@@ -1,0 +1,52 @@
+{
+  "$schema": "../../../references/manifest.schema.json",
+  "schema": 1,
+  "id": "link",
+  "kind": "recipe",
+  "family": "link",
+  "tier": "controls",
+  "pattern": "https://www.w3.org/WAI/ARIA/apg/patterns/link/",
+  "summary": "A link: the browser's own anchor, in the kit's ink.",
+  "element": "a",
+  "role": null,
+  "focus": "own",
+  "tabindex": null,
+  "formAssociated": false,
+  "attributes": {},
+  "resets": [],
+  "states": [
+    "hover",
+    "focus-visible",
+    "active",
+    "current"
+  ],
+  "parts": {
+    "root": {
+      "kind": "root",
+      "material": null,
+      "note": "Text in the accent ink, underlined. The current page's link is in the plain ink."
+    }
+  },
+  "tokens": [
+    "--link-ink",
+    "--link-ink-hover",
+    "--link-ink-active",
+    "--link-radius"
+  ],
+  "behaviours": [],
+  "keys": {},
+  "events": {},
+  "guidance": [
+    {
+      "topic": "naming",
+      "text": "Write a native anchor with data-ui=\"link\". It needs an href; without one it is not a link."
+    }
+  ],
+  "notYet": [],
+  "targets": {
+    "web-components": "built",
+    "react": "planned",
+    "svelte": "planned",
+    "solid": "planned"
+  }
+}

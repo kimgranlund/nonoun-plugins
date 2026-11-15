@@ -1,0 +1,61 @@
+@layer reset, base, tokens, recipes, utilities;
+
+/* The recipe of <ui-menu>. Its shape and rules: docs/specs/css-contract.md. Its conditions: references/states.json.
+   ui-materials: an overlay, relief ground, neutral face. Flat gives it a ring (kit.config.json, flatRings),
+   because its fill is the ground's.
+   ui-geometry: a frame padded like a listbox, its radius concentric with its rows, at the popup offset from
+   its trigger and no wider than a popover.
+   Placement: below the menu button, start edges aligned, no narrower than it; above it where there is no room
+   below. The menu button is the anchor (D77). The same rules place a menu written open before it is defined.
+   position-area places the box whatever the browser's own inset and margin for a popover, so neither is reset.
+   In forced colours Chromium and Firefox drop the shadow themselves; WebKit 27.2 keeps it, hence --_shadow: none. */
+@layer recipes {
+  @scope (ui-menu) {
+    :where(:scope) {
+      --_face: var(--menu-face, var(--overlay-face));
+      --_shadow: var(--overlay-shadow);
+      --_ink: var(--menu-ink, var(--ink));
+      --_inset: var(--menu-inset, var(--collections-frame-d_c));
+      --_radius: var(--menu-radius, var(--collections-curvature-r_frame));
+      --_gap: var(--menu-gap, var(--collections-gap-popup-offset-from-its-trigger));
+      --_width: var(--collections-width-popover);
+      --_text: var(--unit-scale-f);
+      --_border: var(--unit-border-b);
+    }
+
+    /* The recipe's own boxes are border boxes, with or without a reset (C31). */
+    :where(:scope, [data-part]) { box-sizing: border-box; }
+    :scope {
+      display: none;
+      position: fixed;
+      margin-block: var(--_gap);
+      position-anchor: --menu-button;
+      position-area: block-end span-inline-end;
+      position-try-fallbacks: flip-block;
+      min-inline-size: anchor-size(inline);
+      max-inline-size: var(--_width);
+      padding: var(--_inset);
+      border: 0;
+      border-radius: var(--_radius);
+      overflow: auto;
+      background-color: var(--_face);
+      box-shadow: var(--_shadow);
+      color: var(--_ink);
+      font-size: var(--_text);
+    }
+    :scope:where(:is([open], :popover-open)) { display: grid; }
+    :scope:where([hidden]:not([hidden="until-found"])) { display: none; }
+
+    @media (forced-colors: active) {
+      :where(:scope) {
+        --_face: Canvas;
+        --_ink: CanvasText;
+        --_shadow: none;
+      }
+      :scope {
+        outline: var(--_border) solid CanvasText;
+        outline-offset: calc(var(--_border) * -1);
+      }
+    }
+  }
+}

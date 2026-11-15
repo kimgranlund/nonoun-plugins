@@ -1,0 +1,134 @@
+{
+  "$schema": "../../../references/manifest.schema.json",
+  "schema": 1,
+  "id": "slider",
+  "kind": "component",
+  "family": "slider",
+  "tier": "controls",
+  "pattern": "https://www.w3.org/WAI/ARIA/apg/patterns/slider/",
+  "summary": "A value in a range, set by dragging a thumb along a track or with the arrow keys. It is a form control.",
+  "role": "slider",
+  "focus": "own",
+  "tabindex": 0,
+  "formAssociated": true,
+  "attributes": {
+    "value": {
+      "type": "number",
+      "description": "The value. It is held between min and max and on a step."
+    },
+    "min": {
+      "type": "number",
+      "description": "The low end of the range.",
+      "default": 0
+    },
+    "max": {
+      "type": "number",
+      "description": "The high end of the range.",
+      "default": 100
+    },
+    "step": {
+      "type": "number",
+      "description": "The distance between two values the user can reach.",
+      "default": 1
+    },
+    "orientation": {
+      "type": "enum",
+      "values": [
+        "horizontal",
+        "vertical"
+      ],
+      "default": "horizontal",
+      "state": "vertical",
+      "description": "vertical runs the track upwards."
+    },
+    "name": {
+      "type": "string",
+      "description": "The name the value is submitted under."
+    },
+    "disabled": {
+      "type": "boolean",
+      "state": "disabled",
+      "description": "It cannot be changed or focused."
+    }
+  },
+  "resets": [
+    "value"
+  ],
+  "states": [
+    "hover",
+    "focus-visible",
+    "active",
+    "vertical",
+    "disabled"
+  ],
+  "parts": {
+    "root": {
+      "kind": "root",
+      "material": null,
+      "note": "The hit area: as tall as ui-geometry's slider hit area, with the track centred in it."
+    },
+    "track": {
+      "kind": "pseudo",
+      "pseudo": "::before",
+      "material": {
+        "layer": "base",
+        "relief": "recessed",
+        "face": "neutral"
+      },
+      "note": "The filled share is solid."
+    },
+    "thumb": {
+      "kind": "pseudo",
+      "pseudo": "::after",
+      "material": {
+        "layer": "base",
+        "relief": "raised",
+        "face": "neutral"
+      },
+      "note": "Round; it sits at the value's share of the track."
+    },
+    "fill": {
+      "kind": "pseudo",
+      "pseudo": "::before",
+      "material": {
+        "layer": "base",
+        "relief": "recessed",
+        "face": "solid"
+      },
+      "note": "The share of the track up to the value, or between the two thumbs. The recipe may draw it as a second layer of the track."
+    }
+  },
+  "tokens": [
+    "--slider-track-face",
+    "--slider-fill-face",
+    "--slider-thumb-face",
+    "--slider-height",
+    "--slider-track-radius"
+  ],
+  "behaviours": [],
+  "keys": {
+    "ArrowRight, ArrowUp": "One step up.",
+    "ArrowLeft, ArrowDown": "One step down.",
+    "PageUp, PageDown": "Ten steps up or down.",
+    "Home, End": "The minimum or the maximum."
+  },
+  "events": {
+    "input": "Dispatched while the user changes the value.",
+    "change": "Dispatched when the user has finished: on pointer release, or after a key."
+  },
+  "guidance": [
+    {
+      "topic": "naming",
+      "text": "The author names the slider with aria-label or aria-labelledby, and may give aria-valuetext."
+    }
+  ],
+  "notYet": [
+    "Marks along the track."
+  ],
+  "targets": {
+    "web-components": "built",
+    "react": "planned",
+    "svelte": "planned",
+    "solid": "planned"
+  }
+}

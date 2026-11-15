@@ -1,0 +1,21 @@
+{
+ "id": "brand-name",
+ "title": "Brand showcase",
+ "brief": "{spec}/brief.md",
+ "groups": [
+  { "id": "identity", "label": "Identity", "specimens": [
+   { "id": "logo", "label": "Logo", "depiction": "Primary mark on light and dark, with clear space" },
+   { "id": "palette", "label": "Palette", "depiction": "Brand colours with names and values" },
+   { "id": "type", "label": "Type", "depiction": "Display, heading and body faces with a real line of copy" } ] },
+  { "id": "voice", "label": "Voice", "specimens": [
+   { "id": "headline", "label": "Headline", "depiction": "A real headline in the brand's voice" },
+   { "id": "microcopy", "label": "Microcopy", "depiction": "Button, empty state and error text" },
+   { "id": "dont", "label": "Do and don't", "depiction": "One rewrite from off-voice to on-voice" } ] }
+ ],
+ "axes": [ { "name": "theme", "attr": "data-theme", "values": ["light", "dark"] } ],
+ "tokens": { "css": ["{work}/brand.css"], "commands": ["write the brand's tokens (colours, type, radii) as CSS variables to {work}/brand.css"] },
+ "acceptance": [
+  "Every colour, face and length is the brand's own, read from its tokens or site, never invented.",
+  "Copy is real or written in the brand's documented voice; no lorem ipsum, no invented metrics."
+ ]
+}

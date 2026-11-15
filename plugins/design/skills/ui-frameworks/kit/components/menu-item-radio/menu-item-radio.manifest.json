@@ -1,0 +1,78 @@
+{
+  "$schema": "../../../references/manifest.schema.json",
+  "schema": 1,
+  "id": "menu-item-radio",
+  "kind": "component",
+  "family": "menu-button",
+  "tier": "collections",
+  "pattern": "https://www.w3.org/WAI/ARIA/apg/patterns/menubar/",
+  "summary": "A menu item that is one choice of a group in a menu.",
+  "role": "menuitemradio",
+  "focus": "roving",
+  "tabindex": null,
+  "formAssociated": false,
+  "attributes": {
+    "checked": {
+      "type": "boolean",
+      "state": "checked",
+      "description": "This is the chosen item of its group."
+    },
+    "value": {
+      "type": "string",
+      "description": "What the choice stands for; the author reads it in the change listener."
+    },
+    "disabled": {
+      "type": "boolean",
+      "state": "disabled",
+      "description": "It cannot be chosen or focused."
+    }
+  },
+  "resets": [],
+  "states": [
+    "focus",
+    "focus-visible",
+    "active",
+    "checked",
+    "disabled"
+  ],
+  "parts": {
+    "root": {
+      "kind": "root",
+      "material": null,
+      "note": "A menu row with room at its start for the mark."
+    },
+    "mark": {
+      "kind": "pseudo",
+      "pseudo": "::before",
+      "material": null,
+      "note": "A dot, shown while checked."
+    }
+  },
+  "tokens": [
+    "--menu-item-radio-face-focus",
+    "--menu-item-radio-face-active",
+    "--menu-item-radio-ink",
+    "--menu-item-radio-ink-disabled",
+    "--menu-item-radio-height",
+    "--menu-item-radio-inset",
+    "--menu-item-radio-gap",
+    "--menu-item-radio-radius"
+  ],
+  "behaviours": [
+    "press"
+  ],
+  "keys": {
+    "Enter, Space": "Choose the item. The menu stays open on Space and closes on Enter."
+  },
+  "events": {
+    "change": "Dispatched, and bubbles, when the user chooses the item.",
+    "click": "Dispatched once per activation."
+  },
+  "notYet": [],
+  "targets": {
+    "web-components": "built",
+    "react": "planned",
+    "svelte": "planned",
+    "solid": "planned"
+  }
+}

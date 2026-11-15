@@ -1,0 +1,67 @@
+{
+  "$schema": "../../../references/manifest.schema.json",
+  "schema": 1,
+  "id": "menu-button",
+  "kind": "component",
+  "family": "menu-button",
+  "tier": "controls",
+  "pattern": "https://www.w3.org/WAI/ARIA/apg/patterns/menu-button/",
+  "summary": "A button that opens a menu. It holds the button and the menu, and keeps them in step.",
+  "role": null,
+  "focus": "none",
+  "tabindex": null,
+  "formAssociated": false,
+  "attributes": {},
+  "resets": [],
+  "states": [],
+  "parts": {
+    "root": {
+      "kind": "root",
+      "material": null,
+      "note": "An inline box around the trigger. It is the anchor the menu is placed against, and paints nothing."
+    }
+  },
+  "tokens": [],
+  "behaviours": [],
+  "keys": {
+    "Enter, Space": "On the trigger: open the menu, or close it.",
+    "ArrowDown": "On the trigger: opens the menu with focus on its first item.",
+    "ArrowUp": "On the trigger: opens the menu with focus on its last item."
+  },
+  "events": {},
+  "uses": [
+    "button"
+  ],
+  "writes": {
+    "button": [
+      "aria-haspopup",
+      "aria-controls",
+      "aria-expanded",
+      "id"
+    ],
+    "menu": [
+      "open",
+      "aria-labelledby",
+      "id"
+    ]
+  },
+  "guidance": [
+    {
+      "topic": "coordination",
+      "text": "Its menu, by the menu role, and its trigger: the first element with the button role, or native button, that is not inside the menu. Both among its descendants that belong to no menu button nested inside it. It gives an id only to an element that has none, and a name only to one the author left unnamed."
+    },
+    {
+      "topic": "naming",
+      "text": "A chevron in the trigger is the icon component with the name chevron-down, written by the author after the label."
+    }
+  ],
+  "notYet": [
+    "A placement other than below the trigger, start edges aligned."
+  ],
+  "targets": {
+    "web-components": "built",
+    "react": "built",
+    "svelte": "planned",
+    "solid": "planned"
+  }
+}

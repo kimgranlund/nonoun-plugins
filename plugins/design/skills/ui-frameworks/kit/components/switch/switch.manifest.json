@@ -1,0 +1,114 @@
+{
+  "$schema": "../../../references/manifest.schema.json",
+  "schema": 1,
+  "id": "switch",
+  "kind": "component",
+  "family": "switch",
+  "tier": "controls",
+  "pattern": "https://www.w3.org/WAI/ARIA/apg/patterns/switch/",
+  "summary": "A setting that is on or off, and that a form submits while it is on.",
+  "role": "switch",
+  "focus": "own",
+  "tabindex": 0,
+  "formAssociated": true,
+  "attributes": {
+    "checked": {
+      "type": "boolean",
+      "state": "checked",
+      "description": "The setting is on."
+    },
+    "required": {
+      "type": "boolean",
+      "state": "required",
+      "description": "The form cannot be submitted while the setting is off."
+    },
+    "value": {
+      "type": "string",
+      "default": "on",
+      "description": "Submitted with the name while the setting is on."
+    },
+    "name": {
+      "type": "string",
+      "description": "The name the value is submitted under."
+    },
+    "disabled": {
+      "type": "boolean",
+      "state": "disabled",
+      "description": "It cannot be changed or focused."
+    }
+  },
+  "resets": [
+    "checked"
+  ],
+  "states": [
+    "hover",
+    "focus-visible",
+    "active",
+    "checked",
+    "required",
+    "invalid",
+    "disabled"
+  ],
+  "parts": {
+    "root": {
+      "kind": "root",
+      "material": null,
+      "note": "Holds the author's label text and draws no face of its own."
+    },
+    "track": {
+      "kind": "pseudo",
+      "pseudo": "::before",
+      "material": {
+        "layer": "base",
+        "relief": "recessed",
+        "face": "neutral"
+      },
+      "note": "checked: face solid."
+    },
+    "thumb": {
+      "kind": "pseudo",
+      "pseudo": "::after",
+      "material": {
+        "layer": "base",
+        "relief": "raised",
+        "face": "neutral"
+      },
+      "note": "Sits at the start of the track when off and at the end when on."
+    }
+  },
+  "tokens": [
+    "--switch-face",
+    "--switch-face-hover",
+    "--switch-face-active",
+    "--switch-face-checked",
+    "--switch-ink",
+    "--switch-ink-disabled",
+    "--switch-line-invalid",
+    "--switch-height",
+    "--switch-inset"
+  ],
+  "behaviours": [
+    "press"
+  ],
+  "keys": {
+    "Space": "Toggles at key up.",
+    "Enter": "Toggles at key down."
+  },
+  "events": {
+    "input": "Dispatched when the user toggles the setting.",
+    "change": "Dispatched after input, when the user toggles the setting.",
+    "click": "Dispatched once per activation."
+  },
+  "messages": {
+    "valueMissing": "Please turn this on"
+  },
+  "notYet": [
+    "Translated messages."
+  ],
+  "targets": {
+    "web-components": "built",
+    "react": "planned",
+    "svelte": "planned",
+    "solid": "planned"
+  }
+}

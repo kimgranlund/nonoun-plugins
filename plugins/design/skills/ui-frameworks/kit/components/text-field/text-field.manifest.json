@@ -1,0 +1,85 @@
+{
+  "$schema": "../../../references/manifest.schema.json",
+  "schema": 1,
+  "id": "text-field",
+  "kind": "component",
+  "family": "text-field",
+  "tier": "controls",
+  "pattern": "https://www.w3.org/WAI/tutorials/forms/",
+  "summary": "One line of text entry: the kit's field around the browser's own input.",
+  "role": null,
+  "focus": "none",
+  "tabindex": null,
+  "formAssociated": false,
+  "attributes": {
+    "disabled": {
+      "type": "boolean",
+      "state": "disabled",
+      "description": "The field cannot be changed or focused. The component disables its input."
+    }
+  },
+  "resets": [],
+  "states": [
+    "hover",
+    "focus-within",
+    "invalid",
+    "read-only",
+    "disabled"
+  ],
+  "parts": {
+    "root": {
+      "kind": "root",
+      "material": {
+        "layer": "base",
+        "relief": "recessed",
+        "face": "neutral"
+      },
+      "note": "The field: a recessed box around the input, as tall as a control. A click on it focuses the input."
+    },
+    "input": {
+      "kind": "author",
+      "material": null,
+      "note": "A native input the author writes and marks with data-part=\"input\" (D14). It carries the name, the value, the type and every constraint, and takes part in the form by itself."
+    }
+  },
+  "tokens": [
+    "--text-field-face",
+    "--text-field-face-hover",
+    "--text-field-face-read-only",
+    "--text-field-ink",
+    "--text-field-ink-disabled",
+    "--text-field-line-invalid",
+    "--text-field-height",
+    "--text-field-inset",
+    "--text-field-gap",
+    "--text-field-radius"
+  ],
+  "behaviours": [],
+  "keys": {},
+  "events": {},
+  "writes": {
+    "text-field": [
+      "invalid",
+      "readonly"
+    ]
+  },
+  "guidance": [
+    {
+      "topic": "naming",
+      "text": "The author labels the input with a label element, a form field around it, or aria-label."
+    },
+    {
+      "topic": "coordination",
+      "text": "An icon or a button written before or after the input sits inside the field. The component writes aria-invalid on the input once the user is due to be told, and mirrors invalid and readonly onto its root for the recipe."
+    }
+  ],
+  "notYet": [
+    "More than one line of text (a textarea)."
+  ],
+  "targets": {
+    "web-components": "built",
+    "react": "planned",
+    "svelte": "planned",
+    "solid": "planned"
+  }
+}

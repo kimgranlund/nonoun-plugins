@@ -1,0 +1,27 @@
+@layer reset, base, tokens, recipes, utilities;
+
+/* The recipe of <ui-tab-panel>. Its shape and rules: docs/specs/css-contract.md. Its conditions: references/states.json.
+   It holds the author's content and paints nothing but its focus ring. */
+@layer recipes {
+  @scope ([data-ui="tab-panel"]) {
+    :where(:scope) {
+      --_ring: var(--colors-focus-ring);
+      --_ring-width: var(--controls-focus-ring-width-w);
+      --_ring-offset: var(--controls-focus-ring-offset-o);
+    }
+
+    /* The recipe's own boxes are border boxes, with or without a reset (C31). */
+    :where(:scope, [data-part]) { box-sizing: border-box; }
+    :scope { display: block; }
+    :scope:where([hidden]:not([hidden="until-found"])) { display: none; }
+
+    :scope:where(:is(:focus-visible, [data-focus-visible])) {
+      outline: var(--_ring-width) solid var(--_ring);
+      outline-offset: var(--_ring-offset);
+    }
+
+    @media (forced-colors: active) {
+      :where(:scope) { --_ring: Highlight; }
+    }
+  }
+}

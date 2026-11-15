@@ -1,0 +1,104 @@
+{
+  "$schema": "../../../references/manifest.schema.json",
+  "schema": 1,
+  "id": "radio-group",
+  "kind": "component",
+  "family": "radio-group",
+  "tier": "controls",
+  "pattern": "https://www.w3.org/WAI/ARIA/apg/patterns/radio/",
+  "summary": "A set of choices of which one can be chosen. It is one form control and one stop in the Tab order.",
+  "role": "radiogroup",
+  "focus": "none",
+  "tabindex": null,
+  "formAssociated": true,
+  "attributes": {
+    "value": {
+      "type": "string",
+      "description": "The value of the chosen radio. With none written, the group takes the radio the author marked as checked."
+    },
+    "name": {
+      "type": "string",
+      "description": "The name the value is submitted under."
+    },
+    "required": {
+      "type": "boolean",
+      "state": "required",
+      "description": "The form cannot be submitted while no radio is chosen."
+    },
+    "orientation": {
+      "type": "enum",
+      "values": [
+        "vertical",
+        "horizontal"
+      ],
+      "default": "vertical",
+      "state": "horizontal",
+      "description": "horizontal puts the radios in a row."
+    },
+    "disabled": {
+      "type": "boolean",
+      "state": "disabled",
+      "description": "It cannot be changed or focused."
+    }
+  },
+  "resets": [
+    "value"
+  ],
+  "states": [
+    "required",
+    "invalid",
+    "disabled",
+    "horizontal"
+  ],
+  "parts": {
+    "root": {
+      "kind": "root",
+      "material": null,
+      "note": "Stacks its radios and paints nothing."
+    }
+  },
+  "tokens": [
+    "--radio-group-gap"
+  ],
+  "behaviours": [
+    "roving-focus"
+  ],
+  "keys": {
+    "ArrowDown, ArrowRight": "Move focus to the next radio and choose it; wrap at the end.",
+    "ArrowUp, ArrowLeft": "The same, to the previous radio.",
+    "Space": "Chooses the radio that has focus.",
+    "Tab": "Enters the group at the chosen radio, or at the first when none is chosen, and chooses nothing."
+  },
+  "events": {
+    "input": "Dispatched when the user chooses another radio.",
+    "change": "Dispatched after input."
+  },
+  "messages": {
+    "valueMissing": "Please choose one"
+  },
+  "writes": {
+    "radio": [
+      "checked",
+      "tabindex"
+    ]
+  },
+  "guidance": [
+    {
+      "topic": "naming",
+      "text": "The author names the group with aria-label or aria-labelledby."
+    },
+    {
+      "topic": "first paint",
+      "text": "Write `checked` on the chosen radio, so that it is painted before the group is defined."
+    }
+  ],
+  "notYet": [
+    "Translated messages."
+  ],
+  "targets": {
+    "web-components": "built",
+    "react": "planned",
+    "svelte": "planned",
+    "solid": "planned"
+  }
+}

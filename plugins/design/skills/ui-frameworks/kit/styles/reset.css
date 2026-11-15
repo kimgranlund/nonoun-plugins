@@ -1,0 +1,9 @@
+@layer reset, base, tokens, recipes, utilities;
+
+/* The smallest reset the kit's recipes rely on. */
+@layer reset {
+  /* Elements only. A pseudo-element is not valid inside :where(), so ::before and ::after keep their content box, and the recipes are written for that (D102). */
+  :where(*) { box-sizing: border-box; }
+  /* A part holding focus rises over its neighbours, so a later sibling never paints over its ring. Zero specificity: a recipe's own z-index wins. */
+  :where(:is(:focus-visible, [data-focus-visible])) { z-index: 1; }
+}

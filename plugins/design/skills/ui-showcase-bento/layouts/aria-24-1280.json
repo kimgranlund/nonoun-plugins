@@ -1,0 +1,15 @@
+{
+ "id": "aria-24-1280",
+ "note": "ARIA 24 at n 14, standard preset, tile depth 5q, dialogs 80q wide, as drawn in the reference sheet. The rows need about 1,161px of height, so the canvas is 1280 × 1280. Minimums are measured from that sheet: other specimens need their own measurements.",
+ "canvas": { "width": 1280, "height": 1280 },
+ "areas": [
+  "disclosure disclosure disclosure disclosure disclosure choices",
+  "selection selection selection navigation navigation navigation",
+  "input input input input actions actions",
+  "values values values values feedback feedback"
+ ],
+ "mins": {
+  "disclosure": [955, 311], "choices": [241, 300], "selection": [599, 208], "navigation": [597, 264],
+  "input": [802, 266], "actions": [394, 266], "values": [802, 194], "feedback": [394, 284]
+ }
+}

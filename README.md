@@ -6,7 +6,7 @@ Independently installable plugins, with Codex and Claude Code manifests and mark
 |---|---|---|
 | Context (formerly Progressive Context) | Durable capability contracts, selective context loading, evidence and reuse qualification, context-routing diagnosis, system atlases and ICM workspaces | `$context-system` and the other skills in [its guidance](plugins/context/AGENTS.md) |
 | SDLC | Tickets, plans, execution, verification and work closure | `$sdlc` |
-| Design | UI construction, UI geometry, UI colors, inspector jigs, wireframes and design critique | `$ui-geometry`, `$wireframe-review`, and the other skills in [its guidance](plugins/design/AGENTS.md) |
+| Design | UI construction, UI geometry, UI colors, UI materials, content, interactions, UI kits, variant exploration, bento showcases, inspector jigs, wireframes and design critique | `$ui-geometry`, `$wireframe-review`, and the other skills in [its guidance](plugins/design/AGENTS.md) |
 | Dev Tools | Machine, repo and harness care: verification loops, flaky gates, port zombies, bare repos, cross-harness plugins, skill report cards | `$closed-loop-run` and the other skill names |
 
 Context works directly in either host. SDLC supports native Codex execution and Claude execution, selected with `SDLC_BACKEND=codex|claude`. Its project setup installs predefined Codex subagents. See [compatibility and validation](docs/references/plugin-compatibility.md).

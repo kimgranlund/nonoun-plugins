@@ -1,0 +1,184 @@
+{
+ "title": "Colour 24",
+ "note": "The 24 colour-system specimens in eight groups from ui-colors/references/showcase.md, which holds their required depictions. A specimen whose name differs from its row in the brief's required-depictions table carries that row as briefRow.",
+ "areas": [
+  "ramps ramps modes modes",
+  "neutral roles transparency scales",
+  "brand data data scales"
+ ],
+ "groups": [
+  {
+   "id": "ramps",
+   "label": "Ramps",
+   "specimens": [
+    {
+     "id": "light-ramps",
+     "label": "Light ramps",
+     "depiction": "Every family steps 1–12 on a light panel; step 9 marks its solid label"
+    },
+    {
+     "id": "dark-ramps",
+     "label": "Dark ramps",
+     "depiction": "The same on a dark panel"
+    },
+    {
+     "id": "step-use",
+     "label": "Step use",
+     "depiction": "Primary ramp under the five bands, with the construction annotation"
+    }
+   ]
+  },
+  {
+   "id": "neutral",
+   "label": "Neutral & surfaces",
+   "specimens": [
+    {
+     "id": "neutral-ramp",
+     "label": "Neutral ramp",
+     "depiction": "gray 1–12 and its tint source"
+    },
+    {
+     "id": "surface-ladder",
+     "label": "Surface ladder",
+     "depiction": "bg › bg-subtle › bg-muted, light and dark"
+    },
+    {
+     "id": "control-fills",
+     "label": "Control fills",
+     "depiction": "rest, hover, active inside control-border, light and dark"
+    }
+   ]
+  },
+  {
+   "id": "roles",
+   "label": "Roles",
+   "specimens": [
+    {
+     "id": "solids",
+     "label": "Solids",
+     "depiction": "primary and secondary solids on their label, with APCA Lc"
+    },
+    {
+     "id": "status-roles",
+     "label": "Status roles",
+     "depiction": "solid, subtle, border and fg per status role"
+    },
+    {
+     "id": "focus-ring",
+     "label": "Focus ring",
+     "depiction": "around a solid and around a surface"
+    }
+   ]
+  },
+  {
+   "id": "transparency",
+   "label": "Transparency",
+   "specimens": [
+    {
+     "id": "alpha-page",
+     "label": "Alpha over the page",
+     "depiction": "a1–a12 of primary and gray"
+    },
+    {
+     "id": "alpha-surface",
+     "label": "Over a contrasting surface",
+     "depiction": "the same rows on bg-inverse"
+    },
+    {
+     "id": "backdrop",
+     "label": "Backdrop",
+     "depiction": "bg-backdrop over content with a dialog above"
+    }
+   ]
+  },
+  {
+   "id": "modes",
+   "label": "Modes",
+   "specimens": [
+    {
+     "id": "mode-light",
+     "label": "Light",
+     "depiction": "the mini UI card",
+     "briefRow": "Mode cards"
+    },
+    {
+     "id": "mode-dark",
+     "label": "Dark",
+     "depiction": "the same card",
+     "briefRow": "Mode cards"
+    },
+    {
+     "id": "mode-extra",
+     "label": "Extra mode",
+     "depiction": "the same card, or an empty state naming extraModes",
+     "briefRow": "Mode cards"
+    }
+   ]
+  },
+  {
+   "id": "brand",
+   "label": "Brand",
+   "specimens": [
+    {
+     "id": "anchor-report",
+     "label": "Anchor report",
+     "depiction": "requested vs pinned, Lc vs target, ΔE, or no anchors"
+    },
+    {
+     "id": "ground-ink",
+     "label": "Ground and ink",
+     "depiction": "ink on page, light and dark, with hex",
+     "briefRow": "Ground and ink / page and ink"
+    },
+    {
+     "id": "p3-srgb",
+     "label": "P3 vs sRGB",
+     "depiction": "split swatches with ΔE, or an sRGB-only note"
+    }
+   ]
+  },
+  {
+   "id": "data",
+   "label": "Data",
+   "specimens": [
+    {
+     "id": "series",
+     "label": "Series",
+     "depiction": "data-1…6 bars, numbered"
+    },
+    {
+     "id": "series-cvd",
+     "label": "Series under CVD",
+     "depiction": "deutan and protan bars with min ΔE"
+    },
+    {
+     "id": "seq-div",
+     "label": "Sequential & diverging",
+     "depiction": "data-seq and data-div steps, labelled"
+    }
+   ]
+  },
+  {
+   "id": "scales",
+   "label": "Scales & checks",
+   "specimens": [
+    {
+     "id": "tonal",
+     "label": "Tonal 050–950",
+     "depiction": "primary and gray stops"
+    },
+    {
+     "id": "contrast-excerpt",
+     "label": "Contrast excerpt",
+     "depiction": "five weakest pairs per mode, with misses"
+    },
+    {
+     "id": "tonal-role-map",
+     "label": "Tonal ↔ role map",
+     "depiction": "primary steps over their nearest stop"
+    }
+   ],
+   "layout": "column"
+  }
+ ]
+}

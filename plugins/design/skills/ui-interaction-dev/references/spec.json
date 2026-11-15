@@ -1,0 +1,2277 @@
+{
+  "$description": "The interaction spec: one rule per entry, each with one reading. status: sourced (a primary source states it), validated (an implementation's test proved it, with a negative control), contested (sources disagree; both are recorded). `node scripts/spec.mjs --check` validates this file and keeps references/spec.md in step. Edit here, never in spec.md.",
+  "version": 1,
+  "areas": {
+    "drag": "Pointer drag and drop: activation, capture, feedback, drop, cancel, scroll",
+    "alternative": "A way to do what a drag does without dragging (WCAG 2.5.7) and without a pointer",
+    "announce": "What assistive technology is told, and when",
+    "focus": "Where focus goes, and how it is found",
+    "hover": "What a part does under a hovering pointer",
+    "motion": "Motion that follows an action, and what reduced motion removes",
+    "target": "How big a part is to the pointer",
+    "shadow": "Interaction inside shadow DOM",
+    "overlay": "Dialogs, drawers and popups: layering, Escape and where a popup renders",
+    "date": "Typing and picking dates: field order, locale, calendar system, bounds and ranges",
+    "form": "Custom fields inside forms: reset, validation and labels",
+    "mode": "Review and Edit: which scope is editable, how it is entered and left",
+    "support": "Controls that depend on an API not every engine has",
+    "testing": "How an interaction is proved"
+  },
+  "rules": [
+    {
+      "id": "drag.architecture",
+      "area": "drag",
+      "rule": "A drag that must work with touch SHOULD be built on Pointer Events; native HTML drag and drop MAY be used only where files, other windows or other apps must be dragged in or out.",
+      "why": "Native drag and drop has weak touch support and a fixed preview; pointer events give one code path for mouse, pen and touch. Native DnD is the only way to cross the window.",
+      "status": "sourced",
+      "sources": [
+        "https://dndkit.com/api-documentation/sensors/pointer",
+        "https://react-aria.adobe.com/blog/drag-and-drop",
+        "https://developer.mozilla.org/en-US/docs/Web/API/Pointer_events"
+      ]
+    },
+    {
+      "id": "drag.activation",
+      "area": "drag",
+      "rule": "A press MUST NOT become a drag until it passes an activation constraint: a mouse or pen moves a distance (about 4px); a finger rests a delay (about 250ms) without drifting past a tolerance (about 5px). Only one constraint applies per input type.",
+      "why": "Without it a click starts a drag, and on touch a swipe that meant to scroll grabs the item.",
+      "status": "validated",
+      "sources": [
+        "https://dndkit.com/api-documentation/sensors/pointer"
+      ],
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a web-component kanban board, Chromium (Playwright)",
+          "finding": "A click, and a press moved 2px, stay clicks and move nothing; a touch that moves past 5px at once moves nothing (the page may scroll); a touch held 320ms then moved carries the card.",
+          "check": "browser test: mouse click, sub-threshold move, CDP touch swipe and rested touch; all fail against the build without pointer drag"
+        },
+        {
+          "on": "2026-11-13",
+          "where": "a self-contained page, vanilla JS on Pointer Events: an HTML table of 6 columns and 8 rows in a scroll box, with a sticky header row and a sticky first column, columns reordered by the header and rows by a handle; headless Chromium 159 and WebKit 27.2 on macOS driven by page.mouse and the keyboard, touch by CDP touch events under touch emulation in Chromium only",
+          "finding": "Holds unchanged for a table column reordered by its header and for a row reordered by a handle.",
+          "check": "\"col: a 2px press is a click, not a drag\" and \"row: a 2px press is a click, not a drag\" (control: no distance threshold; the click still sorts the column or opens the row menu) and \"col: touch: a swipe from the header is not a drag\", \"row: touch: a swipe from the handle is not a drag\" (control: touch uses the distance constraint, no delay)."
+        },
+        {
+          "on": "2026-11-13",
+          "where": "a list whose rows drag after a 250 ms hold, CDP touch under touch emulation in headless Chromium",
+          "finding": "A finger that moved within 240 ms of touching down was treated as a swipe and nothing was dragged; one that rested 260 ms or more dragged the row. With the hold set to 400 ms a 350 ms rest no longer dragged. A touch drag test therefore has to rest longer than the hold before its first move.",
+          "check": "send the moves at once: the drag must not start; remove the hold: it starts"
+        }
+      ]
+    },
+    {
+      "id": "drag.touch-scroll",
+      "area": "drag",
+      "rule": "touch-action MUST be set in CSS before a press begins, since a change during a press is ignored. When the whole item is draggable inside a scrolling page, the drag SHOULD leave touch-action alone, use the delay constraint, and cancel the scroll from a non-passive touchmove listener once the drag is live. When only a handle drags, touch-action: none goes on the handle only.",
+      "why": "touch-action: none on a whole item stops the page from scrolling when a finger starts on it; pointer listeners cannot cancel the browser's touch scroll, but a non-passive touchmove can.",
+      "status": "sourced",
+      "sources": [
+        "https://dndkit.com/api-documentation/sensors/pointer",
+        "https://JavaScript.info/pointer-events"
+      ],
+      "note": "The delay path is validated (drag.activation); that the touchmove listener is what stops the scroll on a real device is not yet measured."
+    },
+    {
+      "id": "drag.capture",
+      "area": "drag",
+      "rule": "Once a drag is live the element SHOULD capture the pointer (setPointerCapture), and the drag MUST end on pointerup and cancel on pointercancel; the move, up and cancel listeners are removed when it ends.",
+      "why": "Without capture, moves stop when the pointer leaves the element; without a pointercancel path, an interrupted touch leaves the item lifted.",
+      "status": "sourced",
+      "sources": [
+        "https://developer.mozilla.org/en-US/docs/Web/API/Pointer_events",
+        "https://JavaScript.info/pointer-events"
+      ]
+    },
+    {
+      "id": "drag.no-reflow",
+      "area": "drag",
+      "rule": "While dragging, the lifted item SHOULD follow the pointer by a transform (the CSS translate property composes with an existing transform) and keep its slot, so no other box moves until the drop.",
+      "why": "Reflowing the list under the pointer moves the targets the user is aiming at; the drop indicator, not the layout, says where the item lands.",
+      "status": "validated",
+      "sources": [
+        "https://atlassian.design/components/pragmatic-drag-and-drop/design-guidelines"
+      ],
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a web-component kanban board, Chromium (Playwright)",
+          "finding": "Every lane keeps its height mid-drag; the card returns to no translate and no lifted state after the drop.",
+          "check": "browser test compares lane heights before and during a drag"
+        },
+        {
+          "on": "2026-11-13",
+          "where": "a self-contained page, vanilla JS on Pointer Events: an HTML table of 6 columns and 8 rows in a scroll box, with a sticky header row and a sticky first column, columns reordered by the header and rows by a handle; headless Chromium 159 and WebKit 27.2 on macOS driven by page.mouse and the keyboard, touch by CDP touch events under touch emulation in Chromium only",
+          "finding": "Holds unchanged for a table column reordered by its header and for a row reordered by a handle.",
+          "check": "\"col: nothing else moves while it is carried, and it keeps its slot\" and \"row: nothing else moves while it is carried, and it keeps its slot\" (control: the DOM is reordered while carrying). The \"item\" is a set of cells (a header and one cell per row, or every cell of a row); translate is set on each cell. See proposed drag.table-cells-follow."
+        },
+        {
+          "on": "2026-11-14",
+          "where": "a reorderable list and a board on a shared drag-preview helper, web components in shadow DOM, headless Chromium",
+          "finding": "The item can leave its slot for the top layer as a manual popover moved by translate while a placeholder of its measured size holds the slot: the list kept its height and the placeholder its row's height and place, and the card was drawn outside its scroll box. Being the item and not a clone, it kept its container's ::slotted styles; the popover's user-agent box and colour rules were pinned to the item's computed values first.",
+          "check": "\"the ghost appears only past the threshold, in the top layer…\" and \"kanban: the card lifts into the top layer out of its scroll box…\"; fail on the code before the change (negative control run). WebKit not run."
+        }
+      ],
+      "note": "Atlassian keeps the original at opacity 0.4 and drags a separate preview; moving the item itself is the simpler variant when the item's styles come from its container."
+    },
+    {
+      "id": "drag.indicator",
+      "area": "drag",
+      "rule": "Where the item will land SHOULD be shown by a 2px line in the middle of the gap with a terminal mark at its start; a container with no items MUST show no line, and the container that would take the item SHOULD be tinted only when it is not the item's own.",
+      "why": "A line names a position between items; an empty list has no between, so the container itself is the answer.",
+      "status": "validated",
+      "sources": [
+        "https://atlassian.design/components/pragmatic-drag-and-drop/design-guidelines"
+      ],
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a web-component kanban board, Chromium (Playwright)",
+          "finding": "Exactly one line shows, in the lane under the pointer; an empty lane shows no line and is tinted.",
+          "check": "browser test reads each lane's line and tint mid-drag"
+        }
+      ]
+    },
+    {
+      "id": "drag.cancel",
+      "area": "drag",
+      "rule": "Escape, pointercancel and the page becoming hidden MUST cancel a live drag, put the item back where it started, fire no change event, and say so.",
+      "why": "A drag the user cannot abandon is a trap; a cancel that fires a change makes the app persist a move nobody made.",
+      "status": "validated",
+      "sources": [
+        "https://primer.style/accessibility/patterns/drag-and-drop"
+      ],
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a web-component kanban board, Chromium (Playwright)",
+          "finding": "Escape mid-drag restores the order, fires no move event and announces the card put back.",
+          "check": "browser test, negative control against the build without pointer drag"
+        },
+        {
+          "on": "2026-11-13",
+          "where": "a self-contained page, vanilla JS on Pointer Events: an HTML table of 6 columns and 8 rows in a scroll box, with a sticky header row and a sticky first column, columns reordered by the header and rows by a handle; headless Chromium 159 and WebKit 27.2 on macOS driven by page.mouse and the keyboard, touch by CDP touch events under touch emulation in Chromium only",
+          "finding": "Holds unchanged for a table column reordered by its header and for a row reordered by a handle.",
+          "check": "\"col: Escape puts it back and fires nothing\" and \"row: Escape puts it back and fires nothing\" (control: no Escape listener), \"col: touch: pointercancel puts it back and fires nothing\" and \"row: touch: pointercancel puts it back and fires nothing\" (control: pointercancel treated as a drop), \"col: a cancel is announced\" and \"row: a cancel is announced\". The page becoming hidden was not tested. Gap found: the rule does not cover the release that follows an Escape cancel; see proposed drag.swallow-click-cancel."
+        },
+        {
+          "on": "2026-11-13",
+          "where": "a self-contained page, vanilla JS on Pointer Events: a sortable list of six rows in a page that scrolls, each dragged by a handle (mouse past 4px, finger after 250ms), with a keyboard mode on the handle and Move up and Move down buttons; headless Chromium 158 and WebKit 27.2 on macOS driven by page.mouse and page.keyboard, touch by CDP touch events under touch emulation in Chromium only",
+          "finding": "Space or Enter on the handle picked the row up, ArrowDown and ArrowUp carried it one place a press with focus kept on the handle, the same key dropped it with one change event, and Escape put it back with no change event; each stage was announced. Without the restore on Escape the row stayed where it was carried and no change event had fired. Both engines.",
+          "check": "\"keys: Space picks up, the arrows carry, Space drops\", \"keys: Enter picks up, the arrows carry, Enter drops\" (control: no keyboard mode), \"keys: Escape puts the carried row back and fires no change\" (control: Escape ends the mode without restoring)"
+        },
+        {
+          "on": "2026-11-13",
+          "where": "controls whose drag sets a value (a rotary choice, a number window, a scrubbed number with a letter handle, a two-axis colour plane) and a canvas node moved by drag, web components, headless Chromium with page.mouse and the keyboard",
+          "finding": "Escape with the button down put each back to the value before the press and fired no change event; the canvas node announced the cancel. The release that followed did nothing",
+          "check": "each control's \"Escape reverts\" test, and the scrub test's event log with no change; fails on the code before the change (negative control run by the build session, not re-run here)"
+        }
+      ]
+    },
+    {
+      "id": "drag.swallow-click",
+      "area": "drag",
+      "rule": "The click that follows a drop MUST be swallowed (a capturing listener that stops it, removed on the next task or at the next pointerdown, whichever comes first), so a drop never also activates what is under the pointer.",
+      "why": "Browsers fire click after pointerup on the common ancestor; dropping onto a button or link would otherwise press it. Input is scheduled ahead of timers, so a press made just after the release can arrive before the next task; it starts a new gesture whose click must land.",
+      "status": "validated",
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a web-component kanban board, Chromium (Playwright)",
+          "finding": "No click reaches the document after a drag and drop; a plain click still does.",
+          "check": "browser test counts capturing document clicks"
+        },
+        {
+          "on": "2026-11-13",
+          "where": "a self-contained page, vanilla JS on Pointer Events: an HTML table of 6 columns and 8 rows in a scroll box, with a sticky header row and a sticky first column, columns reordered by the header and rows by a handle; headless Chromium 159 and WebKit 27.2 on macOS driven by page.mouse and the keyboard, touch by CDP touch events under touch emulation in Chromium only",
+          "finding": "Holds unchanged for a table column reordered by its header and for a row reordered by a handle.",
+          "check": "\"col: the click after a drop is swallowed\" and \"row: the click after a drop is swallowed\" (control: no capturing click listener). Measured in both engines: the click only arrives when the drop leaves the pressed node in place (carried and dropped in its own slot); it then lands on the header's sort button or the row handle, which would sort the table or open the Move menu. A drop that re-inserted the pressed node produced no click at all, so that case has no control that bites."
+        },
+        {
+          "on": "2026-11-13",
+          "where": "a value window that steps on a click in its upper or lower half and rolls on a drag, and a canvas whose ports are picked by a click and joined by a drag; web components, headless Chromium with page.mouse",
+          "finding": "After a drag, no click stepped the window and no port was picked; a plain click still did both",
+          "check": "\"24px up is four programs, and the click after the drop is swallowed\" and \"the drop is no click: nothing picked\"; fails on the code before the change (negative control run by the build session, not re-run here)"
+        },
+        {
+          "on": "2026-11-14",
+          "where": "a shared pointer-drag helper on Pointer Events, a reorderable list in shadow DOM, headless Chromium",
+          "finding": "With the swallow removed only by a zero timeout, a button clicked at once after the release got no click: the timer's removal ran after the next press and its click. With a capturing pointerdown listener that also removes the swallow, that click landed and the drop's own click was still swallowed.",
+          "check": "\"a press made fast after a drop still clicks\"; fails with the timer-only removal (negative control run). WebKit not run."
+        }
+      ]
+    },
+    {
+      "id": "drag.autoscroll",
+      "area": "drag",
+      "rule": "A drag SHOULD scroll the nearest scroll box that can still move, or the page, while the pointer is within an edge band (about 40px) of its side, every animation frame, and re-evaluate the target as it scrolls.",
+      "why": "With touch scrolling cancelled during a drag, an item cannot otherwise reach a place outside the visible part of a list.",
+      "status": "validated",
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a web-component kanban board in a 160px overflow box, Chromium (Playwright)",
+          "finding": "Holding a dragged card 10px from the box's bottom edge for 400ms scrolls it by more than 20px.",
+          "check": "browser test reads scrollTop"
+        }
+      ]
+    },
+    {
+      "id": "drag.text-selection",
+      "area": "drag",
+      "rule": "A drag start MUST cancel the press's default action (preventDefault on pointerdown) and focus its own part explicitly; a draggable surface SHOULD also set user-select: none (with -webkit-user-select), and an item with other interactive parts SHOULD drag only from a handle.",
+      "why": "Otherwise the press starts a text selection that follows the drag across the page. WebKit keeps extending it even under pointer capture and user-select: none on the pressed element; only cancelling the press stops it, and cancelling also stops the default focus, so the code must focus.",
+      "status": "validated",
+      "sources": [
+        "https://atlassian.design/components/pragmatic-drag-and-drop/design-guidelines"
+      ],
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "knobs, a range slider and other drag controls, WebKit and Chromium (Playwright)",
+          "finding": "Dragging a knob across page text selected it in WebKit but not in Chromium; user-select: none alone did not stop it in WebKit; preventDefault on pointerdown did, in both engines.",
+          "check": "browser test in both engines reads getSelection() after a drag; a plain element's drag is the positive control that does select"
+        },
+        {
+          "on": "2026-11-13",
+          "where": "a self-contained page, vanilla JS on Pointer Events: an HTML table of 6 columns and 8 rows in a scroll box, with a sticky header row and a sticky first column, columns reordered by the header and rows by a handle; headless Chromium 159 and WebKit 27.2 on macOS driven by page.mouse and the keyboard, touch by CDP touch events under touch emulation in Chromium only",
+          "finding": "Holds unchanged for a table column reordered by its header and for a row reordered by a handle.",
+          "check": "Column: \"col: carrying across cells from the header's own surface selects no text\" (control: no preventDefault and no user-select none; Chromium selected \"Team\", WebKit selected most of the table). Focus half, both axes: \"col: the pressed part takes focus although the press's default is cancelled\" and \"row: the pressed part takes focus although the press's default is cancelled\" (control: preventDefault kept, explicit focus removed). Row: the selection half is NOT proven: the handle is a button and a press on a button started no selection in either engine, so the control did not bite and the check was dropped."
+        }
+      ]
+    },
+    {
+      "id": "drag.drop-feedback",
+      "area": "drag",
+      "rule": "A drop SHOULD update the UI at once (optimistically) and persist afterwards; it MAY flash the moved item briefly (Atlassian: about 700ms), and never under prefers-reduced-motion.",
+      "why": "Waiting for the server makes the item jump back and forth; the flash shows where it went.",
+      "status": "sourced",
+      "sources": [
+        "https://atlassian.design/components/pragmatic-drag-and-drop/design-guidelines"
+      ]
+    },
+    {
+      "id": "drag.press-reset",
+      "area": "drag",
+      "rule": "A press that ends without becoming a drag (a click, a swipe) MUST leave no state behind that blocks the next press; a new press replaces any earlier one still being followed.",
+      "why": "A guard set at pointerdown and cleared only when a drag ends stays set after a plain click, so every later drag is ignored; tests that only drive drags that start never see it.",
+      "status": "validated",
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a sortable list on Pointer Events in a React UI kit, vitest with happy-dom and a headless Chrome drag pass",
+          "finding": "After a click on the grip with no movement, the next press dragged nothing. The browser pass found it; the unit tests had not. Stopping any earlier press on pointerdown fixed it.",
+          "check": "unit test \"a click on the grip, with no movement, is no drag\" fails on the code before the fix (re-run at the fix's parent commit with the new test) and passes after; the test was extended with a drag after the click"
+        },
+        {
+          "on": "2026-11-13",
+          "where": "a self-contained page, vanilla JS on Pointer Events: an HTML table of 6 columns and 8 rows in a scroll box, with a sticky header row and a sticky first column, columns reordered by the header and rows by a handle; headless Chromium 159 and WebKit 27.2 on macOS driven by page.mouse and the keyboard, touch by CDP touch events under touch emulation in Chromium only",
+          "finding": "Holds unchanged for a table column reordered by its header and for a row reordered by a handle.",
+          "check": "\"col: a click leaves nothing that hijacks the next press\" and \"row: a click leaves nothing that hijacks the next press\" (control: a click leaves its pending press in place and a new press is ignored). Mouse only; a touch swipe followed by a touch drag was not tested."
+        }
+      ]
+    },
+    {
+      "id": "drag.commit",
+      "area": "drag",
+      "rule": "A value set by dragging or by keys SHOULD report a live change on every step and a separate commit when the gesture ends: on the pointer's release, and on each key press.",
+      "why": "An app that saves, fetches or records history on every pointermove floods; one that waits for a release never hears a keyboard user, whose every key is a whole gesture.",
+      "status": "validated",
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a two-axis colour plane built from two range inputs, React, vitest with happy-dom",
+          "finding": "Before the change a key on the plane changed the value but reported no commit; after it, each key reports one commit and a drag reports one when let go.",
+          "check": "unit test \"keys on the plane end each change; a drag ends when it is let go\" fails on the build before the change (re-run at its parent commit) and passes after"
+        },
+        {
+          "on": "2026-11-13",
+          "where": "a number field scrubbed by dragging its label, and a colour strip dragged with the pointer, web components, headless Chromium with page.mouse and the keyboard",
+          "finding": "While dragging only input events fired, and the release fired one change; a key step fired one input and one change",
+          "check": "the scrub test's event log (every entry but the last an input, the last a change) and \"the change fires once, on release\"; fails on the code before the change (negative control run by the build session, not re-run here)"
+        }
+      ]
+    },
+    {
+      "id": "drag.table-line-span",
+      "area": "drag",
+      "rule": "A table's drop line SHOULD span the visible part of the table across the reorder axis: for a column from the top of the header to the bottom of the last visible row, for a row across the visible width of the scroll box with its terminal mark inside that width.",
+      "why": "The user looks at any row while carrying a column and at any column while carrying a row. A line as long as one header cell is out of sight for most of the table, and a row line laid in the scrolled content starts off-screen once the box is scrolled sideways.",
+      "status": "validated",
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a self-contained page, vanilla JS on Pointer Events: an HTML table of 6 columns and 8 rows in a scroll box, with a sticky header row and a sticky first column, columns reordered by the header and rows by a handle; headless Chromium 159 and WebKit 27.2 on macOS driven by page.mouse and the keyboard, touch by CDP touch events under touch emulation in Chromium only",
+          "finding": "Screenshot pixels on the landing boundary were the line colour in the header, in the second body row and 3px above the visible bottom (column), and over the sticky column and 10px inside the visible right edge with the box scrolled 120px sideways (row), in both engines.",
+          "check": "\"col: the line runs from the header top to the last visible row, over the sticky header\"; the negative control drew the line the height of the header only. \"row: the line spans the visible width, above the sticky column and the lifted row, when the box is scrolled sideways\"; the negative control laid the line in the scrolled content"
+        }
+      ]
+    },
+    {
+      "id": "drag.table-line-layer",
+      "area": "drag",
+      "rule": "A table's drop line MUST paint above the sticky cells and above the lifted cells.",
+      "why": "Sticky cells carry a z-index, so a line drawn in the content passes under them. And cells share a boundary, so a column or row grabbed near its middle always overlaps the boundary it will land on: a line under the lifted cells is hidden exactly when it is needed.",
+      "status": "validated",
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a self-contained page, vanilla JS on Pointer Events: an HTML table of 6 columns and 8 rows in a scroll box, with a sticky header row and a sticky first column, columns reordered by the header and rows by a handle; headless Chromium 159 and WebKit 27.2 on macOS driven by page.mouse and the keyboard, touch by CDP touch events under touch emulation in Chromium only",
+          "finding": "A fixed-position line above every table layer showed on the boundary inside the sticky header. A line in the scrolled content at z-index 0 did not: the pixel was the header paint where the lifted header did not cover it, and the lifted paint where it did. For a row the lifted cells always covered the boundary, so \"above the sticky column\" was only shown together with \"above the lifted row\".",
+          "check": "\"col: the line paints over the sticky header\" (grabbed near the trailing end so the lifted header does not cover the boundary); the negative control put the line in the scrolled content under the sticky cells. Joint evidence for a row: \"row: the line spans the visible width, above the sticky column and the lifted row, when the box is scrolled sideways\""
+        }
+      ]
+    },
+    {
+      "id": "drag.sticky-measure",
+      "area": "drag",
+      "rule": "The edge of a sticky header MUST be measured from a sticky cell, never from its row or section.",
+      "why": "Only the cells are sticky. The row keeps its place in the scrolled content, so its box leaves the scroll box as soon as the table is scrolled; every length taken from it (line start, autoscroll band, pointer clamp) is then wrong.",
+      "status": "validated",
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a self-contained page, vanilla JS on Pointer Events: an HTML table of 6 columns and 8 rows in a scroll box, with a sticky header row and a sticky first column, columns reordered by the header and rows by a handle; headless Chromium 159 and WebKit 27.2 on macOS driven by page.mouse and the keyboard, touch by CDP touch events under touch emulation in Chromium only",
+          "finding": "Found as a bug in the first build: with the box scrolled down 150px the header row measured top -5px while its sticky cells sat at 57px, in both engines; the row autoscroll band and the column line start were both taken from it.",
+          "check": "\"col: the line stays on the sticky header when the box is scrolled down\"; the negative control measured the header row instead of a sticky header cell"
+        }
+      ]
+    },
+    {
+      "id": "drag.autoscroll-sticky-band",
+      "area": "drag",
+      "rule": "Where sticky cells cover a side of the scroll box, the autoscroll edge band MUST start at their inner edge, not at the edge of the scroll box.",
+      "why": "A 40px band measured from the box lies wholly under a sticky column or header that is wider than 40px. The pointer has to be carried over the pinned cells before anything scrolls, and columns hidden behind them cannot be reached as landing places.",
+      "status": "validated",
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a self-contained page, vanilla JS on Pointer Events: an HTML table of 6 columns and 8 rows in a scroll box, with a sticky header row and a sticky first column, columns reordered by the header and rows by a handle; headless Chromium 159 and WebKit 27.2 on macOS driven by page.mouse and the keyboard, touch by CDP touch events under touch emulation in Chromium only",
+          "finding": "With the box scrolled, holding the pointer 20px inside the inner edge of the sticky column (172px from the box edge) or of the sticky header (60px from it) scrolled the box back, in both engines.",
+          "check": "\"col: the near edge band starts at the sticky column's inner edge\" and \"row: the near edge band starts at the sticky header's inner edge\"; the negative control measured the band from the scroll box's own edge"
+        }
+      ]
+    },
+    {
+      "id": "drag.autoscroll-follow",
+      "area": "drag",
+      "rule": "While a drag scrolls its scroll box, the lifted item MUST stay under the pointer: the scroll distance since pick-up is added to its translate.",
+      "why": "The lifted cells live in the scrolled content. Without the correction they slide away from the pointer by the distance scrolled. Not specific to tables; the existing autoscroll rule only says to re-evaluate the target.",
+      "status": "validated",
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a self-contained page, vanilla JS on Pointer Events: an HTML table of 6 columns and 8 rows in a scroll box, with a sticky header row and a sticky first column, columns reordered by the header and rows by a handle; headless Chromium 159 and WebKit 27.2 on macOS driven by page.mouse and the keyboard, touch by CDP touch events under touch emulation in Chromium only",
+          "finding": "After 40px or more of autoscroll the lifted header's (or row's) offset from the pointer equalled the offset at the press within 1px, in both engines; without the correction it was off by the scrolled distance (40px).",
+          "check": "\"col: the lifted cells stay under the pointer while the box scrolls\" and \"row: the lifted cells stay under the pointer while the box scrolls\"; the negative control left the scroll delta out of the translate"
+        }
+      ]
+    },
+    {
+      "id": "drag.lift-above-sticky",
+      "area": "drag",
+      "rule": "Lifted cells SHOULD be given a stacking position above the sticky cells (a positioned cell with a z-index higher than theirs).",
+      "why": "translate alone creates a stacking context at z-index auto, which paints under any sticky cell that has a z-index: the lifted column slides under the pinned column and the lifted row under the header, and disappears.",
+      "status": "validated",
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a self-contained page, vanilla JS on Pointer Events: an HTML table of 6 columns and 8 rows in a scroll box, with a sticky header row and a sticky first column, columns reordered by the header and rows by a handle; headless Chromium 159 and WebKit 27.2 on macOS driven by page.mouse and the keyboard, touch by CDP touch events under touch emulation in Chromium only",
+          "finding": "With position and z-index above the sticky cells, the pixel of a lifted cell carried over the pinned column and over the sticky header was the lifted paint in both engines; with translate alone it was the sticky cell. Whether a lifted column should rather be clamped at the pinned column was not tested.",
+          "check": "\"col: the lifted cells paint above the sticky column\" and \"row: the lifted cells paint above the sticky header\"; the negative control removed position and z-index from the lifted cells"
+        }
+      ]
+    },
+    {
+      "id": "drag.table-commit",
+      "area": "drag",
+      "rule": "A column reorder MUST move the header cell and the cell of every row together, so each row keeps its cells in the header order.",
+      "why": "A column exists only as one cell per row. Moving the header alone puts every value under the wrong heading with nothing visibly broken.",
+      "status": "validated",
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a self-contained page, vanilla JS on Pointer Events: an HTML table of 6 columns and 8 rows in a scroll box, with a sticky header row and a sticky first column, columns reordered by the header and rows by a handle; headless Chromium 159 and WebKit 27.2 on macOS driven by page.mouse and the keyboard, touch by CDP touch events under touch emulation in Chromium only",
+          "finding": "After a column drop every body row listed its cells in the same order as the header row, in both engines.",
+          "check": "\"col: every row keeps its cells in the header order after a column drop\"; the negative control moved the header cell only"
+        }
+      ]
+    },
+    {
+      "id": "drag.swallow-click-cancel",
+      "area": "drag",
+      "rule": "The click that follows the release after an Escape cancel MUST be swallowed too.",
+      "why": "Escape ends the drag while the button is still down. Its release is then an ordinary click on whatever is under the pointer: here it sorted the table by the column just put back, or opened the row's Move menu. Not specific to tables.",
+      "status": "validated",
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a self-contained page, vanilla JS on Pointer Events: an HTML table of 6 columns and 8 rows in a scroll box, with a sticky header row and a sticky first column, columns reordered by the header and rows by a handle; headless Chromium 159 and WebKit 27.2 on macOS driven by page.mouse and the keyboard, touch by CDP touch events under touch emulation in Chromium only",
+          "finding": "After Escape during a short carry, releasing the button over the pressed header left the table unsorted and, for a row, opened no menu; the next real click still worked. Both engines.",
+          "check": "\"col: the release after an Escape cancel does not click the part under it\" and \"row: the release after an Escape cancel does not click the part under it\"; the negative control did not swallow the click after the cancelled press's release"
+        },
+        {
+          "on": "2026-11-13",
+          "where": "a shared pointer-drag helper on Pointer Events used by a canvas of nodes with ports (a link drawn from a port to a port) and by plain handles, light DOM and shadow DOM, headless Chromium with page.mouse and the keyboard",
+          "finding": "After Escape during a short carry, releasing over the pressed handle or port produced no click, so a port was not picked; the next click did. The helper keeps the pointer id of a press cancelled with the button down and swallows the click after that pointer's release, for one task",
+          "check": "\"the release after an Escape cancel does not click; the next click does\" for a handle and for a port; fails on the code before the change (negative control run by the build session, not re-run here)"
+        }
+      ]
+    },
+    {
+      "id": "drag.lost-capture",
+      "area": "drag",
+      "rule": "A live drag MUST cancel when pointer capture is lost without a release, and MUST listen for lostpointercapture at the document: when the capturing element leaves the DOM the event fires there, not on the element.",
+      "why": "A re-render that replaces the dragged node takes its capture with it. Listeners on the element then never hear the release and the drag stays live; listeners on the window carry on with a lifted item that is no longer drawn and commit a move nobody saw.",
+      "status": "validated",
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a self-contained page, vanilla JS on Pointer Events: a sortable list of six rows dragged by a handle that captures the pointer, with its move, up and cancel listeners on the handle and, in a second run, on the window; every row replaced by a new node mid-drag, as a data refresh does; headless Chromium 158 and WebKit 27.2 on macOS driven by page.mouse",
+          "finding": "lostpointercapture fired once, at the document with the document as its target, and never on the removed handle. Without a cancel on it, the drag with listeners on the handle was still live after the release, and the drag with listeners on the window committed a reorder of a row that showed no lift. Hearing the event on the handle only changed nothing. With the cancel at the document the drag ended before the release, fired a cancel and no change, said so in the live region, and the next drag worked. Both engines.",
+          "check": "\"drag: a row re-rendered mid-drag ends the drag at once, and the next drag works\", once with listeners on the handle and once on the window; the negative controls were no lostpointercapture listener, and the listener on the handle only"
+        },
+        {
+          "on": "2026-11-13",
+          "where": "a shared pointer-drag helper used on a light-DOM handle and on a handle inside a shadow root, and by a number field whose label scrubs it; the pressed node replaced by a clone mid-drag; headless Chromium with page.mouse",
+          "finding": "Both cancelled before the release, with no drop and no change; the scrubbed number showed its first value again; the next drag worked. A document-level lostpointercapture listener heard the event for the shadow-root node",
+          "check": "\"the captured node re-rendered mid-drag cancels at once; the release drops nothing; the next drag works\" in both roots, and \"a scrub whose letter is re-rendered mid-drag puts the value back at once, with no change\"; fails on the code before the change (negative control run by the build session, not re-run here)"
+        }
+      ]
+    },
+    {
+      "id": "drag.touchmove-at-mount",
+      "area": "drag",
+      "rule": "The non-passive touchmove listener that cancels the scroll MUST be on the handle before the press begins (added when the handle is mounted); it MUST NOT be added in the pointerdown handler or when the drag goes live.",
+      "why": "Touch events stay with the node the finger landed on. When the press re-renders that node, a listener added afterwards to the node now in the document hears nothing, and one added to the pressed node hears touchmoves that can no longer be cancelled: the page scrolls and the drag ends in pointercancel. Where nothing re-renders a late listener works, so the fault shows only once a re-render is added. Touch events stay with the node where the touch began, so a listener delegated to a root misses a handle that is replaced during the press.",
+      "status": "validated",
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a self-contained page, vanilla JS on Pointer Events: a sortable list of six rows in a page that scrolls, each dragged by a handle (mouse past 4px, finger after 250ms), with a keyboard mode on the handle and Move up and Move down buttons; headless Chromium 158 and WebKit 27.2 on macOS driven by page.mouse and page.keyboard, touch by CDP touch events under touch emulation in Chromium only; the pointerdown handler replaced every row with a new node in the second run",
+          "finding": "Chromium only. With the pressed handle replaced during the press: listener at mount, scrollY 0 and the row moved; listener added at pointerdown or at go-live, the page scrolled 91px and the drag ended in pointercancel (0 touchmoves heard on the new node; 6 heard on the pressed node, none cancelable). With no re-render the late listeners worked. A passive listener failed on both pages. WebKit could not be tested: its driver has a tap only.",
+          "check": "\"touch: the same, where the press re-renders every row (the pressed handle is replaced)\"; negative controls: the listener added at pointerdown (to the new node, to the pressed node), at go-live, passive, and absent"
+        }
+      ],
+      "sources": [
+        "https://developer.mozilla.org/en-US/docs/Web/API/Touch/target"
+      ],
+      "note": "Validated by touch in one engine only: the other engine's driver cannot move a finger. The source states the cause for every engine: a touch's events stay with the element it started on, even after that element leaves the document, and it advises putting touch listeners on the target itself where it may be removed while touched."
+    },
+    {
+      "id": "drag.indicator-own-gap",
+      "area": "drag",
+      "rule": "The drop line MUST NOT show in the two gaps beside the dragged item's own slot, where a release moves nothing.",
+      "why": "A line says the item will land there. In its own gaps the release is a no-op, so a line there promises a move that does not happen.",
+      "status": "validated",
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a self-contained page, vanilla JS on Pointer Events: a sortable list of six rows in a page that scrolls, each dragged by a handle (mouse past 4px, finger after 250ms), with a keyboard mode on the handle and Move up and Move down buttons; headless Chromium 158 and WebKit 27.2 on macOS driven by page.mouse and page.keyboard, touch by CDP touch events under touch emulation in Chromium only",
+          "finding": "With the line hidden in the row's own gaps a line at release always meant a change event. With the line shown there, it showed at release and the release fired no change and moved nothing. Both engines.",
+          "check": "\"own gap: a line shows only where a release would move the row\"; negative control: the line also shown in the row's own gaps"
+        }
+      ]
+    },
+    {
+      "id": "drag.line-no-room",
+      "area": "drag",
+      "rule": "A drop line MUST take no room in the layout: in the flow it is a zero-height box whose stroke is drawn outside it, and inside a container spaced by gap it MUST be positioned out of the flow.",
+      "why": "A line with height pushes the rows below it each time it appears, and in a flex or grid container any item, even an empty one, adds a gap; the rows then move under the pointer while the user aims.",
+      "status": "validated",
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a self-contained page, vanilla JS on Pointer Events: a sortable list of six rows in a page that scrolls, each dragged by a handle (mouse past 4px, finger after 250ms), with a keyboard mode on the handle and Move up and Move down buttons; headless Chromium 158 and WebKit 27.2 on macOS driven by page.mouse and page.keyboard, touch by CDP touch events under touch emulation in Chromium only",
+          "finding": "A zero-height line between rows spaced by margins moved no row (0px) and left the list 284px high; a line 2px high moved the rows below 2px. In a flex column with a 4px gap the zero-height line moved them 4px and the 2px line 6px. Both engines.",
+          "check": "\"line: showing the line moves no row (rows spaced by margins)\"; negative control: a line 2px high in the flow; the flex-gap run was an observation"
+        }
+      ]
+    },
+    {
+      "id": "drag.transition-scope",
+      "area": "drag",
+      "rule": "A view transition that animates a reorder MUST be scoped to the list (element.startViewTransition) and MUST be left out where the engine has no scoped transition; it MUST NOT be a document-wide transition.",
+      "why": "While a document-wide transition runs, the hit test anywhere on the page returns the root element, so every press on the page is lost until the animation ends.",
+      "status": "validated",
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a self-contained page, vanilla JS on Pointer Events: a sortable list of six rows in a page that scrolls, each dragged by a handle (mouse past 4px, finger after 250ms), with a keyboard mode on the handle and Move up and Move down buttons; headless Chromium 158 and WebKit 27.2 on macOS driven by page.mouse and page.keyboard, touch by CDP touch events under touch emulation in Chromium only; a drop animated for 600ms",
+          "finding": "With document.startViewTransition, 120ms after the drop the hit test at a button elsewhere on the page returned the root element and a mouse click on it was not counted, in both engines. Scoped to the list (Chromium), the click was counted while 36 transition animations ran. WebKit 27.2 has no element.startViewTransition; with the transition left out there the click was counted.",
+          "check": "\"view transition: a press elsewhere on the page right after a drop lands\"; negative control: a document-wide transition"
+        }
+      ]
+    },
+    {
+      "id": "drag.virtual-mounted",
+      "area": "drag",
+      "rule": "In a virtualised list the dragged item's node MUST stay in the DOM for as long as the drag is live, however far its slot scrolls out of the rendered window.",
+      "why": "The node holds the pointer capture. When the window recycles it the capture is lost, and a drag that cancels on lost capture (drag.lost-capture) ends the moment the user scrolls far enough to need it.",
+      "status": "validated",
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a self-contained page, vanilla JS on Pointer Events: 200 rows in a 308px scroll box with about ten in the DOM, a row dragged by a handle that captures the pointer, the box scrolled 880px by the mouse wheel mid-drag; headless Chromium 158 and WebKit 27.2 on macOS driven by page.mouse",
+          "finding": "With the dragged row kept in the DOM the release moved it from index 2 to 22. Rendered like any other row it was removed when its slot left the window, capture was lost and the drag was cancelled with nothing moved. Both engines. Touch and autoscroll were not tried.",
+          "check": "\"virtual: a row whose slot has scrolled out of the window is still dropped where it is let go\"; negative control: the dragged row unmounts with its slot"
+        }
+      ]
+    },
+    {
+      "id": "drag.on-zones",
+      "area": "drag",
+      "rule": "A row that can take an item both onto itself and beside itself MUST split its box along the drag axis: the middle (about half) means onto it, shown by a tint and no line, and the outer parts (about a quarter each) mean before and after, shown by the line.",
+      "why": "With no middle zone a closed or empty container cannot be dropped into; with the whole row meaning onto, a place between two such rows cannot be reached.",
+      "status": "validated",
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a self-contained page, vanilla JS on Pointer Events: a tree of items and folders with 36px rows and 24px of indent a level, rows dragged with the mouse; headless Chromium 158 and WebKit 27.2 on macOS driven by page.mouse",
+          "finding": "With a middle half and outer quarters, a release on the middle of a closed folder put the item in it and a release in the upper quarter put the item before it, between two folders. With two halves the item could not be put into the closed folder; with the whole row meaning onto, it could not be put between the two folders. Both engines.",
+          "check": "\"zones: the middle of a closed folder row takes the item into the folder\" (control: two halves), \"zones: the upper quarter of a folder row places the item before it, between two folders\" (control: the whole row means onto)"
+        }
+      ]
+    },
+    {
+      "id": "drag.tree-depth",
+      "area": "drag",
+      "rule": "In a tree, where a gap could belong to more than one level (under the last child of an open branch), the pointer's position along the indent axis MUST pick the level, and the line MUST start at that level's indent.",
+      "why": "The gap under a branch's last child is both the end of the branch and the place after it. If it always takes one level, the other place cannot be reached by a drag.",
+      "status": "validated",
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a self-contained page, vanilla JS on Pointer Events: a tree of items and folders with 36px rows and 24px of indent a level, rows dragged with the mouse; headless Chromium 158 and WebKit 27.2 on macOS driven by page.mouse",
+          "finding": "In the gap under an open folder's last child, the pointer at the outer indent placed the item after the folder (line at depth 0) and at the inner indent made it the last child (line at depth 1). With the gap always taking the level of the row above, the place after the folder could not be reached. Both engines.",
+          "check": "\"depth: in the gap under a folder's last child, the pointer at the outer level places the item after the folder\"; negative control: the gap always takes the level of the row above"
+        }
+      ]
+    },
+    {
+      "id": "drag.refused-target",
+      "area": "drag",
+      "rule": "A target that would refuse the dragged item MUST show no line and no tint, and a release on it MUST put the item back and say so.",
+      "why": "A tint or a line says the item will land there. On a target that refuses it the release changes nothing, so the indicator promises a move that does not happen.",
+      "status": "validated",
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a self-contained page, vanilla JS on Pointer Events: a tree of items and folders with 36px rows and 24px of indent a level, rows dragged with the mouse; headless Chromium 158 and WebKit 27.2 on macOS driven by page.mouse; one folder refuses every item",
+          "finding": "Over the refusing folder nothing was shown, and the release fired a cancel, moved nothing and announced the item put back. With the folder tinted like an accepting one, the tint showed at release and the release still moved nothing. Both engines.",
+          "check": "\"refused: over a folder that takes nothing, nothing is shown; what shows at release is what the release does\"; negative control: the refusing folder is tinted"
+        }
+      ]
+    },
+    {
+      "id": "drag.save-failed",
+      "area": "drag",
+      "rule": "When the save that follows an optimistic drop fails, the order MUST be put back as it was before the drop (from a snapshot taken then), the failure MUST be announced, and focus MUST stay on the item.",
+      "why": "A drop shown at once and never saved leaves the screen showing an order the server does not hold, and nothing tells the user.",
+      "status": "validated",
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a self-contained page, vanilla JS on Pointer Events: a sortable list of six rows in a page that scrolls, each dragged by a handle (mouse past 4px, finger after 250ms), with a keyboard mode on the handle and Move up and Move down buttons; headless Chromium 158 and WebKit 27.2 on macOS driven by page.mouse and page.keyboard, touch by CDP touch events under touch emulation in Chromium only; the save after a drop refused after 200ms",
+          "finding": "With the restore the list returned to the order the server held and said \"Could not save. Snare put back, position 2 of 6\", with focus on the row. Without it the list showed the row at position 4 while the server held it at position 2 and nothing was said. Both engines.",
+          "check": "\"save: when the save is refused the list goes back to what the server holds, says so and keeps focus on the row\"; negative control: no restore"
+        }
+      ]
+    },
+    {
+      "id": "drag.grab-part",
+      "area": "drag",
+      "rule": "A press on a slider's handle MUST NOT change the value: the drag keeps the pointer's offset from the handle's centre. A press on the track outside the handle SHOULD jump the handle to the pointer.",
+      "why": "A press that jumps to the pointer moves the value by the few pixels between where the press landed and the handle's centre, so a click meant to grab it changes it.",
+      "status": "validated",
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a vertical fader with a cap on a recessed slot and a readout, web component, headless Chromium with page.mouse",
+          "finding": "A click 4px off the cap's centre left the value unchanged; a drag then moved it from that offset; a click on the bare slot below the cap set the minimum",
+          "check": "\"a press on the cap grabs it where it is: no jump\" and \"a press at the foot of the slot jumps to the floor\"; fails on the code before the change (negative control run by the build session, not re-run here)"
+        }
+      ]
+    },
+    {
+      "id": "drag.value-taper",
+      "area": "drag",
+      "rule": "A control whose range spans two or more decades SHOULD use a logarithmic taper, and its indicator, marks, pointer drag and keys MUST all use the same one; an arrow key MUST step a fraction of the travel (about a hundredth), not one unit of the value, once the range holds more than about 200 steps.",
+      "why": "On a linear travel of 20 to 20000, everything below 200 takes under 1% of the sweep, so a drag cannot place it, and an arrow moves 1 of 19,980 steps.",
+      "status": "validated",
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a knob over a cutoff of 20 Hz to 20 kHz with eleven lit marks, web component, headless Chromium with page.mouse, the keyboard and the wheel",
+          "finding": "At 2400 Hz the indicator sat at the log angle (within 0.5°) with seven of eleven marks lit; a 40px drag up raised the value by more than ×1.5 and turned the indicator by about a tenth of the sweep; ArrowDown lowered it by more than 5%, not by 1 Hz; Home and End gave 20 and 20000. On the linear code before the change the indicator and marks were off and an arrow moved 1 Hz",
+          "check": "\"a log cutoff turns by drag, keys and wheel\"; fails on the code before the change (negative control run by the build session, not re-run here)"
+        }
+      ]
+    },
+    {
+      "id": "alternative.single-pointer",
+      "area": "alternative",
+      "rule": "Everything a drag does MUST also be possible with single-pointer actions that are not drags (WCAG 2.5.7, AA): typically a Move control on the item opening a menu of destinations (other containers, up, down), or select-then-arrow buttons. A swipe does not count, and keyboard support does not satisfy it.",
+      "why": "People using trackballs, head pointers, eye gaze or voice-driven pointers cannot drag; W3C failure F108 names a kanban without a click alternative.",
+      "status": "validated",
+      "sources": [
+        "https://www.w3.org/WAI/WCAG22/Understanding/dragging-movements",
+        "https://www.w3.org/WAI/WCAG22/Techniques/failures/F108.html",
+        "https://atlassian.design/components/pragmatic-drag-and-drop/accessibility-guidelines/"
+      ],
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a web-component kanban board, Chromium (Playwright)",
+          "finding": "A Move key on the card under the pointer or with focus opens a menu of the other lanes, Move up and Move down; choosing one moves the card with no drag.",
+          "check": "browser test clicks the key and a menu item"
+        },
+        {
+          "on": "2026-11-13",
+          "where": "a self-contained page, vanilla JS on Pointer Events: an HTML table of 6 columns and 8 rows in a scroll box, with a sticky header row and a sticky first column, columns reordered by the header and rows by a handle; headless Chromium 159 and WebKit 27.2 on macOS driven by page.mouse and the keyboard, touch by CDP touch events under touch emulation in Chromium only",
+          "finding": "Holds unchanged for a table column reordered by its header and for a row reordered by a handle.",
+          "check": "\"col: clicks alone move it through the Move menu, with the same change event\" and \"row: clicks alone move it through the Move menu, with the same change event\" (control: no Move control). The menu fires the same change event as a drop."
+        },
+        {
+          "on": "2026-11-13",
+          "where": "a number that is set by dragging across it (a step per 2px) and starts typing on a click, with a minus and a plus key at its two ends; web component, headless Chromium with page.mouse",
+          "finding": "One click on the plus key raised the value by one step, left focus on the field and did not start typing; with a fine pointer the keys sat hidden until hover or focus",
+          "check": "\"one click on + raises the value one step\" for each look; fails on the code before the change (negative control run by the build session, not re-run here)"
+        },
+        {
+          "on": "2026-11-13",
+          "where": "a canvas of nodes with output and input ports joined by cords drawn by dragging, web component, headless Chromium with page.mouse and the keyboard",
+          "finding": "A click on a port picked it and a click on a port of the other kind joined the two, with the same data change as the drag; Enter did the same by keyboard; Escape dropped the pick; Delete on an input port removed its links; a link made by dragging picked no port",
+          "check": "\"two clicks connect: a port, then a port of the other kind\" and \"a drag from an output port to an input port makes a cord\"; fails on the code before the change (negative control run by the build session, not re-run here)"
+        }
+      ]
+    },
+    {
+      "id": "alternative.trigger",
+      "area": "alternative",
+      "rule": "The Move control MUST name the item it acts on (\"Move <item>\"), MUST be reachable by Tab from the item, and after a move focus MUST return to the moved item, or to a sensible neighbour if it no longer exists.",
+      "why": "A row of identical \"Move\" buttons is unusable by name; focus left on a control that just re-rendered elsewhere is lost.",
+      "status": "validated",
+      "sources": [
+        "https://atlassian.design/components/pragmatic-drag-and-drop/accessibility-guidelines/"
+      ],
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a web-component kanban board, Chromium (Playwright)",
+          "finding": "Tab from a card reaches \"Move <card>\"; Enter opens the menu on its first item; Enter moves the card and focus is on the card.",
+          "check": "browser test by keyboard; fails when the menu cannot find its focused item (shadow.active-element)"
+        },
+        {
+          "on": "2026-11-13",
+          "where": "a self-contained page, vanilla JS on Pointer Events: an HTML table of 6 columns and 8 rows in a scroll box, with a sticky header row and a sticky first column, columns reordered by the header and rows by a handle; headless Chromium 159 and WebKit 27.2 on macOS driven by page.mouse and the keyboard, touch by CDP touch events under touch emulation in Chromium only",
+          "finding": "Holds unchanged for a table column reordered by its header and for a row reordered by a handle.",
+          "check": "\"col: Tab reaches the Move control\" and \"row: Tab reaches the Move control\" (control: tabindex -1), \"col: keys move it through the menu and focus returns to its Move control in the new place\" and \"row: keys move it through the menu and focus returns to its Move control in the new place\" (control: no focus call after the move; focus fell to the body), \"col: each Move control has a name of its own that holds its header's text\" and \"row: each Move control has a name of its own that holds its header's text\" (control: every control named \"Move\"). Reading used: \"the moved item\" is its Move control, which sits inside the moved header or row, so a second Enter moves it again. WebKit reached the buttons with Option+Tab only."
+        }
+      ]
+    },
+    {
+      "id": "alternative.keyboard-drag",
+      "area": "alternative",
+      "rule": "A keyboard drag mode (a key picks up, arrows carry, a key drops, Escape cancels) MAY be offered beside the Move menu; it MUST NOT be the only non-pointer way.",
+      "why": "Primer and React Aria build keyboard drag modes; Atlassian advises menus instead, since arrow carrying is hard without sight, needs a mode switch in JAWS and takes many keystrokes.",
+      "status": "contested",
+      "sources": [
+        "https://primer.style/accessibility/patterns/drag-and-drop",
+        "https://react-aria.adobe.com/blog/drag-and-drop",
+        "https://atlassian.design/components/pragmatic-drag-and-drop/accessibility-guidelines/"
+      ]
+    },
+    {
+      "id": "alternative.table-names",
+      "area": "alternative",
+      "rule": "The Move control of a column MUST be named from its header text and the word column, and that of a row from its row header cell and the word row, never from an index.",
+      "why": "Rows and columns of one table share one set of controls, so each name has to say which axis it moves. An index names a place, not a row: it goes stale on the first reorder.",
+      "status": "validated",
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a self-contained page, vanilla JS on Pointer Events: an HTML table of 6 columns and 8 rows in a scroll box, with a sticky header row and a sticky first column, columns reordered by the header and rows by a handle; headless Chromium 159 and WebKit 27.2 on macOS driven by page.mouse and the keyboard, touch by CDP touch events under touch emulation in Chromium only",
+          "finding": "All 13 Move controls had distinct names that held their header text (\"Move Team column\", \"Move Chen Wei row\"), and each row kept its name after another row was dragged past it. Both engines. That the word \"column\" or \"row\" is needed was not shown by a colliding case; only reading by a screen reader would show how the names sound.",
+          "check": "\"col: each Move control has a name of its own that holds its header's text\" and \"row: each Move control has a name of its own that holds its header's text\"; the negative control named every control \"Move\". \"row: the Move control is named from the row header cell and keeps the name when the row moves\"; the negative control named rows by their index at render"
+        }
+      ]
+    },
+    {
+      "id": "alternative.handle-is-trigger",
+      "area": "alternative",
+      "rule": "A row's drag handle MAY also be its Move control: a click or Enter opens the Move menu, a drag past the threshold reorders.",
+      "why": "One control per row instead of two keeps the row narrow and the tab order short. It depends on the activation threshold (a click stays a click) and on swallowing the click after a drop and after a cancel (the menu must not open).",
+      "status": "validated",
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a self-contained page, vanilla JS on Pointer Events: an HTML table of 6 columns and 8 rows in a scroll box, with a sticky header row and a sticky first column, columns reordered by the header and rows by a handle; headless Chromium 159 and WebKit 27.2 on macOS driven by page.mouse and the keyboard, touch by CDP touch events under touch emulation in Chromium only",
+          "finding": "One button per row served as handle and menu trigger in both engines: a 2px press opened the menu, a carry reordered, and neither a drop nor a cancel opened the menu.",
+          "check": "\"row: a 2px press is a click, not a drag\" (negative control: no threshold), \"row: the click after a drop is swallowed\" (negative control: no click swallowing; the menu opened), \"row: Tab reaches the Move control\""
+        }
+      ]
+    },
+    {
+      "id": "alternative.plane-sliders",
+      "area": "alternative",
+      "rule": "A two-axis plane (a thumb dragged in two dimensions) MUST hold one native range input per axis, each named, so both axes are operable by keyboard and present in the accessibility tree; the plane SHOULD be one tab stop, with the focused input also taking the other axis's two arrow keys, so each arrow moves the thumb the way it points.",
+      "why": "A plane built on pointer handlers alone cannot be operated by keyboard and is not in the accessibility tree (WCAG 2.1.1). A native range input moves on all four arrows, so with two independent inputs ArrowUp moves the thumb sideways and the other axis needs a second Tab.",
+      "status": "validated",
+      "sources": [
+        "https://www.w3.org/WAI/WCAG22/Understanding/keyboard.html",
+        "https://www.w3.org/WAI/ARIA/apg/patterns/slider/"
+      ],
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a self-contained page, vanilla JS: an OKLCH colour picker with a 200px chroma by lightness plane, a row per channel (range input and number input) and a text field for a typed colour; headless Chromium 158 and WebKit 27.2 on macOS driven by the real keyboard and mouse; the accessibility tree read by CDP in Chromium and by a computed aria snapshot in WebKit",
+          "finding": "With a range input per axis and one stop, Tab stopped once on the plane, ArrowRight moved chroma alone and the thumb right, ArrowUp moved lightness alone and the thumb up, and the tree held two named sliders. As a div with pointer handlers Tab passed the plane, no key changed the colour and the tree held nothing inside it. With two independent stops ArrowUp moved chroma and the thumb 2px to the right. Both engines.",
+          "check": "\"plane: it is one tab stop between its neighbours\", \"plane: both axes are sliders in the accessibility tree, named, each value text naming the other axis\" and \"plane: from its one stop, left and right move chroma alone and up and down move lightness alone\"; the negative controls were a plane with no inputs, and two inputs each in the tab order taking only their own keys"
+        }
+      ],
+      "note": "The sources state keyboard operability and the keys of one slider; neither states one tab stop for a plane. The APG multi-thumb slider keeps every thumb in the tab sequence, but its thumbs share one axis."
+    },
+    {
+      "id": "alternative.channel-field",
+      "area": "alternative",
+      "rule": "A colour picker whose plane steps more coarsely than the values it holds MUST also give each channel a control of its own that reaches every value: a number field, or a slider at the value's own step.",
+      "why": "A plane steps by about a pixel, so a value between two of its steps cannot be reached on it by key or pointer; the user who was given an exact colour cannot enter it.",
+      "status": "validated",
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a self-contained page, vanilla JS: an OKLCH colour picker with a 200px chroma by lightness plane, a row per channel (range input and number input) and a text field for a typed colour; headless Chromium 158 and WebKit 27.2 on macOS driven by the real keyboard and mouse",
+          "finding": "With a number field per channel L 0.5, C 0.123, H 200 was entered in 17 key presses. With only the plane (chroma step 0.002) and a hue slider the keyboard stopped at chroma 0.124 after 222 presses. With a slider per channel at step 0.001 and no number field the colour was reached exactly, in 393 presses. Both engines.",
+          "check": "\"channels: an exact colour (L 0.5, C 0.123, H 200) is entered with the keyboard\"; the negative control removed the channel rows and left the plane and a hue slider"
+        }
+      ]
+    },
+    {
+      "id": "alternative.move-selected",
+      "area": "alternative",
+      "rule": "A move control that acts on a multi-select list MUST move every selected option, in list order, whichever one has focus; with nothing selected it SHOULD move nothing and say so with aria-disabled.",
+      "why": "A move that takes the focused option leaves the rest behind still marked selected, so the list shows a selection the move ignored. A move with nothing selected takes an option the user never chose.",
+      "status": "validated",
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a self-contained page, vanilla JS: a transfer list of two multi-select listboxes (focus on the option, one roving tab stop each) with two move buttons between them; headless Chromium 158.0.8127.18 and WebKit 27.2 on macOS, driven by page.mouse and the keyboard (Option+Tab in WebKit)",
+          "finding": "With three options selected, three moved; with the move taking the focused option, one moved and two stayed marked selected. With nothing selected nothing moved; without that guard the current option moved while the button said it was disabled. Both engines.",
+          "check": "\"transfer: the move button moves every selected option, in list order\" and \"transfer: Enter in the list moves every selected option\" (control: the move takes the focused option), \"transfer: with nothing selected, the move button and Enter move nothing\" (control: the move takes the current option when nothing is selected)"
+        }
+      ]
+    },
+    {
+      "id": "announce.stages",
+      "area": "announce",
+      "rule": "A live region MUST announce pick-up, each change of position or container, the drop and a cancel, naming the item, the container and the position (\"Snare dropped in Doing, position 3 of 3\"); rapid position updates SHOULD be debounced (about 100ms).",
+      "why": "A drag changes nothing a screen reader reads on its own; repeated rapid announcements interrupt each other.",
+      "status": "validated",
+      "sources": [
+        "https://primer.style/accessibility/patterns/drag-and-drop",
+        "https://atlassian.design/components/pragmatic-drag-and-drop/accessibility-guidelines/"
+      ],
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a web-component kanban board, Chromium (Playwright)",
+          "finding": "Pointer drop, cancel and menu move each announce the card, lane and position.",
+          "check": "browser test waits for the live region's text"
+        },
+        {
+          "on": "2026-11-13",
+          "where": "a self-contained page, vanilla JS on Pointer Events: an HTML table of 6 columns and 8 rows in a scroll box, with a sticky header row and a sticky first column, columns reordered by the header and rows by a handle; headless Chromium 159 and WebKit 27.2 on macOS driven by page.mouse and the keyboard, touch by CDP touch events under touch emulation in Chromium only",
+          "finding": "Holds unchanged for a table column reordered by its header and for a row reordered by a handle.",
+          "check": "\"col: pick-up is announced with name and position\" and \"row: pick-up is announced with name and position\", \"col: a new landing place is announced while carried\" and \"row: a new landing place is announced while carried\", \"col: the drop is announced with name and position\" and \"row: the drop is announced with name and position\", \"col: a cancel is announced\" and \"row: a cancel is announced\", \"col: a menu move is announced\" and \"row: a menu move is announced\" (control for all: the announcer does nothing). The table has no container to name; the texts name the header and the kind: \"Team column dropped, position 4 of 6\", \"Chen Wei row put back, position 3 of 8\"."
+        }
+      ]
+    },
+    {
+      "id": "announce.no-grabbed",
+      "area": "announce",
+      "rule": "aria-grabbed and aria-dropeffect MUST NOT be used; state comes from live-region announcements and the item's own role and name.",
+      "why": "Both are deprecated in ARIA 1.1 and unsupported by assistive technology.",
+      "status": "sourced",
+      "sources": [
+        "https://react-aria.adobe.com/blog/drag-and-drop"
+      ]
+    },
+    {
+      "id": "announce.hide-non-targets",
+      "area": "announce",
+      "rule": "During a keyboard or screen-reader drag across many possible places, everything that is not a valid drop target SHOULD be hidden from assistive technology, and Tab SHOULD move only between valid targets.",
+      "why": "A touch screen-reader user otherwise swipes past hundreds of unrelated elements to find a target.",
+      "status": "sourced",
+      "sources": [
+        "https://react-aria.adobe.com/blog/drag-and-drop"
+      ]
+    },
+    {
+      "id": "announce.on-change",
+      "area": "announce",
+      "rule": "A composite value (a range, a value with a validity state) SHOULD be announced once when its state changes, such as a range becoming whole or empty, and never on each key that leaves the state as it was.",
+      "why": "Announcing per key interrupts the user's own typing echo; announcing nothing leaves a screen reader user unsure the range was taken.",
+      "status": "validated",
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a date field and a date range field in a React UI kit, vitest with happy-dom",
+          "finding": "Keys and a start alone say nothing; the range is said once when both ends are set, and \"No dates chosen\" once when both are emptied.",
+          "check": "unit test \"announces the range once it is whole, and once both ends are emptied; never per key\" fails on the code before the fix (re-run at the fix's parent commit with the new test) and passes after"
+        }
+      ]
+    },
+    {
+      "id": "announce.axis-value-text",
+      "area": "announce",
+      "rule": "Each slider of a two-dimensional control (a plane built from two sliders) MUST carry a value text that also names the other axis's value.",
+      "why": "A screen reader reads one slider at a time, but the position is the pair; with only its own value the user cannot tell where on the plane the thumb is.",
+      "status": "validated",
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a lightness by chroma colour plane built from two range inputs, React, vitest with happy-dom",
+          "finding": "Before the change each axis said only its own value (\"51 percent\"); after it, \"51 percent, chroma 0.120\".",
+          "check": "unit test \"the plane is a named group with one tab stop: a chroma axis and a lightness axis on its thumb\" fails on the build before the change (re-run at its parent commit) and passes after"
+        }
+      ]
+    },
+    {
+      "id": "announce.spill-roles",
+      "area": "announce",
+      "rule": "An item that folds from a toolbar or segmented control into a menu MUST become the menu item that carries its state: a toggle button a menuitemcheckbox with aria-checked, a radio a menuitemradio with aria-checked inside a named group, and an action a menuitem.",
+      "why": "A menu's items are menuitem, menuitemcheckbox or menuitemradio, and only the last two have a checked state. A folded toggle or radio written as a plain menuitem still works, but its state has left the accessibility tree: nothing says that it is on, or which of the set is chosen.",
+      "status": "validated",
+      "sources": [
+        "https://www.w3.org/WAI/ARIA/apg/patterns/menubar/",
+        "https://www.w3.org/WAI/ARIA/apg/patterns/menubar/examples/menubar-editor/",
+        "https://www.w3.org/TR/wai-aria-1.2/#menu"
+      ],
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a toolbar of toggles, an action and a radio group folding into a More menu, headless Chromium (its accessibility tree by CDP and an aria snapshot) and WebKit (aria snapshot)",
+          "finding": "Six folded items read as menuitemcheckbox, menuitem and grouped menuitemradio with the checked state of their sources, and a state changed in the menu read back from the menu and from the unfolded toolbar. Written as plain menuitems, all six lost their role and the two that were on lost their checked state, in both trees.",
+          "check": "write every folded item as a plain menuitem: the tree must not match the sources' roles and states"
+        }
+      ]
+    },
+    {
+      "id": "announce.spill-selection",
+      "area": "announce",
+      "rule": "A single-choice control that spills into a menu MUST still say which item is selected while the menu is closed: the selected item SHOULD stay in the row, taking the last place that shows; otherwise the menu's trigger MUST carry the selected item's label.",
+      "why": "When the selected segment folds like any other, the row shows a radio group with no radio checked and no text naming the choice. Every item can still be reached, but the control's value is hidden until the menu is opened, for a sighted user and in the accessibility tree alike.",
+      "status": "validated",
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a five-segment radio group folding into a More menu, headless Chromium and WebKit (aria snapshot and visible text)",
+          "finding": "With the selected segment kept, the row read Day, Month checked, More. Folded like the rest it read Day, Week, More: no checked radio and no mention of the selected view, also after another was chosen from the menu. Folding it and naming it on the trigger passed. All five views stayed reachable by keyboard in every variant.",
+          "check": "let the selected segment fold with no label on the trigger: the closed row must not name the selection"
+        }
+      ]
+    },
+    {
+      "id": "announce.value-fitted",
+      "area": "announce",
+      "rule": "When a field changes the value the user typed so that it fits (a colour outside the gamut reduced into it, a number clamped to its range), a live region MUST say once what was changed, from what and to what; a value taken as typed MUST NOT be announced.",
+      "why": "The field's text is rewritten after the user has finished typing it, so a screen reader user hears their own value and holds another; nothing a screen reader reads on its own reports the rewrite.",
+      "status": "validated",
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a self-contained page, vanilla JS: an OKLCH colour picker with a 200px chroma by lightness plane, a row per channel (range input and number input) and a text field for a typed colour; headless Chromium 158 and WebKit 27.2 on macOS driven by the real keyboard and mouse",
+          "finding": "Typing oklch(0.7 0.4 150) and Enter rewrote the field to oklch(0.7 0.192 150); with the announcement the live region said \"Chroma reduced from 0.4 to 0.192 to fit sRGB\" once, without it the field changed in silence. A colour inside sRGB was kept as typed and nothing was said. Both engines; a number clamped to its range was not tested.",
+          "check": "\"typed colour: one outside sRGB is fitted, and a live region says what changed\" (the negative control fitted the colour and said nothing) and \"typed colour: one inside sRGB is kept as typed and nothing is said\""
+        }
+      ],
+      "note": "WCAG 4.1.3 requires that a status message be exposed through a role or property; it does not say a fit must produce one. Only the colour case was tested."
+    },
+    {
+      "id": "announce.event-start",
+      "area": "announce",
+      "rule": "An item placed by time (an event in a day or week grid, a bar on a timeline) MUST carry its day and start time in its accessible name, in words, beside its title.",
+      "why": "On screen the day and time are the item's position; a name read out has no position, so two events with one title are the same control twice.",
+      "status": "validated",
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a self-contained page, vanilla JS: a week time grid of 7 days by 10 hourly slots with six events in it and four outside its hours; headless Chromium 158.0.8127.18 and WebKit 27.2 on macOS, driven by page.mouse and the keyboard (Option+Tab in WebKit)",
+          "finding": "Two events with one title on two days had different names, each holding the weekday, date and start time; with the title alone both were named the same. Read from Playwright's name computation in both engines and from Chromium's accessibility tree; no screen reader.",
+          "check": "\"scheduler: each event is named with its day and start time, so two events with one title have different names\"; the negative control named each event by its title alone"
+        }
+      ]
+    },
+    {
+      "id": "announce.whole-name",
+      "area": "announce",
+      "rule": "A label that does not fit MUST be clipped by CSS (text-overflow, line-clamp), never cut in script, unless the whole text is also given as the accessible name.",
+      "why": "Text clipped by CSS stays whole in the accessibility tree; a string cut in script is all there is, so the name read out stops mid-word and the rest is nowhere.",
+      "status": "validated",
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a self-contained page, vanilla JS: a week time grid of 7 days by 10 hourly slots with six events in it and four outside its hours; headless Chromium 158.0.8127.18 and WebKit 27.2 on macOS, driven by page.mouse and the keyboard (Option+Tab in WebKit)",
+          "finding": "A title clipped by CSS to 99px of its 359px kept its whole text as the name; the same title cut to 14 characters in script was named by those 14 characters and an ellipsis. Read from Playwright's name computation in both engines and from Chromium's accessibility tree; no screen reader.",
+          "check": "\"scheduler: an event whose title is cut short on screen still has the whole title in its name\"; the negative control cut the string in script"
+        }
+      ]
+    },
+    {
+      "id": "announce.mode-change",
+      "area": "announce",
+      "rule": "Each change between Review and Edit MUST write one message to a status region that names the scope and what happened (\"Editing Contact details\", \"Contact details saved\", \"Contact details: changes discarded\"), and typing in the scope MUST NOT write one.",
+      "why": "Save and Cancel move focus away from what changed, so the result is said nowhere else. With several sections on a page, a bare \"Saved\" does not say which one, and two writes for one change are two announcements.",
+      "status": "validated",
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a self-contained page, vanilla JS: a record of three sections (text fields, a select, a date field with a picker popup, a field with a clear button, a field with steppers), an Edit button per section, Edit, Save and Cancel for the whole record and a New record button; headless Chromium 158 and WebKit 27.2 on macOS driven by page.mouse and the keyboard",
+          "finding": "A MutationObserver on the role=\"status\" region recorded exactly one write for each Edit, Save, Cancel and Escape of a section, of the whole record and of a new record, each naming its scope, and none while typing. With no scope in the text, saving two sections gave the same message twice. Both engines. No screen reader was run: what was measured is the write.",
+          "check": "\"announce: Edit, Save and Cancel of a section each write one message that names the section\", \"announce: the same change in two sections gives two different messages\" and \"announce: Edit and Save of the whole record, and of a new record, each write one message that names it\"; the negative controls wrote no message, wrote it twice, and wrote it without the scope"
+        }
+      ]
+    },
+    {
+      "id": "announce.chart-table",
+      "area": "announce",
+      "rule": "A chart of discrete points SHOULD be a native table (header cells for series and points, a cell that says a gap in words) and give it a name that states the title, the point count and the unit; it MUST NOT add a live region or a second hidden copy of its data.",
+      "why": "A table already carries every value, name and gap to the accessibility tree; a second copy drifts, and a live region would say the same thing twice.",
+      "status": "validated",
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a bar chart of twelve categorical points in three series drawn as a native table, web component, headless Chromium, read through the accessibility tree; no screen reader",
+          "finding": "The tree showed a table named with its title, point count and unit, a column header per series with its unit, a row header per point, each row reading its values, a gap read as a word, thirteen rows (the header and twelve), and no Table button",
+          "check": "\"the table is the chart, read through the accessibility tree\"; fails on the code before the change (negative control run by the build session, not re-run here)"
+        }
+      ]
+    },
+    {
+      "id": "announce.chart-explorer",
+      "area": "announce",
+      "rule": "A chart that is not a table MUST be one focusable group named with its title, point count, unit and each series' range, MUST move a point on the arrow keys and on Home and End, and MUST say each point's value for every series in a live region, a gap in words; its numbers MUST also be reachable as a real table.",
+      "why": "A drawn line has no values in the accessibility tree; the live region says them as the user moves, and the table is for anyone.",
+      "status": "validated",
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a line chart of twelve points in three series with a gap, web component, headless Chromium with the real keyboard; no screen reader",
+          "finding": "After focus the live region said the first point's value for every series with its unit; after five ArrowRight it said the sixth, with the gap as a word; End and Home moved to the ends; the group's name held the title, point count, unit, each series' range and its gaps; a Table button was in the tree",
+          "check": "\"arrows read each point into the live region\"; fails on the code before the change (negative control run by the build session, not re-run here)"
+        }
+      ]
+    },
+    {
+      "id": "focus.one-stop",
+      "area": "focus",
+      "rule": "A board, list, table of rows or other composite whose parts are reached by arrows SHOULD be one Tab stop (roving tabindex): the last focused item has tabindex 0, the rest -1, and a pressed item becomes the stop.",
+      "why": "Tab through every card of every lane is unusable; arrows move within the composite.",
+      "status": "validated",
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a web-component kanban board, Chromium (Playwright)",
+          "finding": "Shift+Tab into the board lands on its one stop; arrows move between cards and lanes.",
+          "check": "browser tests titled by key"
+        },
+        {
+          "on": "2026-11-13",
+          "where": "a table of twelve rows used as a chart, web component, headless Chromium with the real keyboard",
+          "finding": "Tab landed on row 0; two ArrowRight then ArrowLeft landed on row 1; End landed on row 11, the only row with tabindex 0; the next Tab left the table",
+          "check": "\"one tab stop, arrows move between rows\"; fails on the code before the change (negative control run by the build session, not re-run here)"
+        }
+      ]
+    },
+    {
+      "id": "focus.cursor",
+      "area": "focus",
+      "rule": "In a list that keeps focus on its container (aria-activedescendant), a pressed option MUST become the active option; the active option's paint MUST differ from the selected paint and MUST NOT be the pressed paint; and in a multi-select list it SHOULD show only while the list has focus.",
+      "why": "A focus handler that picks the first option runs before the click, so without the click moving it the first row always looks current; a cursor painted as pressed, or left showing after focus moves away, reads as the selection while the real selection shows only its mark.",
+      "status": "validated",
+      "sources": [
+        "https://www.w3.org/WAI/ARIA/apg/patterns/listbox/"
+      ],
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a two-list transfer component (multi-select listboxes), Chromium (Playwright)",
+          "finding": "Clicking the third option left the first one painted as current; after the fix the clicked option is the cursor, the cursor is a light fill with no sunk shadow, it disappears when focus leaves, and a marked row ignores hover.",
+          "check": "browser test; all four checks fail on the old build"
+        }
+      ]
+    },
+    {
+      "id": "focus.ring-target",
+      "area": "focus",
+      "rule": "When a control's focusable host also holds printed parts (a scale, marks, labels), the focus ring SHOULD go on the part you touch (a fader's cap, a knob's body), with the host's own outline removed, so the ring marks what keys and pointer act on.",
+      "why": "A ring around the whole control, scale included, frames dead space and reads as a selection box, not as the thing that moves.",
+      "status": "validated",
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a fader and knob web components, Chromium (Playwright)",
+          "finding": "With keyboard focus the ring now circles the knob body and the fader cap, and the host carries no outline.",
+          "check": "browser test reads the ring on the touch part and none on the host; fails on the old build"
+        },
+        {
+          "on": "2026-11-13",
+          "where": "a rotary switch whose focus sits on a hidden radio, with a knob body as the touched part, web component, headless Chromium",
+          "finding": "After an arrow key the knob's outline was solid; after a mouse press on the knob it was none",
+          "check": "\"the focus ring is on the knob, from the keyboard only\"; fails on the code before the change (negative control run by the build session, not re-run here)"
+        }
+      ]
+    },
+    {
+      "id": "focus.option-controls",
+      "area": "focus",
+      "rule": "A control placed inside a listbox option for pointer use MUST be out of the tab order, named, and its action MUST also be reachable by a key on the listbox.",
+      "why": "A listbox does not support interacting with elements inside an option, so a tab stop inside one is unreachable or unannounced; the key on the list is the keyboard path, the name is for voice control.",
+      "status": "sourced",
+      "sources": [
+        "https://www.w3.org/WAI/ARIA/apg/patterns/listbox/"
+      ],
+      "note": "Where the rows need real interactive children, the APG points to the grid pattern instead of a listbox."
+    },
+    {
+      "id": "focus.not-obscured",
+      "area": "focus",
+      "rule": "A scroller under sticky or fixed bands (a header, a footer, a banner) SHOULD set scroll-padding to the bands' measured heights, so a focused element is never scrolled under them.",
+      "why": "Focus moved by Tab scrolls the element just into the scroller's edge, which is under the band; WCAG 2.4.11 (AA) fails when the focused element is entirely hidden.",
+      "status": "sourced",
+      "sources": [
+        "https://www.w3.org/WAI/WCAG22/Techniques/css/C43",
+        "https://www.w3.org/WAI/WCAG22/Understanding/focus-not-obscured-minimum"
+      ]
+    },
+    {
+      "id": "focus.feed-keys",
+      "area": "focus",
+      "rule": "A feed (role feed of focusable articles) SHOULD move focus to the next and previous article on Page Down and Page Up, and out of the feed on Control+End and Control+Home.",
+      "why": "A feed can be endless and loads as it scrolls, so Tab through every link of every article never reaches what is after it.",
+      "status": "sourced",
+      "sources": [
+        "https://www.w3.org/WAI/ARIA/apg/patterns/feed/"
+      ],
+      "note": "The APG recommends these keys or a comparable set, since the feed role has no established convention."
+    },
+    {
+      "id": "focus.after-drop",
+      "area": "focus",
+      "rule": "After a drop that re-inserts the moved nodes, focus MUST be put back on the pressed part of the moved item.",
+      "why": "Removing and re-inserting a cell that holds the focused part drops focus to the body in both engines, so the next key press goes nowhere. The same re-insertion is why no click was dispatched after such a drop.",
+      "status": "validated",
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a self-contained page, vanilla JS on Pointer Events: an HTML table of 6 columns and 8 rows in a scroll box, with a sticky header row and a sticky first column, columns reordered by the header and rows by a handle; headless Chromium 159 and WebKit 27.2 on macOS driven by page.mouse and the keyboard, touch by CDP touch events under touch emulation in Chromium only",
+          "finding": "After a drop that moved the column or row, the focused element was the body until the drop code focused the pressed part again; with that call it was the sort button or handle inside the item at its new index. Both engines. A move that keeps the nodes attached (moveBefore, CSS order) was not tested.",
+          "check": "\"col: focus is still on the moved item's part after a drop that re-inserts it\" and \"row: focus is still on the moved item's part after a drop that re-inserts it\"; the negative control removed the focus call after the move"
+        }
+      ]
+    },
+    {
+      "id": "focus.roving-fold",
+      "area": "focus",
+      "rule": "When the part that holds a roving tab stop is hidden (an item that folds into an overflow menu), the stop MUST move to a part that still shows, such as the menu's trigger, and focus MUST move with it when the hidden part had focus.",
+      "why": "A hidden part cannot take focus. If the only tabindex 0 is on it, Tab passes the whole toolbar; if it had focus, focus falls to the body and the arrow keys stop working.",
+      "status": "validated",
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a self-contained page, vanilla JS: a toolbar of six buttons with one roving tab stop, whose buttons fold into a More menu as a ResizeObserver reports less room; headless Chromium 158 and WebKit 27.2 on macOS driven by the keyboard and a real viewport resize",
+          "finding": "With the stop left on a folded button, focus fell to the body when the focused button folded, and Shift+Tab from the next control skipped the toolbar and landed on the control before it. With the stop and focus moved to the More trigger, focus stayed in the toolbar, ArrowLeft reached the last showing button, Shift+Tab landed on the trigger and one visible tab stop remained. Both engines.",
+          "check": "\"toolbar: when the focused item folds, focus moves to the More trigger and the arrows still work\" and \"toolbar: after its stop folds, Shift+Tab from the next control still lands in the toolbar\"; the negative control left the stop and focus on the folded item"
+        }
+      ]
+    },
+    {
+      "id": "focus.after-move-out",
+      "area": "focus",
+      "rule": "When the focused option is moved out of a list, focus MUST stay in that list: on the first option after it that stays, else the last one before it, else the list itself, which then is the tab stop.",
+      "why": "The moved node leaves the list with focus on it, so focus falls to the body and the next arrow key goes nowhere. Staying in the list lets the user move one option after another.",
+      "status": "validated",
+      "sources": [
+        "https://www.w3.org/WAI/ARIA/apg/patterns/listbox/examples/listbox-rearrangeable/"
+      ],
+      "note": "alternative.trigger and focus.after-drop put focus on the moved item when it stays in view of the same control; this rule is for an item that leaves its list. The APG example states the next-option part only; the previous option and the empty list are from the test.",
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a self-contained page, vanilla JS: a transfer list of two multi-select listboxes (focus on the option, one roving tab stop each) with two move buttons between them; headless Chromium 158.0.8127.18 and WebKit 27.2 on macOS, driven by page.mouse and the keyboard (Option+Tab in WebKit)",
+          "finding": "After a move focus was on the next option, on the previous one when the last moved, and on the list when it emptied; ArrowDown went on from there. Without the focus call it was on the body in all four cases, in both engines.",
+          "check": "\"transfer: after a move by Enter, focus is on the next option of the source list and the arrows go on from it\", \"transfer: when the last option moves, focus is on the one before it\", \"transfer: when every option moves, focus is on the empty list, which is still a tab stop\", \"transfer: after a move by the button with the mouse, focus is on the next option of the source list\"; the negative control removed the focus call after the move"
+        }
+      ]
+    },
+    {
+      "id": "focus.keep-on-press",
+      "area": "focus",
+      "rule": "A button that acts on a list's selection while the list has focus SHOULD cancel mousedown (preventDefault), so a press leaves focus on the list's option; it MUST stay reachable by Tab and work by key.",
+      "why": "Without it a press takes focus from the list: to the button in Chromium, and to the body in WebKit, which does not focus a button on a click, so the focus rule after the move has nothing to go on and the keyboard user starts again from the top of the page. The selection itself is state, not focus, and survives either way.",
+      "status": "validated",
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a self-contained page, vanilla JS: a transfer list of two multi-select listboxes (focus on the option, one roving tab stop each) with two move buttons between them; headless Chromium 158.0.8127.18 and WebKit 27.2 on macOS, driven by page.mouse and the keyboard (Option+Tab in WebKit)",
+          "finding": "With mousedown cancelled, focus stayed on the option through the press in both engines and moved to the next option after the move. Without it focus went to the button in Chromium and to the body in WebKit, where it stayed after the move (6 Tab presses to return). The selection was kept in both engines either way.",
+          "check": "\"transfer: a mouse press on the move button leaves focus and the cursor in the list, and the arrows go on after the move\"; the negative control did not cancel mousedown. \"transfer: a mouse press on the move button never leaves focus on the body\" failed under the control in WebKit only"
+        }
+      ]
+    },
+    {
+      "id": "focus.count-opens",
+      "area": "focus",
+      "rule": "A count that stands for items not shown (\"3 more\") MUST be a button that opens them, named with what it counts and where, with aria-expanded; opening MUST move focus to the first of them and Escape MUST return it.",
+      "why": "As text with a click handler the count is no tab stop, so the items behind it cannot be reached from the keyboard at all (WCAG 2.1.1).",
+      "status": "validated",
+      "sources": [
+        "https://www.w3.org/WAI/WCAG22/Understanding/keyboard"
+      ],
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a self-contained page, vanilla JS: a week time grid of 7 days by 10 hourly slots with six events in it and four outside its hours; headless Chromium 158.0.8127.18 and WebKit 27.2 on macOS, driven by page.mouse and the keyboard (Option+Tab in WebKit)",
+          "finding": "As a button the count was the third tab stop; Enter opened the three events with focus on the first and Escape returned it. As a span with a click handler Tab never reached it in eight presses, though a mouse click opened the same list. Both engines.",
+          "check": "\"scheduler: the off-window count is reached by Tab, Enter opens the hidden events with focus on the first, Escape returns\"; the negative control made the count a span with the same click handler"
+        }
+      ]
+    },
+    {
+      "id": "focus.time-grid-keys",
+      "area": "focus",
+      "rule": "A day or week time grid SHOULD be one tab stop that takes the APG data grid keys: arrows move one slot or one day and stop at the edge, Home and End go to the first and last day of the row, Control with them to the first and last cell, Page Up and Page Down move a set number of slots; a cell that holds one event puts focus on the event.",
+      "why": "A week of hourly slots is 70 cells or more: as tab stops they stand between the keyboard user and everything after the grid, and an empty slot that takes no focus cannot be chosen at all.",
+      "status": "validated",
+      "sources": [
+        "https://www.w3.org/WAI/ARIA/apg/patterns/grid/"
+      ],
+      "note": "date.grid-keys covers a calendar of days, where Page Up and Page Down change the month; here they move within the day.",
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a self-contained page, vanilla JS: a week time grid of 7 days by 10 hourly slots with six events in it and four outside its hours; headless Chromium 158.0.8127.18 and WebKit 27.2 on macOS, driven by page.mouse and the keyboard (Option+Tab in WebKit)",
+          "finding": "With the keys the grid was 1 tab stop, 2 Tabs took focus past it and an event on the fifth day took 7 key presses; as tab stops only it was 70 stops, 71 Tabs and 54 presses. Each key landed where the APG grid pattern says. Both engines.",
+          "check": "\"scheduler: the grid is one tab stop: the second Tab after entering it is out of it\", \"scheduler: arrows move a slot or a day, Home and End the row, Ctrl+Home and Ctrl+End the grid, Page Down and Page Up five slots\", \"scheduler: reaching Friday's Retro from before the grid takes few keys\"; the negative control had no key handler and made every cell a tab stop"
+        }
+      ]
+    },
+    {
+      "id": "focus.show-more",
+      "area": "focus",
+      "rule": "A control that reveals clamped text MUST show only while the text overflows its clamp (measured, and measured again when the width changes), and MUST be a toggle: one button that stays in place, keeps focus, carries aria-expanded and collapses the text again.",
+      "why": "Shown on text that fits, it is a tab stop that does nothing. Removed once pressed, it takes focus with it to the body and leaves no way to collapse.",
+      "status": "validated",
+      "sources": [
+        "https://www.w3.org/WAI/ARIA/apg/patterns/disclosure/"
+      ],
+      "note": "The APG disclosure pattern is the source for the toggle and aria-expanded only. Measure in a way that still holds while the text is open (its full height against the clamp's height), or the button hides itself once pressed.",
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a self-contained page, vanilla JS: a feed of 12 articles whose text is clamped to three lines; headless Chromium 158.0.8127.18 and WebKit 27.2 on macOS, driven by page.mouse and the keyboard (Option+Tab in WebKit)",
+          "finding": "The button showed on exactly the 7, 5 and 4 of 12 posts that overflowed at 320, 480 and 800px. Always shown, 7 of 12 buttons at 480px changed nothing when pressed. As a toggle it kept focus and returned the text to its clamped height on a second Enter; as a one-way control it removed itself and focus fell to the body. Both engines.",
+          "check": "\"feed: See more shows exactly on the posts whose clamped text overflows, at 320, 480 and 800 wide\" and \"feed: every See more that shows changes how much text is shown when pressed\" (control: always shown), \"feed: See more is a toggle: it states its state, keeps focus when pressed, and the same button collapses the text\" (control: expands and removes itself)"
+        }
+      ]
+    },
+    {
+      "id": "focus.virtual-keep-focused",
+      "area": "focus",
+      "rule": "A virtualised list or feed MUST keep the item that holds focus in the DOM when it scrolls out of the rendered window, in its place in the order.",
+      "why": "Removing the focused node drops focus to the body: the list's keys stop working, and the user's place is gone with it.",
+      "status": "validated",
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a self-contained page, vanilla JS: a virtualised feed of 200 fixed-height articles in a 480px scroll box; headless Chromium 158.0.8127.18 and WebKit 27.2 on macOS, driven by page.mouse and the keyboard (Option+Tab in WebKit)",
+          "finding": "Scrolled 8000px away, the focused article was still mounted among 10 of 200 and Page Down moved on to the next article and brought it into view. Unmounted like the rest, focus was on the body and Page Down did nothing. Both engines.",
+          "check": "\"feed, virtualised: the focused article stays mounted when scrolled far away, and Page Down goes on from it\"; the negative control unmounted the focused article with the others"
+        }
+      ]
+    },
+    {
+      "id": "focus.scroll-nearest",
+      "area": "focus",
+      "rule": "Roving focus SHOULD follow `focus()` with `scrollIntoView({ block: 'nearest', inline: 'nearest' })`, so an item only partly visible inside a scrolling container is brought fully into view.",
+      "why": "`focus()` on an item partly visible in a scrolling container (a palette grid, a listbox) leaves it partly cut off.",
+      "status": "validated",
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a palette grid in a scroll box with roving focus, and a listbox, web components, headless Chromium with the real keyboard",
+          "finding": "Moving focus to a cell half outside the grid's scroll view with focus() alone left the cell clipped; with the added scrollIntoView call it scrolled fully in",
+          "check": "the palette and listbox roving-focus tests; fail on the code before the change (negative control run by the build session, not re-run here)"
+        }
+      ]
+    },
+    {
+      "id": "hover.face-only",
+      "area": "hover",
+      "rule": "Hover MUST change only a part's face (one step toward the text colour), never its box, MUST NOT look like the pressed state, and MUST NOT answer on a part that holds state (pressed, checked, selected, open, disabled).",
+      "why": "A hover that moves the box shifts targets under the pointer; a hover that looks pressed reads as a click; state that flickers on hover hides the state.",
+      "status": "validated",
+      "validated": [
+        {
+          "on": "2026-11-12",
+          "where": "a web-component library, Chromium (Playwright), every showcase part",
+          "finding": "Each interactive part's paint changes under a real pointer and its box does not; latched, checked and disabled parts do not change.",
+          "check": "browser test with negative controls: a key whose hover is the pressed fill fails"
+        }
+      ],
+      "note": "How fast the change runs is paint, not behaviour: ui-materials gives the timing (in at once, out over the system's settle duration). The validation below proved the face and the box, not a duration."
+    },
+    {
+      "id": "hover.media",
+      "area": "hover",
+      "rule": "Every hover rule MUST sit inside @media (hover: hover), so a touch screen never paints one.",
+      "why": "A tap leaves a sticky hover on touch screens, which then reads as state.",
+      "status": "validated",
+      "validated": [
+        {
+          "on": "2026-11-12",
+          "where": "a web-component library, Chromium (Playwright)",
+          "finding": "Under touch emulation (hover: none) no hover paint appears; a rule outside the media query is caught.",
+          "check": "browser test with CDP touch emulation (setEmulatedMedia does not emulate hover; touch emulation does)"
+        }
+      ]
+    },
+    {
+      "id": "hover.one-highlight",
+      "area": "hover",
+      "rule": "In a menu or pop-up list the pointer MUST move the one active row the arrow keys move; persistent lists tint the row under the pointer instead.",
+      "why": "Two highlights (keyboard and pointer) in one pop-up make Enter's target ambiguous.",
+      "status": "validated",
+      "validated": [
+        {
+          "on": "2026-11-12",
+          "where": "a web-component library, Chromium (Playwright)",
+          "finding": "Moving the pointer over a select's and a menu's rows moves the active row and the focus.",
+          "check": "browser test"
+        }
+      ]
+    },
+    {
+      "id": "hover.reveal",
+      "area": "hover",
+      "rule": "A secondary control revealed on hover (a close mark, a row action) MUST keep its room while hidden (opacity, not display), MUST also show on focus and on the current item, and MUST always show where there is no hover (@media (hover: none)).",
+      "why": "Toggling display moves the item's box under the pointer; a hover-only control is unreachable by keyboard and on touch.",
+      "status": "validated",
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "document tabs with close marks, Chromium (Playwright)",
+          "finding": "The mark is hidden on other tabs, shown on the chosen tab and under the pointer, and the tab's width does not change when it appears.",
+          "check": "browser test reads opacity and tab width at rest and under the pointer; fails on the old build"
+        },
+        {
+          "on": "2026-11-13",
+          "where": "a number field with a minus and a plus key revealed on hover and focus, web component, headless Chromium, a second browser context with touch and mobile emulation for the coarse pointer",
+          "finding": "At rest with a fine pointer the keys had opacity 0 and kept their room; in the touch context (pointer: coarse true) they had opacity 1. The component's query was (hover: none), (pointer: coarse); no check separated the two queries",
+          "check": "\"the step keys show on a coarse pointer\"; fails on the code before the change (negative control run by the build session, not re-run here)"
+        }
+      ]
+    },
+    {
+      "id": "motion.reduced",
+      "area": "motion",
+      "rule": "Motion that is not the pointer's own movement (a thumb sliding to a choice, a cable settling, a flash) MUST be removed under `prefers-reduced-motion: reduce`, and the part MUST be at its final place at once.",
+      "why": "Motion that follows an action can trigger vestibular disorders (WCAG 2.3.3); the state must not depend on it.",
+      "status": "validated",
+      "sources": [
+        "https://www.w3.org/WAI/WCAG22/Techniques/css/C39.html",
+        "https://www.w3.org/WAI/WCAG22/Understanding/animation-from-interactions"
+      ],
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a segmented tab strip whose thumb slides, and a canvas cord that swings after a node moves, web components, headless Chromium with reduced motion emulated",
+          "finding": "With motion the thumb's transition-duration was not 0s and it moved more than 10px to the chosen tab; under reduce the duration was 0s and the thumb covered the chosen tab (within 1.5px) at once. A cord's path differed one frame after a move and again after rest with motion, and was identical in all three readings under reduce",
+          "check": "\"no transition under reduced motion\" and the swing test's three readings; fails on the code before the change (negative control run by the build session, not re-run here)"
+        }
+      ]
+    },
+    {
+      "id": "target.minimum",
+      "area": "target",
+      "rule": "Every target MUST take the pointer over at least 24px (WCAG 2.5.8, AA) at every size context, by its box, a transparent hit area, or a named exception (spacing, equivalent control, inline); the floor MUST be at least 24 CSS px, not only a rem value, and SHOULD rise to 44px under (pointer: coarse).",
+      "why": "A rem-only floor shrinks below 24px when a size context sets the root font size; 44px is the comfortable touch size (2.5.5).",
+      "status": "validated",
+      "sources": [
+        "https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum"
+      ],
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a web-component library, Chromium (Playwright)",
+          "finding": "A 1.5rem floor measured 18px with the small size context on the root; max(24px, 1.5rem) holds at every size.",
+          "check": "browser test asserts the token is 24px at sm, md and lg"
+        }
+      ]
+    },
+    {
+      "id": "target.hit-area",
+      "area": "target",
+      "rule": "A part smaller than the floor SHOULD take a transparent ::before, centred, at least the floor square, on a positioned part that does not clip its overflow; a dense grid whose pitch is below the floor cannot be fixed this way and needs spacing or larger parts.",
+      "why": "The hit area grows the target without moving any box; overlapping hit areas only hand each other's edges to the neighbour drawn later.",
+      "status": "validated",
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a web-component library, Chromium (Playwright)",
+          "finding": "Thumbs, handles, a 2px playhead, close marks and tags take the pointer 11px from their centre at every size; routing points 33px apart overlap at 44px on touch.",
+          "check": "browser hit test (elementFromPoint through shadow roots) just inside the square's edge; fails with the hit area removed"
+        }
+      ]
+    },
+    {
+      "id": "target.slotted",
+      "area": "target",
+      "rule": "A hit area for a slotted (light DOM) part MUST come from the part itself or its own stylesheet; ::slotted() selectors cannot give it a ::before.",
+      "why": "::slotted() cannot be followed by a pseudo-element, so a container cannot grow the hit area of the content it slots.",
+      "status": "sourced",
+      "sources": [
+        "https://developer.mozilla.org/en-US/docs/Web/CSS/::slotted"
+      ]
+    },
+    {
+      "id": "shadow.active-element",
+      "area": "shadow",
+      "rule": "Code that asks which element has focus MUST ask its own root (this.getRootNode().activeElement), never document.activeElement, whenever it can be rendered inside a shadow root; code that saves focus to restore later MUST save the deepest focused element (following shadowRoot.activeElement down from document.activeElement).",
+      "why": "From inside a shadow root, document.activeElement is the outermost host, so a menu rendered in another component's shadow tree finds no focused item and ignores Enter and the arrow keys.",
+      "status": "validated",
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a menu component rendered inside a board's shadow root, Chromium (Playwright)",
+          "finding": "With document.activeElement, Enter on a focused menu item did nothing; reading the root node's activeElement fixed it.",
+          "check": "browser test passes with the fix and fails with the old lookup alone"
+        },
+        {
+          "on": "2026-11-13",
+          "where": "a menu button, a tree, a context menu and tabs rendered inside a host's shadow root, Chromium (Playwright)",
+          "finding": "With document.activeElement, arrows did nothing in the menu button and the tree and the context menu could not return focus; with the root's activeElement and the deepest focused element saved, all work. The tabs check also passed on the old build, so it proves nothing about that fix.",
+          "check": "browser test drives each inside a shadow host; three of its four checks fail on the old build"
+        }
+      ]
+    },
+    {
+      "id": "shadow.create-element",
+      "area": "shadow",
+      "rule": "A custom element whose constructor sets attributes MUST NOT be created with document.createElement; create it from markup (innerHTML or a template), or move the attribute writes out of the constructor.",
+      "why": "The DOM refuses an element whose constructor gives it attributes (NotSupportedError: The result must not have attributes).",
+      "status": "validated",
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a menu item custom element, Chromium (Playwright)",
+          "finding": "createElement threw NotSupportedError; building the items from escaped markup worked.",
+          "check": "page errors collected by the browser test"
+        }
+      ]
+    },
+    {
+      "id": "shadow.composed-target",
+      "area": "shadow",
+      "rule": "A listener on a host MUST find the part that was pressed from event.composedPath()[0], not event.target, which is retargeted to the host.",
+      "why": "event.target outside a shadow root is the host itself, so every press looks like a press on the whole component.",
+      "status": "sourced",
+      "sources": [
+        "https://developer.mozilla.org/en-US/docs/Web/API/Event/composedPath"
+      ]
+    },
+    {
+      "id": "shadow.slotted-hidden",
+      "area": "shadow",
+      "rule": "A component that shows one child at a time by setting the hidden attribute MUST also hide [hidden] children from its own stylesheet (::slotted([hidden]) { display: none !important }).",
+      "why": "hidden is only a user-agent style, so any author display rule on the child (display: grid on a slide) overrides it: every child stays shown and the component looks broken.",
+      "status": "validated",
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a carousel web component with slides styled display: grid, Chromium (Playwright)",
+          "finding": "All slides stayed displayed and Next appeared to do nothing; with the slotted rule exactly one slide shows and Next moves it.",
+          "check": "browser test reads each slide's computed display; fails on the old build"
+        }
+      ]
+    },
+    {
+      "id": "shadow.adopt-into-root",
+      "area": "shadow",
+      "rule": "A component that styles its light-DOM children through an adopted style sheet MUST adopt the sheet into the root it is in (`getRootNode()`) as well as the document.",
+      "why": "A sheet adopted on the document does not reach into a shadow root, so the component renders unstyled once it is placed inside another component's shadow root.",
+      "status": "validated",
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "an inspector web component that styles its light-DOM children by an adopted sheet, placed inside a host's shadow root, headless Chromium",
+          "finding": "Inside the host's shadow root it rendered unstyled; adopting the sheet into that root fixed it",
+          "check": "the inspector-in-a-shadow-root test; fails on the code before the change (negative control run by the build session, not re-run here)"
+        }
+      ]
+    },
+    {
+      "id": "overlay.escape-innermost",
+      "area": "overlay",
+      "rule": "Escape MUST close only the innermost open layer: a dialog or drawer MUST NOT close on the Escape that closes a menu, popover or tooltip open inside it.",
+      "why": "A native popover closes itself on Escape, and a dialog primitive that hears Escape on the document (ignoring defaultPrevented) closes too, so one key takes away both the menu and the work under it.",
+      "status": "validated",
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a drawer, a dialog and an alert dialog on a headless dialog primitive in a React UI kit; found with real keys in headless Chrome, tested in vitest with happy-dom (the open popover stubbed)",
+          "finding": "With a menu open inside, Escape closed the drawer as well. Cancelling the dialog's close while :popover-open matches inside its panel keeps the drawer open; the next Escape closes it.",
+          "check": "unit test \"Escape with a native popover open inside closes only that popover\" fails on the code before the fix (re-run at the fix's parent commit with the new test) and passes after"
+        },
+        {
+          "on": "2026-11-13",
+          "where": "a self-contained page, vanilla JS: a record of three sections (text fields, a select, a date field with a picker popup, a field with a clear button, a field with steppers), an Edit button per section, Edit, Save and Cancel for the whole record and a New record button; headless Chromium 158 and WebKit 27.2 on macOS driven by page.mouse and the keyboard",
+          "finding": "The rule holds between a popup and an editing scope that is not a dialog: with a native auto popover open inside a section in Edit, the keydown still reached the page, and a scope handler that did not check for an open popup cancelled the section, and dropped its draft, on the Escape that closed the popup. Checking for an open popup first, the first Escape closed only the popup and the second cancelled the section. Both engines, popup opened by pointer and from the keyboard.",
+          "check": "\"escape: with the picker popup open, the first Escape closes the popup only and the second cancels the section\" and \"escape: the same with the popup opened from the keyboard\"; the negative control let the scope's handler act on every Escape"
+        }
+      ]
+    },
+    {
+      "id": "overlay.portal-inside",
+      "area": "overlay",
+      "rule": "A popup opened from inside a modal dialog MUST render inside that dialog, or in the top layer above it, never in a portal outside it.",
+      "why": "Everything outside a modal dialog is inert and drawn under the top layer, so a popup portalled to the body cannot be clicked or focused and opens underneath.",
+      "status": "sourced",
+      "sources": [
+        "https://developer.mozilla.org/en-US/docs/Web/API/HTMLDialogElement/showModal"
+      ]
+    },
+    {
+      "id": "overlay.nested-popover",
+      "area": "overlay",
+      "rule": "An auto popover opened from inside another MUST be nested in it: a DOM descendant, shown by an invoker inside it, or anchored to it.",
+      "why": "Only one auto popover shows at a time unless they are nested, so showing an unrelated one light-dismisses the popover it was opened from.",
+      "status": "sourced",
+      "sources": [
+        "https://developer.mozilla.org/en-US/docs/Web/API/Popover_API/Using"
+      ]
+    },
+    {
+      "id": "overlay.top-layer",
+      "area": "overlay",
+      "rule": "An overlay that has to appear above all other content on the page SHOULD be shown in the top layer: a dialog opened with showModal(), or a popover.",
+      "why": "The top layer is made by the browser to hold such elements and sits on top of every other layer of the document, so nothing else on the page can paint over what is in it.",
+      "status": "validated",
+      "sources": [
+        "https://developer.mozilla.org/en-US/docs/Glossary/Top_layer"
+      ],
+      "note": "The source says what the top layer is and which elements enter it; it does not mention z-index.",
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a self-contained page, vanilla JS on Pointer Events: a sortable list of six rows in a page that scrolls, each dragged by a handle (mouse past 4px, finger after 250ms), with a keyboard mode on the handle and Move up and Move down buttons; headless Chromium 158 and WebKit 27.2 on macOS driven by page.mouse and page.keyboard, touch by CDP touch events under touch emulation in Chromium only; the list in a frame with overflow: hidden and a transform, followed by a positioned panel with a z-index",
+          "finding": "A drag preview shown as a manual popover, carried out of the frame and over the panel, was painted there (screenshot pixel) and was top-most (hit test). The same preview as an absolutely positioned child of the frame was clipped: the pixel and the hit test both gave the panel. With no clipping ancestor the two behaved alike. Both engines.",
+          "check": "\"preview: carried out of a clipping, transformed frame and over a later stacking context, the preview is painted and top-most\"; negative control: an absolutely positioned preview inside the frame"
+        }
+      ]
+    },
+    {
+      "id": "overlay.inert-outside",
+      "area": "overlay",
+      "rule": "While a modal dialog is open, the content outside it MUST be inert: users cannot interact with it, and Tab and Shift+Tab do not leave the dialog.",
+      "why": "A dialog is modal only if what is under it cannot be reached; showModal() makes every element outside the dialog inert, and a custom modal has to do the same.",
+      "status": "sourced",
+      "sources": [
+        "https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/",
+        "https://developer.mozilla.org/en-US/docs/Web/API/HTMLDialogElement/showModal"
+      ],
+      "note": "Neither source asks for the page scroll to be locked."
+    },
+    {
+      "id": "overlay.initial-focus",
+      "area": "overlay",
+      "rule": "When a dialog holds enough content that focusing its first interactive element could scroll the start of the content out of view, the dialog SHOULD give a static element at its top (the title or first paragraph) tabindex=\"-1\" and focus that on open.",
+      "why": "The first focusable element of a long dialog or drawer can be far down it, and focusing it opens the panel scrolled past its title.",
+      "status": "validated",
+      "sources": [
+        "https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/"
+      ],
+      "note": "The APG calls this advisable; otherwise focus goes to the first focusable element.",
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a self-contained page, vanilla JS: a drawer of 60 paragraphs opened by showModal(), whose only tabbable element is a Close button at its end; headless Chromium 158 and WebKit 27.2 on macOS driven by page.mouse",
+          "finding": "Focusing the first tabbable element, as a focus trap does, opened the drawer scrolled about 1,560px with its title about 1,525px above the viewport, and so did showModal() alone. With tabindex=\"-1\" on the title and focus put there, it opened at 0 with the title in view and focus inside. Both engines. showModal() alone also chose the title once it had tabindex=\"-1\".",
+          "check": "\"overlay: a long drawer opens at its start, with its title in view and focus inside it\"; the negative control focused the first tabbable element"
+        }
+      ]
+    },
+    {
+      "id": "overlay.outside-scroll-box",
+      "area": "overlay",
+      "rule": "A Move menu opened from a table cell MUST render outside the table's scroll box (fixed to the viewport or in the top layer).",
+      "why": "The scroll box clips its content and a cell that truncates text clips its own. A menu rendered in the cell is cut off or cannot be hit, worst for the last visible rows, whose menu has to extend past the box.",
+      "status": "validated",
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a self-contained page, vanilla JS on Pointer Events: an HTML table of 6 columns and 8 rows in a scroll box, with a sticky header row and a sticky first column, columns reordered by the header and rows by a handle; headless Chromium 159 and WebKit 27.2 on macOS driven by page.mouse and the keyboard, touch by CDP touch events under touch emulation in Chromium only",
+          "finding": "Every menu item was the element under its own centre point, including a row menu that extended below the scroll box's bottom edge. Both engines. Rendered in the cell, the items were not hit-testable.",
+          "check": "\"col: the open Move menu is hit-testable past the scroll box and the cell\" and \"row: the open Move menu is hit-testable past the scroll box and the cell\"; the negative control rendered the menu absolutely inside the trigger's cell"
+        }
+      ]
+    },
+    {
+      "id": "overlay.scroll-lock",
+      "area": "overlay",
+      "rule": "While a modal dialog is open the page behind it MUST NOT scroll: showModal() does not stop it, so the root element takes overflow: hidden until the dialog closes.",
+      "why": "A modal dialog makes the page inert but leaves it scrollable. A wheel, a swipe or a scroll key meant for the dialog moves the page under it, and the dialog closes on a different place from where it was opened.",
+      "status": "validated",
+      "note": "Not proven: keeping the scrollbar's room so nothing shifts sideways. With a root scrollbar styled to take 15px (::-webkit-scrollbar), scrollbar-gutter: stable on the root did not hold the room in either engine and the page shifted 15px; a native scrollbar that takes room could not be had headless.",
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a self-contained page, vanilla JS: a 4,000px page with a short dialog and a long drawer, both opened by showModal(); headless Chromium 158 and WebKit 27.2 on macOS driven by page.mouse (wheel) and the keyboard, touch by CDP touch events under touch emulation in Chromium only",
+          "finding": "With showModal() alone the page scrolled 400px under a wheel over the backdrop and under a wheel over a dialog that does not scroll, scrolled 3,520px on PageDown, ArrowDown and End pressed inside the dialog, and scrolled 900px when the wheel went on past the end of the drawer. Both engines; a swipe on the backdrop scrolled it in Chromium. With overflow: hidden on the root none of these moved the page, the drawer still scrolled itself, and the page kept its scroll position on open and after close.",
+          "check": "\"overlay: a wheel over the backdrop leaves the page where it was\", \"overlay: a wheel over a dialog that does not scroll leaves the page where it was\", \"overlay: PageDown, ArrowDown and End from inside the dialog leave the page where it was\", \"overlay: touch: a swipe on the backdrop leaves the page where it was\" and \"overlay: a long drawer scrolls itself, and at its end the wheel does not move the page\" (negative control: no lock); \"overlay: the page keeps its scroll position when the dialog opens and after it closes\" (negative control: a lock by position: fixed on the body with no offset, which draws the page from its top)"
+        }
+      ]
+    },
+    {
+      "id": "overlay.draft-cancel",
+      "area": "overlay",
+      "rule": "A popup that previews a draft live MUST put back the last applied value on Escape and on Cancel.",
+      "why": "The preview has already changed what the page shows. If closing leaves it there, Cancel has applied the draft; if closing puts back the first value, it has undone an earlier Apply.",
+      "status": "validated",
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a self-contained page, vanilla JS: a colour popup whose slider previews on its trigger, with Apply and Cancel; headless Chromium 158 and WebKit 27.2 on macOS driven by page.mouse and the keyboard",
+          "finding": "After five arrow presses on the slider, Escape and Cancel each put the trigger back to the applied hue, closed the popup and returned focus to the trigger. After an Apply and a second draft, Escape put back the applied hue, not the one the page loaded with. Both engines.",
+          "check": "\"picker: Escape puts back the last applied colour\", \"picker: Cancel puts back the last applied colour\" and \"picker: after an Apply, Escape puts back the applied colour, not the first one\"; the negative controls closed without restoring, and restored the value the page loaded with"
+        }
+      ]
+    },
+    {
+      "id": "overlay.scroll-lock-gutter",
+      "area": "overlay",
+      "rule": "A page that locks scroll with overflow: hidden on the root SHOULD set scrollbar-gutter: stable on the root from the start, so the room of a scrollbar that takes room stays when the lock removes the bar; padding the root by the scrollbar's width MAY be used but holds only content in flow.",
+      "why": "Where the scrollbar takes room, removing it widens the page by the bar's width: centred content jumps half of it and anything anchored to the right edge all of it, and jumps back when the dialog closes. A padding on the root does not move fixed or right-anchored absolute parts, which still jump. With overlay scrollbars the bar takes no room and neither is needed.",
+      "status": "validated",
+      "sources": [
+        "https://developer.mozilla.org/en-US/docs/Web/CSS/scrollbar-gutter"
+      ],
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a tall page with a centred column, a right-anchored and a fixed mark, headed Chromium 158 with classic 15px scrollbars (overlay scrollbars disabled by flag)",
+          "finding": "The plain lock moved the column 7.5px and both marks 15px. With scrollbar-gutter: stable on the root nothing moved. With padding-right of the bar's width the column held and both marks still moved 15px. WebKit could not be made to draw a classic scrollbar, so it was not measured there.",
+          "check": "drop the gutter declaration: the column moves 7.5px and the right-anchored marks 15px"
+        }
+      ]
+    },
+    {
+      "id": "overlay.escape-unsent-edit",
+      "area": "overlay",
+      "rule": "A popup that closes on Escape MUST first put back an unsent typed edit in a field inside it, keep itself open and leave focus in that field, and MUST close on the next Escape; a field's own Escape handler MUST NOT be relied on, since a document-level capture handler hears the key first.",
+      "why": "A popup's dismiss handler sits on the document in the capture phase, so the field never hears Escape; the user loses the draft and the popup in one key.",
+      "status": "validated",
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a popover colour picker with a printed number beside each slider, a web component set in shadow DOM, headless Chromium driven by the real keyboard",
+          "finding": "With a typed, unsent value in a slider's number, the first Escape put the number back to the value shown, left the colour and the popover as they were and kept focus in the number; the second Escape closed the popover. Before the fix the first Escape closed the popover and dropped the text. No change event fired either time.",
+          "check": "\"Escape in a slider number with an unsent edit puts the edit back and keeps the picker open; the next Escape closes\"; fails on the code before the change (negative control run by the build session, not re-run here)"
+        }
+      ]
+    },
+    {
+      "id": "date.digits-only",
+      "area": "date",
+      "rule": "A date field MUST accept a date typed as digits alone (eight, or six with a short year) in the locale's field order.",
+      "why": "With inputmode=\"numeric\" a phone's keypad has no slash, dot or hyphen, so a field that needs separators cannot be filled there.",
+      "status": "validated",
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a date field and a date range field in a React UI kit, vitest with happy-dom",
+          "finding": "Digits typed with no separator were not read before; after, \"19112026\" reads 19 November 2026 in en-GB, and \"11192026\" the same in en-US.",
+          "check": "unit test \"reads eight digits, or six with a short year, typed with no separator, in the locale's order\" fails on the code before the fix (re-run at the fix's parent commit with the new test) and passes after"
+        }
+      ]
+    },
+    {
+      "id": "date.gregorian",
+      "area": "date",
+      "rule": "A date field whose calendar grid is Gregorian MUST format and parse with the Gregorian calendar (calendar: 'gregory') in every locale.",
+      "why": "Thai formatting writes Buddhist-era years (2569) and Persian writes Jalali dates, so an edit stores a date centuries off and the grid's month names disagree with its days.",
+      "status": "validated",
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a date field and a date range field in a React UI kit, vitest with happy-dom",
+          "finding": "th-TH wrote the year as 2569 and the round trip failed; with the Gregorian calendar forced it writes 19/11/2026 and reads it back.",
+          "check": "unit test \"writes the Gregorian date in any locale, and reads back what it wrote, in the locale's own digits\" fails on the code before the fix (re-run at the fix's parent commit with the new test) and passes after"
+        }
+      ]
+    },
+    {
+      "id": "date.locale-digits",
+      "area": "date",
+      "rule": "A date field MUST read back every text its own formatter writes, including the locale's own digits (Arabic-Indic, Persian).",
+      "why": "A locale formatter writes non-Latin digits, so a parser that knows only ASCII cannot read the field's own value after an edit.",
+      "status": "validated",
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a date field and a date range field in a React UI kit, vitest with happy-dom",
+          "finding": "ar-EG and fa-IR text failed the format-then-parse round trip before; mapping the locale's digits to ASCII first makes it pass in seven locales.",
+          "check": "unit test \"writes the Gregorian date in any locale, and reads back what it wrote, in the locale's own digits\" fails on the code before the fix (re-run at the fix's parent commit with the new test) and passes after"
+        }
+      ]
+    },
+    {
+      "id": "date.year-literal",
+      "area": "date",
+      "rule": "A typed four-digit year MUST be taken as written; a short-year pivot MAY apply only to a one- or two-digit year.",
+      "why": "Applying the pivot to every year turns 0005 into 2005, and a year written without four-digit padding cannot be read back.",
+      "status": "validated",
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a date field and a date range field in a React UI kit, vitest with happy-dom",
+          "finding": "12/11/0005 was read as 2005 before; after, it stays 0005 and is written back padded to four digits.",
+          "check": "unit test \"takes a four-digit year as it is, and writes every year in four digits\" fails on the code before the fix (re-run at the fix's parent commit with the new test) and passes after"
+        }
+      ]
+    },
+    {
+      "id": "date.bounds",
+      "area": "date",
+      "rule": "A calendar MUST stop at the first and last dates it can represent (years 0001 and 9999): the days past them disabled and navigation stopping there.",
+      "why": "Stepping past year 9999 crashes or wraps, and an ISO string compare puts \"10000-01-01\" before \"9999-12-31\".",
+      "status": "validated",
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a date field and a date range field in a React UI kit, vitest with happy-dom",
+          "finding": "Before the fix, paging past December 9999 failed; after it, the title stays December 9999 with the later days disabled, and January of year 1 likewise.",
+          "check": "unit test \"shows December 9999 and January of year 1, with the days past them disabled and the keys stopping at them\" fails on the code before the fix (re-run at the fix's parent commit with the new test) and passes after"
+        }
+      ]
+    },
+    {
+      "id": "date.week-start",
+      "area": "date",
+      "rule": "A calendar's first day of the week MUST follow the locale even where the engine lacks Intl.Locale week info, by a fallback table of regions.",
+      "why": "Firefox has neither getWeekInfo() nor weekInfo, so a grid that relies on them starts every locale's week on the same default day.",
+      "status": "validated",
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a date field and a date range field in a React UI kit, vitest with happy-dom",
+          "finding": "Without the engine's week info the grid started its week on a different day than with it; with the region table it starts on the same day.",
+          "check": "unit test \"starts the week on the same day without the engine's week info\" fails on the code before the fix (re-run at the fix's parent commit with the new test) and passes after"
+        }
+      ]
+    },
+    {
+      "id": "date.invalid-kept",
+      "area": "date",
+      "rule": "Text that is not a whole date MUST stay in the field as typed and marked aria-invalid, while the value the form holds is emptied.",
+      "why": "Replacing the text loses what the user typed; keeping the last good date leaves the field showing one thing while the form submits another.",
+      "status": "validated",
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a date field and a date range field in a React UI kit, vitest with happy-dom",
+          "finding": "Before, unreadable text on blur left the form holding the previous date; after, the text stays, is invalid, and the hidden value is empty.",
+          "check": "unit test \"text that is not a date stays as typed and is invalid, and the date is emptied: the form never holds a date the field does not show\" fails on the code before the fix (re-run at the fix's parent commit with the new test) and passes after"
+        }
+      ]
+    },
+    {
+      "id": "date.escape-revert",
+      "area": "date",
+      "rule": "Escape in a field MUST revert only an uncommitted draft, and with no draft MUST be left to propagate unhandled.",
+      "why": "Escape is the user's undo for a half-typed value, but a field that always takes Escape keeps a surrounding dialog from closing.",
+      "status": "validated",
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a date field and a date range field in a React UI kit, vitest with happy-dom",
+          "finding": "Escape after typing put back nothing before; after, it restores the held date's text, and a second Escape is not default-prevented.",
+          "check": "unit test \"Escape puts back the text of the date held; with nothing typed it is left to the page\" fails on the code before the fix (re-run at the fix's parent commit with the new test) and passes after"
+        },
+        {
+          "on": "2026-11-13",
+          "where": "a number window that takes typed digits with Enter, and a scrubbed value that starts typing on a click, web components in shadow DOM, headless Chromium with the real keyboard",
+          "finding": "Digits typed and not sent are dropped by Escape: the held value and the printed number are unchanged. Not shown: a second Escape with no draft",
+          "check": "\"Escape drops a typed draft\" and \"a click starts typing with the value selected\" (then `9`, Escape, value unchanged); fails on the code before the change (negative control run by the build session, not re-run here)"
+        }
+      ]
+    },
+    {
+      "id": "date.alt-arrow",
+      "area": "date",
+      "rule": "A date field with a calendar popup SHOULD open it from the field on Alt+ArrowDown and close it on Alt+ArrowUp.",
+      "why": "Keyboard users otherwise Tab to a separate button to reach the calendar; Alt+ArrowDown is the key the combobox pattern names for opening a field's popup.",
+      "status": "validated",
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a date field and a date range field in a React UI kit, vitest with happy-dom",
+          "finding": "Alt+ArrowDown did nothing before; after, it opens the calendar with focus on the field's date, and Alt+ArrowUp closes it.",
+          "check": "unit test \"Alt+ArrowDown in the field opens the calendar on its date; Alt+ArrowUp closes it\" fails on the code before the fix (re-run at the fix's parent commit with the new test) and passes after"
+        }
+      ],
+      "note": "The APG combobox lists these keys as optional and opens without moving focus; a calendar popup takes focus, since its grid is where the keys act."
+    },
+    {
+      "id": "date.range-preview",
+      "area": "date",
+      "rule": "After the first pick of a range, the calendar SHOULD preview the range to the day under the pointer, or else the focused day, and take it only on the second pick.",
+      "why": "Without a preview the user cannot see what the second pick will select; taking the range on hover would commit a range nobody chose.",
+      "status": "validated",
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a date field and a date range field in a React UI kit, vitest with happy-dom",
+          "finding": "No preview showed before; after, the hovered or focused day previews the range in the selected paint, a day before the start previews nothing, and the value changes only on the second pick.",
+          "check": "unit test \"after the first pick, the day under the pointer or focus previews the range; the range is only taken on the second pick\" fails on the code before the fix (re-run at the fix's parent commit with the new test) and passes after"
+        }
+      ]
+    },
+    {
+      "id": "date.end-alone",
+      "area": "date",
+      "rule": "A range with only an end set SHOULD show that end in the calendar as one selected day.",
+      "why": "A range drawn only when its start exists hides a value the form holds.",
+      "status": "validated",
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a date field and a date range field in a React UI kit, vitest with happy-dom",
+          "finding": "An end alone showed nothing in the grid before; after, that day is selected.",
+          "check": "unit test \"a range with only an end selects that day\" fails on the code before the fix (re-run at the fix's parent commit with the new test) and passes after"
+        }
+      ]
+    },
+    {
+      "id": "date.range-paste",
+      "area": "date",
+      "rule": "A whole range pasted into either field of a range SHOULD fill both fields.",
+      "why": "People copy a range as one piece of text; putting all of it into the start field leaves an unreadable start and an empty end.",
+      "status": "validated",
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a date field and a date range field in a React UI kit, vitest with happy-dom",
+          "finding": "Before, a pasted range did not fill both fields; after, it is split on a dash, tilde or word and fills both.",
+          "check": "unit test \"a whole range pasted into either field fills both\" fails on the code before the fix (re-run at the fix's parent commit with the new test) and passes after"
+        }
+      ]
+    },
+    {
+      "id": "date.range-inverted",
+      "area": "date",
+      "rule": "An end before its start MUST stay as typed, with both fields marked invalid and described by the reason, and the form MUST hold no range while the ends are inverted; the reason SHOULD be announced.",
+      "why": "Swapping the ends silently changes what the user typed; marking the fields without a reason leaves a screen reader user with no way to fix it.",
+      "status": "validated",
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a date field and a date range field in a React UI kit, vitest with happy-dom",
+          "finding": "Before, both fields were invalid but carried no reason; after, each is described by \"The end date is before the start date.\" and it is announced; the ends are never swapped.",
+          "check": "unit test \"an end before its start stays as typed: both fields invalid and described by the reason, which is announced; never swapped\" fails on the code before the fix (re-run at the fix's parent commit with the new test) and passes after"
+        },
+        {
+          "on": "2026-11-13",
+          "where": "a self-contained page, vanilla JS: a date range of two text fields and a calendar popup, each end held as YYYY-MM-DD in a hidden input; headless Chromium 158 and WebKit 27.2 on macOS driven by the real keyboard and mouse",
+          "finding": "A start typed after its end stayed as typed (2026-11-20, 2026-11-15), both fields invalid and described by the reason, which was announced once, and the form held nothing for either end until the end was fixed. Stored as typed with no mark, the form held 2026-11-20 to 2026-11-15; swapped, the typed start appeared in the end field. Both engines.",
+          "check": "\"range: a start typed after the end stays as typed, both fields invalid with the reason, and the form holds no inverted range\"; the negative controls stored the inverted range unmarked, and swapped the ends silently"
+        }
+      ]
+    },
+    {
+      "id": "date.value-format",
+      "area": "date",
+      "rule": "A date field that stands in for a native date input SHOULD hold its value as that input does: a yyyy-mm-dd string, whatever format the locale displays.",
+      "why": "The displayed date follows the locale of the browser while the value is always yyyy-mm-dd, so the value a form or script reads does not change with the locale.",
+      "status": "sourced",
+      "sources": [
+        "https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/input/date"
+      ],
+      "note": "The source states this of the native input (its value is normalized to yyyy-mm-dd and differs from the displayed format); holding a custom field to the same form is by parity. It says nothing of time zones or of how to test."
+    },
+    {
+      "id": "date.grid-keys",
+      "area": "date",
+      "rule": "A calendar grid of days SHOULD take the keys of the APG date picker: arrows move by a day or a week, Home and End go to the first and last day of the week, Page Up and Page Down change the month, and Shift with them the year, keeping the day number or else the last day of the month.",
+      "why": "These are the keys a keyboard user already knows from the grid pattern, and without the paging keys a distant date is reached one day at a time.",
+      "status": "sourced",
+      "sources": [
+        "https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/examples/datepicker-dialog/"
+      ],
+      "note": "From the keyboard table of the APG date picker dialog example, which also keeps one day of the grid in the Tab sequence, as the grid pattern specifies."
+    },
+    {
+      "id": "date.range-pick-writes-fields",
+      "area": "date",
+      "rule": "When a range's calendar takes its second pick, both fields MUST show the dates picked: text left in either field (unreadable or half-typed) and its invalid mark MUST be dropped.",
+      "why": "A field's text is state of its own beside the date held. If the calendar stores the range and leaves that text, the field shows one thing, still marked invalid, while the form submits another.",
+      "status": "validated",
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a self-contained page, vanilla JS: a date range of two text fields and a calendar popup, each end held as YYYY-MM-DD in a hidden input; headless Chromium 158 and WebKit 27.2 on macOS driven by the real keyboard and mouse",
+          "finding": "With \"2026-13-45\" left in the start field, picking 12 and 18 November showed and stored 2026-11-12 to 2026-11-18 with no invalid mark. When the pick left the field's text alone the start field still showed \"2026-13-45\", invalid, while the form held 2026-11-12. The same by keyboard with \"2026-11-\" left in the end field. Both engines.",
+          "check": "\"range: mouse: after the calendar's second pick both fields show the range picked, over a draft left in a field\" and \"range: keyboard: after the calendar's second pick both fields show the range picked, over a draft left in a field\"; the negative control stored the picked range and kept each field's text and mark"
+        }
+      ]
+    },
+    {
+      "id": "date.commit-on-leave",
+      "area": "date",
+      "rule": "A date field MUST take its typed text as a date when focus leaves it or on Enter, and MUST NOT read, mark, store or announce it on each key.",
+      "why": "On the way to a whole date the text passes through others (\"2026-11-2\" before \"2026-11-25\"). Read on each key, a half-typed end falls before its start, so the range is marked invalid, emptied and announced mid-typing, and a field rewritten with the date read corrupts the next key. A field that takes text only on Enter shows one date and holds another once focus has left.",
+      "status": "validated",
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a self-contained page, vanilla JS: a date range of two text fields and a calendar popup, each end held as YYYY-MM-DD in a hidden input; headless Chromium 158 and WebKit 27.2 on macOS driven by the real keyboard and mouse",
+          "finding": "Typing an end of 2026-11-25 after a start of 2026-11-10: with the commit on blur or Enter nothing held, marked or said changed through ten keys, and Enter held the range. With a commit on each key the ninth key (\"2026-11-2\", read as 2 November) emptied the stored start, marked both fields and announced the reason; where the commit also rewrote the field the text ended as \"2026-11-025\" and no end was held. With a commit on Enter only, Tab left the field showing \"2026-11-2\" while the form held 2026-11-15. Both engines.",
+          "check": "\"range: typing an end key by key changes nothing held, marks nothing and says nothing until Enter; then the range is held as typed\" (negative controls: a commit on every input event, with and without rewriting the field) and \"range: a field commits when focus leaves it, as it does on Enter\" (negative control: a commit on Enter only)"
+        }
+      ]
+    },
+    {
+      "id": "form.reset",
+      "area": "form",
+      "rule": "A custom field that submits through a hidden input MUST restore its initial value, and drop typed text, on its form's reset event.",
+      "why": "A form reset restores native controls only; the component's own state and its visible text stay as they were, so the form and the field disagree.",
+      "status": "validated",
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a date field and a date range field in a React UI kit, vitest with happy-dom",
+          "finding": "Reset left the typed text and the changed date before; after, the date and its text are those first rendered.",
+          "check": "unit test \"a form's reset puts back the date it was first rendered with, and drops typed text\" fails on the code before the fix (re-run at the fix's parent commit with the new test) and passes after; the range field's reset test fails the same way"
+        }
+      ]
+    },
+    {
+      "id": "form.visible-control",
+      "area": "form",
+      "rule": "Validation of a custom field MUST point at its visible, focusable control, not at the hidden input that carries the value.",
+      "why": "A hidden input cannot take focus or be validated, so required is never reported and an error summary's link leads nowhere.",
+      "status": "validated",
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a date field and a date range field in a React UI kit, vitest with happy-dom",
+          "finding": "Before, required was not reported and the error link focused nothing; after, the hidden input names the visible field, which takes the error, the focus and the clearing edit.",
+          "check": "unit test \"with the form validation: required is reported, the link focuses the field, an edit clears the error\" fails on the code before the fix (re-run at the fix's parent commit with the new test) and passes after"
+        }
+      ]
+    },
+    {
+      "id": "form.group-label",
+      "area": "form",
+      "rule": "Two inputs under one label (the ends of a range) MUST each have their own id, with the label naming their group and the hint and error describing both.",
+      "why": "A field context made for one input gives both the same id, so the label, the hint and the error attach to one end only.",
+      "status": "validated",
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a date field and a date range field in a React UI kit, vitest with happy-dom",
+          "finding": "Both ends shared one id before; after, each has its own id and name, the label names the group, and the hint and error describe both.",
+          "check": "unit test \"in a form field, each field has its own id and name; the label names the group; hint and error describe both\" fails on the code before the fix (re-run at the fix's parent commit with the new test) and passes after"
+        }
+      ]
+    },
+    {
+      "id": "form.caret-after-rewrite",
+      "area": "form",
+      "rule": "A field that rewrites its own value while focused (normalising `.2` to `0.2` on Enter) SHOULD set the selection and scroll the field to show the caret after rewriting.",
+      "why": "After the rewrite the caret goes to the end, but a narrow field does not scroll to show it, so the end of the text and the caret are out of view.",
+      "status": "validated",
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a 12rem colour field with a long value, web component, headless Chromium with the real keyboard",
+          "finding": "After Enter rewrote the value, the end of the text and the caret were out of view until the field set the selection and scrolled to the caret",
+          "check": "the field's rewrite-on-Enter test; fails on the code before the change (negative control run by the build session, not re-run here)"
+        }
+      ]
+    },
+    {
+      "id": "form.example-persistent",
+      "area": "form",
+      "rule": "An example of a field's expected format SHOULD be help text tied to the field with `aria-describedby`, not placeholder text. Where it is placeholder text, the field's error message MUST repeat the example and be tied to the field, and the placeholder MUST take a colour that meets the contrast required of help text.",
+      "why": "A placeholder is shown only while the value is empty, so the example is gone while the person types and when they check what they typed; some engines' own placeholder colour is under 4.5:1.",
+      "status": "validated",
+      "sources": [
+        "https://www.w3.org/WAI/WCAG22/Understanding/labels-or-instructions.html",
+        "https://www.w3.org/WAI/WCAG22/Techniques/general/G89",
+        "https://html.spec.whatwg.org/multipage/input.html#the-placeholder-attribute",
+        "https://design-system.service.gov.uk/components/text-input/"
+      ],
+      "validated": [
+        {
+          "on": "2026-11-15",
+          "where": "a single text field taking one format, a static page driven by real mouse and keyboard input in Chromium and WebKit (Playwright)",
+          "finding": "After one typed character the example can be read as help text and cannot as placeholder text. With a placeholder, an error message that repeats the example puts it back on screen and in the field's description while the value is corrected. An engine's own placeholder colour on a white field measured 2.35:1 in WebKit and 4.61:1 in Chromium; given the help text's colour it is 7.07:1 in both.",
+          "check": "browser test: type one character; send a wrong value and type on; read the placeholder's computed colour. The typing check fails with the example as a placeholder, and the two error checks fail with the repeat or the `aria-describedby` tie removed, in both engines"
+        }
+      ],
+      "note": "The test shows the mechanics, not a person using the form, and reads the description from the DOM, not from a screen reader. No source names the error-repeat fallback, and it helps only after a first wrong attempt; WCAG's wording favours the help text wherever the label alone does not give the format."
+    },
+    {
+      "id": "mode.review-default",
+      "area": "mode",
+      "rule": "A saved record SHOULD open in Review: no key or press on a field changes a shown or a saved value until Edit is entered for a scope that holds the field.",
+      "why": "A record that opens editable takes any key that lands in it. One stray key changes what is shown, and where Enter saves, two change what is stored.",
+      "status": "validated",
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a self-contained page, vanilla JS: a record of three sections (text fields, a select, a date field with a picker popup, a field with a clear button, a field with steppers), an Edit button per section, Edit, Save and Cancel for the whole record and a New record button; headless Chromium 158 and WebKit 27.2 on macOS driven by page.mouse and the keyboard",
+          "finding": "In Review a click on a field, a letter key and Enter left the shown and the saved value as they were, and a letter on the select's Review control changed nothing. With the record opened in Edit, the letter changed the shown value, the letter and Enter changed the saved value, and one letter on the select changed its draft. Both engines.",
+          "check": "\"review: a key typed into a field of a saved record changes nothing, shown or saved\" and \"review: a letter typed on the Role control of a saved record changes nothing\"; the negative control opened the saved record in Edit"
+        }
+      ]
+    },
+    {
+      "id": "mode.scope",
+      "area": "mode",
+      "rule": "Edit MUST make editable only the scope that was opened, one section or the whole record, and Save MUST commit only that scope's draft: another open section keeps its draft and stays in Edit.",
+      "why": "A field that turns editable without being opened takes typing nobody meant, and a Save that reaches past its scope stores a draft whose owner has not yet chosen to save or cancel it.",
+      "status": "validated",
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a self-contained page, vanilla JS: a record of three sections (text fields, a select, a date field with a picker popup, a field with a clear button, a field with steppers), an Edit button per section, Edit, Save and Cancel for the whole record and a New record button; headless Chromium 158 and WebKit 27.2 on macOS driven by page.mouse and the keyboard",
+          "finding": "With one section opened, typing into a field of another section changed nothing and that field stayed readonly. With two sections open, Save in one stored its draft only; the other stayed in Edit with its draft and its saved value unchanged. Both engines.",
+          "check": "\"scope: Edit on one section makes only that section editable\" and \"scope: Save in one section leaves the draft of another open section uncommitted and open\"; the negative controls made every section editable on any Edit, and committed and closed every open scope on any Save"
+        }
+      ]
+    },
+    {
+      "id": "mode.new-draft",
+      "area": "mode",
+      "rule": "A new record MUST start as a draft in Edit; its first Save stores it and settles it into Review, and Cancel or Escape before that Save MUST leave no record behind.",
+      "why": "A new record in Review is empty fields that take no typing until one more press. A record stored at creation survives its own Cancel as an empty record.",
+      "status": "validated",
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a self-contained page, vanilla JS: a record of three sections (text fields, a select, a date field with a picker popup, a field with a clear button, a field with steppers), an Edit button per section, Edit, Save and Cancel for the whole record and a New record button; headless Chromium 158 and WebKit 27.2 on macOS driven by page.mouse and the keyboard",
+          "finding": "A new record took typing at once and nothing was stored until its first Save, after which every section was in Review and a stray key changed nothing. Cancel and Escape on the unsaved draft left the count of saved records as it was. Both engines.",
+          "check": "\"new: a new record takes typing at once\", \"new: the first Save stores the record and settles it into Review\" and \"new: Cancel/Escape on a draft that was never saved leaves no record behind\"; the negative controls started the new record in Review, left it in Edit after Save, and stored it when it was created"
+        }
+      ]
+    },
+    {
+      "id": "mode.acting-controls",
+      "area": "mode",
+      "rule": "In Review a control that only acts on a field's value (clear, a picker trigger, steppers) MUST NOT be operable or focusable: it leaves the row until its scope is in Edit.",
+      "why": "Left working, it changes what a field shows while the record says nothing is being edited and nothing was saved. Left as a dead button, it is a Tab stop that does nothing.",
+      "status": "validated",
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a self-contained page, vanilla JS: a record of three sections (text fields, a select, a date field with a picker popup, a field with a clear button, a field with steppers), an Edit button per section, Edit, Save and Cancel for the whole record and a New record button; headless Chromium 158 and WebKit 27.2 on macOS driven by page.mouse and the keyboard",
+          "finding": "In Review the record had 11 Tab stops and none was an acting control; presses where clear, a stepper and the picker trigger sit in Edit changed no shown value and opened no popup. With the controls left working, the record had 15 stops and three fields showed values that were not the saved ones while every section was in Review. Left as dead buttons they added 4 stops that did nothing. Both engines. The paint side (the controls leave the row) is ui-materials construction.md, States.",
+          "check": "\"acting: in Review no acting control is a Tab stop\", \"acting: in Review a press where clear and a stepper sit changes no shown value\" and \"acting: in Review the picker popup cannot be opened and no day picked\"; the negative controls kept the controls in the row, working, and kept them as focusable buttons that do nothing"
+        }
+      ]
+    },
+    {
+      "id": "mode.no-shift",
+      "area": "mode",
+      "rule": "Entering or leaving Edit MUST NOT move or resize a row, a section or a field's box: Review draws the value in the same box the field has in Edit.",
+      "why": "A Review value drawn as plain text is shorter than the field, so every row below moves when a scope opens or closes, and a pointer resting on the next control presses something else.",
+      "status": "validated",
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a self-contained page, vanilla JS: a record of three sections (text fields, a select, a date field with a picker popup, a field with a clear button, a field with steppers), an Edit button per section, Edit, Save and Cancel for the whole record and a New record button; headless Chromium 158 and WebKit 27.2 on macOS driven by page.mouse and the keyboard",
+          "finding": "Nothing moved or resized (0px) when the whole record entered Edit, and a pointer resting on the next section's Edit button still pressed it after the section above was opened from the keyboard. With Review drawn as one line of text, 24px against the field's 36px, the last section moved 60px, the next section moved 36px and the resting pointer's press landed on the page background. Chromium and WebKit gave the same numbers.",
+          "check": "\"size: no row, section or value box moves or resizes when the whole record enters Edit\" and \"size: a pointer resting on the next section's Edit still presses it after the section above enters Edit\"; the negative control drew the Review value as plain text in place of the box"
+        }
+      ]
+    },
+    {
+      "id": "mode.escape-scope",
+      "area": "mode",
+      "rule": "Escape MUST cancel one scope, the one that holds focus, or the last one opened when focus is in none: its draft is dropped, and any other open scope keeps its draft and stays in Edit.",
+      "why": "An Escape that cancels every open scope throws away a draft the user was not looking at; one that does nothing leaves the keyboard without a cancel. Focus is not always inside the scope: a popup closed by Escape can leave it on the body.",
+      "status": "validated",
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a self-contained page, vanilla JS: a record of three sections (text fields, a select, a date field with a picker popup, a field with a clear button, a field with steppers), an Edit button per section, Edit, Save and Cancel for the whole record and a New record button; headless Chromium 158 and WebKit 27.2 on macOS driven by page.mouse and the keyboard",
+          "finding": "With two sections in Edit, Escape in a field of one cancelled that one and left the other open with its draft. After a picker popup opened by a pointer was closed with Escape, WebKit left focus on the body; a handler that acts only when focus is inside a scope then ignored the next Escape there, and the fall-back to the last scope opened cancelled it. Both engines for the first finding, WebKit for the second.",
+          "check": "\"escape: cancels the section that holds focus and leaves another open section and its draft\"; the negative controls cancelled every open scope, and swallowed Escape. The fall-back: \"escape: with the picker popup open, the first Escape closes the popup only and the second cancels the section\" under ?break=escape-needs-focus, which failed in WebKit and passed in Chromium"
+        }
+      ]
+    },
+    {
+      "id": "mode.focus-return",
+      "area": "mode",
+      "rule": "When a scope leaves Edit, focus MUST go to the button that opened it, found in the page as it is after the change; Save and Cancel leave with the scope, so without the move nothing visible holds focus.",
+      "why": "The Save and Cancel buttons are gone when the scope closes. Focus then sits on the body or on a hidden button, and if the Edit buttons were re-rendered, a remembered node is detached and focusing it does nothing.",
+      "status": "validated",
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a self-contained page, vanilla JS: a record of three sections (text fields, a select, a date field with a picker popup, a field with a clear button, a field with steppers), an Edit button per section, Edit, Save and Cancel for the whole record and a New record button; headless Chromium 158 and WebKit 27.2 on macOS driven by page.mouse and the keyboard",
+          "finding": "After Save and Cancel pressed from the keyboard, Escape in a field, Enter in a field and a mouse Save, focus was on the Edit button that opened the scope. Without the move, Save and Cancel left focus on the body (Chromium) or on the hidden button (WebKit), 12 Tab presses or 1 Shift+Tab from the opener; Escape and Enter in a field left it on the field, which stays visible in Review. With the Edit buttons re-rendered on close, focusing the remembered node did nothing and the results were the same as with no move. Both engines.",
+          "check": "the five \"focus: after ...\" checks; the negative controls made no focus call, and re-rendered the Edit buttons so the remembered opener was detached"
+        }
+      ]
+    },
+    {
+      "id": "mode.enter-focus",
+      "area": "mode",
+      "rule": "When the button that opens a scope leaves as the scope enters Edit, focus MUST move into the scope, to its first field.",
+      "why": "The pressed Edit button is replaced by Save and Cancel. Without a move, focus is on the body or on a hidden button and the next key goes nowhere.",
+      "status": "validated",
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a self-contained page, vanilla JS: a record of three sections (text fields, a select, a date field with a picker popup, a field with a clear button, a field with steppers), an Edit button per section, Edit, Save and Cancel for the whole record and a New record button; headless Chromium 158 and WebKit 27.2 on macOS driven by page.mouse and the keyboard",
+          "finding": "After Enter on a section's Edit button, focus was on the section's first field and a typed digit landed in it. Without the move, focus was on the body (Chromium) or on the hidden Edit button (WebKit) and the digit was lost. Both engines.",
+          "check": "\"focus: entering Edit puts focus on the first field of the scope\"; the negative control made no focus move on entering Edit"
+        }
+      ]
+    },
+    {
+      "id": "support.detect-api",
+      "area": "support",
+      "rule": "A control that needs an API some engines lack (EyeDropper) MUST be offered only where the API exists (`EyeDropper in window`).",
+      "why": "Where the API is missing the control throws when pressed and does nothing the user can see.",
+      "status": "validated",
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a self-contained page, vanilla JS: a colour popup with a button that opens the screen colour picker; headless Chromium 158 and WebKit 27.2 on macOS driven by page.mouse",
+          "finding": "WebKit has no EyeDropper: offered without detection, pressing the button threw a ReferenceError and nothing happened on the page; with detection the button is absent there. Chromium has the API, so the control cannot fail there: the proof is from one engine.",
+          "check": "\"picker: no control is offered that the engine cannot run\"; the negative control offered the button without detecting the API"
+        }
+      ]
+    },
+    {
+      "id": "support.say-fallback",
+      "area": "support",
+      "rule": "Where a capability the interface offers cannot run in the current engine or context (an effect, an input method, a permission, an API), the interface MUST say so where the capability is offered: leave the control out (`support.detect-api`), disable it with its reason in visible text beside it or in its label, or label the fallback where it renders. It MUST NOT render a substitute that looks like the capability without saying so, and a `title` alone MUST NOT carry the reason. Where both fit, an option among several SHOULD be disabled with its reason, so the set is the same in every engine, and a lone action SHOULD be left out. A stored choice that cannot run SHOULD move to the fallback and say so.",
+      "why": "A silent fallback looks like a fault: the person chose the option, sees nothing change, and cannot tell a missing capability from a broken one. A `title` reaches only a pointing device (HTML Standard, the title attribute).",
+      "status": "validated",
+      "sources": [
+        "https://html.spec.whatwg.org/multipage/dom.html#the-title-attribute"
+      ],
+      "validated": [
+        {
+          "on": "2026-11-14",
+          "where": "a self-contained page: a material switch (native radios Flat, Frosted, Refract) whose Refract option falls back to Frosted where detection says the lens is off (an SVG filter in backdrop-filter, drawn only by Chromium); headless Chromium 156 and WebKit 27.2 on macOS driven by page.mouse and the keyboard, each engine run with the lens forced off and on, and with a stored Refract choice",
+          "finding": "Where the lens is off, the option is disabled, its label names what it needs, and a note says what is shown; a click on it and ArrowDown from Frosted change nothing, and a stored Refract loads as Frosted with the note. Where it is on, neither label nor note, and Refract renders. Measured: WebKit draws no pixel of the lens (the pane is identical to the same face and blur without it), so there Refract and Frosted would render alike.",
+          "check": "\"support: an option that cannot run says so where it is offered\" (by mouse and by keyboard), \"a stored choice that cannot run moves to the fallback and says so\" and \"no option renders a look-alike under its own name\", in both engines; negative control: the option stays enabled and the page renders the fallback with no note, under Refract's name, and every one of these checks fails on it"
+        }
+      ]
+    },
+    {
+      "id": "testing.negative-control",
+      "area": "testing",
+      "rule": "Every interaction check MUST be run once against the code without the change and fail there; a check that passes on the old code proves nothing.",
+      "why": "Interaction tests often pass vacuously: the event never fired, the selector matched nothing, or the assertion read a value that never changes.",
+      "status": "validated",
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "hover, hit-area and kanban drag tests",
+          "finding": "Each new check failed against the previous build and passed after the change.",
+          "check": "rerun with the old component file swapped in"
+        }
+      ]
+    },
+    {
+      "id": "testing.real-input",
+      "area": "testing",
+      "rule": "Drag, hover and touch MUST be tested with the browser's own input (page.mouse, CDP Input.dispatchTouchEvent with touch emulation), reading the result from the DOM, the hit test or the live region; synthetic dispatchEvent does not count.",
+      "why": "dispatchEvent skips hit testing, pointer capture, default actions and the click that follows pointerup, which is where drag bugs live.",
+      "status": "validated",
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "kanban drag tests, Chromium (Playwright)",
+          "finding": "CDP touch events produce pointer events of type touch, so the delay constraint and the swipe case are testable headless.",
+          "check": "browser test"
+        }
+      ]
+    },
+    {
+      "id": "testing.announcer-queue",
+      "area": "testing",
+      "rule": "A test of a queued live region MUST wait until the region says the expected text (with a timeout), not read it right after the action.",
+      "why": "Announcers queue messages and space them out so each is read; the region shows the previous message for a while.",
+      "status": "validated",
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "kanban drag tests, Chromium (Playwright)",
+          "finding": "Read 50ms after Escape, the region still held \"picked up\"; waiting for the text passed.",
+          "check": "browser test"
+        },
+        {
+          "on": "2026-11-13",
+          "where": "a self-contained page, vanilla JS on Pointer Events: a sortable list of six rows in a page that scrolls, each dragged by a handle (mouse past 4px, finger after 250ms), with a keyboard mode on the handle and Move up and Move down buttons; headless Chromium 158 and WebKit 27.2 on macOS driven by page.mouse and page.keyboard, touch by CDP touch events under touch emulation in Chromium only",
+          "finding": "With position announcements debounced by 300ms, the region read right after the last of four arrow keys still said \"Snare picked up, position 2 of 6\"; waiting for the text found \"position 6 of 6\". Both engines; the earlier validation was Chromium only.",
+          "check": "\"testing: read right after the last key, the region holds the new position\" (fails on the correct page) against \"testing: waited for, the region holds the new position\""
+        }
+      ]
+    },
+    {
+      "id": "testing.engines",
+      "area": "testing",
+      "rule": "A pointer or selection behaviour MUST be tested in WebKit as well as Chromium, since the engines differ on selection, capture and focus during a drag.",
+      "why": "A drag test that only runs in Chromium can pass while Safari users see the bug.",
+      "status": "validated",
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "knob drag selection, Playwright",
+          "finding": "The old knob selected page text in WebKit and not in Chromium, so a Chromium-only test passed on the buggy build.",
+          "check": "the same test in both engines; the WebKit run fails on the old build"
+        }
+      ]
+    },
+    {
+      "id": "testing.two-moves",
+      "area": "testing",
+      "rule": "A browser test of a drag MUST move the pointer at least twice over the target before releasing it.",
+      "why": "Drag-over logic runs on a move over the target, and a single move does not trigger it in every browser, so the release lands on a target that was never entered.",
+      "status": "sourced",
+      "sources": [
+        "https://playwright.dev/docs/input"
+      ]
+    },
+    {
+      "id": "testing.time-zones",
+      "area": "testing",
+      "rule": "A check of a date held as a calendar day (a yyyy-mm-dd value) MUST run under a time zone behind UTC that changes its clocks and under one ahead of UTC, on dates that include the days the clocks change; a run under UTC alone does not count.",
+      "why": "A date handled as an instant slips a day only where the zone's offset or a clock change reaches it. Under UTC every such slip is zero, so a suite run there passes on code that is wrong for most users.",
+      "status": "validated",
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a self-contained page, vanilla JS: a date field that holds yyyy-mm-dd, typed into and stepped by the arrow keys; headless Chromium 158 and WebKit 27.2 on macOS, each under UTC, America/Los_Angeles and Pacific/Kiritimati set as the browser context's time zone",
+          "finding": "Three naive routines were each swapped in: new Date('yyyy-mm-dd') read back with local getters, new Date(y, m, d).toISOString().slice(0, 10), and a day step of 86,400,000 ms from local midnight. Under UTC all three passed every check. Under America/Los_Angeles the first failed (2026-03-08 was held as 2026-03-07) and the third failed (ArrowUp on 2026-11-01 stayed on 2026-11-01) while the second passed; under Pacific/Kiritimati only the second failed. Neither zone alone caught all three. Both engines.",
+          "check": "\"date: a typed date is held as typed\" and \"date: ArrowUp and ArrowDown step one day across both clock changes\", each under the three zones, and four \"date matrix\" claims on which zone catches which routine; the negative controls were the three naive routines"
+        }
+      ]
+    },
+    {
+      "id": "testing.cdp-buttons",
+      "area": "testing",
+      "rule": "A pressed pointer move sent by raw CDP (Input.dispatchMouseEvent of type mouseMoved) MUST carry the pressed button, as buttons: 1 or button: 'left'.",
+      "why": "Without it the page's pointermove reports buttons 0, as if the button had been released. Drag code that reads buttons never drags, and the test fails on code that is right.",
+      "status": "validated",
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a self-contained page that records pointermove.buttons during a press; headless Chromium 158 on macOS over CDP (the protocol is Chromium's; no other engine)",
+          "finding": "Six mouseMoved events after a mousePressed arrived as pointermove with buttons 0 when sent with neither field, and with buttons 1 when sent with buttons: 1 or with button: 'left' alone. page.mouse sets it by itself: buttons 1 in Chromium and WebKit.",
+          "check": "\"testing: a pressed move sent by raw CDP reports the button to the page\"; the negative control sent the same moves with neither field"
+        }
+      ]
+    },
+    {
+      "id": "testing.real-click",
+      "area": "testing",
+      "rule": "A check of what a press does (focus, a focus ring, anything that listens for pointerdown or mousedown) MUST press with the browser's mouse, never with el.click().",
+      "why": "el.click() fires the click event alone: no pointerdown, no mousedown and no change of focus. A check that reads focus or a ring after it passes on any code.",
+      "status": "validated",
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a self-contained page with a native button and a focusable custom button that log their events; headless Chromium 158 and WebKit 27.2 on macOS driven by page.mouse and, for the naive method, el.click()",
+          "finding": "A real click on the custom button fired pointerdown, mousedown, focus, pointerup, mouseup and click and focused it; el.click() fired click only and focused nothing. The check \"a pointer press paints no focus ring\" failed on a page that draws its ring on :focus when driven by page.mouse, and passed on that same page when driven by el.click(). Both engines. Also measured: WebKit does not focus a native button on a real click and Chromium does; and a press on a part the keyboard had already focused leaves :focus-visible matching by either method, in both engines.",
+          "check": "\"testing: \\\"a pointer press paints no focus ring\\\", asserted after a press\" by both methods; the negative control drew the ring on :focus, and the naive method passed on it"
+        }
+      ]
+    },
+    {
+      "id": "testing.hit-test",
+      "area": "testing",
+      "rule": "That a popup is top-most MUST be proved by the browser's hit test at the centre of each of its items (elementFromPoint returns the item), not by its visibility, its box or its z-index.",
+      "why": "A popup painted under another layer is still displayed, still has a box and still reports a z-index. Only the hit test asks what the pointer would reach.",
+      "status": "validated",
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a self-contained page with a three-item menu beside a positioned band; headless Chromium 158 and WebKit 27.2 on macOS",
+          "finding": "With the menu's second item under a band of higher z-index, the automation library's visibility test, the item's box, its computed visibility and opacity and its parent's z-index all passed, and elementFromPoint at the item's centre returned the band. Both engines.",
+          "check": "\"testing: \\\"the popup is top-most\\\", asserted on each menu item\" by both methods; the negative control painted the menu under the band, and the naive method passed on it"
+        }
+      ]
+    },
+    {
+      "id": "testing.live-observer",
+      "area": "testing",
+      "rule": "A check that every stage of an interaction is announced MUST record the live region with a MutationObserver started before the first input and compare the whole sequence of messages; the region's text read at the end does not count.",
+      "why": "The region holds one message at a time, so its text at the end shows only the last stage and passes when the stages between were never announced. Waiting for each expected text catches a missing message but cannot see one written twice, or an extra one.",
+      "status": "validated",
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a key-reordered list with a queued announcer, headless Chromium and WebKit",
+          "finding": "For four due messages the observer recorded 4, the end read 1. With position changes unannounced the observer recorded 2 and the end read still passed; with each written twice the observer recorded 6 while the end read and a wait for each text both passed.",
+          "check": "drop the position messages, then write each twice: the observer check must fail on both, and the end read passes on both"
+        }
+      ]
+    },
+    {
+      "id": "testing.react-same-value",
+      "area": "testing",
+      "rule": "A check that enters into a React-controlled field the value it already shows MUST clear the field first (or enter a different value between); a paste or a key that leaves the value as it was runs no onChange.",
+      "why": "React fires onChange only when the field's value differs from the one it last saw. The browser still fires its input event, so the test's input is real and the handler under test is silently never called: a second paste of the same text proves nothing about the parser.",
+      "status": "validated",
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a controlled React 18.3.1 input with a parser in onChange, beside a plain input with a native listener, headless Chromium and WebKit",
+          "finding": "A real paste of the value already shown fired 1 native input event and 0 onChange calls; after a clear it fired 1 onChange. The plain input's listener ran on the unchanged paste. Typing the one character already shown behaved the same way.",
+          "check": "paste the same value twice without clearing: the handler must not run the second time on the React field, and must run on the plain field"
+        }
+      ]
+    },
+    {
+      "id": "testing.inject-now",
+      "area": "testing",
+      "rule": "A component whose output depends on the current time (today's mark, a now-line, what is upcoming or overdue) MUST take that time as an input and MUST NOT read the clock itself; its checks pass the time in.",
+      "why": "A check of a clock-reading component is green only at the moment it was written for: it turns red at midnight and on every other day, or has to compute its expectations from the same clock and so proves nothing.",
+      "status": "validated",
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a self-contained page, vanilla JS: a week time grid of 7 days by 10 hourly slots with six events in it and four outside its hours, the time passed in by the address and the browser's clock fixed by Playwright's page.clock in America/Los_Angeles; headless Chromium 158.0.8127.18 and WebKit 27.2 on macOS, driven by page.mouse and the keyboard (Option+Tab in WebKit)",
+          "finding": "The same assertions for one injected time were green at five wall clocks; with the component reading the clock they were green at one and red at four, and two renders four seconds apart, either side of midnight, disagreed on today. Both engines. The two clock-change days added nothing beyond being other days.",
+          "check": "\"scheduler: today, the now-line and Upcoming follow the injected now at five wall clocks\" and \"scheduler: two renders four seconds apart, either side of midnight, agree on today\"; the negative control read new Date() inside the component. \"scheduler: the assertions for Wednesday 10:30 hold with that now injected and fail with another\" shows the assertions do read the time"
+        }
+      ]
+    },
+    {
+      "id": "testing.coarse-pointer",
+      "area": "testing",
+      "rule": "A check of coarse-pointer or no-hover styling MUST run in a context created with hasTouch and isMobile, MUST first assert `matchMedia('(pointer: coarse)').matches`, and SHOULD read the same property in a default context to show it differs.",
+      "why": "Without the guard a check can pass for the wrong reason, in a context where the query never matched.",
+      "status": "validated",
+      "validated": [
+        {
+          "on": "2026-11-13",
+          "where": "a web component page in headless Chromium, a second context with touch and mobile emulation",
+          "finding": "In the touch context matchMedia('(pointer: coarse)').matches was true and a hover-revealed key read opacity 1; in the default context the same key read opacity 0. Not tested: that the default context does not match, or that toggling touch emulation on a default page would not",
+          "check": "the guard and the two readings; fails on the code before the change (negative control run by the build session, not re-run here)"
+        }
+      ],
+      "note": "Validated in one engine only (Chromium); testing rules aim for both. A WebKit run of the guard and the two readings would complete it."
+    }
+  ]
+}

@@ -1,0 +1,70 @@
+{
+  "$schema": "../../../references/manifest.schema.json",
+  "schema": 1,
+  "id": "icon",
+  "kind": "component",
+  "family": "icon",
+  "tier": "controls",
+  "pattern": "https://www.w3.org/WAI/tutorials/images/decorative/",
+  "summary": "One icon from the kit's set, drawn by CSS in the ink of whatever it sits in.",
+  "role": null,
+  "focus": "none",
+  "tabindex": null,
+  "formAssociated": false,
+  "attributes": {
+    "name": {
+      "type": "string",
+      "description": "Which icon: one of the names in the icons block of kit.config.json."
+    },
+    "size": {
+      "type": "enum",
+      "values": [
+        "sm",
+        "md",
+        "lg",
+        "full"
+      ],
+      "default": "md",
+      "kind": "variant",
+      "description": "ui-geometry's icon sizes. md suits a control's label; full fills the control's slot."
+    }
+  },
+  "resets": [],
+  "states": [],
+  "parts": {
+    "root": {
+      "kind": "root",
+      "material": null,
+      "note": "A mark: a square box painted in the ink through the icon as a mask."
+    }
+  },
+  "tokens": [
+    "--icon-ink",
+    "--icon-height"
+  ],
+  "behaviours": [],
+  "keys": {},
+  "events": {},
+  "writes": {
+    "icon": [
+      "aria-hidden",
+      "role"
+    ]
+  },
+  "guidance": [
+    {
+      "topic": "naming",
+      "text": "An icon beside a label says nothing new, so it is hidden from assistive technology. An icon that stands alone needs aria-label on the icon, or on the button around it."
+    }
+  ],
+  "notYet": [
+    "An icon with more than one colour. A mask has one ink; write an inline svg for such a picture.",
+    "A change of aria-label after the icon has connected is not seen."
+  ],
+  "targets": {
+    "web-components": "built",
+    "react": "planned",
+    "svelte": "planned",
+    "solid": "planned"
+  }
+}

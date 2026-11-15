@@ -1,0 +1,55 @@
+{
+  "$schema": "../../../references/manifest.schema.json",
+  "schema": 1,
+  "id": "breadcrumb",
+  "kind": "component",
+  "family": "breadcrumb",
+  "tier": "collections",
+  "pattern": "https://www.w3.org/WAI/ARIA/apg/patterns/breadcrumb/",
+  "summary": "The trail of links from the top of a site to the current page.",
+  "role": "navigation",
+  "focus": "none",
+  "tabindex": null,
+  "formAssociated": false,
+  "attributes": {},
+  "resets": [],
+  "states": [],
+  "parts": {
+    "root": {
+      "kind": "root",
+      "material": null,
+      "note": "A row of the author's links, with a separator drawn before each but the first."
+    }
+  },
+  "tokens": [
+    "--breadcrumb-ink",
+    "--breadcrumb-gap"
+  ],
+  "behaviours": [],
+  "keys": {},
+  "events": {},
+  "messages": {
+    "label": "Breadcrumb"
+  },
+  "writes": {
+    "breadcrumb": [
+      "aria-label"
+    ]
+  },
+  "guidance": [
+    {
+      "topic": "naming",
+      "text": "The links are native anchors the author writes. The author marks the current page with aria-current=\"page\"."
+    }
+  ],
+  "notYet": [
+    "Translated messages.",
+    "Collapsing a long trail."
+  ],
+  "targets": {
+    "web-components": "built",
+    "react": "planned",
+    "svelte": "planned",
+    "solid": "planned"
+  }
+}

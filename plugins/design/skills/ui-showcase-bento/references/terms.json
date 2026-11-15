@@ -1,0 +1,479 @@
+{
+ "$description": "The vocabulary of ui-showcase-bento: one meaning per term, the identifiers each term owns (names) and the labels to keep out of prose (avoid). scripts/terms.mjs keeps it closed both ways against what the skill emits: every emitted name is listed here, and every listed name is emitted. Aliases may hold retired identifiers that are still accepted.",
+ "version": 1,
+ "principles": [
+  "This skill owns the showcase canvas: its frame, packing, page, switches and checks. Lengths belong to ui-geometry, colour to ui-colors and paint to ui-materials; a term owned there is related here, not redefined.",
+  "A public name (spec key, data attribute, CSS variable, axis id, flag, API) is never renamed without an alias.",
+  "Where a sibling skill uses the same word for something else, the concept's `not` says so."
+ ],
+ "concepts": [
+  {
+   "id": "showcase",
+   "term": "Showcase (sheet)",
+   "definition": "One page of labelled groups of specimens on a fixed canvas, built by scaffold.mjs from one or more sources and checked by uiBentoCheck.",
+   "intent": "Show what a system, framework or brand can produce, all at once, at component scale.",
+   "not": "Not a component library, an app or a jig for tuning constants (ui-kit-inspector), and not a comparison of implementation alternatives (component-variants).",
+   "aliases": [
+    "sheet",
+    "specimen sheet",
+    "bento"
+   ],
+   "names": [
+    "--out",
+    "--standalone"
+   ],
+   "related": [
+    "canvas",
+    "source",
+    "checker"
+   ]
+  },
+  {
+   "id": "canvas",
+   "term": "Canvas",
+   "definition": "The fixed box, in px, that holds every tile: canvas.width × canvas.height, with the chrome margin inside it.",
+   "intent": "One budget every arrangement must fit without scaling.",
+   "not": "Not the page: the page also holds the bar and the side gutter outside the canvas.",
+   "aliases": [
+    "page canvas"
+   ],
+   "names": [
+    "canvas",
+    "width",
+    "height",
+    "data-bento",
+    "canvasKeys"
+   ],
+   "related": [
+    "tile",
+    "chrome",
+    "pack"
+   ]
+  },
+  {
+   "id": "tile",
+   "term": "Tile (group)",
+   "definition": "A group's region on the canvas: a heading and its specimens, at the chrome padding and radius. A group is the data; its tile is how it is drawn.",
+   "intent": "Gather related specimens under one label and one minimum size.",
+   "not": "Not a card component being shown: a tile is page chrome.",
+   "aliases": [
+    "group",
+    "group region"
+   ],
+   "names": [
+    "groups",
+    "data-group",
+    "groupKeys",
+    "id",
+    "label",
+    "layout",
+    "min",
+    "specimens",
+    "column",
+    "groupLayouts"
+   ],
+   "related": [
+    "specimen",
+    "areas",
+    "grid-paper"
+   ]
+  },
+  {
+   "id": "specimen",
+   "term": "Specimen",
+   "definition": "One labelled entry inside a tile: a caption and a slot that holds the drawn pattern with all the states its brief requires.",
+   "intent": "One pattern per entry, with states as variants inside it, never as extra specimens.",
+   "not": "Not a live, operable component: specimens are static drawings.",
+   "aliases": [
+    "entry",
+    "pattern"
+   ],
+   "names": [
+    "data-specimen",
+    "specimenKeys",
+    "depiction",
+    "grow",
+    "briefRow",
+    "--specimens",
+    "data-grow"
+   ],
+   "related": [
+    "slot",
+    "label",
+    "catalogue"
+   ]
+  },
+  {
+   "id": "label",
+   "term": "Label",
+   "definition": "The visible name of a tile (its heading) or of a specimen (its caption), marked data-label.",
+   "intent": "Every group and specimen is named, and the checker refuses one that is not.",
+   "names": [
+    "data-label"
+   ],
+   "related": [
+    "tile",
+    "specimen"
+   ]
+  },
+  {
+   "id": "slot",
+   "term": "Slot",
+   "definition": "The box inside a specimen that holds its fragment; an unfilled slot shows the depiction as a placeholder.",
+   "intent": "Let the scaffold lay out a sheet before any specimen is drawn.",
+   "names": [
+    "data-slot",
+    "data-placeholder"
+   ],
+   "related": [
+    "specimen"
+   ]
+  },
+  {
+   "id": "part",
+   "term": "Part",
+   "definition": "An element inside a specimen whose box the checker compares across axis values: data-part, or ui-materials' data-layer, data-relief and data-face.",
+   "intent": "Prove that switching an invariant axis moves nothing.",
+   "not": "Not ui-materials' anatomy itself: that skill defines layer, relief and face; this skill only reads them.",
+   "aliases": [
+    "data-plane"
+   ],
+   "avoid": [
+    "plane"
+   ],
+   "names": [
+    "data-part",
+    "data-layer",
+    "data-relief",
+    "data-face"
+   ],
+   "related": [
+    "axis",
+    "checker"
+   ]
+  },
+  {
+   "id": "inset-mark",
+   "term": "Inset mark",
+   "definition": "data-inset on content that deliberately starts off its caption's left edge, so the edge check does not warn.",
+   "names": [
+    "data-inset"
+   ],
+   "related": [
+    "specimen"
+   ]
+  },
+  {
+   "id": "empty-state",
+   "term": "Empty state",
+   "definition": "A specimen for a feature the source turned off, marked data-empty, saying which key turns it on.",
+   "intent": "A feature that is off keeps its specimen.",
+   "names": [
+    "data-empty"
+   ],
+   "related": [
+    "specimen"
+   ]
+  },
+  {
+   "id": "source",
+   "term": "Source",
+   "definition": "A JSON manifest saying what one system brings to a sheet: its brief, what it owns, its groups or catalogue, chrome, axes, token sources and acceptance items. Validated against the closed sets in lib.mjs.",
+   "intent": "Keep each system's substance in its own brief and only the wiring here.",
+   "not": "Not the system's brief: the brief stays in the system's own skill and wins on depictions.",
+   "aliases": [
+    "source manifest",
+    "spec"
+   ],
+   "names": [
+    "specKeys",
+    "brief",
+    "title",
+    "acceptance",
+    "note",
+    "--content"
+   ],
+   "related": [
+    "owner",
+    "content-source",
+    "layout-source",
+    "catalogue"
+   ]
+  },
+  {
+   "id": "owner",
+   "term": "Owner",
+   "definition": "The source whose `owns` names a concern. Lengths: only its chrome lengths apply. Colors: only its chrome colours apply. Paint: informational, no chrome field.",
+   "intent": "Let ui-geometry, ui-colors and ui-materials each win their own concern whatever the order.",
+   "names": [
+    "owns",
+    "lengths",
+    "colors",
+    "paint"
+   ],
+   "related": [
+    "source",
+    "chrome"
+   ]
+  },
+  {
+   "id": "content-source",
+   "term": "Content source",
+   "definition": "The source whose groups the sheet shows: the one named by --content, else the first with groups.",
+   "names": [],
+   "related": [
+    "source",
+    "catalogue"
+   ]
+  },
+  {
+   "id": "layout-source",
+   "term": "Layout source",
+   "definition": "A source with no groups that sets the canvas, the areas and measured minimums for a content source's groups, such as layouts/aria-24-1280.json or layouts/geometry-28-1280.json.",
+   "intent": "Reuse an arrangement that has passed the check.",
+   "names": [
+    "mins"
+   ],
+   "related": [
+    "areas",
+    "pack"
+   ]
+  },
+  {
+   "id": "catalogue",
+   "term": "Catalogue",
+   "definition": "A shared set of groups and specimens in catalogues/*.json (aria-24, geometry-28, colour-24) that a source names with {\"catalogue\": id}. briefRow maps a specimen to its row in the brief when the names differ.",
+   "names": [],
+   "related": [
+    "specimen",
+    "source"
+   ]
+  },
+  {
+   "id": "areas",
+   "term": "Areas",
+   "definition": "The arrangement: CSS grid-template-areas rows of group ids, '.' for an empty cell; every group a rectangle.",
+   "names": [
+    "areas",
+    "--areas"
+   ],
+   "related": [
+    "pack",
+    "layout-source"
+   ]
+  },
+  {
+   "id": "pack",
+   "term": "Pack",
+   "definition": "Sizing the column and row tracks so every group meets its minimum and the tracks close exactly on the canvas; NOFIT when no arrangement of these tracks fits.",
+   "intent": "Fit by arrangement and measurement, never by scaling.",
+   "names": [
+    "--mins",
+    "--json",
+    "--work"
+   ],
+   "related": [
+    "areas",
+    "needs",
+    "canvas"
+   ]
+  },
+  {
+   "id": "needs",
+   "term": "Needs",
+   "definition": "The checker's measured size for each overflowing tile, { group: [w, h] }, fed back to pack with --mins.",
+   "names": [],
+   "related": [
+    "pack",
+    "checker"
+   ]
+  },
+  {
+   "id": "chrome",
+   "term": "Chrome",
+   "definition": "The sheet's own lengths, type and colours: margin, gutter, tile padding and radius, gaps, title and caption sizes, font, header, and the colour map.",
+   "intent": "Everything around the specimens, owned by the lengths and colours owners.",
+   "not": "Not a specimen's paint: specimens take their paint from the material tokens.",
+   "names": [
+    "chrome",
+    "chromeKeys",
+    "margin",
+    "gutter",
+    "pad",
+    "radius",
+    "titleGap",
+    "specimenGap",
+    "captionGap",
+    "header",
+    "font",
+    "title",
+    "caption",
+    "derived",
+    "colorsNote",
+    "colorKeys",
+    "bg",
+    "tile",
+    "fg",
+    "muted",
+    "line",
+    "slot",
+    "--b-bg",
+    "--b-tile",
+    "--b-fg",
+    "--b-muted",
+    "--b-line",
+    "--b-slot"
+   ],
+   "related": [
+    "owner",
+    "canvas",
+    "grid-paper"
+   ]
+  },
+  {
+   "id": "grid-paper",
+   "term": "Grid paper",
+   "definition": "The ruling on every tile, from its content edge: minor lines every `grid` px, major every `gridMajor` cells, at gridStrength (light) or gridStrengthDark (the darkThemes values) per cent of the line colour.",
+   "intent": "Give overlays something behind them and let a reader measure lengths against the ruling.",
+   "not": "Not a per-specimen backdrop: no specimen draws its own.",
+   "names": [
+    "texture",
+    "grid",
+    "none",
+    "gridMajor",
+    "gridStrength",
+    "gridStrengthDark",
+    "darkThemes",
+    "data-bento-grid",
+    "--b-grid",
+    "--b-grid-major",
+    "--b-grid-minor",
+    "--b-grid-strong",
+    "textures"
+   ],
+   "related": [
+    "tile",
+    "mode-axis"
+   ]
+  },
+  {
+   "id": "axis",
+   "term": "Axis",
+   "definition": "A switch in the page's bar that sets one attribute (or swaps one class) on a target, with a closed list of values, optional aliases for retired values, and optional captions naming the current value.",
+   "intent": "Let one sheet show every mode, material and overlay, and let the checker compare them.",
+   "names": [
+    "axes",
+    "axisKeys",
+    "name",
+    "attr",
+    "values",
+    "invariant",
+    "target",
+    "aliases",
+    "captions",
+    "root",
+    "data-axis",
+    "data-cap",
+    "targets"
+   ],
+   "related": [
+    "mode-axis",
+    "material-axis",
+    "anatomy-axis",
+    "invariant-axis"
+   ]
+  },
+  {
+   "id": "invariant-axis",
+   "term": "Invariant axis",
+   "definition": "An axis along which no box may move or resize (invariant: true, the default). Mode, material, anatomy and grid are invariant; density and size are not.",
+   "names": [],
+   "related": [
+    "axis",
+    "part",
+    "checker"
+   ]
+  },
+  {
+   "id": "mode-axis",
+   "term": "Mode axis",
+   "definition": "The switch between the colour system's modes (light, dark, dim). Its public id is `theme`; with ui-colors it swaps mode classes, otherwise it sets data-theme.",
+   "intent": "One sheet in every mode.",
+   "not": "Not a theme in ui-colors' sense (a named request with all its modes), and not a mode in ui-materials' sense (the four paint settings).",
+   "avoid": [
+    "theme switch",
+    "theme axis"
+   ],
+   "names": [
+    "theme",
+    "data-theme"
+   ],
+   "related": [
+    "axis",
+    "grid-paper"
+   ]
+  },
+  {
+   "id": "material-axis",
+   "term": "Material axis",
+   "definition": "The switch between ui-materials' presets (flat, physical, frosted, glass, outline), setting data-material; each value's caption names its four settings.",
+   "names": [
+    "material",
+    "data-material"
+   ],
+   "related": [
+    "axis",
+    "anatomy-axis"
+   ]
+  },
+  {
+   "id": "anatomy-axis",
+   "term": "Anatomy axis",
+   "definition": "The overlay that outlines every part by one ui-materials attribute: off, layer, relief or face, with a legend as its caption. `on` is the retired single overlay and maps to relief.",
+   "names": [
+    "anatomy",
+    "data-show-anatomy"
+   ],
+   "related": [
+    "axis",
+    "part",
+    "material-axis"
+   ]
+  },
+  {
+   "id": "token-sources",
+   "term": "Token sources",
+   "definition": "A source's `tokens`: the stylesheets to inline (css) and the commands that produce them (commands). The scaffold refuses a missing stylesheet and names its command.",
+   "not": "Not a design token: the variables live inside those stylesheets and belong to their owning skill.",
+   "names": [
+    "tokens",
+    "tokenKeys",
+    "css",
+    "commands",
+    "--style",
+    "data-source"
+   ],
+   "related": [
+    "source"
+   ]
+  },
+  {
+   "id": "checker",
+   "term": "Checker",
+   "definition": "check.js in the page: uiBentoCheck(opts) runs the layout, label, scale and invariance checks across every axis combination and returns { ok, errors, warnings, needs, summary }; uiBentoRects() dumps every box.",
+   "intent": "Prove what the browser can prove; acceptance items it cannot prove are checked by eye and reported as such.",
+   "names": [
+    "uiBentoCheck",
+    "uiBentoRects",
+    "bento-spec",
+    "data-run-check",
+    "data-check-out"
+   ],
+   "related": [
+    "needs",
+    "invariant-axis",
+    "part"
+   ]
+  }
+ ]
+}

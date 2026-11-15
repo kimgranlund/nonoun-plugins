@@ -1,0 +1,83 @@
+{
+  "$schema": "../../../references/manifest.schema.json",
+  "schema": 1,
+  "id": "tabs",
+  "kind": "component",
+  "family": "tabs",
+  "tier": "collections",
+  "pattern": "https://www.w3.org/WAI/ARIA/apg/patterns/tabs/",
+  "summary": "Shows one of several panels at a time. It holds a tab list and the panels, and keeps the selected tab and the shown panel in step.",
+  "role": null,
+  "focus": "none",
+  "tabindex": null,
+  "formAssociated": false,
+  "attributes": {
+    "value": {
+      "type": "string",
+      "description": "The value of the selected tab. With none written, the element takes the value of the first tab marked selected, or else of the first tab that is not disabled."
+    },
+    "activation": {
+      "type": "enum",
+      "values": [
+        "automatic",
+        "manual"
+      ],
+      "default": "automatic",
+      "description": "automatic selects a tab as soon as it takes focus; manual waits for Enter, Space or a click."
+    }
+  },
+  "resets": [],
+  "states": [],
+  "parts": {
+    "root": {
+      "kind": "root",
+      "material": null,
+      "note": "Lays out the tab list and the panels, and paints nothing."
+    }
+  },
+  "tokens": [
+    "--tabs-gap"
+  ],
+  "behaviours": [],
+  "keys": {},
+  "events": {
+    "change": "Dispatched after the user selects another tab, once the tabs and the panels are up to date. Not dispatched when a script changes the value."
+  },
+  "writes": {
+    "tab": [
+      "selected",
+      "aria-controls",
+      "id"
+    ],
+    "tab-panel": [
+      "hidden",
+      "aria-labelledby",
+      "id"
+    ]
+  },
+  "guidance": [
+    {
+      "topic": "coordination",
+      "text": "Tabs and tab panels by their ARIA role, among its descendants that belong to no tabs element nested inside it. A tab and a panel with the same value. One with no value attribute has its position among its kind as its value, so the first tab pairs with the first panel. It gives an id only to an element that has none, and a name only to one the author left unnamed."
+    },
+    {
+      "topic": "first paint",
+      "text": "For a first paint that does not shift, write `selected` on the selected tab and `hidden` on every other panel. Without them every panel shows until the element is defined."
+    },
+    {
+      "topic": "coordination",
+      "text": "A tab list written inside a panel, with no tabs element of its own, belongs to the tabs element around that panel. Give such a list its own tabs element."
+    }
+  ],
+  "notYet": [
+    "A layout that puts a vertical tab list beside its panels. Today the author lays out the root.",
+    "Panels hidden with hidden=\"until-found\", so that find-in-page can open them.",
+    "Tabs that can be closed, and a tab list that scrolls when it overflows."
+  ],
+  "targets": {
+    "web-components": "built",
+    "react": "built",
+    "svelte": "planned",
+    "solid": "planned"
+  }
+}

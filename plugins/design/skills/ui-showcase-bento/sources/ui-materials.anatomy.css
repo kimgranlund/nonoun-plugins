@@ -1,0 +1,14 @@
+/* Anatomy overlay for the ui-materials source. The anatomy axis picks one attribute (layer, relief or face) and outlines
+   every part by its value, as an outline with a negative offset, so no box changes. "on" is the retired single overlay
+   and maps to relief. Parts carry data-layer, data-relief and data-face; marks carry none. */
+:root:is([data-show-anatomy="layer"], [data-show-anatomy="relief"], [data-show-anatomy="on"], [data-show-anatomy="face"]) [data-layer] {
+  outline: 1px solid var(--anat, transparent); outline-offset: -1px }
+:root[data-show-anatomy="layer"] [data-layer="base"] { --anat: #8a8a8a }
+:root[data-show-anatomy="layer"] [data-layer="overlay"] { --anat: #a24bd6; outline-style: dashed; outline-width: 2px }
+:root:is([data-show-anatomy="relief"], [data-show-anatomy="on"]) [data-relief="ground"] { --anat: #8a8a8a }
+:root:is([data-show-anatomy="relief"], [data-show-anatomy="on"]) [data-relief="raised"] { --anat: #2f7de1 }
+:root:is([data-show-anatomy="relief"], [data-show-anatomy="on"]) [data-relief="recessed"] { --anat: #1a9e6a }
+:root[data-show-anatomy="face"] [data-face="neutral"] { --anat: #8a8a8a }
+:root[data-show-anatomy="face"] [data-face="solid"] { --anat: #d6463a }
+:root[data-show-anatomy="face"] [data-face="emissive"] { --anat: #e07bb5 }
+:root[data-show-anatomy="face"] [data-face="display"] { --anat: #c08a00 }

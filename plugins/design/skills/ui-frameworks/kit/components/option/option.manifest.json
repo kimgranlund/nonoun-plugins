@@ -1,0 +1,69 @@
+{
+  "$schema": "../../../references/manifest.schema.json",
+  "schema": 1,
+  "id": "option",
+  "kind": "component",
+  "family": "listbox",
+  "tier": "collections",
+  "pattern": "https://www.w3.org/WAI/ARIA/apg/patterns/listbox/",
+  "summary": "One option of a listbox.",
+  "role": "option",
+  "focus": "none",
+  "tabindex": null,
+  "formAssociated": false,
+  "attributes": {
+    "value": {
+      "type": "string",
+      "description": "What the listbox's value becomes when this option is selected. Without it, the option's text."
+    },
+    "selected": {
+      "type": "boolean",
+      "state": "selected",
+      "description": "The option is selected. A script that sets it selects the option."
+    },
+    "disabled": {
+      "type": "boolean",
+      "state": "disabled",
+      "description": "It cannot be chosen or focused."
+    }
+  },
+  "resets": [],
+  "states": [
+    "hover",
+    "focus",
+    "highlighted",
+    "active",
+    "selected",
+    "disabled"
+  ],
+  "parts": {
+    "root": {
+      "kind": "root",
+      "material": null,
+      "note": "A row. highlighted: a tint. selected: face solid, no relief."
+    }
+  },
+  "tokens": [
+    "--option-face-hover",
+    "--option-face-highlighted",
+    "--option-face-active",
+    "--option-face-selected",
+    "--option-ink-selected",
+    "--option-ink-disabled",
+    "--option-height",
+    "--option-inset",
+    "--option-radius"
+  ],
+  "behaviours": [],
+  "keys": {},
+  "events": {},
+  "notYet": [
+    "A disabled option still dispatches click to a listener the author adds; the listbox ignores it."
+  ],
+  "targets": {
+    "web-components": "built",
+    "react": "planned",
+    "svelte": "planned",
+    "solid": "planned"
+  }
+}

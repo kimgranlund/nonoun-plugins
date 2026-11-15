@@ -1,0 +1,87 @@
+{
+  "$schema": "../../../references/manifest.schema.json",
+  "schema": 1,
+  "id": "carousel",
+  "kind": "component",
+  "family": "carousel",
+  "tier": "containers",
+  "pattern": "https://www.w3.org/WAI/ARIA/apg/patterns/carousel/",
+  "summary": "A row of slides of which one shows at a time, with buttons to go to the next and the previous.",
+  "role": "region",
+  "focus": "none",
+  "tabindex": null,
+  "formAssociated": false,
+  "attributes": {
+    "value": {
+      "type": "number",
+      "default": 0,
+      "description": "Which slide shows, counted from 0."
+    }
+  },
+  "resets": [],
+  "states": [],
+  "parts": {
+    "root": {
+      "kind": "root",
+      "material": null,
+      "note": "Stacks the slides and the controls."
+    },
+    "slides": {
+      "kind": "author",
+      "material": null,
+      "note": "The element marked data-part=\"slides\" whose child elements are the slides. It scrolls sideways and snaps to a slide."
+    },
+    "previous": {
+      "kind": "author",
+      "material": null,
+      "note": "A button the author marks with data-part=\"previous\"."
+    },
+    "next": {
+      "kind": "author",
+      "material": null,
+      "note": "A button the author marks with data-part=\"next\"."
+    }
+  },
+  "tokens": [
+    "--carousel-gap"
+  ],
+  "behaviours": [],
+  "keys": {},
+  "events": {
+    "change": "Dispatched after the user goes to another slide."
+  },
+  "messages": {
+    "roledescription": "carousel",
+    "slide": "slide",
+    "of": "of"
+  },
+  "uses": [
+    "button"
+  ],
+  "writes": {
+    "carousel": [
+      "aria-roledescription"
+    ],
+    "button": [
+      "aria-controls",
+      "aria-disabled"
+    ]
+  },
+  "guidance": [
+    {
+      "topic": "naming",
+      "text": "The author names the carousel with aria-label. Each slide is named by its position, such as 2 of 5, unless the author names it."
+    }
+  ],
+  "notYet": [
+    "Slides that advance by themselves.",
+    "A set of dots to pick a slide.",
+    "Translated messages."
+  ],
+  "targets": {
+    "web-components": "built",
+    "react": "planned",
+    "svelte": "planned",
+    "solid": "planned"
+  }
+}

@@ -1,0 +1,52 @@
+@layer reset, base, tokens, recipes, utilities;
+
+/* The recipe of the card: a native <article data-ui="card">. Its rules: J65 in docs/specs/patterns.md. Its shape: docs/specs/css-contract.md.
+   A frame whose content is stacked with the gap between blocks. Raised by default; data-variant="outline" is the ground with a line,
+   drawn as an inset shadow so that it takes no room. */
+@layer recipes {
+  @scope ([data-ui="card"]) {
+    :where(:scope) {
+      --_face: var(--card-face, var(--raised-face));
+      --_ink: var(--card-ink, var(--ink));
+      --_line: var(--card-line, var(--line));
+      --_shadow: var(--raised-shadow-1);
+      --_inset: var(--card-inset, var(--containers-frame-nest-f-0-depth));
+      --_gap: var(--card-gap, var(--containers-gap-blocks-in-a-group-card-4));
+      --_radius: var(--card-radius, var(--containers-curvature-r-card-4));
+      --_border: var(--unit-border-b);
+    }
+    :where(:scope[data-variant="outline"]) {
+      --_face: var(--card-face, var(--ground-face));
+      --_shadow: inset 0 0 0 var(--_border) var(--_line);
+    }
+
+    /* The recipe's own boxes are border boxes, with or without a reset (C31). */
+    :where(:scope, [data-part]) { box-sizing: border-box; }
+    :scope {
+      display: grid;
+      gap: var(--_gap);
+      padding: var(--_inset);
+      border-radius: var(--_radius);
+      background-color: var(--_face);
+      box-shadow: var(--_shadow);
+      color: var(--_ink);
+    }
+    :scope > * { margin: 0; }
+    :scope:where([hidden]:not([hidden="until-found"])) { display: none; }
+
+    @media (forced-colors: active) {
+      :where(:scope) {
+        --_face: Canvas;
+        --_ink: CanvasText;
+        --_shadow: none;
+      }
+      :where(:scope[data-variant="outline"]) {
+        --_shadow: none;
+      }
+      :scope {
+        outline: var(--_border) solid CanvasText;
+        outline-offset: calc(var(--_border) * -1);
+      }
+    }
+  }
+}

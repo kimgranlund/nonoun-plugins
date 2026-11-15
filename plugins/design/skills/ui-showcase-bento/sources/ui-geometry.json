@@ -1,0 +1,43 @@
+{
+ "id": "ui-geometry",
+ "owns": [
+  "lengths"
+ ],
+ "title": "Geometry showcase",
+ "brief": "{skills}/ui-geometry/references/showcase.md",
+ "groups": {
+  "catalogue": "geometry-28"
+ },
+ "canvas": {
+  "width": 1280,
+  "height": 1600
+ },
+ "chrome": {
+  "margin": 36,
+  "gutter": 12,
+  "pad": 20,
+  "radius": 28,
+  "titleGap": 4,
+  "specimenGap": 20,
+  "captionGap": 6,
+  "title": 14,
+  "caption": 12,
+  "derived": "n 14, standard preset, default density: margin 36 from the brief's 1208 × 1528 usable area on its 1280 × 1600 canvas, gutter G = M/2 = 12, pad d = 5q = 20, radius R = d + 2q = 28, title gap d/2 − I = 4, specimen gap d = 20, caption gap I = 6. Re-derive with derive.mjs --containers --card 5 at another n or density. Grid paper: minor 2q = 8, major 8q = h = 32, ruled from the content edge.",
+  "grid": 8,
+  "gridMajor": 4
+ },
+ "tokens": {
+  "commands": [
+   "node {skills}/ui-geometry/scripts/derive.mjs --n 14 --card 5 --containers"
+  ]
+ },
+ "acceptance": [
+  "Every specimen length comes from derive.mjs; no invented lengths (brief: Geometry).",
+  "One construction annotation inside an existing entry names slot, inset, control height and the concentric radius relation.",
+  "Type: all 16 roles at their true size and line height, each noted with size, line height and the line height in q; no typeface is prescribed, and no role is scaled.",
+  "Space: the six gaps (d, d/2, 2I, I, g_c, 0) and the four paddings (card d, popover ¾d, dialog 1½d, panel 2I), each marked at its true length and named.",
+  "Dialog and alert dialog at the popover width 80q; menus and the combobox list at content width up to 80q, the tooltip up to 60q.",
+  "Text at T = 2I in controls, menu rows, list rows and table edge cells; one left edge for everything else (mark exceptions [data-inset]).",
+  "Static: no operable controls, no interactive roles, nothing in the tab order."
+ ]
+}

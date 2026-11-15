@@ -1,0 +1,72 @@
+{
+  "$schema": "../../../references/manifest.schema.json",
+  "schema": 1,
+  "id": "disclosure",
+  "kind": "component",
+  "family": "disclosure",
+  "tier": "containers",
+  "pattern": "https://www.w3.org/WAI/ARIA/apg/patterns/disclosure/",
+  "summary": "A button that shows and hides a panel of content.",
+  "role": null,
+  "focus": "none",
+  "tabindex": null,
+  "formAssociated": false,
+  "attributes": {
+    "open": {
+      "type": "boolean",
+      "state": "open",
+      "description": "The panel is showing."
+    }
+  },
+  "resets": [],
+  "states": [
+    "open"
+  ],
+  "parts": {
+    "root": {
+      "kind": "root",
+      "material": null,
+      "note": "Stacks the trigger and the panel."
+    },
+    "panel": {
+      "kind": "author",
+      "material": null,
+      "note": "The content that shows while open. The author marks it with data-part=\"panel\"."
+    }
+  },
+  "tokens": [
+    "--disclosure-gap"
+  ],
+  "behaviours": [],
+  "keys": {
+    "Enter, Space": "On the trigger: show the panel, or hide it."
+  },
+  "events": {
+    "toggle": "Dispatched, and bubbles, after the user shows or hides the panel. Not dispatched when a script changes open."
+  },
+  "uses": [
+    "button"
+  ],
+  "writes": {
+    "button": [
+      "aria-expanded",
+      "aria-controls"
+    ]
+  },
+  "guidance": [
+    {
+      "topic": "coordination",
+      "text": "The trigger is the first element with the button role, or native button, that is not inside the panel. It may sit inside a heading. The panel gets an id only when it has none."
+    }
+  ],
+  "notYet": [
+    "A chevron that turns: the author writes an icon in the trigger.",
+    "Opening with a transition."
+  ],
+  "targets": {
+    "web-components": "built",
+    "react": "planned",
+    "svelte": "planned",
+    "solid": "planned"
+  }
+}

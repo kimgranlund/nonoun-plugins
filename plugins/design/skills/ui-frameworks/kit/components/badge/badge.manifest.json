@@ -1,0 +1,66 @@
+{
+  "$schema": "../../../references/manifest.schema.json",
+  "schema": 1,
+  "id": "badge",
+  "kind": "recipe",
+  "family": "badge",
+  "tier": "controls",
+  "pattern": "https://www.w3.org/WAI/tutorials/images/informative/",
+  "summary": "A short label or count beside something, such as New or 12.",
+  "element": "span",
+  "role": null,
+  "focus": "none",
+  "tabindex": null,
+  "formAssociated": false,
+  "attributes": {
+    "variant": {
+      "type": "enum",
+      "values": [
+        "neutral",
+        "info",
+        "success",
+        "warning",
+        "critical"
+      ],
+      "default": "neutral",
+      "kind": "variant",
+      "description": "What the badge says about its subject, which sets its colours."
+    }
+  },
+  "resets": [],
+  "states": [],
+  "parts": {
+    "root": {
+      "kind": "root",
+      "material": {
+        "layer": "base",
+        "relief": "raised",
+        "face": "solid"
+      },
+      "note": "A pill as tall as ui-geometry's badge, with a small label."
+    }
+  },
+  "tokens": [
+    "--badge-face",
+    "--badge-ink",
+    "--badge-height",
+    "--badge-inset",
+    "--badge-radius"
+  ],
+  "behaviours": [],
+  "keys": {},
+  "events": {},
+  "guidance": [
+    {
+      "topic": "naming",
+      "text": "A span with data-ui=\"badge\". Its text is read where it stands; a count needs words around it, such as 12 unread."
+    }
+  ],
+  "notYet": [],
+  "targets": {
+    "web-components": "built",
+    "react": "planned",
+    "svelte": "planned",
+    "solid": "planned"
+  }
+}

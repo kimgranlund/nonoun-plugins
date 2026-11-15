@@ -1,0 +1,76 @@
+{
+  "$schema": "../../../references/manifest.schema.json",
+  "schema": 1,
+  "id": "tab",
+  "kind": "component",
+  "family": "tabs",
+  "tier": "collections",
+  "pattern": "https://www.w3.org/WAI/ARIA/apg/patterns/tabs/",
+  "summary": "One tab of a tab list. Selecting it shows its panel.",
+  "role": "tab",
+  "focus": "roving",
+  "tabindex": null,
+  "formAssociated": false,
+  "attributes": {
+    "value": {
+      "type": "string",
+      "description": "Pairs the tab with the panel of the same value. Without it the tab's position is its value."
+    },
+    "selected": {
+      "type": "boolean",
+      "state": "selected",
+      "description": "This is the selected tab. The tabs element keeps one tab selected; a script that sets it selects the tab."
+    },
+    "disabled": {
+      "type": "boolean",
+      "state": "disabled",
+      "description": "The tab cannot be selected or focused."
+    }
+  },
+  "resets": [],
+  "states": [
+    "hover",
+    "focus-visible",
+    "active",
+    "selected",
+    "disabled"
+  ],
+  "parts": {
+    "root": {
+      "kind": "root",
+      "material": null,
+      "note": "No face at rest. selected: layer base, relief raised, face neutral, never the solid face."
+    }
+  },
+  "tokens": [
+    "--tab-face-hover",
+    "--tab-face-active",
+    "--tab-face-selected",
+    "--tab-ink",
+    "--tab-ink-selected",
+    "--tab-ink-disabled",
+    "--tab-height",
+    "--tab-inset",
+    "--tab-gap",
+    "--tab-radius"
+  ],
+  "behaviours": [
+    "press"
+  ],
+  "keys": {
+    "Enter": "Selects the tab at key down, when activation is manual.",
+    "Space": "Selects the tab at key up, when activation is manual."
+  },
+  "events": {
+    "click": "Dispatched once per activation."
+  },
+  "notYet": [
+    "A disabled tab still dispatches click to a listener the author adds; the tabs element ignores it."
+  ],
+  "targets": {
+    "web-components": "built",
+    "react": "built",
+    "svelte": "planned",
+    "solid": "planned"
+  }
+}

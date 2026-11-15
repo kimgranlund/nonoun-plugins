@@ -1,0 +1,45 @@
+{
+  "$schema": "../../../references/manifest.schema.json",
+  "schema": 1,
+  "id": "tab-panel",
+  "kind": "component",
+  "family": "tabs",
+  "tier": "containers",
+  "pattern": "https://www.w3.org/WAI/ARIA/apg/patterns/tabs/",
+  "summary": "The content one tab shows.",
+  "role": "tabpanel",
+  "focus": "own",
+  "tabindex": 0,
+  "formAssociated": false,
+  "attributes": {
+    "value": {
+      "type": "string",
+      "description": "Pairs the panel with the tab of the same value. Without it the panel's position is its value."
+    }
+  },
+  "resets": [],
+  "states": [
+    "focus-visible",
+    "hidden"
+  ],
+  "parts": {
+    "root": {
+      "kind": "root",
+      "material": null,
+      "note": "Holds the author's content and paints nothing but its focus ring."
+    }
+  },
+  "tokens": [],
+  "behaviours": [],
+  "keys": {
+    "Tab": "From the selected tab, moves focus to the panel. An author who puts a focusable element first in the panel can write tabindex=\"-1\" on the panel."
+  },
+  "events": {},
+  "notYet": [],
+  "targets": {
+    "web-components": "built",
+    "react": "built",
+    "svelte": "planned",
+    "solid": "planned"
+  }
+}

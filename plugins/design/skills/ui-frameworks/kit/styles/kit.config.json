@@ -1,0 +1,40 @@
+{
+  "$description": "The inputs of this kit's tokens.css. scripts/tokens.mjs reads them and the three sibling skills.",
+  "n": 14,
+  "densities": [
+    "compact",
+    "default",
+    "loose"
+  ],
+  "colors": {
+    "preset": "minimal"
+  },
+  "flatRings": {
+    "$description": "ui-materials, fills.md: an unlit material gives an operable boundary an even ring where its fill alone does not separate it from its ground. With one neutral, a raised face has the ground's own colour, so the kit sets both rings. In the dark scheme a recess that sits on the base ground has the ground's own fill as well, so a tray takes a quieter ring.",
+    "--field-shadow": "inset 0 0 0 var(--unit-border-b) var(--line-strong)",
+    "--raised-shadow-1": "inset 0 0 0 var(--unit-border-b) var(--line-strong)",
+    "--recessed-shadow": "inset 0 0 0 var(--unit-border-b) var(--line)",
+    "--overlay-shadow": "inset 0 0 0 var(--unit-border-b) var(--line-strong)"
+  },
+  "icons": {
+    "$description": "The kit's icons. scripts/icons.mjs writes kit/styles/icons.css from them. `source` is a folder of SVG files, one per icon; `names` maps each name the kit uses to a file in it, without the extension. To use another library, point `source` at its folder and change the file names on the right.",
+    "source": "kit/icons/phosphor",
+    "library": "Phosphor Icons 2.1.1, regular weight, MIT (kit/icons/phosphor/LICENSE)",
+    "names": {
+      "check": "check",
+      "minus": "minus",
+      "close": "x",
+      "add": "plus",
+      "chevron-down": "caret-down",
+      "chevron-up": "caret-up",
+      "chevron-left": "caret-left",
+      "chevron-right": "caret-right",
+      "search": "magnifying-glass",
+      "warning": "warning",
+      "info": "info",
+      "error": "warning-circle",
+      "success": "check-circle",
+      "more": "dots-three"
+    }
+  }
+}

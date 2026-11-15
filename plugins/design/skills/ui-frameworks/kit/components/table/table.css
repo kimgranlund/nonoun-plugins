@@ -1,0 +1,60 @@
+@layer reset, base, tokens, recipes, utilities;
+
+/* The recipe of the table: a native <table data-ui="table">. Its rules: J67 in docs/specs/patterns.md. Its shape: docs/specs/css-contract.md.
+   Full width, rows as tall as ui-geometry's row, a hairline under each row, header cells in the muted ink. The cells are the
+   table's own elements, selected from the root by element. data-align="end" on a cell aligns its text to the end, for numbers. */
+@layer recipes {
+  @scope ([data-ui="table"]) {
+    :where(:scope) {
+      --_ink: var(--table-ink, var(--ink));
+      --_ink-head: var(--ink-muted);
+      --_line: var(--table-line, var(--line));
+      --_height: var(--table-height, var(--collections-rows-row));
+      --_inset: var(--table-inset, var(--collections-rows-cell-inline-padding));
+      --_gap: var(--containers-gap-group-caption-content);
+      --_tint: var(--colors-bg-muted-hover);
+      --_border: var(--unit-border-b);
+    }
+
+    /* The recipe's own boxes are border boxes, with or without a reset (C31). */
+    :where(:scope, [data-part], caption, th, td) { box-sizing: border-box; }
+    :scope {
+      inline-size: 100%;
+      border-collapse: collapse;
+      color: var(--_ink);
+    }
+    :scope caption {
+      padding-block-end: var(--_gap);
+      padding-inline: var(--_inset);
+      text-align: start;
+      color: var(--_ink-head);
+    }
+    :scope th,
+    :scope td {
+      block-size: var(--_height);
+      padding-inline: var(--_inset);
+      border-block-end: var(--_border) solid var(--_line);
+      text-align: start;
+      vertical-align: middle;
+    }
+    :scope th {
+      color: var(--_ink-head);
+      font-weight: normal;
+    }
+    :scope :is(th, td)[data-align=end] {
+      text-align: end;
+      font-variant-numeric: tabular-nums;
+    }
+
+    @media (hover: hover) {
+      :scope tbody tr:where(:is(:hover, [data-hover]):where(:not(:is(:disabled, [disabled], [aria-disabled="true"]), :is(:checked, [aria-checked="true"], [checked]:not(input, option)), :is(input[type="checkbox"]:indeterminate, [aria-checked="mixed"], [indeterminate]), :is([aria-pressed="true"], [pressed]), :is([aria-selected="true"], [selected]:not(option)), :is([aria-current]:not([aria-current="false"], [aria-current=""]), [current]), :is([aria-expanded="true"], [expanded]), :is([open], :popover-open)))) { background-color: var(--_tint); }
+    }
+
+    @media (forced-colors: active) {
+      :where(:scope) {
+        --_line: CanvasText;
+        --_tint: Canvas;
+      }
+    }
+  }
+}

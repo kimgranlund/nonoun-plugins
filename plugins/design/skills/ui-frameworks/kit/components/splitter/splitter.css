@@ -1,0 +1,192 @@
+@layer reset, base, tokens, recipes, utilities;
+
+/* The recipe of <ui-splitter>. Its rules: J62 and J63 in docs/specs/patterns.md. Its shape: docs/specs/css-contract.md.
+   Its conditions: references/states.json.
+   The root is a grid of three tracks along the split: the first pane, the bar, the second pane. The first pane takes
+   --_share percent of the room the bar leaves; the second takes the rest. The class writes --_share on the root's
+   inline style from value. Before the element is defined there is no class, so a variant block per whole number
+   from 0 to 100 reads the share from the author's value attribute (U1): a whole-number value lays out the same
+   before and after the element is defined. With no value the share is 50, the default. Vertical stacks the tracks.
+   Each pane is placed by its data-part, so the bar the class appends at the end of the root sits between them, and
+   its track exists before the bar does. A pane is never pushed wider than its track by its content; it scrolls.
+   The bar is a line of ui-geometry's separator mark (controls.mark.separator) in the material's line colour,
+   stronger under the pointer, with a hit area of the pointer's target (controls.target.t_hit-pointer, 24px) across
+   it, drawn as its ::after, so it is easy to grab without taking room. Touch on the bar drags it and does not scroll.
+   The focus ring is an outline around the bar. In forced colours the bar is CanvasText, Highlight under the pointer. */
+@layer recipes {
+  @scope (ui-splitter) {
+    :where(:scope) {
+      --_share: 50;
+      --_bar: var(--splitter-bar-height, var(--controls-mark-separator));
+      --_bar-face: var(--splitter-bar-face, var(--line));
+      --_bar-face-hover: var(--splitter-bar-face-hover, var(--splitter-bar-face, var(--line-strong)));
+      --_hit: var(--controls-target-t_hit-pointer);
+      --_ring: var(--colors-focus-ring);
+      --_ring-width: var(--controls-focus-ring-width-w);
+      --_ring-offset: var(--controls-focus-ring-offset-o);
+    }
+    :where(:scope[value="0"]) { --_share: 0; }
+    :where(:scope[value="1"]) { --_share: 1; }
+    :where(:scope[value="2"]) { --_share: 2; }
+    :where(:scope[value="3"]) { --_share: 3; }
+    :where(:scope[value="4"]) { --_share: 4; }
+    :where(:scope[value="5"]) { --_share: 5; }
+    :where(:scope[value="6"]) { --_share: 6; }
+    :where(:scope[value="7"]) { --_share: 7; }
+    :where(:scope[value="8"]) { --_share: 8; }
+    :where(:scope[value="9"]) { --_share: 9; }
+    :where(:scope[value="10"]) { --_share: 10; }
+    :where(:scope[value="11"]) { --_share: 11; }
+    :where(:scope[value="12"]) { --_share: 12; }
+    :where(:scope[value="13"]) { --_share: 13; }
+    :where(:scope[value="14"]) { --_share: 14; }
+    :where(:scope[value="15"]) { --_share: 15; }
+    :where(:scope[value="16"]) { --_share: 16; }
+    :where(:scope[value="17"]) { --_share: 17; }
+    :where(:scope[value="18"]) { --_share: 18; }
+    :where(:scope[value="19"]) { --_share: 19; }
+    :where(:scope[value="20"]) { --_share: 20; }
+    :where(:scope[value="21"]) { --_share: 21; }
+    :where(:scope[value="22"]) { --_share: 22; }
+    :where(:scope[value="23"]) { --_share: 23; }
+    :where(:scope[value="24"]) { --_share: 24; }
+    :where(:scope[value="25"]) { --_share: 25; }
+    :where(:scope[value="26"]) { --_share: 26; }
+    :where(:scope[value="27"]) { --_share: 27; }
+    :where(:scope[value="28"]) { --_share: 28; }
+    :where(:scope[value="29"]) { --_share: 29; }
+    :where(:scope[value="30"]) { --_share: 30; }
+    :where(:scope[value="31"]) { --_share: 31; }
+    :where(:scope[value="32"]) { --_share: 32; }
+    :where(:scope[value="33"]) { --_share: 33; }
+    :where(:scope[value="34"]) { --_share: 34; }
+    :where(:scope[value="35"]) { --_share: 35; }
+    :where(:scope[value="36"]) { --_share: 36; }
+    :where(:scope[value="37"]) { --_share: 37; }
+    :where(:scope[value="38"]) { --_share: 38; }
+    :where(:scope[value="39"]) { --_share: 39; }
+    :where(:scope[value="40"]) { --_share: 40; }
+    :where(:scope[value="41"]) { --_share: 41; }
+    :where(:scope[value="42"]) { --_share: 42; }
+    :where(:scope[value="43"]) { --_share: 43; }
+    :where(:scope[value="44"]) { --_share: 44; }
+    :where(:scope[value="45"]) { --_share: 45; }
+    :where(:scope[value="46"]) { --_share: 46; }
+    :where(:scope[value="47"]) { --_share: 47; }
+    :where(:scope[value="48"]) { --_share: 48; }
+    :where(:scope[value="49"]) { --_share: 49; }
+    :where(:scope[value="50"]) { --_share: 50; }
+    :where(:scope[value="51"]) { --_share: 51; }
+    :where(:scope[value="52"]) { --_share: 52; }
+    :where(:scope[value="53"]) { --_share: 53; }
+    :where(:scope[value="54"]) { --_share: 54; }
+    :where(:scope[value="55"]) { --_share: 55; }
+    :where(:scope[value="56"]) { --_share: 56; }
+    :where(:scope[value="57"]) { --_share: 57; }
+    :where(:scope[value="58"]) { --_share: 58; }
+    :where(:scope[value="59"]) { --_share: 59; }
+    :where(:scope[value="60"]) { --_share: 60; }
+    :where(:scope[value="61"]) { --_share: 61; }
+    :where(:scope[value="62"]) { --_share: 62; }
+    :where(:scope[value="63"]) { --_share: 63; }
+    :where(:scope[value="64"]) { --_share: 64; }
+    :where(:scope[value="65"]) { --_share: 65; }
+    :where(:scope[value="66"]) { --_share: 66; }
+    :where(:scope[value="67"]) { --_share: 67; }
+    :where(:scope[value="68"]) { --_share: 68; }
+    :where(:scope[value="69"]) { --_share: 69; }
+    :where(:scope[value="70"]) { --_share: 70; }
+    :where(:scope[value="71"]) { --_share: 71; }
+    :where(:scope[value="72"]) { --_share: 72; }
+    :where(:scope[value="73"]) { --_share: 73; }
+    :where(:scope[value="74"]) { --_share: 74; }
+    :where(:scope[value="75"]) { --_share: 75; }
+    :where(:scope[value="76"]) { --_share: 76; }
+    :where(:scope[value="77"]) { --_share: 77; }
+    :where(:scope[value="78"]) { --_share: 78; }
+    :where(:scope[value="79"]) { --_share: 79; }
+    :where(:scope[value="80"]) { --_share: 80; }
+    :where(:scope[value="81"]) { --_share: 81; }
+    :where(:scope[value="82"]) { --_share: 82; }
+    :where(:scope[value="83"]) { --_share: 83; }
+    :where(:scope[value="84"]) { --_share: 84; }
+    :where(:scope[value="85"]) { --_share: 85; }
+    :where(:scope[value="86"]) { --_share: 86; }
+    :where(:scope[value="87"]) { --_share: 87; }
+    :where(:scope[value="88"]) { --_share: 88; }
+    :where(:scope[value="89"]) { --_share: 89; }
+    :where(:scope[value="90"]) { --_share: 90; }
+    :where(:scope[value="91"]) { --_share: 91; }
+    :where(:scope[value="92"]) { --_share: 92; }
+    :where(:scope[value="93"]) { --_share: 93; }
+    :where(:scope[value="94"]) { --_share: 94; }
+    :where(:scope[value="95"]) { --_share: 95; }
+    :where(:scope[value="96"]) { --_share: 96; }
+    :where(:scope[value="97"]) { --_share: 97; }
+    :where(:scope[value="98"]) { --_share: 98; }
+    :where(:scope[value="99"]) { --_share: 99; }
+    :where(:scope[value="100"]) { --_share: 100; }
+
+    /* The recipe's own boxes are border boxes, with or without a reset (C31). */
+    :where(:scope, [data-part]) { box-sizing: border-box; }
+    :scope {
+      display: grid;
+      grid-template-columns: minmax(0, calc((100% - var(--_bar)) * var(--_share) / 100)) var(--_bar) minmax(0, 1fr);
+      grid-template-rows: minmax(0, 1fr);
+    }
+    :scope:where([hidden]:not([hidden="until-found"])) { display: none; }
+
+    :scope > [data-part="start"] {
+      grid-column: 1;
+      grid-row: 1;
+      overflow: auto;
+    }
+    :scope > [data-part="end"] {
+      grid-column: 3;
+      grid-row: 1;
+      overflow: auto;
+    }
+    :scope > [data-part="bar"] {
+      grid-column: 2;
+      grid-row: 1;
+      position: relative;
+      background-color: var(--_bar-face);
+      cursor: col-resize;
+      touch-action: none;
+    }
+    :scope > [data-part="bar"]::after {
+      content: "";
+      position: absolute;
+      inset-block: 0;
+      inset-inline: calc((var(--_bar) - var(--_hit)) / 2);
+    }
+
+    @media (hover: hover) {
+      :scope > [data-part="bar"]:where(:is(:hover, [data-hover]):where(:not(:is(:disabled, [disabled], [aria-disabled="true"]), :is(:checked, [aria-checked="true"], [checked]:not(input, option)), :is(input[type="checkbox"]:indeterminate, [aria-checked="mixed"], [indeterminate]), :is([aria-pressed="true"], [pressed]), :is([aria-selected="true"], [selected]:not(option)), :is([aria-current]:not([aria-current="false"], [aria-current=""]), [current]), :is([aria-expanded="true"], [expanded]), :is([open], :popover-open)))) { background-color: var(--_bar-face-hover); }
+    }
+    :scope > [data-part="bar"]:where(:is(:focus-visible, [data-focus-visible])) {
+      outline: var(--_ring-width) solid var(--_ring);
+      outline-offset: var(--_ring-offset);
+    }
+
+    :scope:where(:is([aria-orientation="vertical"], [orientation="vertical"])) {
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-rows: minmax(0, calc((100% - var(--_bar)) * var(--_share) / 100)) var(--_bar) minmax(0, 1fr);
+    }
+    :scope:where(:is([aria-orientation="vertical"], [orientation="vertical"])) > [data-part="start"] { grid-column: 1; grid-row: 1; }
+    :scope:where(:is([aria-orientation="vertical"], [orientation="vertical"])) > [data-part="bar"] { grid-column: 1; grid-row: 2; cursor: row-resize; }
+    :scope:where(:is([aria-orientation="vertical"], [orientation="vertical"])) > [data-part="end"] { grid-column: 1; grid-row: 3; }
+    :scope:where(:is([aria-orientation="vertical"], [orientation="vertical"])) > [data-part="bar"]::after {
+      inset-inline: 0;
+      inset-block: calc((var(--_bar) - var(--_hit)) / 2);
+    }
+
+    @media (forced-colors: active) {
+      :where(:scope) {
+        --_bar-face: CanvasText;
+        --_bar-face-hover: Highlight;
+        --_ring: Highlight;
+      }
+    }
+  }
+}

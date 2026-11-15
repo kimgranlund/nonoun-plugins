@@ -1,0 +1,15 @@
+@layer reset, base, tokens, recipes, utilities;
+
+/* The recipe of <ui-tree>. Its shape and rules: docs/specs/css-contract.md. It stacks its items and paints
+   nothing, so it has no forced-colours block. It never takes focus itself: its items do, and each draws its ring
+   inside its own label (J35). */
+@layer recipes {
+  @scope (ui-tree) {
+    /* The recipe's own boxes are border boxes, with or without a reset (C31). */
+    :where(:scope, [data-part]) { box-sizing: border-box; }
+    :scope {
+      display: block;
+    }
+    :scope:where([hidden]:not([hidden="until-found"])) { display: none; }
+  }
+}

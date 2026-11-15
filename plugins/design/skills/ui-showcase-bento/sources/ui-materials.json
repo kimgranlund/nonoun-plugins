@@ -1,0 +1,68 @@
+{
+ "id": "ui-materials",
+ "owns": [
+  "paint"
+ ],
+ "title": "Material showcase",
+ "brief": "{skills}/ui-materials/references/showcase.md",
+ "groups": {
+  "catalogue": "aria-24"
+ },
+ "axes": [
+  {
+   "name": "material",
+   "attr": "data-material",
+   "values": [
+    "flat",
+    "physical",
+    "frosted",
+    "glass",
+    "outline"
+   ],
+   "invariant": true,
+   "captions": {
+    "flat": "Flat: none · opaque · fill · colour",
+    "physical": "Physical: lit · opaque · fill · colour",
+    "frosted": "Frosted glass: lit · frosted · fill · colour",
+    "glass": "Glass: lit · clear · fill · colour · lens off",
+    "outline": "Outline: none · opaque · line · mono"
+   }
+  },
+  {
+   "name": "anatomy",
+   "label": "anatomy",
+   "attr": "data-show-anatomy",
+   "values": [
+    "off",
+    "layer",
+    "relief",
+    "face"
+   ],
+   "invariant": true,
+   "aliases": {
+    "on": "relief"
+   },
+   "captions": {
+    "layer": "Anatomy by layer: solid = base · dashed = overlay",
+    "relief": "Anatomy by relief: grey = ground · blue = raised · green = recessed",
+    "face": "Anatomy by face: grey = neutral · red = solid · pink = emissive · amber = display"
+   }
+  }
+ ],
+ "tokens": {
+  "css": [
+   "{bento}/sources/ui-materials.anatomy.css"
+  ],
+  "commands": [
+   "node {skills}/ui-materials/scripts/request.mjs > {work}/colors-request.json",
+   "write the system's material tokens (named by relief, face and layer, under data-material) to {work}/materials.css and add it to tokens.css, or pass it with --style"
+  ]
+ },
+ "acceptance": [
+  "Every part carries data-layer (base, overlay), data-relief (ground, raised, recessed) and data-face (neutral, solid, emissive, display); marks carry none.",
+  "Overlays (menu, combobox list, tooltip, dialog, alert dialog, menu-bar menu) sit directly on the tile's grid paper, so frosted and clear transmission have something to show; no specimen draws its own backdrop.",
+  "States are attribute moves beside rest: pressed (raised → recessed), latched or selected (recessed; solid when latched or the primary choice), live (emissive).",
+  "Boxes are identical across materials and schemes: uiBentoCheck() compares every material in each scheme.",
+  "Paint comes only from the system's material tokens; this source adds the material axis and the anatomy overlay, nothing else."
+ ]
+}

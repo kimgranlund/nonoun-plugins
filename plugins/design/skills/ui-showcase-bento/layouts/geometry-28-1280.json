@@ -1,0 +1,17 @@
+{
+ "id": "geometry-28-1280",
+ "note": "Geometry 28 (ARIA 24 plus Type and Space) at n 14, standard preset, tile depth 5q, dialogs 80q wide. The suffix is the canvas width. The five rows need 1,509px of height, so the canvas is 1280 × 1600. The eight ARIA 24 minimums are those of aria-24-1280, measured from its reference sheet. Type and Space were measured with the in-page checker in headless Chromium, each alone in a tile with this chrome, in the system-ui face: the smallest tile that passes, and 1px less in either direction fails. They hold for the reference specimens the brief describes (the sample Ag per role with its note; rungs 24q wide; frames around a 20q × h block). Other specimens, or another typeface, need their own measurements.",
+ "canvas": { "width": 1280, "height": 1600 },
+ "areas": [
+  "disclosure disclosure disclosure disclosure choices",
+  "selection selection navigation navigation navigation",
+  "input input input actions actions",
+  "values values values feedback feedback",
+  "type space space space space"
+ ],
+ "mins": {
+  "disclosure": [955, 311], "choices": [241, 300], "selection": [599, 208], "navigation": [597, 264],
+  "input": [802, 266], "actions": [394, 266], "values": [802, 194], "feedback": [394, 284],
+  "type": [463, 336], "space": [676, 329]
+ }
+}

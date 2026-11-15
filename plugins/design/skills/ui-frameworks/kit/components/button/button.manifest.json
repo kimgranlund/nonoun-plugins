@@ -1,0 +1,112 @@
+{
+  "$schema": "../../../references/manifest.schema.json",
+  "schema": 1,
+  "id": "button",
+  "kind": "component",
+  "family": "button",
+  "tier": "controls",
+  "pattern": "https://www.w3.org/WAI/ARIA/apg/patterns/button/",
+  "summary": "Runs one action when activated, or submits or resets the form it belongs to.",
+  "role": "button",
+  "focus": "own",
+  "tabindex": 0,
+  "formAssociated": true,
+  "attributes": {
+    "variant": {
+      "type": "enum",
+      "values": [
+        "neutral",
+        "primary"
+      ],
+      "default": "neutral",
+      "kind": "variant",
+      "description": "neutral is a raised key; primary is the one filled action of a view."
+    },
+    "type": {
+      "type": "enum",
+      "values": [
+        "button",
+        "submit",
+        "reset"
+      ],
+      "default": "button",
+      "description": "What activation does to the form: nothing, submit it, or reset it."
+    },
+    "value": {
+      "type": "string",
+      "description": "Submitted with the button's name when this button submits the form."
+    },
+    "name": {
+      "type": "string",
+      "description": "The name the value is submitted under."
+    },
+    "disabled": {
+      "type": "boolean",
+      "state": "disabled",
+      "description": "The button cannot be activated or focused."
+    }
+  },
+  "resets": [],
+  "states": [
+    "hover",
+    "focus-visible",
+    "active",
+    "disabled"
+  ],
+  "parts": {
+    "root": {
+      "kind": "root",
+      "material": {
+        "layer": "base",
+        "relief": "raised",
+        "face": "neutral"
+      },
+      "note": "primary: face solid"
+    },
+    "submit": {
+      "kind": "element",
+      "tag": "button",
+      "at": "end",
+      "lazy": true,
+      "attrs": {
+        "type": "submit",
+        "hidden": "",
+        "tabindex": "-1"
+      },
+      "when": "type is submit",
+      "material": null,
+      "note": "A hidden native submit button (D19). It makes this button the form's default button and its submitter."
+    }
+  },
+  "tokens": [
+    "--button-face",
+    "--button-face-hover",
+    "--button-face-active",
+    "--button-ink",
+    "--button-ink-disabled",
+    "--button-height",
+    "--button-inset",
+    "--button-gap",
+    "--button-radius"
+  ],
+  "behaviours": [
+    "press"
+  ],
+  "keys": {
+    "Enter": "Activates at key down.",
+    "Space": "Activates at key up."
+  },
+  "events": {
+    "click": "Dispatched once per activation: pointer, Enter, Space, or Enter in a text field when this is the form's submit button."
+  },
+  "notYet": [
+    "A toggle button (the pressed state).",
+    "The `form` attribute, to submit a form the button is not inside."
+  ],
+  "targets": {
+    "web-components": "built",
+    "react": "built",
+    "svelte": "planned",
+    "solid": "planned"
+  }
+}

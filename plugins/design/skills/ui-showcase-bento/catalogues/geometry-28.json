@@ -1,0 +1,207 @@
+{
+ "title": "Geometry 28",
+ "note": "The ui-geometry showcase: the 24 ARIA patterns of aria-24, group for group, plus a Type group and a Space group, 28 specimens in ten groups. Depictions are the required depictions of ui-geometry/references/showcase.md, which is their source. The first eight groups equal aria-24 (checked by bento.test.mjs).",
+ "groups": [
+  {
+   "id": "actions",
+   "label": "Actions",
+   "specimens": [
+    {
+     "id": "button",
+     "label": "Button",
+     "depiction": "Default, focused and disabled states of the same labelled action"
+    },
+    {
+     "id": "link",
+     "label": "Link",
+     "depiction": "Inline link and external destination indicator"
+    },
+    {
+     "id": "toolbar",
+     "label": "Toolbar",
+     "depiction": "Related actions with one selected toggle"
+    }
+   ]
+  },
+  {
+   "id": "choices",
+   "label": "Choices",
+   "specimens": [
+    {
+     "id": "checkbox",
+     "label": "Checkbox",
+     "depiction": "Unchecked, checked and indeterminate"
+    },
+    {
+     "id": "radio-group",
+     "label": "Radio group",
+     "depiction": "Three or more options, exactly one selected"
+    },
+    {
+     "id": "switch",
+     "label": "Switch",
+     "depiction": "On and off"
+    }
+   ]
+  },
+  {
+   "id": "input",
+   "label": "Input",
+   "specimens": [
+    {
+     "id": "textbox",
+     "label": "Textbox",
+     "depiction": "Labelled default, focused and invalid states; invalid has an error message"
+    },
+    {
+     "id": "combobox",
+     "label": "Combobox",
+     "depiction": "Editable value, expanded suggestion list, highlighted suggestion"
+    },
+    {
+     "id": "spinbutton",
+     "label": "Spinbutton",
+     "depiction": "Value, decrement and increment actions"
+    }
+   ]
+  },
+  {
+   "id": "selection",
+   "label": "Selection",
+   "specimens": [
+    {
+     "id": "listbox",
+     "label": "Listbox",
+     "depiction": "Three or more options, one selected"
+    },
+    {
+     "id": "menu",
+     "label": "Menu",
+     "depiction": "Open action menu with a disabled item and a separated action group"
+    },
+    {
+     "id": "tree-view",
+     "label": "Tree view",
+     "depiction": "Expanded parent, child items, collapsed branch, selected item"
+    }
+   ]
+  },
+  {
+   "id": "navigation",
+   "label": "Navigation",
+   "specimens": [
+    {
+     "id": "tabs",
+     "label": "Tabs",
+     "depiction": "Two or more tabs, one selected, and its content region"
+    },
+    {
+     "id": "menu-bar",
+     "label": "Menu bar",
+     "depiction": "Several top-level items, one menu open"
+    },
+    {
+     "id": "breadcrumb",
+     "label": "Breadcrumb",
+     "depiction": "Three or more levels, current location identified, one line"
+    }
+   ]
+  },
+  {
+   "id": "disclosure",
+   "label": "Disclosure",
+   "specimens": [
+    {
+     "id": "accordion",
+     "label": "Accordion",
+     "depiction": "One expanded section with content and one collapsed"
+    },
+    {
+     "id": "dialog",
+     "label": "Dialog",
+     "depiction": "Title, supporting content, completion or dismissal action"
+    },
+    {
+     "id": "alert-dialog",
+     "label": "Alert dialog",
+     "depiction": "Consequence statement and two clearly distinguished decisions"
+    }
+   ]
+  },
+  {
+   "id": "feedback",
+   "label": "Feedback",
+   "specimens": [
+    {
+     "id": "alert",
+     "label": "Alert",
+     "depiction": "Status indicator and concise message"
+    },
+    {
+     "id": "tooltip",
+     "label": "Tooltip",
+     "depiction": "Visible tooltip tied to its trigger"
+    },
+    {
+     "id": "progress-bar",
+     "label": "Progress bar",
+     "depiction": "Determinate progress with a matching numeric value"
+    }
+   ]
+  },
+  {
+   "id": "values",
+   "label": "Values and data",
+   "specimens": [
+    {
+     "id": "slider",
+     "label": "Slider",
+     "depiction": "Track, thumb, current value and range endpoints"
+    },
+    {
+     "id": "meter",
+     "label": "Meter",
+     "depiction": "Bounded measurement with value, unit and range"
+    },
+    {
+     "id": "data-grid",
+     "label": "Data grid",
+     "depiction": "Column headers, two or more rows, one focused or selected cell"
+    }
+   ]
+  },
+  {
+   "id": "type",
+   "label": "Type",
+   "specimens": [
+    {
+     "id": "type-display-heading",
+     "label": "Display and heading roles",
+     "depiction": "display-lg to heading-sm, each at true size in its line box, with size, line height and the line height in q"
+    },
+    {
+     "id": "type-text",
+     "label": "Title, body, label and kicker roles",
+     "depiction": "title-lg to kicker-sm, each at true size in its line box, with size, line height and the line height in q"
+    }
+   ]
+  },
+  {
+   "id": "space",
+   "label": "Space",
+   "layout": "column",
+   "specimens": [
+    {
+     "id": "gap-ladder",
+     "label": "Gap ladder",
+     "depiction": "Six rungs, each a pair of siblings with its gap marked and named: groups d, blocks d/2, fields 2I, caption I, field label g_c, joined 0"
+    },
+    {
+     "id": "container-padding",
+     "label": "Container padding ladder",
+     "depiction": "Card d, popover ¾d, dialog 1½d and panel 2I, each a frame with its padding marked and named"
+    }
+   ]
+  }
+ ]
+}

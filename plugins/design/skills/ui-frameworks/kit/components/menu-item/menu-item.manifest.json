@@ -1,0 +1,64 @@
+{
+  "$schema": "../../../references/manifest.schema.json",
+  "schema": 1,
+  "id": "menu-item",
+  "kind": "component",
+  "family": "menu-button",
+  "tier": "collections",
+  "pattern": "https://www.w3.org/WAI/ARIA/apg/patterns/menubar/",
+  "summary": "One action in a menu.",
+  "role": "menuitem",
+  "focus": "roving",
+  "tabindex": null,
+  "formAssociated": false,
+  "attributes": {
+    "disabled": {
+      "type": "boolean",
+      "state": "disabled",
+      "description": "The action cannot be run, and the item takes no focus."
+    }
+  },
+  "resets": [],
+  "states": [
+    "focus",
+    "focus-visible",
+    "active",
+    "disabled"
+  ],
+  "parts": {
+    "root": {
+      "kind": "root",
+      "material": null,
+      "note": "No face at rest. The item that has focus has a tint: it is the one marked row of the menu, moved by the keys and by the pointer."
+    }
+  },
+  "tokens": [
+    "--menu-item-face-focus",
+    "--menu-item-face-active",
+    "--menu-item-ink",
+    "--menu-item-ink-disabled",
+    "--menu-item-height",
+    "--menu-item-inset",
+    "--menu-item-gap",
+    "--menu-item-radius"
+  ],
+  "behaviours": [
+    "press"
+  ],
+  "keys": {
+    "Enter": "Runs the action at key down and closes the menu.",
+    "Space": "Runs the action at key up and closes the menu."
+  },
+  "events": {
+    "click": "Dispatched once when the item is activated. Listen for it to run the action."
+  },
+  "notYet": [
+    "A disabled item still dispatches click to a listener the author adds; the menu ignores it."
+  ],
+  "targets": {
+    "web-components": "built",
+    "react": "built",
+    "svelte": "planned",
+    "solid": "planned"
+  }
+}

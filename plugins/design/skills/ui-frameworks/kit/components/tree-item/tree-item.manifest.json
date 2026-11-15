@@ -1,0 +1,86 @@
+{
+  "$schema": "../../../references/manifest.schema.json",
+  "schema": 1,
+  "id": "tree-item",
+  "kind": "component",
+  "family": "tree",
+  "tier": "collections",
+  "pattern": "https://www.w3.org/WAI/ARIA/apg/patterns/treeview/",
+  "summary": "One item of a tree. It may hold a group of items of its own.",
+  "role": "treeitem",
+  "focus": "roving",
+  "tabindex": null,
+  "formAssociated": false,
+  "attributes": {
+    "value": {
+      "type": "string",
+      "description": "What the tree's value becomes when this item is selected. Without it, the item's label text."
+    },
+    "selected": {
+      "type": "boolean",
+      "state": "selected",
+      "description": "The item is selected."
+    },
+    "expanded": {
+      "type": "boolean",
+      "state": "expanded",
+      "description": "The item's group shows. Only an item with a group has it."
+    },
+    "disabled": {
+      "type": "boolean",
+      "state": "disabled",
+      "description": "It cannot be chosen or focused."
+    }
+  },
+  "resets": [],
+  "states": [
+    "hover",
+    "focus-visible",
+    "active",
+    "selected",
+    "expanded",
+    "disabled"
+  ],
+  "parts": {
+    "root": {
+      "kind": "root",
+      "material": null,
+      "note": "Stacks its label and its group."
+    },
+    "label": {
+      "kind": "author",
+      "material": null,
+      "note": "The item's own row: the author marks it with data-part=\"label\". It takes the paint of hover, focus and selected."
+    },
+    "group": {
+      "kind": "author",
+      "material": null,
+      "note": "The items inside this one: the author marks it with data-part=\"group\". It shows while the item is expanded, and is indented by ui-geometry's tree indent."
+    }
+  },
+  "tokens": [
+    "--tree-item-label-face-hover",
+    "--tree-item-label-face-active",
+    "--tree-item-label-face-selected",
+    "--tree-item-label-ink",
+    "--tree-item-label-ink-selected",
+    "--tree-item-label-ink-disabled",
+    "--tree-item-label-height",
+    "--tree-item-label-inset",
+    "--tree-item-label-gap",
+    "--tree-item-label-radius",
+    "--tree-item-group-inset"
+  ],
+  "behaviours": [],
+  "keys": {},
+  "events": {},
+  "notYet": [
+    "A chevron that shows whether an item is open: the author writes an icon in the label."
+  ],
+  "targets": {
+    "web-components": "built",
+    "react": "planned",
+    "svelte": "planned",
+    "solid": "planned"
+  }
+}

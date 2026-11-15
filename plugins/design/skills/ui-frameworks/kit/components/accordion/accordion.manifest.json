@@ -1,0 +1,59 @@
+{
+  "$schema": "../../../references/manifest.schema.json",
+  "schema": 1,
+  "id": "accordion",
+  "kind": "component",
+  "family": "accordion",
+  "tier": "containers",
+  "pattern": "https://www.w3.org/WAI/ARIA/apg/patterns/accordion/",
+  "summary": "A stack of disclosures, of which it can keep only one open.",
+  "role": null,
+  "focus": "none",
+  "tabindex": null,
+  "formAssociated": false,
+  "attributes": {
+    "single": {
+      "type": "boolean",
+      "description": "Opening one disclosure closes the others."
+    }
+  },
+  "resets": [],
+  "states": [],
+  "parts": {
+    "root": {
+      "kind": "root",
+      "material": null,
+      "note": "Stacks its disclosures with a hairline between them."
+    }
+  },
+  "tokens": [
+    "--accordion-line"
+  ],
+  "behaviours": [],
+  "keys": {},
+  "events": {},
+  "uses": [
+    "disclosure",
+    "button"
+  ],
+  "writes": {
+    "disclosure": [
+      "open"
+    ]
+  },
+  "guidance": [
+    {
+      "topic": "coordination",
+      "text": "Its disclosures are its child elements. Each trigger sits inside a heading the author writes, so that the titles are headings to assistive technology."
+    }
+  ],
+  "notYet": [
+    "Arrow keys that move between the triggers, which APG lists as optional."
+  ],
+  "targets": {
+    "web-components": "built",
+    "react": "planned",
+    "svelte": "planned",
+    "solid": "planned"
+  }
+}

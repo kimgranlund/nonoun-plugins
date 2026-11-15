@@ -1,0 +1,54 @@
+{
+  "$schema": "../../../references/manifest.schema.json",
+  "schema": 1,
+  "id": "menu-group",
+  "kind": "component",
+  "family": "menu-button",
+  "tier": "collections",
+  "pattern": "https://www.w3.org/WAI/ARIA/apg/patterns/menubar/",
+  "summary": "A set of menu items that belong together, such as the radio items of one choice.",
+  "role": "group",
+  "focus": "none",
+  "tabindex": null,
+  "formAssociated": false,
+  "attributes": {},
+  "resets": [],
+  "states": [],
+  "parts": {
+    "root": {
+      "kind": "root",
+      "material": null,
+      "note": "Stacks its items; a hairline separates it from what comes before and after."
+    },
+    "label": {
+      "kind": "author",
+      "material": null,
+      "note": "An optional heading the author marks with data-part=\"label\"; the group is named after it."
+    }
+  },
+  "tokens": [
+    "--menu-group-line",
+    "--menu-group-ink"
+  ],
+  "behaviours": [],
+  "keys": {},
+  "events": {},
+  "writes": {
+    "menu-item-radio": [
+      "checked"
+    ]
+  },
+  "guidance": [
+    {
+      "topic": "coordination",
+      "text": "Of the radio items that are its children, it keeps at most one checked."
+    }
+  ],
+  "notYet": [],
+  "targets": {
+    "web-components": "built",
+    "react": "planned",
+    "svelte": "planned",
+    "solid": "planned"
+  }
+}

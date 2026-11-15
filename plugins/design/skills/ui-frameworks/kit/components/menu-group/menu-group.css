@@ -1,0 +1,57 @@
+@layer reset, base, tokens, recipes, utilities;
+
+/* The recipe of <ui-menu-group>, a set of menu items that belong together. Its shape and rules:
+   docs/specs/css-contract.md. It stacks its children, each as wide as the menu, and a hairline of the border
+   unit above and below separates it from its neighbours, drawn as the accordion draws its own (J23). A group
+   that is the first or the last child of its menu has no line on that side, so no line meets the menu's frame.
+   ui-geometry: the frame's padding between a line and the rows. The label is a heading of the group: the label
+   size of the type scale, in the muted ink, at the rows' inset so that it lines up with their text. */
+@layer recipes {
+  @scope (ui-menu-group) {
+    :where(:scope) {
+      --_line: var(--menu-group-line, var(--line));
+      --_ink: var(--menu-group-ink, var(--ink-muted));
+      --_border: var(--unit-border-b);
+      --_pad: var(--collections-frame-d_c);
+      --_inset: calc(var(--controls-control-t) - var(--collections-frame-d_c));
+      --_height: var(--collections-rows-menu-row);
+      --_text: var(--unit-type-label);
+      --_leading: var(--unit-type-label-line);
+    }
+
+    /* The recipe's own boxes are border boxes, with or without a reset (C31). */
+    :where(:scope, [data-part]) { box-sizing: border-box; }
+    :scope {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      padding-block: var(--_pad);
+      border-block: var(--_border) solid var(--_line);
+    }
+    :scope:where([hidden]:not([hidden="until-found"])) { display: none; }
+    :scope:first-child {
+      padding-block-start: 0;
+      border-block-start-width: 0;
+    }
+    :scope:last-child {
+      padding-block-end: 0;
+      border-block-end-width: 0;
+    }
+
+    :scope > [data-part="label"] {
+      display: flex;
+      align-items: center;
+      min-block-size: var(--_height);
+      padding-inline: var(--_inset);
+      color: var(--_ink);
+      font-size: var(--_text);
+      line-height: var(--_leading);
+    }
+
+    @media (forced-colors: active) {
+      :where(:scope) {
+        --_line: CanvasText;
+        --_ink: CanvasText;
+      }
+    }
+  }
+}

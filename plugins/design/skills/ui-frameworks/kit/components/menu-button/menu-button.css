@@ -1,0 +1,18 @@
+@layer reset, base, tokens, recipes, utilities;
+
+/* The recipe of <ui-menu-button>, the element that holds a trigger and its menu. Its shape and rules:
+   docs/specs/css-contract.md. An inline box around the trigger: the anchor its menu is placed against (D77).
+   anchor-scope keeps the name to this element, so each menu finds its own menu button and no id is needed.
+   It paints nothing, so it has no forced-colours block. */
+@layer recipes {
+  @scope (ui-menu-button) {
+    /* The recipe's own boxes are border boxes, with or without a reset (C31). */
+    :where(:scope, [data-part]) { box-sizing: border-box; }
+    :scope {
+      display: inline-block;
+      anchor-name: --menu-button;
+      anchor-scope: --menu-button;
+    }
+    :scope:where([hidden]:not([hidden="until-found"])) { display: none; }
+  }
+}

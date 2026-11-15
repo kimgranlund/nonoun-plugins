@@ -1,0 +1,59 @@
+{
+  "$schema": "../../../references/manifest.schema.json",
+  "schema": 1,
+  "id": "submenu",
+  "kind": "component",
+  "family": "menu-button",
+  "tier": "collections",
+  "pattern": "https://www.w3.org/WAI/ARIA/apg/patterns/menubar/",
+  "summary": "A menu item that opens another menu beside it.",
+  "role": null,
+  "focus": "none",
+  "tabindex": null,
+  "formAssociated": false,
+  "attributes": {},
+  "resets": [],
+  "states": [],
+  "parts": {
+    "root": {
+      "kind": "root",
+      "material": null,
+      "note": "A box around the item; it is the anchor its menu is placed against."
+    }
+  },
+  "tokens": [],
+  "behaviours": [],
+  "keys": {
+    "ArrowRight, Enter, Space": "On the item: open the menu with focus on its first item. ArrowRight is the arrow pointing at the inline end, ArrowLeft in a right-to-left page.",
+    "ArrowLeft, Escape": "Inside the menu: close it and return focus to the item, leaving the menu around it open. ArrowLeft is the arrow pointing at the inline start."
+  },
+  "events": {},
+  "writes": {
+    "menu-item": [
+      "aria-haspopup",
+      "aria-controls",
+      "aria-expanded",
+      "id"
+    ],
+    "menu": [
+      "open",
+      "aria-labelledby",
+      "id"
+    ]
+  },
+  "guidance": [
+    {
+      "topic": "coordination",
+      "text": "It holds one menu item and one menu, and is itself an item of the menu around it. The arrows follow the writing direction."
+    }
+  ],
+  "notYet": [
+    "Opening when the pointer rests on the item."
+  ],
+  "targets": {
+    "web-components": "built",
+    "react": "planned",
+    "svelte": "planned",
+    "solid": "planned"
+  }
+}

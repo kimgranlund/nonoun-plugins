@@ -1,0 +1,53 @@
+@layer reset, base, tokens, recipes, utilities;
+
+/* The recipe of <ui-meter>. Its rules: J18 in docs/specs/patterns.md. Its shape: docs/specs/css-contract.md.
+   The root is the track; the fill is its ::before, as long as the value's share of the range. The share is
+   --_share, which the class writes on the root's inline style (0 until the element is defined). The fill is
+   a block at the inline start of the track, so it follows the writing direction. */
+@layer recipes {
+  @scope (ui-meter) {
+    :where(:scope) {
+      --_share: 0;
+      --_face: var(--meter-face, var(--recessed-face));
+      --_face-value: var(--meter-fill-face, var(--solid-face));
+      --_shadow: var(--recessed-shadow);
+      --_height: var(--meter-height, var(--controls-track-meter-track));
+      --_radius: var(--meter-radius, calc(var(--_height) / 2));
+      --_length: var(--controls-track-slider-minimum-length);
+      --_border: var(--unit-border-b);
+    }
+
+    /* The recipe's own boxes are border boxes, with or without a reset (C31). */
+    :where(:scope, [data-part]) { box-sizing: border-box; }
+    :scope {
+      display: block;
+      block-size: var(--_height);
+      min-inline-size: var(--_length);
+      border-radius: var(--_radius);
+      background-color: var(--_face);
+      box-shadow: var(--_shadow);
+      overflow: hidden;
+    }
+    :scope:where([hidden]:not([hidden="until-found"])) { display: none; }
+
+    :scope::before {
+      content: "";
+      display: block;
+      block-size: 100%;
+      inline-size: calc(var(--_share) * 100%);
+      background-color: var(--_face-value);
+    }
+
+    @media (forced-colors: active) {
+      :where(:scope) {
+        --_face: Canvas;
+        --_face-value: Highlight;
+        --_shadow: none;
+      }
+      :scope {
+        outline: var(--_border) solid CanvasText;
+        outline-offset: calc(var(--_border) * -1);
+      }
+    }
+  }
+}

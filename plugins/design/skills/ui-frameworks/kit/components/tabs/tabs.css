@@ -1,0 +1,20 @@
+@layer reset, base, tokens, recipes, utilities;
+
+/* The recipe of <ui-tabs>, the element that holds a tab list and its panels. Its shape and rules:
+   docs/specs/css-contract.md. It lays out its children and paints nothing, so it has no forced-colours block. */
+@layer recipes {
+  @scope (ui-tabs) {
+    :where(:scope) {
+      --_gap: var(--tabs-gap, var(--containers-gap-blocks-in-a-group-card-4));
+    }
+
+    /* The recipe's own boxes are border boxes, with or without a reset (C31). */
+    :where(:scope, [data-part]) { box-sizing: border-box; }
+    :scope {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: var(--_gap);
+    }
+    :scope:where([hidden]:not([hidden="until-found"])) { display: none; }
+  }
+}

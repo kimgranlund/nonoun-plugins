@@ -1,0 +1,112 @@
+<title>NAME THE EXPLORATION</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Layout: one reading column; every variant is live, drawn from one shared fixture, under one shared stress control. */
+:root {
+  --bg: #f1f1f4; --panel: #fdfdfc; --ink: #1c2024; --muted: #5b606a; --quiet: #868a94;
+  --line: #dcdde3; --fill: #e9e9ee; --focus: #3d4fc9;
+  --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  --stress: 440px; /* the shared stress control writes this */
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #111113; --panel: #1a1a1d; --ink: #edeef0; --muted: #b3b6bd; --quiet: #7c808a;
+  --line: #2f3136; --fill: #232428; --focus: #9aa5ff; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #111113; --panel: #1a1a1d; --ink: #edeef0; --muted: #b3b6bd; --quiet: #7c808a;
+  --line: #2f3136; --fill: #232428; --focus: #9aa5ff; color-scheme: dark }
+/* If the product has its own tokens, replace the values above with them and keep the names. */
+
+body { background: var(--bg); color: var(--ink); font: 400 15px/1.55 var(--sans);
+  padding-block: 40px 72px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.page { max-width: 780px; margin-inline: auto; display: grid; gap: 40px; }
+h1 { font: 600 28px/1.2 var(--sans); margin: 0; text-wrap: balance; }
+h2 { font: 600 19px/1.25 var(--sans); margin: 0; }
+p { margin: 0; max-width: 66ch; }
+.lede { color: var(--muted); }
+.kicker { font: 500 12px/1 var(--mono); color: var(--quiet); letter-spacing: 0.06em; text-transform: uppercase; }
+header.top, .opt, .opt-head { display: grid; gap: 12px; }
+.opt { gap: 16px; } .opt-head { gap: 6px; }
+.control { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; padding: 14px 16px; background: var(--panel); border-radius: 14px; }
+.control label { font-weight: 500; }
+.control input[type=range] { flex: 1 1 180px; min-width: 0; accent-color: var(--focus); }
+.control output { font: 500 13px/1 var(--mono); color: var(--muted); min-width: 6ch; text-align: end; font-variant-numeric: tabular-nums; }
+.stage { background: var(--panel); border-radius: 16px; padding: 16px; overflow-x: auto; }
+.mock { width: var(--stress); max-width: 100%; min-width: 0; }
+.facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px 24px; }
+.facts div { display: grid; gap: 2px; align-content: start; }
+.facts b { font: 500 12px/1.3 var(--mono); color: var(--quiet); letter-spacing: 0.04em; text-transform: uppercase; }
+.facts span { color: var(--muted); font-size: 14px; }
+.tablewrap { overflow-x: auto; background: var(--panel); border-radius: 16px; padding: 8px 16px; }
+table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+th, td { text-align: start; padding: 9px 12px 9px 0; border-bottom: 1px solid var(--line); vertical-align: top; color: var(--muted); }
+tr:last-child td { border-bottom: 0; }
+th { font: 500 12px/1.3 var(--mono); color: var(--quiet); letter-spacing: 0.04em; text-transform: uppercase; white-space: nowrap; }
+td:first-child { font-weight: 500; white-space: nowrap; color: var(--ink); }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+/* variant-specific styles go here */
+
+/*@feedback.css*/
+</style>
+
+<!-- data-question: the one question in the reader's words. data-round: 1, then 2 after feedback.
+     data-aspects: the things a reader can say work or do not, specific to this problem (comma list). -->
+<div class="page" data-explore data-round="1"
+     data-question="STATE THE QUESTION"
+     data-aspects="Layout,Density,Readability,Interaction,Fits the system">
+
+  <header class="top">
+    <span class="kicker">WHERE THIS LIVES · THE FIXTURE</span>
+    <h1>THE QUESTION AS A HEADLINE</h1>
+    <p class="lede">What is wrong today, in one or two sentences, and what every variant below must achieve. Say what the shared control does.</p>
+  </header>
+
+  <!-- One shared stress control. It changes the thing that makes the problem hard (width, count, length, time). -->
+  <div class="control">
+    <label for="stress">STRESS AXIS</label>
+    <input id="stress" type="range" min="260" max="748" step="4" value="440" data-fb-control="width">
+    <output id="stressout" for="stress">440 px</output>
+  </div>
+
+  <!-- Repeat once per variant. id and data-variant are short, stable slugs. data-moment names the component or UI
+       moment the variant answers (one per question on the page); it stays the same across rounds, so Compare can lay
+       every answer to it side by side. A variant kept from an earlier round also carries its own data-round. -->
+  <section class="opt" id="variant-a" data-variant="variant-a" data-moment="NAME-THE-MOMENT">
+    <div class="opt-head"><span class="kicker">Option A</span><h2>NAME IT BY ITS MECHANISM</h2>
+      <p class="lede">How it works, in one or two sentences, with no reference to the other variants.</p></div>
+    <div class="stage"><div class="mock" id="mA"></div></div>
+    <div class="facts">
+      <div><b>Keeps</b><span>What survives from today.</span></div>
+      <div><b>Gives up</b><span>The cost, stated plainly.</span></div>
+      <div><b>Breaks when</b><span>The condition where it fails.</span></div>
+    </div>
+  </section>
+
+  <section class="opt">
+    <div class="opt-head"><span class="kicker">Side by side</span><h2>What each one keeps</h2></div>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Option</th><th>CRITERION</th><th>CRITERION</th><th>CRITERION</th></tr></thead>
+      <tbody><tr><td>A NAME</td><td>…</td><td>…</td><td>…</td></tr></tbody>
+    </table></div>
+  </section>
+
+  <section class="opt">
+    <div class="opt-head"><span class="kicker">Reading</span><h2>YOUR RECOMMENDATION AS A SENTENCE</h2></div>
+    <p class="lede">Which you would pick and when. Mark every figure that is an estimate and not a measurement.</p>
+  </section>
+  <!-- The feedback module appends "Send feedback" here. -->
+</div>
+
+<script>
+// One fixture for every variant: real content, including the cases that make the problem hard.
+const FIXTURE = [];
+function renderA() { document.getElementById('mA').innerHTML = ''; }
+const stress = document.getElementById('stress'), stressOut = document.getElementById('stressout');
+function setStress() { document.documentElement.style.setProperty('--stress', stress.value + 'px'); stressOut.textContent = stress.value + ' px'; }
+stress.addEventListener('input', setStress);
+setStress(); renderA();
+</script>
+<script>
+/*@feedback.js*/
+</script>
