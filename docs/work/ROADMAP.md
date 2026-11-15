@@ -6,7 +6,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | ID | Ticket | Title | Type | Size | Pri | Depends on | Status |
 |---|---|---|---|---|---|---|---|
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔴 blocked |
-| T-0855 | [0855-ui-skill-resync](0855-ui-skill-resync/handoff.md) | Resync four ui-* skills from the MacBook copies | chore | L2 | P2 | none | 🟡 claimed |
+| T-0855 | [0855-ui-skill-resync](0855-ui-skill-resync/handoff.md) | Resync four ui-* skills from the MacBook copies | chore | L2 | P2 | none | 🟡 claimed (branch lane/T-0855-t0855) |
 
 Closed: 816 done, 30 dropped (git log or .NNNN-* folders)
 
