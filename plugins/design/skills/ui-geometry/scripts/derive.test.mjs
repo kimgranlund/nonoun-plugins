@@ -1,14 +1,14 @@
 // node --test derive.test.mjs
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { PRESETS, derive, system } from './derive.mjs'
+import { PRESETS, derive, system, validatePreset, multiGrid, multiGridFaults } from './derive.mjs'
 
-const P = PRESETS.massimo
+const P = PRESETS.standard
 const { q, I, mc, h, radius, cardRadius, nested } = system(P)
 const densities = Object.keys(P.inset)
 const close = (a, b) => assert.ok(Math.abs(a - b) < 1e-9, `${a} ≠ ${b}`)
 
-test('massimo: q is 4px at 14, 5px at 16; h is 28/32/36 at 14', () => {
+test('standard: q is 4px at 14, 5px at 16; h is 28/32/36 at 14', () => {
   close(q(14), 4); close(q(16), 5)
   assert.deepEqual(densities.map((d) => h(d) * q(14)), [28, 32, 36])
 })
@@ -43,7 +43,25 @@ test('curvature is continuous, monotonic and never above h/2', () => {
 })
 
 test('a card at inset 1 is concentric with a control: R − d = r while r ≤ soft', () => {
-  for (const d of densities) for (const c of P.cardDepths.slice(1)) for (const k of [0, 0.3, P.softAnchor]) close(cardRadius(c, k, d) - c, radius(k, d))
+  for (const d of densities) for (const c of P.cardDepths.slice(1)) for (const k of [0.1, 0.3, P.softAnchor]) close(cardRadius(c, k, d) - c, radius(k, d))
+})
+
+test('a card at curvature 0 is square at every depth, and its nested cards with it', () => {
+  for (const d of densities) for (const c of P.cardDepths) close(cardRadius(c, 0, d), 0)
+  close(nested(4, cardRadius(4, 0, 'default'), 0.5)[1], 0)
+})
+
+test("cardRadius 'control' gives every card, nested card and panel the control's corner; the default is unchanged; another value is refused", () => {
+  const cur = (o) => Object.fromEntries(derive(o).filter((r) => r.tier === 'containers' && r.group === 'curvature').map((r) => [r.id, r.px]))
+  for (const density of densities) for (const kc of [0.25, 0.5, 1]) {
+    const kappa = { control: kc, frame: kc, card: 0.5, panel: kc }, r = derive({ density, kappa }).find((x) => x.id === 'controls.curvature.r').px
+    const flat = cur({ preset: { ...P, cardRadius: 'control' }, density, kappa })
+    for (const [id, px] of Object.entries(flat)) close(px, /nest-f-0-in/.test(id) ? 0 : r)
+    assert.deepEqual(cur({ preset: { ...P, cardRadius: 'concentric' }, density, kappa }), cur({ density, kappa }))
+  }
+  // Negative control: under the default a padded card is larger than the control's corner, so the assertion above can fail.
+  assert.ok(cur({})['containers.curvature.r-card-4'] > derive().find((x) => x.id === 'controls.curvature.r').px)
+  assert.throws(() => validatePreset({ cardRadius: 'round' }), /cardRadius is 'concentric' or 'control'/); assert.doesNotThrow(() => validatePreset({ cardRadius: 'control' }))
 })
 
 test('deeper cards stay soft under pill; depth 0 takes the control corner', () => {
@@ -68,7 +86,20 @@ test('grid columns fill the width exactly', () => {
   close(12 * w + 11 * G + 2 * M, 1280 / q(14))
 })
 
-test('marks, tracks and widths derive from the preset (massimo at 14px)', () => {
+test('every listed count fills the field in whole units', () => {
+  const m = multiGrid({ field: 58, gutter: 2, width: 1440 })
+  assert.deepEqual(m.counts.map((c) => c.n), [1, 2, 3, 4, 5, 6, 10, 12])
+  assert.deepEqual(m.counts.map((c) => c.units), [58, 28, 18, 13, 10, 8, 4, 3])
+  assert.deepEqual(multiGridFaults(m), [])
+  for (const c of m.counts) close(c.n * c.px + (c.n - 1) * m.gutter, m.field)
+  assert.equal(multiGrid({ field: 58, gutter: 2, width: 1456 }).u, 23, 'at 1x, whole px'); assert.equal(m.u, 23); assert.equal(m.margin, m.gutter); assert.equal(m.margin, 46)
+  assert.equal(multiGrid({ field: 58, gutter: 2, width: 1456, dpr: 2 }).u, 23.5, 'u snaps to the device grid')
+  assert.deepEqual(multiGrid({ field: 57, gutter: 2, width: 1440 }).counts.map((c) => c.n), [1], 'negative control: U + g = 59 is prime')
+  assert.equal(multiGridFaults({ ...m, counts: [...m.counts, { n: 7, units: 52 / 7, px: 0 }] }).length, 1, 'negative control: 7 columns fall between units')
+  assert.equal(multiGridFaults({ ...m, counts: m.counts.filter((c) => c.n !== 5) }).length, 1, 'negative control: a whole count left out')
+})
+
+test('marks, tracks and widths derive from the preset (standard at 14px)', () => {
   const px = (s) => derive().find((r) => r.symbol === s).px
   assert.equal(px('checkbox box'), 16)
   assert.equal(px('radio dot'), 8)
@@ -94,14 +125,14 @@ test('a custom preset changes the system and keeps the identities', () => {
 
 import { elevation } from './derive.mjs'
 
-test('elevation: massimo popup is ¼, ½, 1, 2 q, each blurred twice its offset; far blur = 4q', () => {
+test('elevation: standard popup is ¼, ½, 1, 2 q, each blurred twice its offset; far blur = 4q', () => {
   const e = elevation({ level: 'popup' })
   assert.deepEqual(e.layers.map((l) => l.y), [0.25, 0.5, 1, 2])
   for (const l of e.layers) close(l.blur, 2 * l.y)
   close(e.layers.at(-1).blur, 4)
 })
 
-test('elevation: massimo alphas round to 7, 5, 4, 3% in light and sum to the budget', () => {
+test('elevation: standard alphas round to 7, 5, 4, 3% in light and sum to the budget', () => {
   const e = elevation({ level: 'popup' })
   assert.deepEqual(elevation({ level: 'popup', round: true }).layers.map((l) => Math.round(l.alpha * 100)), [7, 5, 4, 3])
   close(e.layers.reduce((a, l) => a + l.alpha, 0), 0.19)
@@ -131,7 +162,7 @@ test('elevation: a continuous level and a light angle', () => {
 })
 
 import { fluidN, snap, onGrid, capOffset } from './derive.mjs'
-const val = (rows, sym) => rows.find((r) => r.symbol === sym)
+const val = (rows, sym) => rows.find((r) => r.symbol === sym || r.alias === sym)
 
 test('focus ring: its outer corner is concentric, r + o + w', () => {
   const rows = derive()
@@ -198,7 +229,7 @@ test('crisp tiers: n ≡ 2 mod 4 makes half-q lengths whole; n ≡ 6 mod 8 makes
   assert.deepEqual([360, 1000, 1300, 1920].map((W) => fluidN(W, crisp)), [14, 14, 22, 22])
 })
 
-test('container ladder: massimo defaults at 14 and its identities at every density', async () => {
+test('container ladder: standard defaults at 14 and its identities at every density', async () => {
   const { containers } = await import('./derive.mjs')
   const px = (rows, name, col, i = 0) => rows.find((r) => r.container === name)[col][i].q * 4
   const A = containers({ n: 14 })
@@ -211,12 +242,12 @@ test('container ladder: massimo defaults at 14 and its identities at every densi
     close(g('Segmented control, tab list', 'height', 1), g('Segmented control, tab list', 'height') - 2 * g('Segmented control, tab list', 'pad'))
     close(g('Listbox, menu, select popup', 'radius', 1), Math.max(0, g('Listbox, menu, select popup', 'radius') - g('Listbox, menu, select popup', 'pad')))
     close(g('Nested card, well', 'pad') * 2, g('Card', 'pad'))
-    close(g('Card', 'radius') - g('Card', 'pad'), Math.min(radius(kv, density), P.soft))
+    { const rk = Math.min(radius(kv, density), P.soft); close(g('Card', 'radius'), rk === 0 ? 0 : g('Card', 'pad') + rk) }   // square at κ 0
     assert.equal(rows.length, 20)
   }
 })
 
-test('massimo cards default to κ ½: R − d = 2q, while controls keep κ_s', () => {
+test('standard cards default to κ ½: R − d = 2q, while controls keep κ_s', () => {
   const at = (rows, sym) => rows.find((r) => r.symbol.startsWith(sym))
   const rows = derive({ n: 14, cardDepth: 4 })
   close(at(rows, 'R card-4 ').q - 4, 2); close(at(rows, 'r  κ').q, 3)
@@ -232,9 +263,9 @@ test('gap rule: inside every container the gap is half its padding, before actio
       const p = r.pad[0].q
       for (const g of r.gap) {
         assert.ok(Math.abs(g.q * 4 - Math.round(g.q * 4)) < 1e-9, `${r.container} ${g.e} = ${g.q * 4}px is off the pixel grid`)
-        if (/before actions/.test(g.e)) close(g.q, p)
-        else if (/title →/.test(g.e)) assert.ok(g.q <= Math.round(p) / 2 + 1e-9)
-        else if (!/rows d \/ 4|groups d|caption/.test(g.e)) assert.ok(Math.abs(g.q - p / 2) <= 0.25 + 1e-9, `${r.container} ${g.e}: ${g.q} vs ${p}/2`)
+        if (/before actions|header →/.test(g.e)) close(g.q, p)
+        else if (/band →/.test(g.e)) assert.ok(g.q <= Math.round(p) / 2 + 1e-9)
+        else if (!/rows d \/ 4|groups d|caption|^flow:/.test(g.e)) assert.ok(Math.abs(g.q - p / 2) <= 0.25 + 1e-9, `${r.container} ${g.e}: ${g.q} vs ${p}/2`)
       }
     }
     const pop = rows.find((x) => x.container.startsWith('Popover')).pad[0].q, dlg = rows.find((x) => x.container.startsWith('Dialog')).pad[0].q
@@ -294,11 +325,13 @@ test('form fields sit 2I apart, the same as table columns; labels and help text 
   assert.equal(containers({ n: 14 }).find((r) => r.container === 'Form').gap[0].q * 4, 12)
 })
 
-test('card depth follows density, one q per step; the title gap holds at 2px', async () => {
+test('card depth follows density, one q per step; the band gap holds at 2px; a header has d below as above', async () => {
   const { containers } = await import('./derive.mjs')
   const card = (density) => containers({ n: 14, density }).find((r) => r.container === 'Card')
+  const gap = (density, re) => card(density).gap.find((g) => re.test(g.e)).q * 4
   assert.deepEqual(['compact', 'default', 'loose'].map((x) => card(x).pad[0].q * 4), [12, 16, 20])
-  assert.deepEqual(['compact', 'default', 'loose'].map((x) => card(x).gap[1].q * 4), [2, 2, 2])
+  assert.deepEqual(['compact', 'default', 'loose'].map((x) => gap(x, /^band →/)), [2, 2, 2])
+  assert.deepEqual(['compact', 'default', 'loose'].map((x) => gap(x, /^header →/)), [12, 16, 20])
 })
 
 test('crisp: at 16px every padding, gap and height is a whole px, and h = 40', async () => {
@@ -308,6 +341,24 @@ test('crisp: at 16px every padding, gap and height is a whole px, and h = 40', a
     for (const r of rows) for (const col of ['pad', 'gap', 'height']) for (const x of r[col]) assert.ok(Math.abs(x.q * 5 - Math.round(x.q * 5)) < 1e-9, `${density} ${r.container} ${x.e} = ${x.q * 5}px`)
   }
   close(containers({ n: 16 }).find((r) => r.container.startsWith('Button')).height[0].q * 5, 40)
+})
+
+test('the flow of a page is spaced in body sizes: the same at every density, text to actions twice the paragraph gap, sections 6½F apart', async () => {
+  const { containers, derive: dv } = await import('./derive.mjs')
+  for (const n of [14, 16, 18, 20]) {
+    const at = (density) => containers({ n, density }).find((r) => r.container === 'Page section')
+    const sec = at('default'), g = (re) => sec.gap.find((x) => re.test(x.e)).q, px = (v) => v * system(P).q(n)
+    for (const d of densities) assert.deepEqual(at(d).gap.map((x) => x.q), sec.gap.map((x) => x.q), `n ${n} ${d}: flow gaps move with density`)
+    close(px(g(/paragraphs/)), Math.round(1.25 * n) - (Math.abs((1.25 * n) % 1 - 0.5) < 1e-9 && Math.round(1.25 * n) % 2 ? 1 : 0))   // whole px, ties to even
+    close(px(g(/kicker/)), n); close(px(g(/action → note/)), n)
+    assert.ok(Math.abs(px(g(/text → actions/)) - 2 * px(g(/paragraphs/))) <= 1, 'text to actions is twice the paragraph gap, to the pixel')
+    assert.ok(Math.abs(2 * px(sec.pad[0].q) - 6.5 * n) <= 1)
+    assert.ok(g(/text → actions/) < sec.pad[0].q, 'no flow gap exceeds the section padding')
+    const rows = dv({ n }), row = (id) => rows.find((r) => r.id === 'layout.flow.' + id)
+    close(row('paragraphs').px, px(g(/paragraphs/))); close(row('section-padding').px, px(sec.pad[0].q))
+  }
+  // Negative control: the card keeps the gap rule; its gaps do move with density.
+  assert.notDeepEqual(containers({ n: 14, density: 'compact' }).find((r) => r.container === 'Card').pad[0].q, containers({ n: 14, density: 'loose' }).find((r) => r.container === 'Card').pad[0].q)
 })
 
 test('a page section shares the page edge: no inline padding', async () => {
@@ -385,4 +436,93 @@ test('a button inside an input is an item in a host; a popup sits d_c from its t
     close(hc.height[0].q, seg.height[1].q); close(hc.pad[0].q, seg.pad[0].q); close(hc.radius[0].q, seg.radius[1].q)
     close(menu.gap.find((g) => g.e.startsWith('popup offset')).q, menu.pad[0].q)
   }
+})
+
+// ---- named checks for SKILL.md › Identities, with negative controls ----
+import { checkIdentities, containers as ladder } from './derive.mjs'
+
+test('identities hold at every density under checkIdentities(), and a mutated table fails', () => {
+  for (const density of densities) assert.deepEqual(checkIdentities(derive({ density })), [], density)
+  const bad = derive().map((r) => (r.id === 'controls.control.h' ? { ...r, q: r.q + 0.25 } : r))
+  assert.ok(checkIdentities(bad).includes('h = S + 2I'), 'negative control: a mutated h must fail')
+})
+
+/** Gaps that exceed the largest padding of a padded container (popover, card, dialog, region, page section, page). */
+export const gapOverruns = (rows) => rows.filter((r) => ['containers', 'layout'].includes(r.tier) && r.pad.some((p) => p.q > 0))
+  .flatMap((r) => r.gap.filter((g) => g.q > Math.max(...r.pad.map((p) => p.q)) + 1e-9).map((g) => `${r.container}: ${g.e}`))
+
+test("no gap exceeds its container's padding, at every density and card depth", () => {
+  for (const density of densities) for (const cardDepth of [2, 3, 4, 5, 6]) assert.deepEqual(gapOverruns(ladder({ density, cardDepth })), [], `${density} d ${cardDepth}`)
+  const bad = ladder().map((r) => (r.container === 'Card' ? { ...r, gap: [...r.gap, { e: 'mutant', q: 99 }] } : r))
+  assert.deepEqual(gapOverruns(bad), ['Card: mutant'], 'negative control: an oversized gap must be reported')
+})
+
+test('a control with no inset is its slot, and h/F is 2 to 2.57 with the standard insets', () => {
+  assert.deepEqual(densities.map((d) => Math.round((h(d) * q(14) / 14) * 100) / 100), [2, 2.29, 2.57])
+  const bare = { ...P, inset: { compact: 0, default: 0.5, loose: 1 }, gutter: 0 }
+  const rows = derive({ preset: bare, n: 15, density: 'compact' }), px = (id) => rows.find((r) => r.id === id).px
+  assert.deepEqual(checkIdentities(rows), [])
+  assert.equal(px('controls.control.h'), px('controls.control.s'))
+  assert.equal(px('controls.control.m_c'), 0)
+  assert.equal(px('controls.control.t'), 0)
+  // Negative control: the standard gutter with no inset puts the margin below zero.
+  const bad = derive({ preset: { ...bare, gutter: 0.5 }, n: 15, density: 'compact' })
+  assert.ok(bad.find((r) => r.id === 'controls.control.m_c').px < 0)
+})
+
+test('the heavy rule is the inset at every density and size, and the hairline does not move', async () => {
+  const { derive: dv } = await import('./derive.mjs')
+  for (const n of [14, 16, 18]) for (const density of densities) {
+    const rows = dv({ n, density }), px = (id) => rows.find((r) => r.id === id).px
+    close(px('controls.border.heavy-rule'), px('controls.control.i')); close(px('unit.border.b'), 1)
+  }
+  // Negative control: it is not a multiple of the hairline: it changes with density while b does not.
+  const at = (density) => dv({ n: 14, density }).find((r) => r.id === 'controls.border.heavy-rule').px
+  assert.notEqual(at('compact'), at('loose'))
+})
+
+test('a stepped page margin: the standard preset gives one M at every width; three levels give 2I, 4I and 8I either side of each step, with G unchanged', async () => {
+  const { derive: dv, pageLevel, validatePreset, PRESETS: PR } = await import('./derive.mjs')
+  const M = (o) => dv(o).find((r) => r.id === 'layout.grid.m').px, Gt = (o) => dv(o).find((r) => r.id === 'layout.grid.g').px
+  for (const width of [undefined, 390, 800, 1440]) close(M({ n: 16, density: 'loose', width, columns: 4 }), M({ n: 16, density: 'loose' }))
+  const P3 = { ...PR.standard, levels: { ...PR.standard.levels, page: { narrow: 2, base: 4, wide: 8 } } }, I = dv({ preset: P3, n: 16, density: 'loose' }).find((r) => r.id === 'controls.control.i').px
+  for (const [width, l] of [[390, 2], [599, 2], [600, 4], [999, 4], [1000, 8], [1440, 8], [undefined, 4]]) { close(M({ preset: P3, n: 16, density: 'loose', width, columns: 4 }), l * I); close(Gt({ preset: P3, n: 16, density: 'loose', width, columns: 4 }), 2 * I); assert.equal(pageLevel(P3, width), l) }
+  for (const width of [390, 1440]) assert.deepEqual(checkIdentities(dv({ preset: P3, n: 16, density: 'loose', width, columns: 4 })), [], `identities at ${width}`)
+  // Negative controls: a malformed level or step is refused, with the reason.
+  assert.throws(() => validatePreset({ levels: { page: { narrow: 2, wide: 8 } } }), /levels\.page is a number, or \{ narrow, base, wide \}/)
+  assert.throws(() => validatePreset({ marginSteps: [1000, 600] }), /marginSteps is two page widths in px, the smaller first/)
+  assert.throws(() => validatePreset({ marginSteps: [600] }), /marginSteps/)
+})
+
+test("rhythm 'line' puts text lines, gaps, control boxes and rows on half of the body line; a heading keeps its own line; the default prints nothing", async () => {
+  const { lineGrid } = await import('./derive.mjs'), { applyArchetype } = await import('./archetypes.mjs')
+  // The default preset has no rhythm rows, and its other rows are unchanged by the setting's existence (negative control).
+  assert.equal(derive({}).filter((r) => r.group === 'rhythm').length, 0)
+  const plain = derive({ n: 16 }), lined = derive({ preset: { ...P, rhythm: 'line' }, n: 16 })
+  assert.deepEqual(lined.filter((r) => r.group !== 'rhythm').map((r) => [r.id, r.px]), plain.map((r) => [r.id, r.px]))
+  // The module: an even px that divides by 4. 20 at n 14, 24 at n 16 (23.5 by the formula), 36 for running text of 35.25.
+  assert.deepEqual([20, 23.5, 35.25, 18, 21].map((b) => lineGrid({ bodyLine: b }).L), [20, 24, 36, 20, 24])
+  for (const name of ['product', 'civic', 'editorial', 'calm', 'marketing']) {
+    const rows = derive(applyArchetype(name)).filter((r) => r.group === 'rhythm'), px = (sym) => rows.find((r) => r.symbol === sym).px, L = px('L'), half = px('half-line')
+    assert.equal(half, L / 2); assert.equal(L % 4, 0, `${name}: L ${L}`)
+    for (const r of rows.filter((x) => / line on the grid$/.test(x.symbol))) {
+      const padded = /padded/.test(r.expr); assert.ok(Number.isInteger(r.px), `${name}: ${r.symbol} ${r.px}`)
+      if (!padded) assert.ok(Math.abs(r.px / half - Math.round(r.px / half)) < 1e-9, `${name}: ${r.symbol} ${r.px} is not a half-line multiple`)
+    }
+    for (const sym of ['gap floor', 'control box', 'row on the grid', 'around a field group']) assert.ok(Math.abs(px(sym) / half - Math.round(px(sym) / half)) < 1e-9, `${name}: ${sym}`)
+    assert.ok(px('control box') >= derive(applyArchetype(name)).find((r) => r.id === 'controls.control.h').px)
+  }
+  // What was drawn: product rows of 40 in place of 32, civic boxes of 48 for 40; civic's heading 41px (36 × 1.15) where the formula gives 43.5; editorial's module is its running text.
+  const v = (name, sym) => derive(applyArchetype(name)).find((r) => r.group === 'rhythm' && r.symbol === sym).px
+  assert.equal(v('product', 'row on the grid'), 40); assert.equal(v('civic', 'control box'), 48); assert.equal(v('civic', 'heading-lg line on the grid'), 41); assert.equal(v('civic', 'around a field group'), 24)
+  // The floor of 1.3: product's 17px title is tipped onto 30px; civic's 19.75px title would need 36px, over 1.8 × its size, so it takes its own 30px line, padded. Toy was kept off the grid.
+  assert.equal(v('product', 'title-lg line on the grid'), 30); assert.equal(v('product', 'body-sm line on the grid'), 20); assert.equal(v('civic', 'title-lg line on the grid'), 30); assert.equal(v('calm', 'L'), 28); assert.equal(v('marketing', 'control box'), 56)
+  assert.equal(derive(applyArchetype('toy')).filter((r) => r.group === 'rhythm').length, 0)
+  assert.equal(v('editorial', 'L'), 36); assert.equal(v('editorial', 'heading-sm line on the grid'), 36); assert.equal(v('editorial', 'body-md line on the grid'), 24)
+  assert.throws(() => validatePreset({ rhythm: 'baseline' }), /rhythm is 'formula' or 'line'/)
+})
+
+test('a field with its help and its own actions is one group: g_c inside, the gap between groups around it, never under three times the inside', () => {
+  for (const density of densities) for (const n of [13, 14, 16, 18]) { const rows = derive({ n, density }), px = (sym) => rows.find((r) => r.symbol === sym).px
+    assert.ok(px('around a field group') >= 3 * px('label → control, control → help') - 1e-9, `n ${n} ${density}`); assert.equal(px('around a field group'), Math.max(px('groups in card-4'), 3 * px('label → control, control → help'))) }
 })

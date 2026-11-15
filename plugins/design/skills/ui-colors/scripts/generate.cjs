@@ -2633,4 +2633,5 @@ Writes palettes.json, sources.json, palettes.css and preview.html. Node 22+; no 
 `],["sources.json",JSON.stringify(e.sources,null,2)+`
 `],["palettes.css",n.join(`
 `)+`
-`],["preview.html",o]].map(([s,a])=>Ur.default.writeFile(Gt.default.join(t,s),a,{flag:"wx"}))),console.log(JSON.stringify({directory:t,palettes:e.order.length,output:e.request.output,files:["palettes.json","sources.json","palettes.css","preview.html"]}))}catch(e){console.error(e.message),process.exitCode=1}}_u().catch(r=>{console.error(r.message),process.exitCode=1});
+`],["preview.html",o.replace('<link rel="stylesheet" href="palettes.css">',()=>"<style>\n"+n.join(`
+`)+"\n</style>")]].map(([s,a])=>Ur.default.writeFile(Gt.default.join(t,s),a,{flag:"wx"}))),console.log(JSON.stringify({directory:t,palettes:e.order.length,output:e.request.output,files:["palettes.json","sources.json","palettes.css","preview.html"]}))}catch(e){console.error(e.message),process.exitCode=1}}_u().catch(r=>{console.error(r.message),process.exitCode=1});

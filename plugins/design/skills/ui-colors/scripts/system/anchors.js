@@ -30,6 +30,8 @@ import { apcaLc, deepenKeys, DEFAULT_TARGETS, luminance, stepTones } from './con
 export const ANCHOR_REACHES = ['key', 'ramp'];
 /** The first step of the solids and text, where a `key` anchor's chroma starts. */
 const KEY_FROM = 9;
+/** Anchor roles whose colour is a solid (step 9 by default in both schemes): the brand accents and the feedback roles. */
+export const SOLID_ANCHOR_ROLES = ['primary', 'secondary', 'critical', 'warning', 'success', 'info'];
 /** The first step a page pin leaves alone. */
 const BASE_TO = 5;
 /** Below this chroma a color has no hue worth carrying. */
@@ -280,8 +282,10 @@ export function applyAnchors(data, roles, anchors, targets) {
         const lightRamp = out.schemes.light[family];
         const page = toneOf(lightRamp[0]);
         const lc = apcaLc(toneOfY(yOfHex(anchor.value)), page);
-        // The step whose target is nearest the anchor's Lc (steps 2–12), unless the anchor names one.
-        const step = anchor.step ?? 2 + targets.light.reduce((best, t, i) => (Math.abs(t - lc) < Math.abs(targets.light[best] - lc) ? i : best), 0);
+        // A brand or feedback accent is a solid: step 9 unless the anchor names a step. `step: "auto"` (and the default on
+        // neutral and data roles) takes the step whose target is nearest the anchor's Lc (steps 2–12).
+        const solidRole = SOLID_ANCHOR_ROLES.includes(anchor.role);
+        const step = anchor.step === 'auto' || (anchor.step == null && !solidRole) ? 2 + targets.light.reduce((best, t, i) => (Math.abs(t - lc) < Math.abs(targets.light[best] - lc) ? i : best), 0) : anchor.step ?? 9;
         const at = lightRamp[step - 1];
         const before = deltaE(want, at.oklch);
         const ratio = at.oklch[1] > 1e-4 ? want[1] / at.oklch[1] : 1;
@@ -289,7 +293,7 @@ export function applyAnchors(data, roles, anchors, targets) {
         const darkRamp = out.schemes.dark[family];
         const wantD = anchor.dark ? srgbToOklch(anchor.dark) : undefined;
         const lcD = anchor.dark ? apcaLc(toneOfY(yOfHex(anchor.dark)), toneOf(darkRamp[0])) : 0;
-        const stepD = anchor.dark ? anchor.darkStep ?? 2 + targets.dark.reduce((best, t, i) => (Math.abs(t - lcD) < Math.abs(targets.dark[best] - lcD) ? i : best), 0) : undefined;
+        const stepD = !anchor.dark ? undefined : anchor.darkStep === 'auto' || (anchor.darkStep == null && !solidRole) ? 2 + targets.dark.reduce((best, t, i) => (Math.abs(t - lcD) < Math.abs(targets.dark[best] - lcD) ? i : best), 0) : anchor.darkStep ?? 9;
         const reach = anchor.reach ?? (neutralFamilies.has(family) ? 'ramp' : 'key');
         const chroma = (C, n, anchored, cap) => {
             if (reach === 'ramp')
@@ -320,7 +324,7 @@ export function applyAnchors(data, roles, anchors, targets) {
                 solidSteps.dark[anchor.role] = stepD;
         }
         report.push({
-            role: anchor.role, family, value: anchor.value, step, lc: Math.round(lc * 10) / 10, target: targets.light[step - 2],
+            role: anchor.role, family, value: anchor.value, step, stepFrom: anchor.step === 'auto' || (anchor.step == null && !solidRole) ? 'nearest-lc' : anchor.step == null ? 'solid' : 'given', lc: Math.round(lc * 10) / 10, target: targets.light[step - 2],
             below, above, inOrder: lc > below && lc < above, inRange: lc <= targets.light[10] + 10 && lc >= targets.light[0] / 2,
             dE: Math.round(before * 10) / 10, ...(dark ? { dark } : {}),
         });

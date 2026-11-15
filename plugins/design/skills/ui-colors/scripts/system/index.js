@@ -129,11 +129,20 @@ const hueOf = (data, name) => data.schemes.light[name][8].hct[0];
 export function closestFamily(data, requested, candidates) {
     if (candidates.includes(requested))
         return requested;
-    const hue = RADIX_HUES[requested] ?? (/^h\d{3}$/.test(requested) ? Number(requested.slice(1)) : 25);
+    // A family name: a Radix name, `hNNN` (an HCT hue, 0–360, decimals allowed) or `oklch:NNN` (an OKLCH hue, matched against
+    // each family's step-9 OKLCH hue). Anything else is a request error, never a silent fallback to some hue.
+    const hct = /^h(\d{1,3}(?:\.\d+)?)$/.exec(requested ?? ''), ok = /^oklch:(\d{1,3}(?:\.\d+)?)$/.exec(requested ?? '');
+    const hue = RADIX_HUES[requested] ?? (hct ? Number(hct[1]) : ok ? Number(ok[1]) : undefined);
+    if (hue === undefined || hue > 360) {
+        const e = new Error(`role family ${JSON.stringify(requested)} is not a family of this system (${candidates.join(', ')}), a Radix name, an HCT hue (h0–h360) or an OKLCH hue (oklch:0–oklch:360)`);
+        e.request = true;
+        throw e;
+    }
     // The Radix hues are HCT, and they land on the same families in OKLCH angles, except red, which sits
     // near 25° there and would tip to crimson at its HCT 20°.
     const want = data.settings.generator === 'oklch' && requested === 'red' ? 25 : hue;
-    const distance = (n) => { const d = Math.abs(hueOf(data, n) - want) % 360; return Math.min(d, 360 - d); };
+    const hueAt = ok ? (n) => data.schemes.light[n][8].oklch[2] : (n) => hueOf(data, n);
+    const distance = (n) => { const d = Math.abs(hueAt(n) - want) % 360; return Math.min(d, 360 - d); };
     return candidates.reduce((best, n) => (distance(n) < distance(best) ? n : best));
 }
 /**
@@ -183,13 +192,24 @@ export function roleVariables(data, roles, mode, solidSteps = {}) {
     return vars;
 }
 /**
- * White and black (`--colors-white`, `--colors-black`): a step of the neutral role's ramp, the same
- * in both schemes: white from the light ramp, black from the dark ramp, step 3 by default (DEFAULT_ENDPOINT);
- * or 'pure' (#fff, #000).
+ * White and black (`--colors-white`, `--colors-black`), the same in both schemes. By default they are the two ends of
+ * the system, past every step and short of pure: white halfway in lightness from the light page (light step 1) to pure
+ * white, black at ENDPOINT_BLACK of the dark page's lightness (dark step 1), each keeping the neutral's hue, and never
+ * inside the ramps of either scheme. A request
+ * may name a step of the neutral ramp (white from the light ramp, black from the dark one) or 'pure' (#fff, #000).
  */
+export const ENDPOINT_WHITE = 0.5, ENDPOINT_BLACK = 0.6;
 export function endpointVars(data, roles, map = {}) {
-    const pick = (want, mode, pure) => want === 'pure' ? pure : data.schemes[mode][roles.neutral][(want ?? DEFAULT_ENDPOINT) - 1].css;
-    return { '--colors-white': pick(map.white, 'light', '#fff'), '--colors-black': pick(map.black, 'dark', '#000') };
+    const ramp = (mode) => data.schemes[mode][roles.neutral];
+    const css = ([l, c, h]) => `oklch(${+l.toFixed(4)} ${+c.toFixed(4)} ${+(c < 1e-4 || !Number.isFinite(h) ? 0 : h).toFixed(4)})`;
+    // Never inside the ramps: where a step of either scheme is already lighter or darker (a contrast mode's pure ink, a
+    // white page), the endpoint takes that lightness, without chroma once it is pure.
+    const every = ['light', 'dark'].flatMap((mode) => Object.values(data.schemes[mode]).flatMap((steps) => steps.map((s) => s.oklch[0])));
+    const clamp = (l, c, h, edge) => { const x = edge === 1 ? Math.min(1, Math.max(l, ...every)) : Math.max(0, Math.min(l, ...every)); return css([x, x > 0.9999 || x < 0.0001 ? 0 : c, h]); };
+    const end = { white: () => { const [l, c, h] = ramp('light')[0].oklch; return clamp(l + (1 - l) * ENDPOINT_WHITE, c * (1 - ENDPOINT_WHITE), h, 1); },
+        black: () => { const [l, c, h] = ramp('dark')[0].oklch; return clamp(l * ENDPOINT_BLACK, c, h, 0); } };
+    const pick = (name, want, mode, pure) => want === 'pure' ? pure : want == null ? end[name]() : ramp(mode)[want - 1].css;
+    return { '--colors-white': pick('white', map.white, 'light', '#fff'), '--colors-black': pick('black', map.black, 'dark', '#000') };
 }
 const block = (sel, vars) => `${sel} {\n${Object.entries(vars).map(([k, v]) => `  ${k}: ${v};`).join('\n')}\n}`;
 /**

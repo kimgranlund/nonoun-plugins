@@ -2,7 +2,7 @@ import { PRESETS, crisp, system } from './geometry-runtime/derive.js';
 // Consumer adapter: ui-geometry lengths for the panel's own chrome, mapped to CSS pixels exactly once.
 // The panel is a card at d = 2I; controls are h = S + 2I tall with text at T = 2I from their edge.
 const px = (v) => `${Math.round(v * 1000) / 1000}px`;
-export function panelGeometry({ n = 14, border = 0, controlDensity = 'default', collectionDensity = 'default', cardDensity = 'default', controlCurvature, containerCurvature, preset = PRESETS.massimo } = {}) {
+export function panelGeometry({ n = 14, border = 0, controlDensity = 'default', collectionDensity = 'default', cardDensity = 'default', controlCurvature, containerCurvature, preset = PRESETS.standard } = {}) {
   const P = crisp(preset, n), X = system(P), q = X.q(n);
   if (!(n >= preset.unit.nMin) || !(q > 0)) throw new RangeError(`panel geometry: n = ${n} is under the preset's ${preset.unit.nMin}px minimum`);
   for (const dn of [controlDensity, collectionDensity, cardDensity]) if (!(dn in P.inset)) throw new RangeError(`panel geometry: density must be one of ${Object.keys(P.inset).join(', ')}, not ${dn}`);

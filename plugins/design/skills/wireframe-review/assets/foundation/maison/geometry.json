@@ -2,7 +2,7 @@
   "schemaVersion": 3,
   "source": "ui-geometry/scripts/derive.mjs --json",
   "dials": {
-    "preset": "massimo",
+    "preset": "standard",
     "density": "default",
     "tiers": {
       "widget": [

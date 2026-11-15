@@ -1,23 +1,172 @@
 {
   "$comment": "Routing cases for the ui-colors skill. label: system = scripts/system.mjs, source = scripts/generate.cjs, none = the skill should not run. Run by hand with a fresh model (evals/README.md).",
-  "labels": ["system", "source", "none"],
+  "labels": [
+    "system",
+    "source",
+    "none"
+  ],
   "cases": [
-    { "id": "sys-light-dark", "prompt": "Make me a light and dark theme for my app with CSS variables, built around brand blue #0a4dff.", "label": "system", "why": "light and dark, CSS variables, brand anchor" },
-    { "id": "sys-radix", "prompt": "I want Radix-style 12-step colour scales with alpha steps, but generated, not copied from Radix.", "label": "system", "why": "12 steps, alpha" },
-    { "id": "sys-chart", "prompt": "Give me six chart colours that work in both light and dark mode and survive colour blindness.", "label": "system", "why": "data series per mode, CVD check" },
-    { "id": "sys-dtcg", "prompt": "Generate DTCG colour tokens with semantic roles (primary, critical, success) and a high-contrast mode.", "label": "system", "why": "tokens, roles, contrast mode" },
-    { "id": "sys-paper-ink", "prompt": "Our brand paper is #f6f2ea and ink is #1c1a17 — build a colour system around them with Figma variables.", "label": "system", "why": "ground and ink anchors, Figma" },
-    { "id": "sys-wcag-audit", "prompt": "Generate a palette for my design system and tell me which text/background pairs fail WCAG AA.", "label": "system", "why": "the system generator reports an APCA contrast matrix (WCAG 2 ratio as information only); a palette plus pairs means roles" },
-    { "id": "sys-p3-anchor", "prompt": "Use color(display-p3 0 0.8 0.3) as our success colour in a P3 light/dark theme.", "label": "system", "why": "anchor in a wide-gamut space, modes" },
-    { "id": "src-max-chroma", "prompt": "/ui-colors 230deg max chroma", "label": "source", "why": "bare HCT angle, max chroma" },
-    { "id": "src-base-primes", "prompt": "Give me a Base 050–950 range plus the seven Primes for hue 140.", "label": "source", "why": "Base, Primes, 050–950" },
-    { "id": "src-balanced", "prompt": "Six balanced HCT palettes starting at 20 degrees, with system and Material palettes.", "label": "source", "why": "balanced N colors, Material" },
-    { "id": "src-brand-ramp", "prompt": "Turn oklch(0.62 0.18 265) into a tonal 050–950 ramp I can paste into Figma as a style library.", "label": "source", "why": "one source colour to a 050–950 ramp, no modes or roles" },
-    { "id": "src-ambiguous-palette", "prompt": "I need a nice tonal palette from my brand colour #3366cc.", "label": "source", "why": "a palette from one colour with no modes, roles or tokens: a source palette (ask if the user then mentions UI theming)" },
-    { "id": "none-map-tokens", "prompt": "Map these existing tokens to semantic roles in my app's Tailwind config.", "label": "none", "why": "editing an existing app's token mapping; generating colours was not asked" },
-    { "id": "none-font", "prompt": "Pick a font pairing for my landing page.", "label": "none", "why": "typography, not colour" },
-    { "id": "none-convert", "prompt": "What is #ff6600 in OKLCH?", "label": "none", "why": "a single conversion; no palette or system" },
-    { "id": "none-chart-code", "prompt": "Fix the legend overlap in my Recharts bar chart.", "label": "none", "why": "chart code, not colour generation" },
-    { "id": "none-contrast-one", "prompt": "Does white text on #767676 pass WCAG AA?", "label": "none", "why": "one contrast question about given colours; nothing to generate" }
+    {
+      "id": "sys-light-dark",
+      "prompt": "Make me a light and dark theme for my app with CSS variables, built around brand blue #0a4dff.",
+      "label": "system",
+      "why": "light and dark, CSS variables, brand anchor"
+    },
+    {
+      "id": "sys-radix",
+      "prompt": "I want Radix-style 12-step colour scales with alpha steps, but generated, not copied from Radix.",
+      "label": "system",
+      "why": "12 steps, alpha"
+    },
+    {
+      "id": "sys-chart",
+      "prompt": "Give me six chart colours that work in both light and dark mode and survive colour blindness.",
+      "label": "system",
+      "why": "data series per mode, CVD check"
+    },
+    {
+      "id": "sys-dtcg",
+      "prompt": "Generate DTCG colour tokens with semantic roles (primary, critical, success) and a high-contrast mode.",
+      "label": "system",
+      "why": "tokens, roles, contrast mode"
+    },
+    {
+      "id": "sys-paper-ink",
+      "prompt": "Our brand paper is #f6f2ea and ink is #1c1a17 — build a colour system around them with Figma variables.",
+      "label": "system",
+      "why": "ground and ink anchors, Figma"
+    },
+    {
+      "id": "sys-wcag-audit",
+      "prompt": "Generate a palette for my design system and tell me which text/background pairs fail WCAG AA.",
+      "label": "system",
+      "why": "the system generator reports an APCA contrast matrix (WCAG 2 ratio as information only); a palette plus pairs means roles"
+    },
+    {
+      "id": "sys-p3-anchor",
+      "prompt": "Use color(display-p3 0 0.8 0.3) as our success colour in a P3 light/dark theme.",
+      "label": "system",
+      "why": "anchor in a wide-gamut space, modes"
+    },
+    {
+      "id": "src-max-chroma",
+      "prompt": "/ui-colors 230deg max chroma",
+      "label": "source",
+      "why": "bare HCT angle, max chroma"
+    },
+    {
+      "id": "src-base-primes",
+      "prompt": "Give me a Base 050–950 range plus the seven Primes for hue 140.",
+      "label": "source",
+      "why": "Base, Primes, 050–950"
+    },
+    {
+      "id": "src-balanced",
+      "prompt": "Six balanced HCT palettes starting at 20 degrees, with system and Material palettes.",
+      "label": "source",
+      "why": "balanced N colors, Material"
+    },
+    {
+      "id": "src-brand-ramp",
+      "prompt": "Turn oklch(0.62 0.18 265) into a tonal 050–950 ramp I can paste into Figma as a style library.",
+      "label": "source",
+      "why": "one source colour to a 050–950 ramp, no modes or roles"
+    },
+    {
+      "id": "src-ambiguous-palette",
+      "prompt": "I need a nice tonal palette from my brand colour #3366cc.",
+      "label": "source",
+      "why": "a palette from one colour with no modes, roles or tokens: a source palette (ask if the user then mentions UI theming)"
+    },
+    {
+      "id": "none-map-tokens",
+      "prompt": "Map these existing tokens to semantic roles in my app's Tailwind config.",
+      "label": "none",
+      "why": "editing an existing app's token mapping; generating colours was not asked"
+    },
+    {
+      "id": "none-font",
+      "prompt": "Pick a font pairing for my landing page.",
+      "label": "none",
+      "why": "typography, not colour"
+    },
+    {
+      "id": "none-convert",
+      "prompt": "What is #ff6600 in OKLCH?",
+      "label": "none",
+      "why": "a single conversion; no palette or system"
+    },
+    {
+      "id": "none-chart-code",
+      "prompt": "Fix the legend overlap in my Recharts bar chart.",
+      "label": "none",
+      "why": "chart code, not colour generation"
+    },
+    {
+      "id": "none-contrast-one",
+      "prompt": "Does white text on #767676 pass WCAG AA?",
+      "label": "none",
+      "why": "one contrast question about given colours; nothing to generate"
+    },
+    {
+      "id": "none-sibling-materials",
+      "prompt": "Make our cards frosted glass with a soft edge highlight in dark mode.",
+      "label": "none",
+      "why": "paint and materials belong to ui-materials; ui-colors supplies role colors but is not the skill to load"
+    },
+    {
+      "id": "none-sibling-geometry",
+      "prompt": "What corner radius and padding should a card have at a 16px root size?",
+      "label": "none",
+      "why": "lengths and radii belong to ui-geometry"
+    },
+    {
+      "id": "none-sibling-bento",
+      "prompt": "Build one bento showcase page that combines our geometry, colors and materials.",
+      "label": "none",
+      "why": "a combined showcase belongs to ui-showcase-bento, which runs this skill as a source"
+    },
+    {
+      "id": "sys-showcase-only",
+      "prompt": "Make a one-page specimen sheet of our colour system so the team can review it.",
+      "label": "system",
+      "why": "a sheet of this skill's colours alone is system.mjs with showcase: true; only a showcase that combines several sources is ui-showcase-bento's"
+    },
+    {
+      "id": "sys-brand-intake",
+      "prompt": "Here are our brand colours: page #f4f1ea, cards #ebe5dc, body text #221d18, captions #7d6f57, accent #c8962a (never for body text). Build our colour system from them and keep every one exact.",
+      "label": "system",
+      "why": "named brand colours with usage: anchors per system.md › Brand colours, brandExact, status colours"
+    },
+    {
+      "id": "sys-brand-guide-rules",
+      "prompt": "Our brand guide bans pastel pinks and soft greens and allows at most three colours on a surface. Make design tokens from our five brand hexes and add error, warning and success colours that fit.",
+      "label": "system",
+      "why": "brand restrictions + status roles that fit the brand"
+    },
+    {
+      "id": "sys-brand-dark-section",
+      "prompt": "Our near-black #121010 is only for hero sections, it is not a dark mode. Generate CSS variables for the light page and for those dark sections from our brand colours.",
+      "label": "system",
+      "why": "dark as a section class (autoDark: false + a forced extra mode), not prefers-color-scheme"
+    },
+    {
+      "id": "sys-brand-from-page",
+      "prompt": "Take the colours on our brand guidelines page and turn them into a 1–12 step token system, only the families we actually use, named after our colours.",
+      "label": "system",
+      "why": "a system from brand colours, trimmed and renamed"
+    },
+    {
+      "id": "src-brand-swatches",
+      "prompt": "Make a 050–950 swatch ramp from each of our five brand colours for the Figma library, no light or dark modes.",
+      "label": "source",
+      "why": "per-colour source ramps, no system (preset.mjs / generate.cjs): the contrast case for sys-brand-intake"
+    },
+    {
+      "id": "none-brand-audit",
+      "prompt": "Do the text colours in our existing brand.css pass APCA on their backgrounds?",
+      "label": "none",
+      "why": "auditing existing tokens / given pairs, not generating"
+    }
   ]
 }
