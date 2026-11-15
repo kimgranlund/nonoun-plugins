@@ -29,8 +29,8 @@ test('controls: h = S + 2I, border deducted once, text at T = 2I, r(κ) as deriv
       near(v('height'), v('slot') + 2 * I, `${at} h = S + 2I`);
       near(v('height'), rowPx(rows, 'controls', 'h'), `${at} h`);
       near(border + v('padding') + v('edge-start'), rowPx(rows, 'controls', 'T'), `${at} text at T = 2I`);
-      near(v('radius'), rowPx(rows, 'controls', `r  κ=${PRESETS.massimo.softAnchor}`), `${at} r(κ_s)`);
-      near(v('radius'), PRESETS.massimo.soft * v('unit'), `${at} r(κ_s) = soft`);
+      near(v('radius'), rowPx(rows, 'controls', `r  κ=${PRESETS.standard.softAnchor}`), `${at} r(κ_s)`);
+      near(v('radius'), PRESETS.standard.soft * v('unit'), `${at} r(κ_s) = soft`);
       assert.ok(v('radius') <= v('height') / 2, `${at} r ≤ h/2`);
       near(v('choice-size'), rowPx(rows, 'controls', 'checkbox box'), `${at} checkbox a.md`);
       near(v('choice-radius'), rowPx(rows, 'controls', 'checkbox radius'), `${at} checkbox radius`);
@@ -48,8 +48,8 @@ test('containers: the panel is a card at d = 2I and R − d = min(r(κ_card), so
     const at = `n ${n} ${density} b ${border}`;
     const d = v('card-padding') + border, I = rowPx(rows, 'controls', 'I');
     near(d, 2 * I, `${at} d = 2I`);
-    near(v('container-radius'), rowPx(rows, 'containers', `R panel (card at 2I)  κ=${PRESETS.massimo.dials.kappa.card}`), `${at} R panel`);
-    near(v('container-radius') - d, Math.min(rowPx(rows, 'containers', `R card-0  κ=${PRESETS.massimo.dials.kappa.card}`), PRESETS.massimo.soft * v('unit')), `${at} R − d`);
+    near(v('container-radius'), rowPx(rows, 'containers', `R panel (card at 2I)  κ=${PRESETS.standard.dials.kappa.card}`), `${at} R panel`);
+    near(v('container-radius') - d, Math.min(rowPx(rows, 'containers', `R card-0  κ=${PRESETS.standard.dials.kappa.card}`), PRESETS.standard.soft * v('unit')), `${at} R − d`);
     near(v('card-gap'), d / 2, `${at} gap = d/2`);
   }
 });

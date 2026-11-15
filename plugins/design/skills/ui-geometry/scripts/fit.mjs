@@ -1,42 +1,54 @@
 #!/usr/bin/env node
 // Fit: find the nearest UI-geometry system behind a project's measured lengths, tier by tier.
-//   node fit.mjs lengths.json [--preset massimo|file.json] [--json] [--md report.md]
+//   node fit.mjs lengths.json [--preset standard|file.json] [--json] [--md report.md]
 //                [--preset-out fitted.json] [--html compare.html] [--target fitted|preset]
 // lengths.json: { "source": "…", "n": 16, "lengths": [ { "id": "button.height", "role": "height", "px": 40, "tier"?: "controls", "n"?: 16 } ] }
 // Prints a report: the unit, each tier's constants in notation, identity checks, and every length against
 // two targets: the project's own system made consistent ("fitted") and the reference preset at the project's n.
 
 import { readFileSync, writeFileSync, realpathSync } from 'node:fs'
+import { rank } from './archetypes.mjs'
 import { fileURLToPath } from 'node:url'
-import { PRESETS, TIERS, system, tierUnit, crisp } from './derive.mjs'
+import { PRESETS, TIERS, system, tierUnit, crisp, pageLevel } from './derive.mjs'
 
 /** Roles a length can play. Each belongs to one tier and is compared with one symbol. */
 export const ROLES = {
-  height: { tier: 'controls', symbol: 'h', says: 'control height' },
-  'label-inset': { tier: 'controls', symbol: 'T = 2I', says: 'inline padding to the label (border included)' },
-  inset: { tier: 'controls', symbol: 'I', says: 'block padding of a control' },
-  icon: { tier: 'controls', symbol: 'a', says: 'icon size in a control' },
-  radius: { tier: 'controls', symbol: 'r', says: 'control corner radius' },
-  'control-gap': { tier: 'controls', symbol: 'gap', says: 'gap between sibling controls' },
-  mark: { tier: 'controls', symbol: 'mark', says: 'checkbox, radio, switch, badge size' },
-  row: { tier: 'collections', symbol: 'row', says: 'row or item height in a list, menu, table' },
-  'row-radius': { tier: 'collections', symbol: 'r_row', says: 'item radius inside a frame' },
-  'frame-depth': { tier: 'collections', symbol: 'd_c', says: 'padding of a listbox, menu or segmented host (border included)' },
-  'frame-radius': { tier: 'collections', symbol: 'r_frame', says: 'radius of that frame' },
-  'row-gap': { tier: 'collections', symbol: 'row gap', says: 'gap between rows or segments' },
-  'cell-inset': { tier: 'collections', symbol: 'I', says: 'inline padding of a cell or item' },
-  'item-inset': { tier: 'collections', symbol: 'T − d_c', says: 'inline padding of a menu or listbox row (text then sits at T)' },
-  'cell-control': { tier: 'collections', symbol: 'item = S + 2m_c', says: 'height of an input, select or button inside a table cell' },
-  'host-height': { tier: 'collections', symbol: 'h', says: 'height of a segmented control or tab list (a host of joined controls)' },
-  'host-depth': { tier: 'collections', symbol: '(h − item)/2 = g_c', says: 'padding of that host (border included)' },
-  'host-radius': { tier: 'collections', symbol: 'r', says: 'radius of that host' },
-  segment: { tier: 'collections', symbol: 'item = S + 2m_c', says: 'height of a segment or tab inside the host' },
-  'segment-radius': { tier: 'collections', symbol: 'r − host padding', says: 'radius of that segment' },
-  'card-depth': { tier: 'containers', symbol: 'd', says: 'card, dialog or panel padding (border included)' },
-  'card-radius': { tier: 'containers', symbol: 'R', says: 'card corner radius' },
-  'card-gap': { tier: 'containers', symbol: 'gap in card', says: 'gap between a card’s children' },
-  gutter: { tier: 'layout', symbol: 'G = M/2', says: 'gap between cards or grid columns' },
-  margin: { tier: 'layout', symbol: 'M', says: 'page margin' },
+  height: { tier: 'controls', symbol: 'h', says: 'control height', compare: 'h = S + 2I' },
+  'label-inset': { tier: 'controls', symbol: 'T = 2I', says: 'inline padding to the label (border included)', compare: 'T = 2I' },
+  inset: { tier: 'controls', symbol: 'I', says: 'block padding of a control', compare: 'I', collect: false },
+  icon: { tier: 'controls', symbol: 'a', says: 'icon size in a control', compare: 'the nearest icon size' },
+  radius: { tier: 'controls', symbol: 'r', says: 'control corner radius', compare: 'r(κ_control)' },
+  'control-gap': { tier: 'controls', symbol: 'gap', says: 'gap between sibling controls', compare: 'the nearest of 0, g_c, m_c, min(cap, I)' },
+  mark: { tier: 'controls', symbol: 'mark', says: 'checkbox, radio, switch, badge size', compare: 'itself, snapped to q/2' },
+  row: { tier: 'collections', symbol: 'row', says: 'row or item height in a list, menu, table', compare: 'h at the nearest density' },
+  'row-radius': { tier: 'collections', symbol: 'r_row', says: 'item radius inside a frame', compare: 'r_frame − d_c, or r when the frame has no radius' },
+  'frame-depth': { tier: 'collections', symbol: 'd_c', says: 'padding of a listbox, menu or segmented host (border included)', compare: 'd_c' },
+  'frame-radius': { tier: 'collections', symbol: 'r_frame', says: 'radius of that frame', compare: 'r_frame = min(r(κ_frame), soft)' },
+  'row-gap': { tier: 'collections', symbol: 'row gap', says: 'gap between rows or segments', compare: 'the nearest of 0, g_c, the level gutter' },
+  'cell-inset': { tier: 'collections', symbol: 'I', says: 'inline padding of a cell or item', compare: 'I (table cells)', collect: false },
+  'item-inset': { tier: 'collections', symbol: 'T − d_c', says: 'inline padding of a menu or listbox row (text then sits at T)', compare: 'T − d_c (menu and listbox rows, text at T)' },
+  'cell-control': { tier: 'collections', symbol: 'item = h − 2d_c', says: 'height of an input, select or button inside a table cell', compare: 'the item height h − 2d_c', collect: false },
+  'host-height': { tier: 'collections', symbol: 'h', says: 'height of a segmented control or tab list (a host of joined controls)', compare: 'h' },
+  'host-depth': { tier: 'collections', symbol: '(h − item)/2 = d_c', says: 'padding of that host (border included)', compare: '(h − item)/2 = d_c' },
+  'host-radius': { tier: 'collections', symbol: 'r', says: 'radius of that host', compare: 'r' },
+  segment: { tier: 'collections', symbol: 'item = h − 2d_c', says: 'height of a segment or tab inside the host', compare: 'the item height h − 2d_c' },
+  'segment-radius': { tier: 'collections', symbol: 'r − d_c', says: 'radius of that segment', compare: 'r − d_c' },
+  'card-depth': { tier: 'containers', symbol: 'd', says: 'card, dialog or panel padding (border included)', compare: 'd' },
+  'card-radius': { tier: 'containers', symbol: 'R', says: 'card corner radius', compare: 'd + min(r(κ_card), soft); 0 at κ_card 0' },
+  'card-gap': { tier: 'containers', symbol: 'gap in card', says: 'gap between a card’s children', compare: 'the nearest of d/4, d/2 − I, d/2, d' },
+  gutter: { tier: 'layout', symbol: 'G = M/2', says: 'gap between cards or grid columns', compare: 'G = M/2' },
+  margin: { tier: 'layout', symbol: 'M', says: 'page margin', compare: 'M = ℓ_page·I' },
+  // Read from tokens or measured by hand: the collector does not record these (collect: false).
+  'hosted-control': { tier: 'controls', symbol: 'item = h − 2d_c', says: 'a button inside an input (clear, stepper, addon)', compare: 'the item height h − 2d_c', collect: false },
+  'inline-control': { tier: 'controls', symbol: 'h_o = S + 2g_c', says: 'height of a chip or tag', compare: 'h_o = S + 2g_c', collect: false },
+  'focus-ring': { tier: 'controls', symbol: 'w', says: 'focus ring width', compare: 'w', collect: false },
+  'popup-offset': { tier: 'collections', symbol: 'd_c', says: 'gap between a popup and its trigger', compare: 'd_c', collect: false },
+  'field-gap': { tier: 'collections', symbol: '2I', says: 'gap between stacked form fields', compare: '2I, as table columns', collect: false },
+  'label-gap': { tier: 'collections', symbol: 'g_c', says: 'field label → control, control → help text', compare: 'g_c', collect: false },
+  'popover-depth': { tier: 'containers', symbol: 'd_p = ¾d', says: 'popover padding (border included)', compare: 'd_p = popoverRatio·d, snapped to q/2', collect: false },
+  'dialog-depth': { tier: 'containers', symbol: 'd_d = 1½d', says: 'dialog padding (border included)', compare: 'd_d = dialogRatio·d, snapped to q/2', collect: false },
+  'title-gap': { tier: 'containers', symbol: 'd/2 − I', says: 'gap under a card\'s painted, flush title band (a header takes d)', compare: 'max(0, d/2 − I)', collect: false },
+  'section-pad': { tier: 'layout', symbol: '3¼F', says: 'page section padding above and below', compare: 'flow.section·F = 3¼F', collect: false },
 }
 
 const median = (a) => { if (!a.length) return undefined; const s = [...a].sort((x, y) => x - y); const m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2 }
@@ -88,7 +100,7 @@ export function kappaFor(r, h, soft, ks = 0.75) {
 }
 
 /** Fit a measured project. Returns the unit, each tier's constants, a fitted preset, identity checks and targets. */
-export function fit(data, { preset = PRESETS.massimo, tol = 0.26 } = {}) {
+export function fit(data, { preset = PRESETS.standard, tol = 0.26 } = {}) {
   const P = preset, X = system(P)
   const lengths = data.lengths.map((l) => ({ ...l, tier: l.tier ?? ROLES[l.role]?.tier ?? 'controls', px: Number(l.px) }))
   const ns = [...new Set(lengths.map((l) => l.n ?? data.n).filter(Boolean))]
@@ -98,7 +110,7 @@ export function fit(data, { preset = PRESETS.massimo, tol = 0.26 } = {}) {
   if (data.n === undefined && !ns.length) notes.push('No n given: assumed 16px.')
 
   // Paddings that record a border may sit on the grid with or without it.
-  const PADS0 = ['label-inset', 'frame-depth', 'card-depth', 'host-depth'], b0 = (P.border ?? PRESETS.massimo.border).width
+  const PADS0 = ['label-inset', 'frame-depth', 'card-depth', 'host-depth'], b0 = (P.border ?? PRESETS.standard.border).width
   const unitVal = (l) => (PADS0.includes(l.role) && l.border > 0 ? { px: l.px, alt: l.px - l.border } : l.px)
   // 1. The unit. Several scopes (lengths tagged with different n) fit q = a·n + b; one scope keeps the preset's slope.
   let unit, q
@@ -118,7 +130,7 @@ export function fit(data, { preset = PRESETS.massimo, tol = 0.26 } = {}) {
 
   // 2. A tier may run on its own unit: only when the shared q misses most of its lengths and its own q catches them.
   //    A padding that lands on the shared grid once its border is taken off counts as on it.
-  const bpx = (P.border ?? PRESETS.massimo.border).width
+  const bpx = (P.border ?? PRESETS.standard.border).width
   const onG = (px, qq) => Math.abs(px - Math.round(px / (qq / 2)) * (qq / 2)) <= tol
   const PADS = ['label-inset', 'frame-depth', 'card-depth', 'host-depth']
   /** The border to take off a padding: the measured one when the length says, else the preset's (assumed). */
@@ -215,7 +227,7 @@ export function fit(data, { preset = PRESETS.massimo, tol = 0.26 } = {}) {
   if (dc !== undefined) Pf.frameDepth = Math.abs(dc - (I - P.gutter * qC)) <= tol ? 'm_c' : Math.round((dc / q2) * 4) / 4
   const gcp = P.gutter * qC
   if (row !== undefined) Pf.frameRow = dc !== undefined && Math.abs(row - (h - 2 * dc)) <= tol ? 'fit' : Math.abs(row - (S + 2 * (I - gcp))) <= tol ? 'm_c' : Math.abs(row - (S + 2 * gcp)) <= tol ? 'h_o' : 'h'
-  if (M !== undefined) Pf.levels = { ...P.levels, page: snapHalf(M / (Iq * qC)) || P.levels.page }
+  if (M !== undefined) Pf.levels = { ...P.levels, page: snapHalf(M / (Iq * qC)) || pageLevel(P) }
   const dq = d === undefined ? 4 : snapHalf(d / q3)
   Pf.cardDepths = [...new Set([...P.cardDepths, dq])].sort((a, b) => a - b)
   const kappa = { control: controls.kappa, frame: collections.kappa, card: containers.kappa, panel: containers.kappa }
@@ -300,8 +312,18 @@ export function targetPx(l, { P: P0, n, density: dn, kappa: k, d }) {
     case 'card-depth': return d * u3
     case 'card-radius': return d === 0 ? X.radius(k.card, dn) * uC : d * u3 + Math.min(X.radius(k.card, dn) * uC, P.soft * u3)
     case 'card-gap': return nearest(l.px / u3, [Math.round(d / 2) / 2, Math.max(0, snapHalf(d / 2 - I * uC / u3)), snapHalf(d / 2), d]) * u3
-    case 'gutter': return snapHalf((P.levels.page * I * uC) / u4 / 2) * u4
-    case 'margin': return P.levels.page * I * uC
+    case 'gutter': return snapHalf((pageLevel(P) * I * uC) / u4 / 2) * u4
+    case 'margin': return pageLevel(P) * I * uC
+    case 'hosted-control': return X.frameRow(dn) * uC
+    case 'inline-control': return (P.slot + 2 * gc) * uC
+    case 'focus-ring': return P.focus.width * uC
+    case 'popup-offset': return dcPx
+    case 'field-gap': return 2 * I * uC
+    case 'label-gap': return gc * uC
+    case 'popover-depth': return snapHalf((P.spacing?.popoverRatio ?? 0.75) * d) * u3
+    case 'dialog-depth': return snapHalf((P.spacing?.dialogRatio ?? 1.5) * d) * u3
+    case 'title-gap': return Math.max(0, snapHalf(d / 2 - I * uC / u3)) * u3
+    case 'section-pad': return Math.round((P.flow?.section ?? 3.25) * n)
     default: return snapIn(l.tier)
   }
 }
@@ -311,7 +333,7 @@ const f = (x) => (x === undefined || x === null || Number.isNaN(x) ? '—' : Str
 const sign = (x) => (Math.abs(x) < 0.005 ? '0' : x > 0 ? `+${r2(x)}` : String(r2(x)))
 
 /** The report as Markdown. */
-export function report(R, presetName = 'massimo') {
+export function report(R, presetName = 'standard') {
   const { tiers: T, q } = R, Pf = R.preset, qI = (v, qq = q) => (v === undefined ? '—' : `${f(v / qq)}q`)
   const out = []
   out.push(`# Geometry fit${R.source ? `: ${R.source}` : ''}\n`)
@@ -344,6 +366,12 @@ export function report(R, presetName = 'massimo') {
   out.push(`- G = ${f(T.layout.G)}px = ${qI(T.layout.G, q4)} · M = ${f(T.layout.M)}px = ${qI(T.layout.M, q4)} = ${f(T.layout.M === undefined ? undefined : T.layout.M / T.controls.I)}·I`)
   out.push(`\nFitted preset: unit ${Pf.unit.a}·n ${Pf.unit.b < 0 ? '−' : '+'} ${Math.abs(Pf.unit.b)}, inset ${JSON.stringify(Pf.inset)}, slot ${Pf.slot}, icons ${JSON.stringify(Pf.icons)}, d_c ${Pf.frameDepth}, page ${Pf.levels.page}·I.`)
 
+  // Archetypes, from the three figures a fit has: n, control height and control radius. Page composition decides the rest.
+  const hh = T.controls.h, rr = T.controls.r
+  if (hh) {
+    const ranked = rank({ body: R.n, loft: hh / R.n, kappa2: rr === undefined ? undefined : Math.min(rr, hh / 2) / (hh / 2) })
+    out.push(`\n## Archetype\n\nh/F = ${f(hh / R.n)}. Nearest by n, h/F and control curvature: ${ranked.slice(0, 3).map((x) => `${x.name} (${f(x.distance)})`).join(', ')}. A distance of 0 is inside every band; text and image coverage, which a fit does not measure, decide between near ones (references/archetypes.json).`)
+  }
   out.push('\n## Identities\n')
   for (const c of R.checks) out.push(`- ${c.ok ? '✓' : '✗'} ${c.tier}: ${c.name}. ${c.detail}`)
 
@@ -355,7 +383,7 @@ export function report(R, presetName = 'massimo') {
 }
 
 /** A standalone before/after page: one specimen per component, drawn with measured px and with each target. */
-export function compareHtml(R, presetName = 'massimo') {
+export function compareHtml(R, presetName = 'standard') {
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c])
   const comps = new Map()
   for (const l of R.lengths) {
@@ -431,9 +459,9 @@ if (isMain()) {
   const argv = process.argv.slice(2)
   const get = (k) => { const i = argv.indexOf(`--${k}`); return i < 0 ? undefined : argv[i + 1] }
   const file = argv.find((a, i) => !a.startsWith('--') && !argv[i - 1]?.startsWith('--'))
-  if (!file) { console.error('usage: node fit.mjs lengths.json [--preset massimo|file.json] [--json] [--md out.md] [--preset-out fitted.json] [--html compare.html]'); process.exit(2) }
-  const pname = get('preset') ?? 'massimo'
-  const preset = pname in PRESETS ? PRESETS[pname] : { ...PRESETS.massimo, ...JSON.parse(readFileSync(pname, 'utf8')) }
+  if (!file) { console.error('usage: node fit.mjs lengths.json [--preset standard|file.json] [--json] [--md out.md] [--preset-out fitted.json] [--html compare.html]'); process.exit(2) }
+  const pname = get('preset') ?? 'standard'
+  const preset = pname in PRESETS ? PRESETS[pname] : { ...PRESETS.standard, ...JSON.parse(readFileSync(pname, 'utf8')) }
   const R = fit(JSON.parse(readFileSync(file, 'utf8')), { preset })
   const label = pname in PRESETS ? pname : 'reference'
   if (get('preset-out')) writeFileSync(get('preset-out'), JSON.stringify(R.preset, null, 2) + '\n')

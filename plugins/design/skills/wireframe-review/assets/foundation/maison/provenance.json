@@ -10,7 +10,7 @@
   "generated": {
     "date": "2026-11-12",
     "owner": "wireframe-review",
-    "authority": "ui-geometry/scripts/derive.mjs --json (massimo preset)",
+    "authority": "ui-geometry/scripts/derive.mjs --json (standard preset)",
     "generator": "../../../scripts/generate-geometry.mjs",
     "check": "node scripts/generate-geometry.mjs --check",
     "changes": [
@@ -19,7 +19,7 @@
       "Custom property names are unchanged from the earlier geometry.css; layout.css is a hand-kept snapshot and is not generated."
     ],
     "files": {
-      "geometry.json": "2a07f2c296df7fd6cf4026c302e64aeedc750254177a426172b817ec244de05d",
+      "geometry.json": "2d938cd2b04143291c666327a6184cfb227b92a419af217cceec4b2ba484100e",
       "geometry.css": "ce8a5371754f2e253304f74dba09b711a08d31610fdce7f0dbd32d5fc6d0b96b",
       "layout.css": "66032a724aa6a9e145526096072557bfbf76c945bbb1aae5eb2e9e431eebed70"
     }

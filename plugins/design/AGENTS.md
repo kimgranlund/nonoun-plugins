@@ -6,8 +6,8 @@ Read [repository guidance](../../AGENTS.md) first. This plugin ships design skil
 
 | Skill | Owns |
 |---|---|
-| `ui-colors` | HCT source palettes, ramps, Primes and balanced color sets, and a full light/dark color system (APCA-placed ramps, roles, presets) |
-| `ui-geometry` | UI geometry derived from one font size and unit across four tiers, and fitting an existing project to the nearest system |
+| `ui-colors` | HCT source palettes, ramps, Primes and balanced color sets, and a full light/dark color system (APCA-placed ramps, roles including a pressed solid, presets). Synced from the MacBook copy at `e9ff385` |
+| `ui-geometry` | UI geometry derived from one font size and unit across four tiers, measured archetypes with dials, and fitting an existing project to the nearest system and archetype. Synced from the MacBook copy at `62d0cda`; `agents/openai.yaml` is repo-only |
 | `ui-kit-inspector` | Jigs: live panels that tune a UI system's constants and export a change set; `examples/inspector-panel/` holds the former `inspector-panels` skill |
 | `component-variants` | Interactive comparison pages for component implementation alternatives |
 | `wireframe-review` | Interactive wireframes with alternatives, annotations and JSON feedback |

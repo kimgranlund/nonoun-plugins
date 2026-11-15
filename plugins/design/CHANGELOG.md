@@ -6,6 +6,8 @@ The design plugin, newest first. Releases before this file are recorded in the r
 
 ### Changed
 
+- `ui-geometry` (T-0852): synced from the MacBook copy at `62d0cda`. Adds measured archetypes, dimensions and terms (`references/{archetypes,dimensions,terms}.json`) with their scripts and tests (`archetypes`, `dimensions`, `docs`, `observe`, `terms`, `knowledge.test.mjs`). The built-in preset `massimo` is now `standard` with the same values, so the inspector panel (`PRESETS.standard`, rebuilt `geometry-runtime/derive.js`) and `wireframe-review` (`generate-geometry.mjs` dial, regenerated `geometry.json` and its provenance hash) follow the new name.
+- `ui-colors` (T-0852): synced from the MacBook copy at `e9ff385`. Adds `references/terms.json` and a pressed solid role, `-solid-active`, in every mode.
 - `ui-colors` (T-0848): renamed from `hct-palettes`, the first of the ui-* skills. Invoke it as `$ui-colors`; the generator id `hct-palettes@4` in output manifests is unchanged.
 
 ## [0.3.0] - 2026-11-12

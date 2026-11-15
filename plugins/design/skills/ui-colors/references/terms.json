@@ -1,0 +1,675 @@
+{
+  "$description": "The color vocabulary of this skill as data: what each concept means, what it is for, what it is not, and which names it owns. One term, one meaning; `aliases` are accepted spellings, `avoid` are words not to use for it. `roles` lists every role variable the color system emits and the concept it belongs to. check.mjs validates this file: the role catalogue against what the runs emit (both ways), every concept's term or alias used in SKILL.md or references/system.md, no `avoid` phrase in the docs, and every concrete `names` variable emitted.",
+  "version": 1,
+  "principles": [
+    {
+      "id": "generated-not-derived",
+      "rule": "The system generates every color.",
+      "why": "A color the browser derives (color-mix, calc, relative color) is not in the system's files, so no tool can check, export or audit it.",
+      "detail": "A variable is a color (oklch, with alpha when translucent) or an alias naming another variable. Never color-mix(), calc() or `from` syntax."
+    },
+    {
+      "id": "one-term-one-meaning",
+      "rule": "A word names one concept.",
+      "why": "Shared words (surface, secondary, theme) let two people agree on a name and disagree on the color."
+    },
+    {
+      "id": "roles-alias-steps",
+      "rule": "A role names a step; it does not invent a color.",
+      "why": "Every role is then explained by its family, step and mode. The only exceptions are translucent roles (a step at a fixed alpha) and an in-between selection emphasis (a generated OKLCH mix)."
+    }
+  ],
+  "concepts": [
+    {
+      "id": "source-palette",
+      "term": "Source palette",
+      "layer": "source",
+      "definition": "One seed color turned into Base 050–950 and the Primes by scripts/generate.cjs, with the seed kept exact as its tagged source.",
+      "intent": "A swatch library for brand, marketing and illustration work, or the input to a color system.",
+      "not": "Not a UI color system: no modes, roles or contrast placement.",
+      "names": [
+        "--<palette>-base-050…950",
+        "--color-<id>-base-050…950"
+      ],
+      "related": [
+        "base-stop",
+        "primes",
+        "palette-preset"
+      ]
+    },
+    {
+      "id": "base-stop",
+      "term": "Base stop (050–950)",
+      "layer": "source",
+      "definition": "A tone of a source palette, 050 lightest to 950 darkest, on the HCT tone ladder.",
+      "intent": "A fixed, mode-independent lightness ladder for one seed.",
+      "not": "Not a step: a base stop has no job and no mode. Shares its numbering with the tonal stop but belongs to a different output.",
+      "aliases": [
+        "base 050–950"
+      ],
+      "related": [
+        "tonal-stop",
+        "step"
+      ]
+    },
+    {
+      "id": "primes",
+      "term": "Primes",
+      "layer": "source",
+      "definition": "A source palette's named brightness set (brightest … dimmest) around the seed.",
+      "intent": "Picking a seed variant by name rather than by number.",
+      "names": [
+        "--palette-<family>-brightest…dimmest"
+      ],
+      "related": [
+        "source-palette"
+      ]
+    },
+    {
+      "id": "palette-preset",
+      "term": "Palette preset",
+      "layer": "source",
+      "definition": "A named set of seed colors in scripts/presets.json, each run as a source palette (scripts/preset.mjs).",
+      "intent": "A fixed brand set that isn't an evenly spaced hue spectrum.",
+      "not": "Not a request preset (system.mjs `preset`), which fills request defaults.",
+      "related": [
+        "request-preset",
+        "source-palette"
+      ]
+    },
+    {
+      "id": "material-palette",
+      "term": "Material palette",
+      "layer": "source",
+      "definition": "One neutral or lightly tinted source ramp that generate.cjs adds beside the core palettes (the `material` option), named after Material Design's neutral palettes.",
+      "intent": "A neutral to pair with a source palette set.",
+      "not": "Not a Material Design semantic theme, and not a ui-materials material (Flat, Physical, Frosted, Glass, Outline), which is how a part is painted.",
+      "related": [
+        "source-palette"
+      ]
+    },
+    {
+      "id": "color-system",
+      "term": "Color system",
+      "layer": "system",
+      "definition": "The output of scripts/system.mjs: families × modes × steps, plus roles, alpha steps, the tonal layer and reports.",
+      "intent": "Everything a UI paints with, in every mode, contrast-placed and checked.",
+      "aliases": [
+        "system"
+      ],
+      "related": [
+        "family",
+        "mode",
+        "role"
+      ]
+    },
+    {
+      "id": "family",
+      "term": "Family",
+      "layer": "system",
+      "definition": "One ramp of twelve steps per mode: an accent hue or a neutral.",
+      "intent": "The unit roles point at.",
+      "aliases": [
+        "ramp",
+        "12-step scale"
+      ],
+      "names": [
+        "--colors-<family>-1…12"
+      ],
+      "related": [
+        "accent",
+        "neutral",
+        "step"
+      ]
+    },
+    {
+      "id": "accent",
+      "term": "Accent",
+      "layer": "system",
+      "definition": "Any non-neutral family (the twelve hues by default).",
+      "intent": "Naming the hue families as a group, apart from the neutrals.",
+      "not": "Not a role. Primary and secondary are roles that point at accents. ui-materials calls the primary role's solid 'the primary solid' and reads it through an input named --accent; that input is one role's color, not this group of families.",
+      "avoid": [
+        "accent color"
+      ],
+      "related": [
+        "family",
+        "primary",
+        "secondary"
+      ]
+    },
+    {
+      "id": "neutral",
+      "term": "Neutral",
+      "layer": "system",
+      "definition": "The low-chroma family that paints pages, surfaces, borders and text. Its CSS family name is gray; with `neutrals` it splits into ground, surface and ink, and gray becomes an alias of ink.",
+      "intent": "One tinted grey that carries most of the interface.",
+      "aliases": [
+        "gray"
+      ],
+      "names": [
+        "--colors-gray-1…12",
+        "--colors-neutral-*"
+      ],
+      "related": [
+        "ground",
+        "surface",
+        "ink"
+      ]
+    },
+    {
+      "id": "ground",
+      "term": "Ground",
+      "layer": "system",
+      "definition": "The neutral family of the page: bg, bg-subtle and what is cast onto the page (shadow).",
+      "intent": "The color everything sits on.",
+      "not": "Not cards or panels (that is surface). As an anchor role, `ground` pins this family's step 1 in light. ui-materials uses `ground` for a relief value (the part others sit on), a public name there; in this skill ground is only the page's neutral family.",
+      "names": [
+        "--colors-ground-1…12"
+      ],
+      "related": [
+        "surface",
+        "ink",
+        "anchor"
+      ]
+    },
+    {
+      "id": "surface",
+      "term": "Surface",
+      "layer": "system",
+      "definition": "The neutral family of the material on the page: cards, panels, wells, control fills, borders, floating layers. Generated against a page lifted by SURFACE_LIFT so a card separates from the page by lightness.",
+      "intent": "Telling a card apart from the page without a border or shadow.",
+      "not": "Not the page (ground) and not text (ink). Older usage called ground and ink together 'surface anchors'; that meaning is retired. Not a painted element of a component, which ui-materials calls a part.",
+      "names": [
+        "--colors-surface-1…12",
+        "--colors-surface",
+        "--colors-surface-subtle",
+        "--colors-surface-muted"
+      ],
+      "related": [
+        "ground",
+        "ink"
+      ]
+    },
+    {
+      "id": "ink",
+      "term": "Ink",
+      "layer": "system",
+      "definition": "The neutral family of text and inverse fills: fg, fg-muted, fg-subtle, bg-inverse, the dark label.",
+      "intent": "Text that reads on both ground and surface.",
+      "names": [
+        "--colors-ink-1…12"
+      ],
+      "related": [
+        "ground",
+        "surface",
+        "label"
+      ]
+    },
+    {
+      "id": "step",
+      "term": "Step (1–12)",
+      "layer": "system",
+      "definition": "A position on a family's ramp with a fixed job: 1–2 backgrounds (1 is the page), 3–5 interactive fills, 6–8 borders, 9–10 solids, 11–12 text. Placed per mode by APCA contrast against the page.",
+      "intent": "Picking a color by what it does, so it works in every mode and every family.",
+      "not": "Not a lightness: step 5 of yellow and step 5 of blue differ in lightness, and a step's value changes between modes. Not a base or tonal stop.",
+      "names": [
+        "--colors-<family>-<n>"
+      ],
+      "related": [
+        "alpha-step",
+        "key-run",
+        "tonal-stop"
+      ]
+    },
+    {
+      "id": "alpha-step",
+      "term": "Alpha step (a1–a12)",
+      "layer": "system",
+      "definition": "A translucent twin of a step, solved per mode so that over ground 1 it equals its solid step.",
+      "intent": "Fills that sit on more than one background.",
+      "names": [
+        "--colors-<family>-a<n>"
+      ],
+      "related": [
+        "step",
+        "translucent-role"
+      ],
+      "aliases": [
+        "transparent step"
+      ]
+    },
+    {
+      "id": "tonal-scale",
+      "term": "Tonal scale",
+      "layer": "system",
+      "definition": "The color system's mode-independent layer: each family's tonal stops 050–950 on the HCT tone ladder.",
+      "intent": "Brand, illustration and marketing colors that stay put across modes.",
+      "not": "Not the 12-step ramps (they have jobs and modes) and not a source palette.",
+      "avoid": [
+        "tonal layer"
+      ],
+      "names": [
+        "--palette-<family>-050…950"
+      ],
+      "related": [
+        "tonal-stop",
+        "family"
+      ]
+    },
+    {
+      "id": "key-run",
+      "term": "Key run",
+      "layer": "system",
+      "definition": "Steps 9–12 of an accent: solid, hover and the two text steps, evenly spaced in page APCA Lc.",
+      "intent": "Saturated keys over quiet steps 1–8.",
+      "related": [
+        "step",
+        "solid"
+      ]
+    },
+    {
+      "id": "solid",
+      "term": "Solid",
+      "layer": "system",
+      "definition": "A family's filled-background step: 9 (or an anchored step), with hover one step on and active one step beyond it (or one step back where the label would fail).",
+      "intent": "Buttons, badges and other filled marks that carry a label.",
+      "names": [
+        "--colors-<role>-solid",
+        "--colors-<role>-solid-hover",
+        "--colors-<role>-solid-active"
+      ],
+      "related": [
+        "label",
+        "key-run"
+      ]
+    },
+    {
+      "id": "label",
+      "term": "Label (on-solid)",
+      "layer": "system",
+      "definition": "The text color on a solid: the light label (white first, kept whenever it passes APCA Lc 45) or the dark label (for bright hues 70°–125°, or when white fails).",
+      "intent": "Legible text on every solid without a per-color rule.",
+      "aliases": [
+        "on-solid"
+      ],
+      "names": [
+        "--colors-<role>-on-solid",
+        "--colors-fg-on-solid"
+      ],
+      "related": [
+        "solid",
+        "ink"
+      ]
+    },
+    {
+      "id": "tonal-stop",
+      "term": "Tonal stop (050–950)",
+      "layer": "system",
+      "definition": "A stop of the system's tonal layer, --palette-<family>-050…950: each family on a mode-independent HCT tone ladder.",
+      "intent": "Marketing and illustration colors that stay put across modes; with tonalRoles, the stop nearest each role's solid.",
+      "not": "Not a step (no job, no mode) and not a source palette's base stop, though the numbering matches.",
+      "names": [
+        "--palette-<family>-050…950",
+        "--palette-role-<role>"
+      ],
+      "related": [
+        "base-stop",
+        "step",
+        "tonal-scale"
+      ]
+    },
+    {
+      "id": "role",
+      "term": "Role",
+      "layer": "role",
+      "definition": "A semantic variable that names a family step (or a step at an alpha) for one job: bg, fg, primary-solid, border.",
+      "intent": "Components paint with roles, so a theme or mode changes every component at once.",
+      "not": "Not a family and not a color of its own.",
+      "names": [
+        "--colors-<role>"
+      ],
+      "related": [
+        "scale-role",
+        "page-role"
+      ]
+    },
+    {
+      "id": "scale-role",
+      "term": "Scale role",
+      "layer": "role",
+      "definition": "A role that maps a whole family: primary, secondary, neutral, critical, warning, success, info, each with -subtle, -subtle-hover, -border, -solid, -solid-hover, -solid-active, -on-solid, -fg and -1…12.",
+      "intent": "Pointing a meaning at a family once.",
+      "related": [
+        "primary",
+        "secondary",
+        "status"
+      ]
+    },
+    {
+      "id": "page-role",
+      "term": "Page role",
+      "layer": "role",
+      "definition": "A role for the page itself rather than a family: bg, fg, border, surface, control fills, selection, backdrop, shadow, focus ring.",
+      "intent": "The structure of a screen in neutral terms.",
+      "related": [
+        "ground",
+        "surface",
+        "ink"
+      ]
+    },
+    {
+      "id": "primary",
+      "term": "Primary",
+      "layer": "role",
+      "definition": "The scale role for action: the first hue of the ring by default (indigo). Its solid is the one filled action per view.",
+      "intent": "Making the main action and the current selection findable.",
+      "not": "Not 'the brand color' as such; a brand pins it with an anchor.",
+      "avoid": [
+        "accent role",
+        "brand role"
+      ],
+      "related": [
+        "secondary",
+        "anchor"
+      ]
+    },
+    {
+      "id": "secondary",
+      "term": "Secondary",
+      "layer": "role",
+      "definition": "The scale role for a second brand hue (amber by default).",
+      "intent": "A second identity color, used sparingly beside the primary.",
+      "not": "Not a quieter primary: a component variant named secondary that fills with primary-subtle is a variant name, not this role.",
+      "related": [
+        "primary",
+        "accent"
+      ]
+    },
+    {
+      "id": "status",
+      "term": "Status",
+      "layer": "role",
+      "definition": "The scale roles with a fixed meaning: critical (red), warning (yellow), success (green), info (cyan).",
+      "intent": "Meaning that survives any brand: a danger action is told apart by label, icon and placement, never by hue alone.",
+      "aliases": [
+        "tone (as a layout key)"
+      ],
+      "avoid": [
+        "system colors"
+      ],
+      "related": [
+        "scale-role"
+      ]
+    },
+    {
+      "id": "data-series",
+      "term": "Data series",
+      "layer": "role",
+      "definition": "Categorical data-1…N (CVD-searched), sequential data-seq-N and diverging data-div-N colors.",
+      "intent": "Charts that stay distinguishable under color-vision deficiency.",
+      "names": [
+        "--colors-data-<n>",
+        "--colors-data-seq-<n>",
+        "--colors-data-div-<n>"
+      ],
+      "related": [
+        "role"
+      ]
+    },
+    {
+      "id": "translucent-role",
+      "term": "Translucent role",
+      "layer": "role",
+      "definition": "A role that is a step's color at a fixed alpha, written as oklch(L C H / a): bg-control*, shadow, bg-backdrop.",
+      "intent": "Fills and casts that darken whatever is behind them by the same amount.",
+      "not": "Not a live mix: the alpha is generated per mode, not computed by the browser.",
+      "related": [
+        "alpha-step",
+        "backdrop"
+      ]
+    },
+    {
+      "id": "requested-translucent-role",
+      "term": "Requested translucent role",
+      "layer": "input",
+      "definition": "A role the request defines under `translucent`: a variable of the system, or a given color, at a fixed alpha per scheme, emitted as --colors-<name> in every mode.",
+      "intent": "Giving a consumer a generated color at an alpha, without the system knowing what it is for.",
+      "not": "Not a built-in role: the system defines no name or alpha for it, and the default system has none. Not an alpha step, which is solved to match a solid step.",
+      "names": [
+        "--colors-<name>"
+      ],
+      "related": [
+        "translucent-role",
+        "alpha-step"
+      ]
+    },
+    {
+      "id": "backdrop",
+      "term": "Backdrop",
+      "layer": "role",
+      "definition": "The veil behind dialogs and sheets: pure black at 80% in every mode.",
+      "intent": "The dialog reads as the only layer.",
+      "aliases": [
+        "scrim"
+      ],
+      "names": [
+        "--colors-bg-backdrop"
+      ],
+      "related": [
+        "translucent-role",
+        "endpoint"
+      ]
+    },
+    {
+      "id": "emphasis",
+      "term": "Emphasis",
+      "layer": "input",
+      "definition": "The request's strength for the selection fills, 0 quiet, 1 balanced, 2 loud. Resolved at generation: a whole number is an alias to a step, a value between is the generated OKLCH mix.",
+      "intent": "One dial for how loud selection is.",
+      "not": "Not a runtime variable; a different emphasis is a different generated system.",
+      "names": [
+        "--colors-bg-selected",
+        "--colors-fg-selected"
+      ],
+      "related": [
+        "role"
+      ]
+    },
+    {
+      "id": "anchor",
+      "term": "Anchor",
+      "layer": "input",
+      "definition": "An exact color pinned at a role's step (primary, secondary, neutral, status, ground, ink, surface); the family takes its hue and its neighbours ease toward it.",
+      "intent": "Placing a brand's real colors in the system exactly.",
+      "related": [
+        "brand",
+        "ground",
+        "ink",
+        "surface"
+      ]
+    },
+    {
+      "id": "endpoint",
+      "term": "Endpoint (white, black)",
+      "layer": "role",
+      "definition": "--colors-white and --colors-black: by default the two ends of the system, lighter and darker than every step and short of pure, keeping the neutral's hue; a named neutral step or pure #fff / #000 with the endpoints request key.",
+      "intent": "A white and a black that belong to the palette.",
+      "not": "Not the backdrop, which is always pure black. Not the lightest or darkest step of a ramp: a fill or text named white or black takes an endpoint, the same in every scheme.",
+      "names": [
+        "--colors-white",
+        "--colors-black",
+        "--colors-fg-strong"
+      ],
+      "related": [
+        "neutral",
+        "backdrop"
+      ]
+    },
+    {
+      "id": "scheme",
+      "term": "Scheme",
+      "layer": "axis",
+      "definition": "The polarity of a mode: light or dark (CSS color-scheme).",
+      "intent": "What the platform and form controls need to know.",
+      "not": "Not a mode: two modes (dark and dim) share the dark scheme.",
+      "avoid": [
+        "color mode"
+      ],
+      "related": [
+        "mode"
+      ]
+    },
+    {
+      "id": "mode",
+      "term": "Mode",
+      "layer": "axis",
+      "definition": "One generated variant of the system with its own scheme and settings: light, dark, light-contrast, dark-contrast, dim, or a custom extraMode.",
+      "intent": "Every value a reader's preference (dark, more contrast, dimmer) needs, generated rather than inverted.",
+      "not": "Not a theme: switching mode keeps the same inputs. Not ui-materials' material settings (lighting, transmission, delineation, chroma).",
+      "names": [
+        "modes.<id>",
+        ".light",
+        ".dark",
+        ".dim",
+        ".light.contrast-more",
+        ".dark.contrast-more"
+      ],
+      "related": [
+        "scheme",
+        "contrast-mode",
+        "theme"
+      ]
+    },
+    {
+      "id": "contrast-mode",
+      "term": "Contrast mode",
+      "layer": "axis",
+      "definition": "A mode generated with APCA thresholds raised by 15 (light-contrast, dark-contrast), served under prefers-contrast: more.",
+      "intent": "Readers who ask for more contrast.",
+      "related": [
+        "mode"
+      ],
+      "avoid": [
+        "high-contrast mode"
+      ]
+    },
+    {
+      "id": "theme",
+      "term": "Theme",
+      "layer": "axis",
+      "definition": "A named request: the full set of inputs (hues, neutrals, anchors, settings, emphasis) that produces one color system with all its modes.",
+      "intent": "Different products or brands from one generator.",
+      "not": "Not a mode (a theme has all the modes) and not a brand (a brand is the part of a theme that makes it someone's).",
+      "related": [
+        "brand",
+        "mode",
+        "request-preset"
+      ]
+    },
+    {
+      "id": "brand",
+      "term": "Brand",
+      "layer": "axis",
+      "definition": "The identity inputs of a theme: anchors, primary and secondary hues, neutral source.",
+      "intent": "Making a generated system recognisably one company's.",
+      "not": "Not a role; there is no --colors-brand.",
+      "related": [
+        "theme",
+        "anchor",
+        "primary"
+      ]
+    },
+    {
+      "id": "request-preset",
+      "term": "Request preset",
+      "layer": "input",
+      "definition": "A named set of request defaults in system.mjs (`preset: \"minimal\"`); explicit keys win.",
+      "intent": "A smaller output without listing every key.",
+      "not": "Not a palette preset (presets.json).",
+      "related": [
+        "palette-preset",
+        "theme"
+      ]
+    },
+    {
+      "id": "gamut",
+      "term": "Gamut",
+      "layer": "axis",
+      "definition": "The color space a system targets: Display P3 by default, with sRGB values and a P3 upgrade under @media (color-gamut: p3); or sRGB only.",
+      "intent": "Using a wide-gamut screen's range without breaking on others.",
+      "related": [
+        "color-system"
+      ]
+    }
+  ],
+  "roles": {
+    "$description": "Every role variable the color system emits (without the --colors- prefix), with its concept. Scale roles are listed by suffix; `<scale>` is each of scaleRoles.",
+    "scaleRoles": [
+      "primary",
+      "secondary",
+      "neutral",
+      "critical",
+      "warning",
+      "success",
+      "info"
+    ],
+    "scaleSuffixes": {
+      "-subtle": "scale-role",
+      "-subtle-hover": "scale-role",
+      "-border": "scale-role",
+      "-solid": "solid",
+      "-solid-hover": "solid",
+      "-solid-active": "solid",
+      "-on-solid": "label",
+      "-on-solid-muted": "label",
+      "-fg": "scale-role",
+      "-<n>": "scale-role"
+    },
+    "page": {
+      "bg": "ground",
+      "bg-subtle": "ground",
+      "bg-muted": "surface",
+      "bg-muted-hover": "surface",
+      "bg-muted-active": "surface",
+      "bg-control": "translucent-role",
+      "bg-control-hover": "translucent-role",
+      "bg-control-active": "translucent-role",
+      "bg-overlay": "surface",
+      "bg-overlay-muted": "surface",
+      "surface": "surface",
+      "surface-subtle": "surface",
+      "surface-muted": "surface",
+      "bg-selected": "emphasis",
+      "fg-selected": "emphasis",
+      "bg-selected-multiple": "surface",
+      "bg-disabled": "surface",
+      "fg-disabled": "ink",
+      "bg-inverse": "ink",
+      "fg-inverse": "ground",
+      "bg-backdrop": "backdrop",
+      "fg": "ink",
+      "fg-muted": "ink",
+      "fg-subtle": "ink",
+      "fg-strong": "endpoint",
+      "fg-on-solid": "label",
+      "border": "surface",
+      "border-strong": "surface",
+      "control-border": "surface",
+      "white": "endpoint",
+      "black": "endpoint",
+      "shadow": "translucent-role",
+      "focus-ring": "primary",
+      "data-<n>": "data-series",
+      "data-seq-<n>": "data-series",
+      "data-div-<n>": "data-series"
+    },
+    "splitOnly": [
+      "bg-overlay",
+      "bg-overlay-muted",
+      "surface",
+      "surface-subtle",
+      "surface-muted"
+    ]
+  }
+}

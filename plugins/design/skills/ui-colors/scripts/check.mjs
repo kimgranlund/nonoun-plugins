@@ -4,11 +4,11 @@
 // negative controls: each mutates a copy of the output (or the fixture) and must make its check fail.
 // Usage: node check.mjs [--keep]   (--keep leaves the temporary directory and prints its path)
 // Exit codes: 0 all checks pass and every negative control bites; 1 otherwise.
-import { readFileSync, writeFileSync, mkdtempSync, existsSync, rmSync, cpSync, unlinkSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdtempSync, existsSync, rmSync, cpSync, unlinkSync, readdirSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { apcaLc, generateSpectrum, normalizeSpectrum, spectrumOverrides } from './system/index.js';
 import { clampChroma, shapeKeys } from './system/anchors.js';
@@ -69,6 +69,14 @@ const APCA_DEF = { solid: 45, text: 45, hint: 30, ui: 15, series: 30 }, APCA_UP 
 const thrOf = (j, M) => { const a = (j.resolvedRequest || j.request).apca || {}, n = Object.fromEntries(Object.keys(APCA_DEF).map((k) => [k, a[k] ?? APCA_DEF[k]]));
   return M.contrastMode ? Object.fromEntries(Object.keys(APCA_DEF).map((k) => [k, a.contrast?.[k] ?? Math.min(108, n[k] + APCA_UP)])) : n; };
 const lcOk = (fg, bg) => apcaLc(toneOk(fg), toneOk(bg));
+// What a Display P3 screen shows: each colour clipped to P3, luminance by P3's own weights. A system with a P3 upgrade is
+// solved on the worse of the two renderings, so its floors are recomputed the same way (lcShown).
+const linRaw = ([L, C, H]) => { const a = C * Math.cos(H * Math.PI / 180), b = C * Math.sin(H * Math.PI / 180);
+  const l = (L + 0.3963377774 * a + 0.2158037573 * b) ** 3, m = (L - 0.1055613458 * a - 0.0638541728 * b) ** 3, s = (L - 0.0894841775 * a - 1.291485548 * b) ** 3;
+  return [4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s, -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s, -0.0041960863 * l - 0.7034186147 * m + 1.707614701 * s]; };
+const toneP3 = (c) => { const [r, g, b] = linRaw(c), v = [0.8224621 * r + 0.177538 * g, 0.0331941 * r + 0.9668058 * g, 0.0170827 * r + 0.0723974 * g + 0.9105199 * b].map((x) => Math.min(1, Math.max(0, x)));
+  const y = 0.2289746 * v[0] + 0.6917385 * v[1] + 0.0792869 * v[2]; return y > 0.008856 ? 116 * Math.cbrt(y) - 16 : 903.3 * y; };
+const lcShown = (j) => (j.target === 'display-p3' ? (fg, bg) => Math.min(lcOk(fg, bg), apcaLc(toneP3(fg), toneP3(bg))) : lcOk);
 // Bright hues: the window from the request (default 70°–125°, inclusive, from > to wraps; false: none), read here on its own.
 const brightOf = (j) => { const b = (j.resolvedRequest || j.request).brightHues; const w = b === false ? null : b ?? [70, 125];
   return (H) => { if (!w) return false; const h = ((H % 360) + 360) % 360; return w[0] <= w[1] ? h >= w[0] && h <= w[1] : h >= w[0] || h <= w[1]; }; };
@@ -76,22 +84,23 @@ const brightOf = (j) => { const b = (j.resolvedRequest || j.request).brightHues;
 const splitOf = (j) => (j.resolvedRequest || j.request).neutrals ?? null;
 const labelsOf = (j) => ({ light: (splitOf(j) ? j.modes.light.ramps.ground : j.modes.light.ramps.gray)[0].oklch, dark: j.modes.light.ramps.gray[11].oklch });
 function checkFloors(j) {
+  const lcS = lcShown(j);
   const f = [], labels = labelsOf(j), eps = 0.05, near = (a, b) => a && b && dE(a, b) < 0.05;
   for (const [id, M] of Object.entries(j.modes)) {
     const T = thrOf(j, M); if (JSON.stringify(M.apca) !== JSON.stringify(T)) f.push(`${id}: system.json apca ${JSON.stringify(M.apca)} ≠ ${JSON.stringify(T)} from the request`);
     for (const fam of j.families.all) { const e = M.solidLabels?.[fam]; if (!e || !labels[e.label]) { f.push(`${id} ${fam}: no solid label`); continue; }
-      const v = lcOk(labels[e.label], M.ramps[fam][8].oklch); if (v < T.solid - eps) f.push(`${id} ${fam} solid Lc ${v.toFixed(2)} < ${T.solid} against its ${e.label} label`);
+      const v = lcS(labels[e.label], M.ramps[fam][8].oklch); if (v < T.solid - eps) f.push(`${id} ${fam} solid Lc ${v.toFixed(2)} < ${T.solid} against its ${e.label} label`);
       if (Math.abs(v - e.lc) > 0.1) f.push(`${id} ${fam}: solidLabels lc ${e.lc}, recomputed ${v.toFixed(2)}`);
       if (Math.abs(v - M.solidLabelContrast?.[fam]) > 0.1) f.push(`${id} ${fam}: solidLabelContrast ${M.solidLabelContrast?.[fam]}, recomputed ${v.toFixed(2)}`);
-      const excused = (M.keyRun?.[fam]?.deviations || []).some((d) => d.step === 10 && /unreachable|anchored/.test(d.reason)), h = lcOk(labels[e.label], M.ramps[fam][9].oklch);
+      const excused = (M.keyRun?.[fam]?.deviations || []).some((d) => d.step === 10 && /unreachable|anchored/.test(d.reason)), h = lcS(labels[e.label], M.ramps[fam][9].oklch);
       if (h < T.solid - eps && !excused) f.push(`${id} ${fam} hover Lc ${h.toFixed(2)} < ${T.solid} against its ${e.label} label`); }
     for (const [role, fam0] of Object.entries(M.roles)) { const v = M.variables['--colors-' + role + '-on-solid']; if (v == null) continue; const fam = fam0 === 'neutral' ? 'gray' : fam0, st = M.solidSteps?.[role] ?? 9, e = M.solidLabels?.[fam], want = st === 9 ? e?.label : (e?.anchored?.[st] ?? e)?.label;
       if (!near(nums(v).length === 3 ? nums(v) : null, labels[want])) f.push(`${id} --colors-${role}-on-solid is ${v}, not the ${want} label of ${fam} ${st}`); }
-    const g = M.ramps.gray; if (!splitOf(j)) for (const k of [0, 1]) { const v = lcOk(g[7].oklch, g[k].oklch); if (v < T.ui - eps) f.push(`${id} control border on step ${k + 1} Lc ${v.toFixed(2)} < ${T.ui}`); }
+    const g = M.ramps.gray; if (!splitOf(j)) for (const k of [0, 1]) { const v = lcS(g[7].oklch, g[k].oklch); if (v < T.ui - eps) f.push(`${id} control border on step ${k + 1} Lc ${v.toFixed(2)} < ${T.ui}`); }
     // Neutrals split: the control border is surface 8, on the page (ground 1–2) and on the material (surface 1–2); series sit on bg-subtle (ground 2).
-    if (splitOf(j)) for (const [fam, k] of [['ground', 0], ['ground', 1], ['surface', 0], ['surface', 1]]) { const v = lcOk(M.ramps.surface[7].oklch, M.ramps[fam][k].oklch); if (v < T.ui - eps) f.push(`${id} control border (surface 8) on ${fam} ${k + 1} Lc ${v.toFixed(2)} < ${T.ui}`); }
+    if (splitOf(j)) for (const [fam, k] of [['ground', 0], ['ground', 1], ['surface', 0], ['surface', 1]]) { const v = lcS(M.ramps.surface[7].oklch, M.ramps[fam][k].oklch); if (v < T.ui - eps) f.push(`${id} control border (surface 8) on ${fam} ${k + 1} Lc ${v.toFixed(2)} < ${T.ui}`); }
     const chart = splitOf(j) ? M.ramps.ground : g;
-    for (const [i, s] of (M.series || []).entries()) { const v = lcOk(s.oklch, chart[1].oklch); if (v < T.series - eps) f.push(`${id} series ${i + 1} Lc ${v.toFixed(2)} < ${T.series}`); if (Math.abs(v - s.lcOnSurface) > 0.1) f.push(`${id} series ${i + 1}: lcOnSurface ${s.lcOnSurface}, recomputed ${v.toFixed(2)}`); }
+    for (const [i, s] of (M.series || []).entries()) { const v = lcS(s.oklch, chart[1].oklch); if (v < T.series - eps) f.push(`${id} series ${i + 1} Lc ${v.toFixed(2)} < ${T.series}`); if (Math.abs(v - s.lcOnSurface) > 0.1) f.push(`${id} series ${i + 1}: lcOnSurface ${s.lcOnSurface}, recomputed ${v.toFixed(2)}`); }
   }
   return f;
 }
@@ -106,11 +115,12 @@ function checkFloors(j) {
 const preCache = new Map();
 function preSolve(settings) { const k = JSON.stringify(settings); if (!preCache.has(k)) preCache.set(k, shapeKeys(generateSpectrum(spectrumOverrides(normalizeSpectrum(settings))))); return preCache.get(k); }
 function checkKeep(j) {
+  const lcS = lcShown(j);
   const f = [], labels = labelsOf(j), W = toneOk(labels.light), bright = brightOf(j), neutral = new Set(j.families.neutrals); let kept = 0, moved = 0, rejected = 0, brights = 0;
   for (const [id, M] of Object.entries(j.modes)) { if (M.anchorReport?.length || j.familyNames === 'index') continue; const T = thrOf(j, M), F = T.solid + MARGIN, g = preSolve(M.settings).schemes[M.scheme];
     for (const fam of j.families.all) { const e = M.solidLabels?.[fam], gen = g[fam === 'gray' ? 'neutral' : fam]?.[8]?.oklch, r = M.ramps[fam]; if (!e || !gen) { f.push(`${id} ${fam}: no solid label or generated step`); continue; }
       if (dE(gen, e.generated) > 0.1) { f.push(`${id} ${fam}: recorded generated step 9 is ΔE ${dE(gen, e.generated).toFixed(2)} from the engine's`); continue; }
-      const page = toneOk(r[0].oklch), lL = lcOk(labels.light, gen), lD = lcOk(labels.dark, gen), isBright = !neutral.has(fam) && bright(gen[2]);
+      const page = toneOk(r[0].oklch), lL = lcS(labels.light, gen), lD = lcS(labels.dark, gen), isBright = !neutral.has(fam) && bright(gen[2]);
       if (isBright !== !!e.brightHue) f.push(`${id} ${fam}: hue ${gen[2].toFixed(1)}° is ${isBright ? '' : 'not '}in the bright-hue window, but brightHue is ${!!e.brightHue}`);
       if (isBright) { brights++; if (e.label !== 'dark') f.push(`${id} ${fam}: bright hue (${gen[2].toFixed(1)}°) on the ${e.label} label`); if ((lD >= F) !== (e.moved === 0) && Math.abs(lD - F) >= 0.2) f.push(`${id} ${fam}: bright hue ${e.moved === 0 ? 'kept although it fails' : 'moved although it passes'} the dark label (${lD.toFixed(1)})`); continue; }
       if (Math.abs(lL - F) < 0.2 || Math.abs(lD - F) < 0.2) continue; // too close to call
@@ -131,7 +141,7 @@ function checkKeep(j) {
       else { moved++; if (e.moved === 0) f.push(`${id} ${fam}: generated solid fails its ${e.label} label (${(e.label === 'light' ? lL : lD).toFixed(1)}) but was kept`); }
       const fin = r[8].oklch;
       if (!e.hoverRoom && !e.cusp && e.moved === 0 && dE(fin, gen) > 0.05) f.push(`${id} ${fam}: step 9 moved ΔE ${dE(fin, gen).toFixed(2)} from the generated solid with no recorded reason`);
-      if (e.hoverRoom) { const h = lcOk(labels[e.label], r[9].oklch); if (Math.abs(h - F) > 0.3) f.push(`${id} ${fam}: hover room is not minimal (hover Lc ${h.toFixed(2)}, floor ${F})`);
+      if (e.hoverRoom) { const h = lcS(labels[e.label], r[9].oklch); if (Math.abs(h - F) > 0.3) f.push(`${id} ${fam}: hover room is not minimal (hover Lc ${h.toFixed(2)}, floor ${F})`);
         if (e.moved === 0 && !e.cusp && apcaLc(toneOk(fin), page) >= apcaLc(toneOk(gen), page)) f.push(`${id} ${fam}: hover room moved step 9 away from the page`); } } }
   if (!kept || !moved) f.push(`no ${!kept ? 'kept' : 'moved'} solid to check (kept ${kept}, moved ${moved}, white rejected ${rejected}, bright ${brights})`);
   return f;
@@ -142,6 +152,7 @@ function checkKeep(j) {
 // Light-label solids never carry the cusp mark.
 function cuspL(H, gamut) { let best = 0, bL = 0; for (let L = 0.3; L <= 1; L += 0.001) { const c = clampChroma(L, 0.5, H, gamut); if (c > best) { best = c; bL = L; } } return Math.min(bL, 0.95); }
 function checkCusp(j) {
+  const lcS = lcShown(j);
   const f = [], neutral = new Set(j.families.neutrals); let n = 0;
   for (const [id, M] of Object.entries(j.modes)) { const T = thrOf(j, M), gamut = M.settings.target, pinned9 = new Set(M.anchorReport.filter((a) => (M.scheme === 'light' ? a.step : a.dark?.step) === 9).map((a) => (a.family === 'neutral' ? 'gray' : a.family)));
     for (const fam of j.families.accents) { const e = M.solidLabels?.[fam], r = M.ramps[fam]; if (!e) continue;
@@ -152,7 +163,7 @@ function checkCusp(j) {
         if (!e.cusp) { f.push(`${id} ${fam}: dark-label solid at L ${fin[0].toFixed(3)}, its cusp is brighter (L ${cl.toFixed(3)})`); continue; }
         if (fin[0] > cl + 0.003) f.push(`${id} ${fam}: step 9 L ${fin[0].toFixed(3)} above the cusp ${cl.toFixed(3)}`);
         // Below the cusp only as far as the page needs (apca.ui) or the key run needs (15 Lc short of step 12 on the page).
-        const p9 = lcOk(fin, r[0].oklch), room = lcOk(r[11].oklch, r[0].oklch) - 15;
+        const p9 = lcS(fin, r[0].oklch), room = lcS(r[11].oklch, r[0].oklch) - 15;
         if (fin[0] < cl - 0.003 && Math.abs(p9 - (T.ui + MARGIN)) > 0.3 && Math.abs(p9 - room) > 0.3) f.push(`${id} ${fam}: step 9 L ${fin[0].toFixed(3)} below the cusp ${cl.toFixed(3)} without the page or the key run needing it`);
         if (p9 > room + 0.3) f.push(`${id} ${fam}: step 9 at page Lc ${p9.toFixed(1)} leaves the key run under 15 Lc to step 12`);
         if (fin[1] < clampChroma(fin[0], 0.5, H, gamut) - 0.002) f.push(`${id} ${fam}: step 9 chroma ${fin[1].toFixed(3)} under the gamut maximum there`);
@@ -168,6 +179,7 @@ function checkCusp(j) {
 // its own floor.
 const KEYRUN_TOL = 0.5;
 function checkKeyRun(j) {
+  const lcS = lcShown(j);
   const f = [], labels = labelsOf(j); let worst = 0;
   for (const [id, M] of Object.entries(j.modes)) { const T = thrOf(j, M), F = T.solid + MARGIN;
     for (const fam of j.families.all) { const r = M.ramps[fam], kr = M.keyRun?.[fam], e = M.solidLabels?.[fam]; if (!kr || !e) { f.push(`${id} ${fam}: keyRun missing`); continue; }
@@ -177,12 +189,12 @@ function checkKeyRun(j) {
       const steps = [...new Set([9, 12, ...anch, ...kr.deviations.map((d) => d.step)])].sort((a, b) => a - b);
       for (let k = 0; k + 1 < steps.length; k++) { const a = steps[k], b = steps[k + 1]; for (let st = a + 1; st < b; st++) { const want = at(a) + (at(b) - at(a)) * (st - a) / (b - a), d = Math.abs(at(st) - want); worst = Math.max(worst, d); if (d > KEYRUN_TOL) f.push(`${id} ${fam} step ${st}: Lc ${at(st).toFixed(2)}, even spacing wants ${want.toFixed(2)} (±${KEYRUN_TOL})`); } }
       for (let st = 9; st < 12; st++) if ((r[st].oklch[0] - r[st - 1].oklch[0]) * dir <= 0 && !kr.deviations.some((d) => d.reason === 'order')) f.push(`${id} ${fam}: lightness reverses between steps ${st} and ${st + 1}`);
-      const onS3 = (st) => Math.min(at(st), lcOk(r[st - 1].oklch, r[2].oklch));
+      const onS3 = (st) => Math.min(at(st), lcS(r[st - 1].oklch, r[2].oklch));
       for (const st of [11, 12]) if (onS3(st) < T.text - 0.05) f.push(`${id} ${fam} step ${st}: Lc ${onS3(st).toFixed(2)} on the page or step 3 < text ${T.text}`);
-      for (const d of kr.deviations) { const even10 = at(9) + (at(12) - at(9)) / 3, h = lcOk(labels[e.label], r[9].oklch);
+      for (const d of kr.deviations) { const even10 = at(9) + (at(12) - at(9)) / 3, h = lcS(labels[e.label], r[9].oklch);
         if (d.reason === 'hover-floor' && (Math.abs(h - F) > 0.3 || Math.abs(at(10) - even10) <= KEYRUN_TOL)) f.push(`${id} ${fam}: hover-floor deviation, but step 10 is ${Math.abs(h - F) > 0.3 ? 'not at the floor' : 'evenly spaced'}`);
         if (d.reason === 'text-floor' && Math.abs(onS3(d.step) - (T.text + MARGIN)) > 0.3) f.push(`${id} ${fam}: text-floor deviation, but step ${d.step} is not at the text floor`);
-        if (/unreachable|anchored-hover/.test(d.reason) && lcOk(labels[(e.anchored?.[d.step - 1] ?? e).label], r[d.step - 1].oklch) >= T.solid) f.push(`${id} ${fam}: ${d.reason} at step ${d.step}, but it clears the floor`); } } }
+        if (/unreachable|anchored-hover/.test(d.reason) && lcS(labels[(e.anchored?.[d.step - 1] ?? e).label], r[d.step - 1].oklch) >= T.solid) f.push(`${id} ${fam}: ${d.reason} at step ${d.step}, but it clears the floor`); } } }
   return { f, worst };
 }
 // 4. Files.
@@ -261,12 +273,42 @@ function checkContrast(j) {
       const r = ratioOk(a, b); if (Math.abs(r - p.ratio) > 0.02) f.push(`${id} ${p.fg} on ${p.bg}: informational ratio ${p.ratio}, recomputed ${r.toFixed(2)}`); }
     if (checked < 30) f.push(`${id}: only ${checked} pairs could be recomputed`);
     if (c.summary.fail !== c.pairs.filter((p) => !p.pass).length) f.push(`${id}: summary.fail disagrees with the pairs`);
+    // A system with a Display P3 upgrade measures every pair on the P3 values as well; one without carries no P3 field.
+    const wide = j.target === 'display-p3';
+    for (const p of c.pairs) { if (wide ? !(typeof p.lcP3 === 'number' && p.passP3 === (p.lcP3 >= p.threshold)) : 'lcP3' in p) f.push(`${id} ${p.fg} on ${p.bg}: Display P3 measurement ${wide ? 'missing or inconsistent' : 'present in an sRGB system'}`);
+      // The two measurements may differ only where a colour lies outside sRGB.
+      if (wide && Math.abs(p.lcP3 - p.lc) > 6) f.push(`${id} ${p.fg} on ${p.bg}: Lc ${p.lc} on sRGB and ${p.lcP3} on Display P3 differ by more than clipping can explain`); }
+    if (wide && c.summary.failP3 !== c.pairs.filter((p) => !p.passP3).length) f.push(`${id}: summary.failP3 disagrees with the pairs`);
   }
   return f;
 }
 // 9b. The apca and brightHues request keys: each bad value exits 2 (and nothing else does).
 const BAD_REQUESTS = [{ solid: 'x' }, { solid: -1 }, { text: 109 }, { tint: 30 }, { contrast: 5 }, { contrast: { hint: 200 } }, [], { contrast: { foo: 1 } }].map((apca) => ({ apca }))
-  .concat([true, [70], [70, 'x'], [-5, 120], [70, 400], { from: 70, to: 125 }].map((brightHues) => ({ brightHues })));
+  .concat([true, [70], [70, 'x'], [-5, 120], [70, 400], { from: 70, to: 125 }].map((brightHues) => ({ brightHues })))
+  .concat([3, -0.5, 'loud', true].map((emphasis) => ({ emphasis })));
+// Brand colours (system.md › Brand colours): generic page, card, text, dark-section, accent and low-chroma label colours.
+// With brandExact every accent anchor is the step-9 solid in every mode; autoDark false writes no prefers-color-scheme block;
+// series false writes no data role. Without brandExact (and without dark), an anchored family still never takes the cusp, and
+// the low-chroma label family is never a bright hue.
+const BRAND_ACCENTS = [{ role: 'primary', value: '#c8962a' }, { role: 'secondary', value: '#7d6f57' }];
+const BRAND = { preset: 'minimal', familyNames: { indigo: 'mark' }, series: false, autoDark: false, brandExact: true, extraModes: [{ id: 'on-dark', scheme: 'dark' }], neutrals: { ground: { tint: 30 }, surface: { tint: 30 }, ink: { tint: 30 } },
+  anchors: [{ role: 'ground', value: '#f4f1ea' }, { role: 'ink', value: '#221d18', dark: '#121010' }, { role: 'surface', value: '#ebe5dc' }, ...BRAND_ACCENTS] };
+const BAD_BRAND = [{ roles: { primary: 'foo' } }, { roles: { primary: 'h400' } }, { roles: { primary: 'oklch:x' } }, { anchors: [{ role: 'ink', value: '#221d18', step: 11 }] }, { anchors: [{ role: 'primary', value: '#c8962a', step: 'nine' }] }, { autoDark: 'no' }, { autoDark: false, lightDark: true }, { familyNames: { foo: 'bar' } }, { familyNames: { amber: 'cyan' } }, { familyNames: { amber: 'ink' } }, { familyNames: { amber: 'x', orange: 'x' } }];
+function checkBrand(j, css, jLoose) {
+  const f = [];
+  for (const [id, M] of Object.entries(j.modes)) for (const a of BRAND_ACCENTS) {
+    const x = M.anchorReport.find((r) => r.role === a.role); if (!x) { f.push(`${id}: no anchorReport entry for ${a.role}`); continue; }
+    const got = M.ramps[x.family]?.[8]?.oklch; if (!got) { f.push(`${id}: no ${x.family} ramp`); continue; }
+    const d = dE(hexOk(a.value), got); if (d > 0.5) f.push(`${id}: ${a.role} anchor ${a.value} is not the ${x.family} step 9 (ΔE ${d.toFixed(2)})`);
+  }
+  if (/prefers-color-scheme/.test(css)) f.push('autoDark false: system.css has a prefers-color-scheme block');
+  if (/--colors-data-\d/.test(css)) f.push('series false: system.css has a --colors-data-N variable');
+  if (!/--colors-mark-9:/.test(css) || /--colors-indigo-/.test(css) || j.modes.light.roles.primary !== 'mark') f.push('familyNames { indigo: mark }: the family is not emitted as mark, or indigo is still emitted');
+  for (const [id, M] of Object.entries(jLoose.modes)) for (const x of M.anchorReport.filter((r) => BRAND_ACCENTS.some((a) => a.role === r.role))) {
+    const e = M.solidLabels[x.family]; if (e?.cusp) f.push(`${id}: anchored ${x.family} solid at its cusp`); if (e?.brightHue) f.push(`${id}: anchored ${x.family} marked bright`);
+  }
+  return f;
+}
 function checkBadRequests(list) {
   const f = [];
   list.forEach((rq, i) => { try { runSystem({ ...rq, extraModes: false, tonal: false, alpha: false, series: false, dtcg: false }, join(tmp, `bad-${i}-${Math.random().toString(36).slice(2, 8)}`)); f.push(`${JSON.stringify(rq)} was accepted`); } catch (e) { if (e.status !== 2) f.push(`${JSON.stringify(rq)} exited ${e.status}, not 2`); } });
@@ -375,20 +417,194 @@ function checkShowcaseColours(html, j, css) {
 const checkShowcase = (dir, j) => { const p = join(dir, 'showcase.html'); if (!existsSync(p)) return ['missing showcase.html']; const html = readFileSync(p, 'utf8'), css = readFileSync(join(dir, 'system.css'), 'utf8');
   return [...checkShowcaseShape(html), ...checkShowcaseAnnotation(html, j), ...checkShowcaseFlags(html, j), ...checkShowcaseColours(html, j, css)]; };
 
+// 9b. Disabled roles: bg-disabled is the muted fill and fg-disabled the neutral (or ink) step 8, in every mode; both pairs are
+// listed under contrast.unleveled with level "none", and no matrix pair holds a disabled role to a threshold.
+function checkDisabled(j, split) {
+  const f = [];
+  for (const [id, M] of Object.entries(j.modes)) { const V = M.variables, c = M.contrast;
+    if (V['--colors-bg-disabled'] !== 'var(--colors-bg-muted)') f.push(`${id} --colors-bg-disabled is ${V['--colors-bg-disabled']}`);
+    const want = `var(--colors-${split ? 'ink' : 'neutral'}-8)`; if (V['--colors-fg-disabled'] !== want) f.push(`${id} --colors-fg-disabled is ${V['--colors-fg-disabled']}, not ${want}`);
+    for (const bg of ['bg-disabled', 'bg']) { const u = (c.unleveled || []).find((p) => p.fg === 'fg-disabled' && p.bg === bg); if (!u || u.level !== 'none' || !(u.lc > 0)) f.push(`${id}: fg-disabled on ${bg} is not reported as unleveled`); }
+    for (const p of c.pairs) if (/-disabled$/.test(p.fg) || /-disabled$/.test(p.bg)) f.push(`${id}: ${p.fg} on ${p.bg} holds a disabled role to a threshold`); }
+  return f;
+}
+// 9c. Quiet ink on a solid: each scale role's -on-solid-muted is the step of its own family that solidMuted names, is held to
+// apca.hint against the role's solid in the matrix, and a solve reported as reached passes there.
+function checkSolidMuted(j) {
+  const f = [];
+  for (const [id, M] of Object.entries(j.modes)) for (const [role, m] of Object.entries(M.solidMuted || { missing: {} })) {
+    if (role === 'missing') { f.push(`${id}: solidMuted missing`); continue; }
+    const got = M.variables[`--colors-${role}-on-solid-muted`], want = m.step ? `var(--colors-${m.family}-${m.step})` : `var(--colors-${role}-on-solid)`;
+    if (got !== want) f.push(`${id} --colors-${role}-on-solid-muted is ${got}, not ${want}`);
+    const p = M.contrast.pairs.find((x) => x.fg === role + '-on-solid-muted' && x.bg === role + '-solid');
+    if (!p || p.intent !== 'hint') f.push(`${id}: ${role}-on-solid-muted on ${role}-solid is not a hint pair of the matrix`);
+    else if (m.reached && !p.pass) f.push(`${id}: ${role}-on-solid-muted reported as reached but Lc ${p.lc} is under ${p.threshold}`); }
+  return f;
+}
+// 9d. The inverse pair on the endpoints: where the request names an endpoint, bg-inverse is the scheme's far endpoint (black in
+// light, white in dark) and fg-inverse the near one; a side whose endpoint is not named, and every mode of a request without
+// `endpoints`, keeps neutral 12 and 1. The pair is a text pair of the matrix.
+function checkInverse(j) {
+  const f = [];
+  for (const [id, M] of Object.entries(j.modes)) { const V = M.variables, E = j.request.modes?.[id]?.endpoints ?? j.request.endpoints ?? {}, dark = M.scheme === 'dark', far = dark ? 'white' : 'black', near = dark ? 'black' : 'white';
+    const bg = V['--colors-bg-inverse'], fg = V['--colors-fg-inverse'];
+    if (E[far] != null ? bg !== `var(--colors-${far})` : /--colors-(white|black)\)/.test(bg)) f.push(`${id} --colors-bg-inverse is ${bg} with endpoints ${JSON.stringify(E)}`);
+    if (E[near] != null ? fg !== `var(--colors-${near})` : /--colors-(white|black)\)/.test(fg)) f.push(`${id} --colors-fg-inverse is ${fg} with endpoints ${JSON.stringify(E)}`);
+    if (!M.contrast.pairs.some((p) => p.fg === 'fg-inverse' && p.bg === 'bg-inverse' && p.intent === 'text')) f.push(`${id}: fg-inverse on bg-inverse is not a text pair of the matrix`); }
+  return f;
+}
+// 9e. Default endpoints: without `endpoints`, white is at least as light as every step of every ramp in the mode and black at
+// least as dark, and each is short of pure unless a step already is pure. A request that names a step or `pure` is not held to this.
+function checkEndpoints(j) {
+  const f = [];
+  if (j.request.endpoints) return f;
+  // An endpoint is the same in both schemes, so a pure step in any mode's ramps lets it be pure in every mode.
+  const any = Object.values(j.modes).flatMap((M) => Object.values(M.ramps).flatMap((r) => r.map((x) => x.oklch[0]))), HI = Math.max(...any), LO = Math.min(...any);
+  for (const [id, M] of Object.entries(j.modes)) { if (j.request.modes?.[id]?.endpoints) continue;
+    const L = (k) => nums(M.variables[k] || '')[0], all = Object.values(M.ramps).flatMap((r) => r.map((s) => s.oklch[0])), w = L('--colors-white'), b = L('--colors-black');
+    const hi = Math.max(...all), lo = Math.min(...all), e = 0.0002;
+    if (w < hi - e || (HI < 1 - e && !(w > hi && w < 1))) f.push(`${id}: --colors-white L ${w} is not past the lightest step (${hi.toFixed(4)}) and short of pure`);
+    if (b > lo + e || (LO > e && !(b < lo && b > 0))) f.push(`${id}: --colors-black L ${b} is not past the darkest step (${lo.toFixed(4)}) and short of pure`); }
+  return f;
+}
 // 13. Neutrals split (references/system.md › Neutrals), each re-derived here from the request on its own.
 // 13a. Role mapping: every split role points at its family and step (restated here, not imported), gray-N is an alias of
 // ink-N and ink-N is the gray ramp's own colour; the default run has none of it.
 const SPLIT = { bg: 'ground 1', 'bg-subtle': 'ground 2', surface: 'surface 1', 'surface-subtle': 'surface 2', 'surface-muted': 'surface 3', 'bg-muted': 'surface 3', 'bg-muted-hover': 'surface 4', 'bg-muted-active': 'surface 5',
   border: 'surface 6', 'border-strong': 'surface 7', 'control-border': 'surface 8', fg: 'ink 12', 'fg-muted': 'ink 11', 'bg-inverse': 'ink 12', 'fg-inverse': 'ground 1' };
-const SPLIT_MIX = { 'bg-control': 'surface 12', 'bg-control-hover': 'surface 12', 'bg-control-active': 'surface 12', shadow: 'ground 12|ground 1', 'bg-overlay': 'surface 1|surface 2' };
+const SPLIT_MIX = { 'bg-control': 'surface 12', 'bg-control-hover': 'surface 12', 'bg-control-active': 'surface 12', shadow: 'ground 12|ground 1', 'bg-overlay': 'surface 1|surface 3', 'bg-overlay-muted': 'surface 3|surface 4' };
+// Follow var() aliases inside one mode's variables to the colour they name.
+const resolveVar = (V, x) => { for (let d = 0; d < 8 && /^var\(/.test(x || ''); d++) x = V[/^var\((--[\w-]+)\)$/.exec(x)[1]]; return x && /^oklch\(/.test(x) ? x : null; };
+// Generated, not derived: every value in the CSS files and the JSON variables is a colour or an alias, never color-mix(),
+// calc() or relative colour syntax (`from`), which would leave the browser to derive the colour.
+const DERIVED = /color-mix\(|calc\(|\(\s*from\s/;
+const checkGenerated = (texts) => texts.flatMap(([name, t]) => t.split('\n').filter((l) => /^\s*--/.test(l) && DERIVED.test(l)).slice(0, 3).map((l) => `${name}: ${l.trim().slice(0, 110)}`));
+const checkGeneratedJson = (j, name) => Object.entries(j.modes).flatMap(([id, M]) => Object.entries(M.variables).filter(([, x]) => DERIVED.test(String(x))).slice(0, 3).map(([k, x]) => `${name} ${id} ${k}: ${x}`));
+// Selection fills by emphasis e (0–2), recomputed: light neutral 3 → neutral 1 (t = clamp(e)) → primary 3 (t = clamp(e − 1));
+// dark neutral 4 → bg-inverse (t = clamp(e)) → primary solid (t = clamp(e − 1)), text neutral 12 → fg-inverse → the solid's label;
+// bg-selected-multiple is the lowest of neutral (surface) steps 5–7 at apca.ui against step 1, at every emphasis. Under the split: surface 3, surface 4,
+// ink 12. A whole step is an alias to it; between steps the OKLCH mix (shorter hue arc) as a colour.
+const mixC = (a, b, t) => { let ha = a[2], hb = b[2]; if (a[1] < 1e-4) ha = hb; if (b[1] < 1e-4) hb = ha; const d = ((hb - ha + 540) % 360) - 180; return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, ha + d * t]; };
+function checkSelection(j, e, split) {
+  const f = [], cl = (x) => Math.min(1, Math.max(0, x)), lo = cl(e), hi = cl(e - 1);
+  const n = (k) => '--colors-' + (split ? { 'neutral-3': 'surface-3', 'neutral-1': 'surface-4', 'neutral-4': 'surface-4', 'neutral-12': 'ink-12' }[k] ?? k : k);
+  for (const [id, M] of Object.entries(j.modes)) { const V = M.variables, col = (k) => nums(resolveVar(V, `var(${k})`) || '').slice(0, 3);
+    const step = (a, b, t) => (t <= 0 ? a : t >= 1 ? b : mixC(typeof a === 'string' ? col(a) : a, typeof b === 'string' ? col(b) : b, t));
+    let want = M.scheme === 'light' ? { 'bg-selected': step(step(n('neutral-3'), n('neutral-1'), lo), n('primary-3'), hi), 'fg-selected': n('neutral-12') } : { 'bg-selected': step(step(n('neutral-4'), '--colors-bg-inverse', lo), '--colors-primary-solid', hi), 'fg-selected': step(step(n('neutral-12'), '--colors-fg-inverse', lo), '--colors-fg-on-solid', hi) };
+    { const fam = split ? 'surface' : 'neutral', row = col(`--colors-${fam}-1`), s = [5, 6, 7].find((k) => lcOk(col(`--colors-${fam}-${k}`), row) >= M.apca.ui + 0.5) ?? 7; want['bg-selected-multiple'] = `--colors-${fam}-${s}`; }
+    for (const [r, w] of Object.entries(want)) { const got = V['--colors-' + r];
+      if (typeof w === 'string') { if (got !== `var(${w})`) f.push(`${id} --colors-${r} is ${got}, not var(${w})`); }
+      else if (!/^oklch\(/.test(got || '') || dE(nums(got).slice(0, 3), w) > 0.05) f.push(`${id} --colors-${r} is ${got}, not the emphasis ${e} mix`); } }
+  return f;
+}
+// 14. Terms (references/terms.json): the vocabulary as data. Shape, links, and the role catalogue against what the runs emit,
+// both ways: every emitted role is catalogued and every catalogued role is emitted by some run.
+const LAYERS = ['source', 'system', 'role', 'input', 'axis'];
+// 14b. Terms in the docs: every concept's term (or an accepted alias) is used in SKILL.md or references/system.md under
+// that label; no `avoid` phrase appears in SKILL.md or references/*.md; every concrete variable a concept owns (`names`
+// without a placeholder) is emitted by some run.
+const termLabel = (t) => t.replace(/\s*\(.*\)\s*$/, '').trim();
+const phraseRe = (w) => new RegExp('(?<![\\w-])' + w.toLowerCase().split(/[\s-]+/).map((x) => x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('[\\s-]') + 's?(?![\\w-])', 'i');
+function checkTermsInDocs(T, docs, refs, runs) {
+  const f = [], used = docs.join('\n'), all = refs.join('\n');
+  for (const c of T.concepts) {
+    const labels = [termLabel(c.term), ...(c.aliases || []).map(termLabel)];
+    if (!labels.some((l) => phraseRe(l).test(used))) f.push(`concept ${c.id}: neither "${labels.join('" nor "')}" appears in SKILL.md or references/system.md`);
+    for (const a of c.avoid || []) { const m = all.split('\n').findIndex((l) => phraseRe(a).test(l)); if (m >= 0) f.push(`concept ${c.id}: avoided phrase "${a}" is used in the docs (line ${m + 1} of the joined docs)`); }
+  }
+  const emitted = new Set(runs.flatMap((j) => Object.values(j.modes).flatMap((M) => Object.keys(M.variables))));
+  for (const c of T.concepts) for (const n of c.names || []) if (/^--[\w-]+$/.test(n) && !emitted.has(n)) f.push(`concept ${c.id}: names ${n}, which no run emits`);
+  return f;
+}
+// 15. Invariants named in SKILL.md › Invariants. Host-project names: the words are stored reversed so this file never
+// contains them. Default targets: the default system and the field-operator palette preset are Display P3.
+const FORBIDDEN = ['omissam', 'nosiam'].map((w) => [...w].reverse().join(''));
+function checkNames(files) {
+  const f = [];
+  for (const [path, text] of files) for (const w of FORBIDDEN) { const i = text.toLowerCase().indexOf(w); if (i >= 0) f.push(`${path}: contains a host-project name at offset ${i}`); }
+  return f;
+}
+// 15b. Entry files: every relative Markdown link in SKILL.md and references/*.md resolves to a file the skill ships, and
+// SKILL.md stays under the host's 18,000-character limit. `files` is [path, text] pairs; `exists` takes a skill-relative path.
+function checkEntry(files, exists) {
+  const f = [];
+  for (const [path, text] of files) {
+    if (path === 'SKILL.md' && text.length >= 18000) f.push(`SKILL.md is ${text.length} characters (limit 18,000)`);
+    // The description is written unquoted, so it must stay a plain YAML scalar of at most 1,024 characters, or a host refuses the file.
+    if (path === 'SKILL.md') { const d = (/^description: (.*)$/m.exec(text) || [])[1]; if (d == null) f.push('SKILL.md has no description'); else { if (d.length > 1024) f.push(`description is ${d.length} characters (limit 1,024)`); if (/: | #/.test(d)) f.push('description holds ": " or " #", which ends a plain YAML scalar'); } }
+    for (const m of text.matchAll(/\]\(([^)#\s]+)(?:#[^)]*)?\)/g)) {
+      if (/^[a-z]+:/i.test(m[1])) continue;
+      if (!exists(join(dirname(path), m[1]))) f.push(`${path}: link ${m[1]} does not resolve`);
+    }
+  }
+  return f;
+}
+// 15c. Requested translucent roles (request key `translucent`): each is emitted in every mode as a literal at the alpha asked
+// for that mode's scheme, on the base the request names, and reported in system.json; a system without the key has none.
+const BAD_TRANSLUCENT = [[], { Bad: { of: 'bg', alpha: 0.5 } }, { x: { of: 'bg' } }, { x: { of: 'bg', alpha: 2 } }, { x: { of: 'nope', alpha: 0.5 } }, { bg: { of: 'fg', alpha: 0.5 } },
+  { x: { of: 'shadow', alpha: 0.5 } }, { x: { of: '#fff', alpha: 0.5 } }, { x: { of: 'bg', alpha: 0.5, extra: 1 } }, { x: { of: 'bg', alpha: 0.5, darkAlpha: -0.1 } }].map((translucent) => ({ translucent }));
+function checkTranslucent(j, css, spec, plain) {
+  const f = [], num = (s) => s.match(/-?[\d.]+/g).map(Number), isColour = (s) => /^#|\(/.test(s), TOL = [1e-4, 1e-4, 6e-3];
+  for (const [id, M] of Object.entries(j.modes)) {
+    const dark = M.scheme === 'dark';
+    for (const [name, e] of Object.entries(spec)) {
+      const key = '--colors-' + name, got = M.variables[key], want = dark && e.darkAlpha != null ? e.darkAlpha : e.alpha, rep = (M.translucent || {})[name];
+      if (!got) { f.push(`${id}: ${key} is not emitted`); continue; }
+      if (!/^oklch\(-?[\d.]+ -?[\d.]+ -?[\d.]+(?: \/ [\d.]+)?\)$/.test(got)) { f.push(`${id}: ${key} is not a literal colour (${got})`); continue; }
+      const n = num(got), alpha = n.length > 3 ? n[3] : 1;
+      if (Math.abs(alpha - want) > 5e-4) f.push(`${id}: ${key} has alpha ${alpha}, the request asks ${want}`);
+      if (!rep || Math.abs(rep.alpha - want) > 1e-9) { f.push(`${id}: system.json › translucent.${name} is missing or reports another alpha`); continue; }
+      const base = num(rep.base), src = [].concat(dark && e.darkOf != null ? e.darkOf : e.of).find((s) => isColour(s) || '--colors-' + s in M.variables);
+      if (base.slice(0, 3).some((x, i) => Math.abs(x - n[i]) > 1e-9)) f.push(`${id}: ${key} is not its reported base ${rep.base}`);
+      if (src !== rep.of) f.push(`${id}: translucent.${name} reports base ${rep.of}, the request names ${src}`);
+      else if (!isColour(src)) { const lit = resolveVar(M.variables, M.variables['--colors-' + src]); if (!lit || num(lit).slice(0, 3).some((x, i) => Math.abs(x - base[i]) > TOL[i])) f.push(`${id}: ${key} is not ${src} of this mode`); }
+      if (!css.includes(key + ': ')) f.push(`system.css lacks ${key}`);
+    }
+  }
+  for (const [id, M] of Object.entries(plain.modes)) if ('translucent' in M) f.push(`a system without the key: mode ${id} reports translucent roles`);
+  return f;
+}
+const checkTargets = (system, preset) => [...(system.target === 'display-p3' ? [] : [`default system targets ${system.target}, not display-p3`]), ...(preset.request && preset.request.target === 'display-p3' ? [] : [`palette preset targets ${preset.request && preset.request.target}, not display-p3`])];
+// 16. Closed sets declared once: system.mjs KEYS and the system.md Request keys table name the same keys; preset.mjs
+// ALLOWED keys are each documented in references/requests.md.
+const docKeys = (md) => { const sec = (md.split('\n## Request keys')[1] || '').split('\n## ')[0]; return new Set(sec.split('\n').filter((l) => /^\| `/.test(l)).flatMap((l) => [...l.split('|')[1].matchAll(/`([\w.]+)`/g)].map((m) => m[1]))); };
+function checkKeyClosure(keys, md, allowed, requestsMd) {
+  const d = docKeys(md), f = [];
+  for (const k of keys) if (!d.has(k)) f.push(`request key ${k} is accepted by system.mjs but has no row in system.md › Request keys`);
+  for (const k of d) if (!keys.includes(k)) f.push(`system.md documents request key ${k}, which system.mjs rejects`);
+  for (const k of allowed) if (!requestsMd.includes('`' + k + '`')) f.push(`preset.mjs accepts ${k}, which references/requests.md does not document`);
+  return f;
+}
+function checkTerms(T, runs) {
+  const f = [], ids = new Set();
+  for (const p of T.principles || []) if (!p.id || !p.rule || !p.why) f.push('principle ' + (p.id || '?') + ' lacks id, rule or why');
+  for (const c of T.concepts || []) { if (ids.has(c.id)) f.push('duplicate concept ' + c.id); ids.add(c.id);
+    for (const k of ['id', 'term', 'layer', 'definition', 'intent']) if (!c[k]) f.push(`concept ${c.id || '?'} lacks ${k}`);
+    if (c.layer && !LAYERS.includes(c.layer)) f.push(`concept ${c.id} has unknown layer ${c.layer}`); }
+  for (const c of T.concepts || []) for (const r of c.related || []) if (!ids.has(r)) f.push(`concept ${c.id} relates to unknown ${r}`);
+  const R = T.roles || {}, scale = R.scaleRoles || [], suf = R.scaleSuffixes || {}, page = R.page || {};
+  for (const [k, c] of [...Object.entries(suf), ...Object.entries(page)]) if (!ids.has(c)) f.push(`role ${k} names unknown concept ${c}`);
+  const norm = (r) => r.replace(/-\d+$/, '-<n>');
+  const known = new Set([...Object.keys(page), ...scale.flatMap((x) => Object.keys(suf).map((sx) => x + sx))]);
+  const seen = new Set();
+  for (const j of runs) { const fam = new Set([...j.families.all, 'gray', 'ground', 'surface', 'ink']);
+    for (const M of Object.values(j.modes)) for (const k of Object.keys(M.variables)) { const m = /^--colors-(.+)$/.exec(k); if (!m) continue;
+      const fm = /^(.+)-a?\d+$/.exec(m[1]); if (fm && fam.has(fm[1])) continue;
+      const r = norm(m[1]); seen.add(r); if (!known.has(r)) f.push(`emitted role ${m[1]} is not in terms.json › roles`); } }
+  for (const r of known) if (!seen.has(r)) f.push(`terms.json › roles lists ${r}, which no run emits`);
+  return [...new Set(f)];
+}
 const varOf = (x) => { const [f, n] = x.split(' '); return `var(--colors-${f}-${n})`; };
 function checkNeutralRoles(j) {
   const f = [];
   for (const [id, M] of Object.entries(j.modes)) { const V = M.variables, dark = M.scheme === 'dark';
     for (const [role, at] of Object.entries(SPLIT)) if (V['--colors-' + role] !== varOf(at)) f.push(`${id} --colors-${role} is ${V['--colors-' + role]}, not ${varOf(at)}`);
     // The backdrop is pure black at 80% in every mode, split or not (system.mjs › BACKDROP_ALPHA).
-    if (V['--colors-bg-backdrop'] !== 'rgb(0 0 0 / 0.8)') f.push(`${id} --colors-bg-backdrop is ${V['--colors-bg-backdrop']}, not pure black at 80%`);
-    for (const [role, at] of Object.entries(SPLIT_MIX)) { const want = varOf(at.split('|')[dark && at.includes('|') ? 1 : 0]); if (!String(V['--colors-' + role]).includes(want)) f.push(`${id} --colors-${role} (${V['--colors-' + role]}) does not use ${want}`); }
+    if (V['--colors-bg-backdrop'] !== 'oklch(0 0 0 / 0.8)') f.push(`${id} --colors-bg-backdrop is ${V['--colors-bg-backdrop']}, not pure black at 80%`);
+    // Translucent split roles are generated colours: the source step's colour at an alpha under 1 (never a var() mix).
+    for (const [role, at] of Object.entries(SPLIT_MIX)) { const want = varOf(at.split('|')[dark && at.includes('|') ? 1 : 0]), got = String(V['--colors-' + role]);
+      if (got === want) continue; const src = resolveVar(V, want), c = nums(got);
+      if (!/^oklch\(/.test(got) || c.length !== 4 || !(c[3] < 1) || !src || dE(c.slice(0, 3), nums(src).slice(0, 3)) > 0.05) f.push(`${id} --colors-${role} (${got}) is not ${want}'s colour at an alpha`); }
     for (let n = 1; n <= 12; n++) { if (V[`--colors-gray-${n}`] !== `var(--colors-ink-${n})`) f.push(`${id} --colors-gray-${n} is not an alias of ink-${n}`);
       const ink = nums(V[`--colors-ink-${n}`] || ''); if (ink.length !== 3 || dE(ink, M.ramps.gray[n - 1].oklch) > 0.05) f.push(`${id} --colors-ink-${n} is not the ink ramp's step ${n}`); }
     if (M.alpha && V['--colors-gray-a1'] !== 'var(--colors-ink-a1)') f.push(`${id} --colors-gray-a1 is not an alias of ink-a1`);
@@ -422,7 +638,8 @@ function checkNeutralSources(j) {
 }
 // 13c. Separation: surface 1 against ground 1 per mode, OKLab ΔE × 100 and APCA |Lc| recomputed and equal to system.json; the
 // threshold is 2 (one CSS Color 4 JND) and pass is ΔE ≥ 2.
-const SEP_MIN = 2;
+const SEP_MIN = 2, SEP_RAISED = 6;
+const SEP_LAYERS = [['surface', 'bg', 'resting'], ['bg-overlay', 'bg', 'raised'], ['bg-overlay', 'surface', 'raised'], ['bg-muted', 'surface', 'resting'], ['bg-overlay-muted', 'bg-overlay', 'resting']];
 function checkSeparation(j) {
   const f = [];
   for (const [id, M] of Object.entries(j.modes)) { const S = M.separation; if (!S) { f.push(id + ': separation missing'); continue; }
@@ -430,10 +647,79 @@ function checkSeparation(j) {
     if (Math.abs(d - S.dE) > 0.05) f.push(`${id}: separation ΔE ${S.dE}, recomputed ${d.toFixed(2)}`);
     if (Math.abs(lc - S.lc) > 0.1) f.push(`${id}: separation Lc ${S.lc}, recomputed ${lc.toFixed(2)}`);
     if (S.threshold !== SEP_MIN) f.push(`${id}: separation threshold ${S.threshold}, not ${SEP_MIN}`);
-    if (S.pass !== d >= SEP_MIN && Math.abs(d - SEP_MIN) > 0.05) f.push(`${id}: separation pass ${S.pass} at ΔE ${d.toFixed(2)}`); }
+    if (S.pass !== d >= SEP_MIN && Math.abs(d - SEP_MIN) > 0.05) f.push(`${id}: separation pass ${S.pass} at ΔE ${d.toFixed(2)}`);
+    // Every adjacent pair of the stack, recomputed from the variables: a resting pair at the floor, a raised pair at the
+    // raised gate (6) in a dark scheme and at no gate in a light one.
+    const col = (r) => nums(resolveVar(M.variables, `var(--colors-${r})`) || '').slice(0, 3), L = S.layers || [];
+    for (const [u, l, level] of SEP_LAYERS) { const p = L.find((x) => x.upper === u && x.lower === l); if (!p) { f.push(`${id}: layer ${u} on ${l} not reported`); continue; }
+      const x = dE(col(u), col(l)), need = level === 'resting' ? SEP_MIN : M.scheme === 'dark' ? SEP_RAISED : null;
+      if (Math.abs(x - p.dE) > 0.05) f.push(`${id}: layer ${u} on ${l} ΔE ${p.dE}, recomputed ${x.toFixed(2)}`);
+      if (p.threshold !== need) f.push(`${id}: layer ${u} on ${l} threshold ${p.threshold}, not ${need}`);
+      if (need == null ? p.pass !== null : p.pass !== x >= need && Math.abs(x - need) > 0.05) f.push(`${id}: layer ${u} on ${l} pass ${p.pass} at ΔE ${x.toFixed(2)}`); } }
   return f;
 }
 const allSeparate = (j) => Object.entries(j.modes).filter(([, M]) => !M.separation?.pass).map(([id, M]) => `${id}: surface 1 ΔE ${M.separation?.dE} from ground 1, under ${SEP_MIN}`);
+// 13g. Hover steps (every run): each rest → hover pair recomputed from the emitted variables, OKLab ΔE × 100 within 0.05 —
+// bg-muted, bg-control composited over bg (and surface with neutrals) in encoded sRGB, each scale role's -subtle and -solid —
+// at threshold 4, pass consistent, summary counts; the neutral's (and surface's) steps 1→6 recomputed from the ramps.
+const HOVER_MIN = 4, SCALE = ['primary', 'secondary', 'neutral', 'critical', 'warning', 'success', 'info'];
+const encS = (v) => (v <= 0.0031308 ? 12.92 * v : 1.055 * v ** (1 / 2.4) - 0.055), decS = (v) => (v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4);
+const labLin = (rgb) => { const [l, m, q] = [0.4122214708 * rgb[0] + 0.5363325363 * rgb[1] + 0.0514459929 * rgb[2], 0.2119034982 * rgb[0] + 0.6806995451 * rgb[1] + 0.1073969566 * rgb[2], 0.0883024619 * rgb[0] + 0.2817188376 * rgb[1] + 0.6299787005 * rgb[2]].map(Math.cbrt);
+  return [0.2104542553 * l + 0.793617785 * m - 0.0040720468 * q, 1.9779984951 * l - 2.428592205 * m + 0.4505937099 * q, 0.0259040371 * l + 0.7827717662 * m - 0.808675766 * q]; };
+function checkHover(j) {
+  const f = [];
+  for (const [id, M] of Object.entries(j.modes)) { const H = M.hover; if (!H || !Array.isArray(H.pairs)) { f.push(id + ': hover report missing'); continue; }
+    if (H.threshold !== HOVER_MIN) f.push(`${id}: hover threshold ${H.threshold}, not ${HOVER_MIN}`);
+    const lit = (r) => resolveVar(M.variables, `var(--colors-${r})`), col = (r) => nums(lit(r) || '').slice(0, 3);
+    const over = (r, g) => { const c = nums(lit(r) || ''), a = c[3] ?? 1, G = lin(col(g)).map(encS); return labLin(lin(c.slice(0, 3)).map(encS).map((x, i) => x * a + G[i] * (1 - a)).map(decS)); };
+    const want = [['bg-muted', 'bg-muted-hover'], ...(splitOf(j) ? ['bg', 'surface'] : ['bg']).map((g) => ['bg-control', 'bg-control-hover', g]), ...SCALE.flatMap((r) => [[r + '-subtle', r + '-subtle-hover'], [r + '-solid', r + '-solid-hover']])];
+    for (const [rest, hover, g] of want) { const p = H.pairs.find((x) => x.rest === rest && x.hover === hover && (x.over ?? null) === (g ?? null)); if (!p) { f.push(`${id}: hover pair ${rest} → ${hover}${g ? ' over ' + g : ''} not reported`); continue; }
+      const d = g ? 100 * Math.hypot(...over(rest, g).map((x, i) => x - over(hover, g)[i])) : dE(col(rest), col(hover));
+      if (!Number.isFinite(d) || Math.abs(d - p.dE) > 0.05) f.push(`${id}: hover ${rest} → ${hover}${g ? ' over ' + g : ''} ΔE ${p.dE}, recomputed ${d.toFixed(2)}`);
+      if (p.pass !== d >= HOVER_MIN && Math.abs(d - HOVER_MIN) > 0.05) f.push(`${id}: hover ${rest} → ${hover} pass ${p.pass} at ΔE ${d.toFixed(2)}`); }
+    if (H.pairs.length !== want.length) f.push(`${id}: ${H.pairs.length} hover pairs, expected ${want.length}`);
+    const fails = H.pairs.filter((p) => !p.pass).length; if (H.summary?.pairs !== H.pairs.length || H.summary?.fail !== fails || H.summary?.failures?.length !== fails) f.push(`${id}: hover summary disagrees with the pairs`);
+    const neutralFam = M.roles.neutral === 'neutral' ? 'gray' : M.roles.neutral;
+    for (const fam of splitOf(j) ? [neutralFam, 'surface'] : [neutralFam]) { const s = H.steps?.[fam], r = M.ramps[fam]; if (!Array.isArray(s) || s.length !== 5) { f.push(`${id}: hover steps for ${fam} missing`); continue; }
+      for (let i = 0; i < 5; i++) { const d = dE(r[i].oklch, r[i + 1].oklch); if (Math.abs(d - s[i]) > 0.05) f.push(`${id}: ${fam} step ${i + 1} → ${i + 2} ΔE ${s[i]}, recomputed ${d.toFixed(2)}`); } } }
+  return f;
+}
+// 3e. The pressed solid (-solid-active), per family and role: `side` is "on" exactly where the solid's label clears
+// apca.solid + 0.5 on the step past the hover (11 above a step-9 solid), and the role's variable is then the alias to that
+// step; otherwise "back": a colour at page Lc max(Lc9 − (Lc10 − Lc9), apca.ui + 0.5), `clamped` where the limit binds, never
+// under apca.ui on the page, the variable that colour. Either way the label clears apca.solid on it, and lc and lcOnPage are
+// recomputed (worse of the two renderings with a P3 upgrade).
+function checkActive(j) {
+  const lcS = lcShown(j), f = [], labels = labelsOf(j), eps = 0.05;
+  for (const [id, M] of Object.entries(j.modes)) { const T = thrOf(j, M);
+    const one = (fam, st, e, where) => { const a = e?.active, r = M.ramps[fam]; if (!a) { f.push(`${id} ${where}: no active entry`); return; }
+      const lab = labels[e.label], page = toneOk(r[0].oklch), lcP = (c) => apcaLc(toneOk(c), page), hv = st === 12 ? 11 : st + 1, on = st === 12 ? 10 : st + 2;
+      // Past the hover: a step, or (no step there: an anchored step 11) the colour at one hover gap beyond it, given as oklch
+      // (at the end of the lightness range where that gap runs past it).
+      const l9 = lcP(r[st - 1].oklch), l10 = lcP(r[hv - 1].oklch), past = on <= 12 ? r[on - 1].oklch : a.side === 'on' ? a.oklch : null, F = T.solid + MARGIN;
+      if (on > 12 && a.side === 'on' && Math.abs(lcP(a.oklch) - Math.min(108, 2 * l10 - l9)) > 0.15 && a.oklch[0] > 1e-3 && a.oklch[0] < 1 - 1e-3) f.push(`${id} ${where}: active past the hover at page Lc ${lcP(a.oklch).toFixed(2)}, not ${Math.min(108, 2 * l10 - l9).toFixed(2)}`);
+      const onLc = past ? lcS(lab, past) : -1;
+      if (past && Math.abs(onLc - F) > eps && (a.side === 'on') !== onLc >= F) f.push(`${id} ${where}: active side ${a.side}, but the label on step ${on} is Lc ${onLc.toFixed(2)} (needs ${F})`);
+      const c = a.step ? r[a.step - 1]?.oklch : a.oklch; if (!c) { f.push(`${id} ${where}: active colour missing`); return; }
+      if (a.side === 'on' && on <= 12 && a.step !== on) f.push(`${id} ${where}: active on step ${a.step}, not ${on}`);
+      // A back step clamped at apca.ui on a solid already nearer the page than that can miss the label: the matrix reports it.
+      const v = lcS(lab, c); if (v < T.solid - eps && !(a.side === 'back' && a.clamped)) f.push(`${id} ${where}: label on active Lc ${v.toFixed(2)} < ${T.solid}`);
+      if (Math.abs(v - a.lc) > 0.1) f.push(`${id} ${where}: active lc ${a.lc}, recomputed ${v.toFixed(2)}`);
+      if (Math.abs(lcP(c) - a.lcOnPage) > 0.1) f.push(`${id} ${where}: active lcOnPage ${a.lcOnPage}, recomputed ${lcP(c).toFixed(2)}`);
+      if (a.side === 'back') { const want = l9 - (l10 - l9), min = T.ui + MARGIN;
+        if (lcP(c) < T.ui - eps) f.push(`${id} ${where}: back step at page Lc ${lcP(c).toFixed(2)}, under apca.ui ${T.ui}`);
+        if (Math.abs(lcP(c) - Math.min(108, Math.max(want, min))) > 0.15) f.push(`${id} ${where}: back step at page Lc ${lcP(c).toFixed(2)}, not ${Math.max(want, min).toFixed(2)}`);
+        if (a.clamped !== want < min) f.push(`${id} ${where}: clamped ${a.clamped} with Lc9 − (Lc10 − Lc9) = ${want.toFixed(2)}`); } };
+    for (const fam of j.families.all) { const e = M.solidLabels?.[fam]; if (!e) continue; one(fam, 9, e, fam);
+      for (const [st, x] of Object.entries(e.anchored || {})) one(fam, +st, x, `${fam} ${st}`); }
+    for (const [role, fam0] of Object.entries(M.roles)) { const v = M.variables['--colors-' + role + '-solid-active']; if (!(('--colors-' + role + '-solid') in M.variables) || /^data/.test(role)) continue;
+      const fam = fam0 === 'neutral' ? 'gray' : fam0, st = M.solidSteps?.[role] ?? 9, e = M.solidLabels?.[fam], x = st === 9 ? e : e?.anchored?.[st] ?? e, a = x?.active;
+      if (v == null || !a) { f.push(`${id} --colors-${role}-solid-active missing`); continue; }
+      if (a.step ? v !== `var(--colors-${fam}-${a.step})` : !(nums(v).length === 3 && dE(nums(v), a.oklch) < 0.05)) f.push(`${id} --colors-${role}-solid-active is ${v}, not the ${a.side} step of ${fam} ${st}`); }
+    for (const r of SCALE) { const p = (M.hover?.active || []).find((x) => x.active === r + '-solid-active'), d = dE(nums(resolveVar(M.variables, `var(--colors-${r}-solid-hover)`) || '').slice(0, 3), nums(resolveVar(M.variables, `var(--colors-${r}-solid-active)`) || '').slice(0, 3));
+      if (!p || Math.abs(p.dE - d) > 0.05) f.push(`${id}: hover → active of ${r} ${p ? 'ΔE ' + p.dE + ', recomputed ' + d.toFixed(2) : 'not reported'}`); } }
+  return f;
+}
 // 13d. Anchors: ground → ground light 1 and ink dark 12; ink → ink light 12 and ground dark 1; surface → surface light 1 and
 // (with dark) surface dark 1. Read from the request; hex values, so ΔE ≤ 0.5 covers 8-bit rounding.
 const hexOk = (h) => { const c = [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16) / 255).map((v) => (v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
@@ -480,14 +766,33 @@ try {
   // Figma); ground, ink and surface anchors with a card colour too close to the page (a separation miss).
   const out6 = join(tmp, 'neutrals-cross'), out7 = join(tmp, 'neutrals-tinted'), out8 = join(tmp, 'neutrals-anchored');
   const NA = { showcase: true, neutrals: { ground: { from: 'Sand' }, surface: { from: 'Slate' }, cross: true } };
-  const NB = { lightDark: true, split: true, figma: true, extraModes: [{ id: 'dim', scheme: 'dark', settings: { darkTone: 14 } }], neutrals: { ground: { tint: 20, neutralFrom: 6 }, surface: { tint: 60 }, ink: { hue: 280 } } };
+  const NB = { emphasis: 1.5, diverging: true, lightDark: true, split: true, figma: true, extraModes: [{ id: 'dim', scheme: 'dark', settings: { darkTone: 14 } }], neutrals: { ground: { tint: 20, neutralFrom: 6 }, surface: { tint: 60 }, ink: { hue: 280 } } };
   const NC = { showcase: true, extraModes: false, neutrals: { ground: { from: 'Sand' } }, anchors: [{ role: 'ground', value: '#f6f2ea', dark: '#e9e4da' }, { role: 'ink', value: '#1c1a17', dark: '#121110' }, { role: 'surface', value: '#f7f3eb', dark: '#24221f' }] };
   const line1 = runSystem({}, out1), line2 = runSystem(LD, out2); runSystem({ showcase: true }, out3); runSystem(SC, out4); runSystem(AN, out5); runSystem(NA, out6); runSystem(NB, out7); runSystem(NC, out8);
   console.log('ran system.mjs on {}, a light-dark request, two showcase requests, an APCA-override anchored request and three neutrals requests in ' + tmp + '\n  ' + line1.trim().slice(0, 160) + '…');
   const j6 = readJson(join(out6, 'system.json')), j7 = readJson(join(out7, 'system.json')), j8 = readJson(join(out8, 'system.json')), sc6 = readFileSync(join(out6, 'showcase.html'), 'utf8'), sc8 = readFileSync(join(out8, 'showcase.html'), 'utf8');
+  // Requested translucent roles: a role with a dark base and alpha, a given colour, and a list that falls back (surface is split-only).
+  const outT = join(tmp, 'translucent'), TR = { tonal: false, series: false, translucent: { 'veil-a': { of: 'neutral-12', alpha: 0.12, darkOf: '#000000', darkAlpha: 0.36 }, 'veil-b': { of: '#ffffff', alpha: 0.5, darkAlpha: 0.125 }, 'veil-c': { of: ['surface', 'bg'], alpha: 0.62 } } };
+  runSystem(TR, outT);
+  // Endpoints: both pure (the inverse pair follows them), and white alone (only that side follows).
+  const outE = join(tmp, 'endpoints'), outE2 = join(tmp, 'endpoints-white'); runSystem({ extraModes: false, tonal: false, endpoints: { white: 'pure', black: 'pure' } }, outE); runSystem({ extraModes: false, tonal: false, endpoints: { white: 'pure' } }, outE2);
+  const jE = readJson(join(outE, 'system.json')), jE2 = readJson(join(outE2, 'system.json'));
+  const outB = join(tmp, 'brand'), outBL = join(tmp, 'brand-loose'); runSystem(BRAND, outB); runSystem({ ...BRAND, brandExact: false, autoDark: true, extraModes: false }, outBL);
+  const jB = readJson(join(outB, 'system.json')), cssB = readFileSync(join(outB, 'system.css'), 'utf8'), jBL = readJson(join(outBL, 'system.json'));
+  const jT = readJson(join(outT, 'system.json')), cssT = readFileSync(join(outT, 'system.css'), 'utf8');
   const json1Text = readFileSync(join(out1, 'system.json'), 'utf8');
   if (process.argv.includes('--update-digest')) { writeFileSync(DIGEST, JSON.stringify({ $description: 'sha256 of system.css and system.json for the request {} (check.mjs › byte-identical default). Refresh with check.mjs --update-digest after a deliberate change to the default output.', 'system.css': sha(readFileSync(join(out1, 'system.css'), 'utf8')), 'system.json': sha(json1Text) }, null, 2) + '\n'); console.log('updated ' + DIGEST); }
   const j3 = readJson(join(out3, 'system.json')), j4 = readJson(join(out4, 'system.json')), j5 = readJson(join(out5, 'system.json')), sc3 = readFileSync(join(out3, 'showcase.html'), 'utf8'), sc4 = readFileSync(join(out4, 'showcase.html'), 'utf8'), sc5 = readFileSync(join(out5, 'showcase.html'), 'utf8');
+  const TERMS = readJson(here + '../references/terms.json');
+  const skillRoot = here + '../', readText = (r) => readFileSync(skillRoot + r, 'utf8');
+  const REF_MD = ['SKILL.md', ...readdirSync(skillRoot + 'references').filter((x) => x.endsWith('.md')).map((x) => 'references/' + x)];
+  const DOCS = [readText('SKILL.md'), readText('references/system.md')], REFS = REF_MD.map(readText);
+  const walk = (d) => readdirSync(skillRoot + d, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(d + e.name + '/') : /\.(md|json|mjs|cjs|js|yaml|txt|html)$/.test(e.name) ? [d + e.name] : []));
+  const SKILL_FILES = walk('').map((r) => [r, readText(r)]);
+  const SYS_SRC = readText('scripts/system.mjs'), KEYS_SRC = JSON.parse(SYS_SRC.match(/const KEYS = (\[[^\]]*\])/)[1].replace(/'/g, '"'));
+  const ALLOWED_SRC = JSON.parse(readText('scripts/preset.mjs').match(/const ALLOWED = (\[[^\]]*\])/)[1].replace(/'/g, '"'));
+  const outP = join(tmp, 'palette-preset'); execFileSync(process.execPath, [here + 'preset.mjs', '--preset', 'field-operator', '--out', outP], { stdio: ['ignore', 'ignore', 'pipe'] });
+  const presetJson = readJson(join(outP, 'palettes.json'));
   const fx = readJson(here + 'system/fixtures/hct-default.json'), j1 = readJson(join(out1, 'system.json')), j2 = readJson(join(out2, 'system.json'));
   const css1 = readFileSync(join(out1, 'system.css'), 'utf8'), css2 = readFileSync(join(out2, 'system.css'), 'utf8'), fg2 = readJson(join(out2, 'figma-variables.json'));
   const FILES1 = ['request.json', 'system.css', 'system.json', 'tokens.dtcg.json', 'preview.html'], FILES2 = [...FILES1, 'figma-variables.json', 'system.base.css', 'system.dim.css', 'system.light-contrast.css', 'system.dark-contrast.css'];
@@ -521,6 +826,19 @@ try {
     'light-dark: color-scheme per block, P3 light-dark complete': () => checkLightDark(css2, j2),
     'split: base + per-mode files cover system.css': () => checkSplit(out2, j2),
     'figma: aliases resolve to their target colour': () => checkFigma(fg2),
+    'disabled: neutral fill and faded ink in every mode, reported with no level (default, light-dark, cross)': () => [...checkDisabled(j1, false), ...checkDisabled(j2, false), ...checkDisabled(j6, true)],
+    'quiet ink on a solid: a step of the role\'s own family, held to apca.hint against its solid (default, light-dark, anchored, cross)': () => [...checkSolidMuted(j1), ...checkSolidMuted(j2), ...checkSolidMuted(j5), ...checkSolidMuted(j6)],
+    'inverse: the pair follows each endpoint the request names, and neutral 12 and 1 otherwise (default, pure, white only, cross)': () => [...checkInverse(j1), ...checkInverse(jE), ...checkInverse(jE2), ...checkInverse(j6)],
+    'endpoints: by default white and black sit past every step and short of pure (default, light-dark, cross, tinted)': () => [...checkEndpoints(j1), ...checkEndpoints(j2), ...checkEndpoints(j6), ...checkEndpoints(j7)],
+    'terms: concepts complete and linked, roles catalogued both ways (default, light-dark, cross, tinted)': () => checkTerms(TERMS, [j1, j2, j6, j7]),
+    'terms: every concept used under its term or alias, no avoided phrase, every concrete name emitted': () => checkTermsInDocs(TERMS, DOCS, REFS, [j1, j2, j6, j7]),
+    'invariants: no host-project name anywhere in the skill': () => checkNames(SKILL_FILES),
+    'entry: every relative link in SKILL.md and the references resolves; SKILL.md under 18,000 characters': () => checkEntry(REF_MD.map((r) => [r, readText(r)]), (p) => existsSync(skillRoot + p)),
+    'invariants: Display P3 by default (system and palette preset)': () => checkTargets(j1, presetJson),
+    'closure: request keys in system.mjs and system.md match; preset.mjs keys documented': () => checkKeyClosure(KEYS_SRC, DOCS[1], ALLOWED_SRC, readText('references/requests.md')),
+    'generated: no color-mix(), calc() or relative colour in any CSS file or JSON variable (all runs)': () => [...checkGenerated([['default', css1], ['light-dark', css2], ['tinted', readFileSync(join(out7, 'system.css'), 'utf8')], ...['system.base.css', 'system.light.css', 'system.dark.css'].filter((x) => existsSync(join(out7, x))).map((x) => ['tinted ' + x, readFileSync(join(out7, x), 'utf8')])]), ...[[j1, 'default'], [j2, 'light-dark'], [j6, 'cross'], [j7, 'tinted'], [j8, 'anchored']].flatMap(([j, nm]) => checkGeneratedJson(j, nm))],
+    'selection: emphasis 1 lands on steps as aliases (default, cross)': () => [...checkSelection(j1, 1, false), ...checkSelection(j6, 1, true)],
+    'selection: emphasis 1.5 is the generated mix in light and in dark (tinted)': () => checkSelection(j7, 1.5, true),
     'contrast (APCA): matrix recomputed from ramps (default)': () => checkContrast(j1),
     'contrast (APCA): matrix recomputed from ramps (light-dark)': () => checkContrast(j2),
     'contrast (APCA): matrix at overridden thresholds (anchored request)': () => checkContrast(j5),
@@ -536,6 +854,8 @@ try {
     'neutrals: roles mapped to ground / surface / ink, gray an alias of ink (cross, tinted, anchored)': () => [...checkNeutralRoles(j6), ...checkNeutralRoles(j7), ...checkNeutralRoles(j8)],
     'neutrals: families regenerated from their specs, surface lifted, cross swaps in dark (cross, tinted)': () => [...checkNeutralSources(j6), ...checkNeutralSources(j7)],
     'neutrals: cross run takes Slate for the dark page and Sand for the dark cards': () => { const f = [], d = j6.modes.dark, l = j6.modes.light; if (!/Slate/.test(d.neutralSources.ground.source) || !/Sand/.test(d.neutralSources.surface.source) || !/Sand/.test(l.neutralSources.ground.source)) f.push('neutralSources do not show the cross'); return f; },
+    'pressed solid: step 11 where the label holds, else one step back, never under apca.ui (default, light-dark, anchored, cross, tinted)': () => [...checkActive(j1), ...checkActive(j2), ...checkActive(j5), ...checkActive(j6), ...checkActive(j7)],
+    'hover steps: each rest → hover ΔE recomputed, threshold 4, summary (default, light-dark, anchored, cross, tinted)': () => [...checkHover(j1), ...checkHover(j2), ...checkHover(j5), ...checkHover(j6), ...checkHover(j7)],
     'neutrals: separation recomputed (all runs)': () => [...checkSeparation(j6), ...checkSeparation(j7), ...checkSeparation(j8)],
     'neutrals: surface separates from ground in every mode (cross, tinted)': () => [...allSeparate(j6), ...allSeparate(j7)],
     'neutrals: the anchored run has a separation miss to flag': () => (allSeparate(j8).length ? [] : ['no separation miss in the anchored neutrals run']),
@@ -547,6 +867,10 @@ try {
     'neutrals: preview shows the three families': () => { const h = readFileSync(join(out6, 'preview.html'), 'utf8'); return ['ground', 'surface', 'ink'].filter((x) => !h.includes(`var(--colors-${x}-12)`)).map((x) => 'preview lacks the ' + x + ' strip'); },
     'neutrals: showcase (24 specimens, flags incl. separation, panels, colours) and its Neutral & surfaces group': () => [...checkShowcase(out6, j6), ...checkShowcase(out8, j8), ...checkShowcaseNeutrals(sc6, j6), ...checkShowcaseNeutrals(sc8, j8)],
     'neutrals: bad values exit 2': () => checkBadRequests(BAD_NEUTRALS),
+    'translucent: requested roles emitted in every mode at the requested alpha and base; none without the key': () => checkTranslucent(jT, cssT, TR.translucent, j1),
+    'translucent: bad values exit 2': () => checkBadRequests(BAD_TRANSLUCENT),
+    'brand colours: accents exact at step 9 in every mode (brandExact), no auto-dark block, no data roles, a renamed family, anchored families off the cusp': () => checkBrand(jB, cssB, jBL),
+    'brand colours: bad roles, anchor steps, autoDark and familyNames exit 2': () => checkBadRequests(BAD_BRAND),
     'showcase: the runs have anchor, APCA-miss and key-run flags to check': () => (/data-flag="anchor-order"/.test(sc4) && /data-flag="anchor-clip"/.test(sc4) && /data-flag="lc-miss"/.test(sc5) && /data-flag="keyrun"/.test(sc5) ? [] : ['a showcase run lacks the failures the controls need']),
   };
   for (const [name, fn] of Object.entries(checks)) record(name, fn());
@@ -562,12 +886,57 @@ try {
   control('a step 4 pushed off its target', () => { const x = clone(j1); x.modes.light.ramps.cyan[3].oklch[0] -= 0.05; return checkPlacement(x); });
   control('a solid lightened to L 0.75', () => { const x = clone(j1); x.modes.light.ramps.indigo[8].oklch[0] = 0.75; return checkFloors(x); });
   control('a contrast-mode solid at Lc 55 against its own label', () => { const x = clone(j2); const M = x.modes['light-contrast'], e = M.solidLabels.cyan, lbl = labelsOf(x)[e.label], s = M.ramps.cyan[8].oklch, dir = e.label === 'dark' ? -1 : 1; let L = s[0]; while (lcOk([L, s[1], s[2]], lbl) > 55) L += dir * 0.005; s[0] = L; return checkFloors(x); });
+  control('a disabled ink left on a toned step', () => { const x = clone(j1); x.modes.light.variables['--colors-fg-disabled'] = 'var(--colors-primary-8)'; return checkDisabled(x, false); });
+  control('a disabled pair held to a threshold', () => { const x = clone(j1); x.modes.dark.contrast.pairs.push({ fg: 'fg-disabled', bg: 'bg-disabled', intent: 'text', lc: 30, threshold: 45, pass: false, ratio: 2 }); return checkDisabled(x, false); });
+  control('a quiet on-solid ink taken from the page', () => { const x = clone(j1); x.modes.light.variables['--colors-primary-on-solid-muted'] = 'var(--colors-fg-muted)'; return checkSolidMuted(x); });
+  control('a quiet on-solid ink dropped from the matrix', () => { const x = clone(j1); x.modes.dark.contrast.pairs = x.modes.dark.contrast.pairs.filter((p) => p.fg !== 'critical-on-solid-muted'); return checkSolidMuted(x); });
+  control('a pure-white request whose dark inverse stays on step 12', () => { const x = clone(jE); x.modes.dark.variables['--colors-bg-inverse'] = 'var(--colors-gray-12)'; return checkInverse(x); });
+  control('a default inverse moved onto an endpoint', () => { const x = clone(j1); x.modes.light.variables['--colors-bg-inverse'] = 'var(--colors-black)'; return checkInverse(x); });
+  control('a default white left on a ramp step', () => { const x = clone(j1); x.modes.light.variables['--colors-white'] = x.modes.light.variables['--colors-gray-3']; return checkEndpoints(x); });
+  control('a default black left on a ramp step', () => { const x = clone(j1); x.modes.dark.variables['--colors-black'] = x.modes.dark.variables['--colors-gray-3']; return checkEndpoints(x); });
+  control('a Display P3 miss left out of the summary', () => { const x = clone(j1); const p = x.modes.dark.contrast.pairs[0]; p.lcP3 = 1; p.passP3 = false; return checkContrast(x); });
+  control('a P3 measurement in an sRGB-only system', () => { const x = clone(j4); x.modes.light.contrast.pairs[0].lcP3 = 50; return checkContrast(x); });
   control('a hover under the floor', () => { const x = clone(j1); const s = x.modes.dark.ramps.indigo[9].oklch; s[0] += 0.08; return checkFloors(x); });
   control('a dark-label solid claimed for the light label', () => { const x = clone(j2); const M = x.modes['dark-contrast'], fam = labelFam(M, 'dark'); M.solidLabels[fam].label = 'light'; return checkFloors(x); });
   control('a role labelled with the other label', () => { const x = clone(j1); const M = x.modes.light; M.variables['--colors-primary-on-solid'] = x.labelColors.dark.css; return checkFloors(x); });
   control('the request\'s apca solid raised to 75 (floors read the request)', () => { const x = clone(j5); x.request.apca.solid = 75; x.modes.light.apca.solid = 75; return checkFloors(x); });
   control('a control border under apca.ui', () => { const x = clone(j1); x.modes.light.ramps.gray[7].oklch = [...x.modes.light.ramps.gray[1].oklch]; return checkFloors(x); });
   control('a valid apca value in the bad list', () => checkBadRequests([{ apca: { solid: 50 } }]));
+  control('a brand accent off its anchor in the dark section', () => { const x = clone(jB); const r = x.modes['on-dark'].anchorReport.find((a) => a.role === 'primary'); x.modes['on-dark'].ramps[r.family][8].oklch[0] -= 0.05; return checkBrand(x, cssB, jBL); });
+  control('an auto-dark block written with autoDark false', () => checkBrand(jB, cssB + '\n@media (prefers-color-scheme: dark) { :root { color-scheme: dark; } }', jBL));
+  control('a renamed family emitted under its hue name', () => checkBrand(jB, cssB + '\n:root { --colors-indigo-9: red; }', jBL));
+  control('a data role written with series false', () => checkBrand(jB, cssB + '\n:root { --colors-data-1: red; }', jBL));
+  control('an anchored family moved to its cusp', () => { const x = clone(jBL); const r = x.modes.dark.anchorReport.find((a) => a.role === 'secondary'); x.modes.dark.solidLabels[r.family].cusp = true; return checkBrand(jB, cssB, x); });
+  control('a valid role hue in the bad list', () => checkBadRequests([{ roles: { primary: 'h85.5' } }, { roles: { primary: 'oklch:84' } }]));
+  control('a requested translucent role at another alpha', () => { const x = clone(jT); x.modes.dark.variables['--colors-veil-a'] = x.modes.dark.variables['--colors-veil-a'].replace(/\/ [\d.]+\)$/, '/ 0.5)'); return checkTranslucent(x, cssT, TR.translucent, j1); });
+  control('a requested translucent role missing from one mode', () => { const x = clone(jT); delete x.modes.dim.variables['--colors-veil-b']; return checkTranslucent(x, cssT, TR.translucent, j1); });
+  control('a requested translucent role on another base', () => { const x = clone(jT); x.modes.light.variables['--colors-neutral-12'] = 'oklch(0.9 0 0)'; return checkTranslucent(x, cssT, TR.translucent, j1); });
+  control('a system without the key that reports translucent roles', () => { const x = clone(j1); x.modes.light.translucent = {}; return checkTranslucent(jT, cssT, TR.translucent, x); });
+  control('a valid translucent request in the bad list', () => checkBadRequests([{ translucent: { ok: { of: 'bg', alpha: 0.5 } } }]));
+  control('a concept whose term the docs never use', () => { const x = clone(TERMS); x.concepts.push({ id: 'zebra', term: 'Zebra stripe', layer: 'system', definition: 'x', intent: 'x' }); return checkTermsInDocs(x, DOCS, REFS, [j1]); });
+  control('an avoided phrase planted in SKILL.md', () => checkTermsInDocs(TERMS, DOCS, [REFS[0] + '\nThe tonal layer stays put.'], [j1, j2, j6, j7]));
+  control('a concept naming a variable no run emits', () => { const x = clone(TERMS); x.concepts.find((c) => c.id === 'backdrop').names.push('--colors-bg-veil'); return checkTermsInDocs(x, DOCS, REFS, [j1, j2, j6, j7]); });
+  control('a host-project name in a reference', () => checkNames([['references/x.md', 'Made for ' + FORBIDDEN[0].toUpperCase() + ' UI.']]));
+  control('a link to a file the skill does not ship', () => checkEntry([['references/x.md', 'See [the contract](../recipes/NOPE.md).']], (p) => existsSync(skillRoot + p)));
+  control('a SKILL.md of 18,000 characters', () => checkEntry([['SKILL.md', 'x'.repeat(18000)]], (p) => existsSync(skillRoot + p)));
+  control('a description that is not a plain YAML scalar', () => checkEntry([['SKILL.md', '---\nname: x\ndescription: Generate HCT color: source palettes\n---\n']], (p) => existsSync(skillRoot + p)));
+  control('a default system targeting sRGB', () => { const x = clone(j1); x.target = 'srgb'; return checkTargets(x, presetJson); });
+  control('a palette preset targeting sRGB', () => checkTargets(j1, { request: { target: 'srgb' } }));
+  control('a request key system.mjs accepts but system.md omits', () => checkKeyClosure([...KEYS_SRC, 'bogusKey'], DOCS[1], ALLOWED_SRC, readText('references/requests.md')));
+  control('a documented request key system.mjs rejects', () => checkKeyClosure(KEYS_SRC.filter((k) => k !== 'emphasis'), DOCS[1], ALLOWED_SRC, readText('references/requests.md')));
+  control('a preset.mjs key requests.md does not document', () => checkKeyClosure(KEYS_SRC, DOCS[1], [...ALLOWED_SRC, 'zebraKey'], readText('references/requests.md')));
+  control('a role dropped from the terms catalogue', () => { const x = clone(TERMS); delete x.roles.page['bg-overlay']; return checkTerms(x, [j1, j2, j6, j7]); });
+  control('a catalogued role no run emits', () => { const x = clone(TERMS); x.roles.page['bg-brand'] = 'brand'; return checkTerms(x, [j1, j2, j6, j7]); });
+  control('a concept related to an unknown term', () => { const x = clone(TERMS); x.concepts[0].related.push('accent-colour'); return checkTerms(x, [j1]); });
+  control('a concept without an intent', () => { const x = clone(TERMS); delete x.concepts.find((c) => c.id === 'surface').intent; return checkTerms(x, [j1]); });
+  control('a color-mix() left in system.css', () => checkGenerated([['default', css1.replace(/(--colors-bg-control: )[^;]+/, '$1color-mix(in oklch, var(--colors-gray-12) 12%, transparent)')]]));
+  control('a calc() alpha in the JSON variables', () => { const x = clone(j7); x.modes.light.variables['--colors-shadow'] = 'oklch(0.3 0 0 / calc(0.14 * 1))'; return checkGeneratedJson(x, 'tinted'); });
+  control('the emphasis mix moved toward the primary', () => { const x = clone(j7); x.modes.light.variables['--colors-bg-selected'] = x.modes.light.variables['--colors-primary-3'] || 'oklch(0.9 0.05 270)'; return checkSelection(x, 1.5, true); });
+  control('a dark single selection left on the primary solid', () => { const x = clone(j1); x.modes.dark.variables['--colors-bg-selected'] = 'var(--colors-primary-solid)'; return checkSelection(x, 1, false); });
+  control('the multiple-selection tint left under apca.ui', () => { const x = clone(j2); x.modes['dark-contrast'].variables['--colors-bg-selected-multiple'] = 'var(--colors-neutral-5)'; return checkSelection(x, 1, false); });
+  control('emphasis 1 written as a colour instead of an alias', () => { const x = clone(j1); x.modes.light.variables['--colors-bg-selected'] = 'oklch(0.99 0 0)'; return checkSelection(x, 1, false); });
+  control('a translucent split role pointing at the wrong step', () => { const x = clone(j6); const V = x.modes.light.variables; V['--colors-bg-control'] = resolveVar(V, 'var(--colors-surface-6)').replace(/\)$/, ' / 0.12)'); return checkNeutralRoles(x); });
+  control('a valid emphasis value in the bad list', () => checkBadRequests([{ emphasis: 1.5 }]));
   control('a valid brightHues value in the bad list', () => checkBadRequests([{ brightHues: [80, 110] }]));
   control('a bright-hue family on the light label', () => { const x = clone(j1); const M = x.modes.light, fam = Object.keys(M.solidLabels).find((k) => M.solidLabels[k].brightHue); M.solidLabels[fam].label = 'light'; return checkKeep(x); });
   control('a family outside the window marked bright', () => { const x = clone(j1); const M = x.modes.light; M.solidLabels.indigo.brightHue = true; return checkKeep(x); });
@@ -630,6 +999,15 @@ try {
   control('cross ignored: dark ground and surface swapped back', () => { const x = clone(j6); const M = x.modes.dark; [M.ramps.ground, M.ramps.surface] = [M.ramps.surface, M.ramps.ground]; return checkNeutralSources(x); });
   control('surface not lifted off the page', () => { const x = clone(j7); x.modes.light.ramps.surface = clone(x.modes.light.ramps.ground); return checkNeutralSources(x); });
   control('cross read as off (request without cross)', () => { const x = clone(j6); delete x.request.neutrals.cross; return checkNeutralSources(x); });
+  control('a dark overlay left one step above the card', () => { const x = clone(j6); x.modes.dark.variables['--colors-bg-overlay'] = 'var(--colors-surface-2)'; return checkNeutralRoles(x); });
+  control('a layer of the stack misreported', () => { const x = clone(j6); x.modes.dark.separation.layers[2].dE += 1; return checkSeparation(x); });
+  control('a raised dark layer held only to the floor', () => { const x = clone(j6); x.modes.dark.separation.layers[1].threshold = 2; return checkSeparation(x); });
+  control('a pressed solid aliased to step 11 where its label fails there', () => { const x = clone(j1); const M = x.modes.dark, a = M.solidLabels.indigo.active; Object.assign(a, { side: 'on', step: 11 }); M.variables['--colors-primary-solid-active'] = 'var(--colors-indigo-11)'; return checkActive(x); });
+  control('a pressed solid aliased to the hover', () => { const x = clone(j1); x.modes.light.variables['--colors-primary-solid-active'] = 'var(--colors-indigo-10)'; return checkActive(x); });
+  control('a back step under apca.ui', () => { const x = clone(j1); const M = x.modes.dim, a = M.solidLabels.indigo.active; a.oklch = [...M.ramps.indigo[1].oklch]; M.variables['--colors-primary-solid-active'] = 'oklch(' + a.oklch.join(' ') + ')'; return checkActive(x); });
+  control('a hover ΔE misreported', () => { const x = clone(j1); x.modes.dark.hover.pairs.find((p) => p.rest === 'primary-solid').dE += 1; return checkHover(x); });
+  control('a hover under ΔE 4 passed', () => { const x = clone(j1); const p = x.modes.light.hover.pairs.find((q) => !q.pass); p.pass = true; x.modes.light.hover.summary.fail--; x.modes.light.hover.summary.failures.pop(); return checkHover(x); });
+  control('a hover pair dropped', () => { const x = clone(j6); const H = x.modes.dark.hover; H.pairs = H.pairs.filter((p) => p.over !== 'surface'); H.summary.pairs--; return checkHover(x); });
   control('a separation misreported', () => { const x = clone(j6); x.modes.dim.separation.dE += 1; return checkSeparation(x); });
   control('the card on the page set to the page colour', () => { const x = clone(j7); x.modes.light.ramps.surface[0] = clone(x.modes.light.ramps.ground[0]); return [...checkSeparation(x), ...allSeparate(x)]; });
   control('a ground anchor not pinned', () => { const x = clone(j8); x.modes.light.ramps.ground[0].oklch[0] -= 0.03; return checkNeutralAnchors(x); });

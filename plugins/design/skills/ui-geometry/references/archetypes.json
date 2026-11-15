@@ -1,0 +1,1332 @@
+{
+ "$description": "Archetypes as profiles. For each observable, bands gives [25th percentile, median, 75th percentile] over the pages measured for that archetype (public pages, one per site, at 1440 by 900). A page or preset is scored by its distance outside the bands, each scaled by `scale` (the 10th to 90th percentile spread over all pages); nothing must be inside every band. `dials` are a font size, density and κ that land inside the bands a preset can reach; `constants` are preset keys the standard preset cannot reach them with. Observables with `derived` null are page composition: typeface, colour, grouping, layout and pixel measures, which no preset sets. Observables with `derived` null are page composition: typeface, colour, grouping, layout and pixel measures, which no preset sets. Read by scripts/archetypes.mjs; checked by scripts/archetypes.test.mjs. family groups archetypes the measured pages do not separate into distinct groups; near names the ones an archetype cannot be told from (references/equations.md section 20, and references/dimensions.json for a page's position).",
+ "version": 3,
+ "pages": 156,
+ "observables": {
+  "body": {
+   "is": "font size carrying the most characters, px",
+   "derived": "n"
+  },
+  "contrast": {
+   "is": "largest type size with at least 6 characters, over body",
+   "derived": "the largest type role in use, over F"
+  },
+  "nSizes": {
+   "is": "type sizes each carrying at least 1% of characters",
+   "derived": null
+  },
+  "upperShare": {
+   "is": "share of characters set in capitals",
+   "derived": null
+  },
+  "ctlTracking": {
+   "is": "median letter spacing over font size on text controls (buttons and links drawn as buttons; navigation links are not counted). In no profile yet: on the 91 archetype pages with a reading it is 0 at every quartile of every archetype, and 0.13 at most",
+   "derived": null
+  },
+  "ctlUpperShare": {
+   "is": "share of text controls set in capitals by text-transform. In no profile yet: 0 at the median of every archetype; fashion's upper quartile is 0.5",
+   "derived": null
+  },
+  "textCov": {
+   "is": "area of text line boxes over page area, first three viewports",
+   "derived": null
+  },
+  "imgCov": {
+   "is": "area of images, video, canvas and background images over page area, first three viewports, capped at 1",
+   "derived": null
+  },
+  "occupancy": {
+   "is": "width between the 3rd and 97th percentile text edges, over viewport width",
+   "derived": null
+  },
+  "measure": {
+   "is": "median characters per line of body paragraphs over 150 characters",
+   "derived": "measure.ideal"
+  },
+  "loft": {
+   "is": "median height over font size of boxed text controls",
+   "derived": "h / F"
+  },
+  "kappa2": {
+   "is": "median radius over half height of text buttons, where the painted face may be a child or pseudo-element",
+   "derived": "r / (h/2)"
+  },
+  "kappaSurface": {
+   "is": "median radius over half the short side of filled or bordered surfaces",
+   "derived": null
+  },
+  "squareShare": {
+   "is": "share of those surfaces with no radius",
+   "derived": null
+  },
+  "pillShare": {
+   "is": "share of those surfaces with a full radius",
+   "derived": null
+  },
+  "iconOnlyShare": {
+   "is": "controls without text over all controls, pages with at least 5 controls",
+   "derived": null
+  },
+  "iconToBody": {
+   "is": "median icon size over body",
+   "derived": "icon md / F"
+  },
+  "borderShare": {
+   "is": "share of elements with a visible border",
+   "derived": null
+  },
+  "bwMax": {
+   "is": "95th percentile border width, px: the heaviest rule in regular use",
+   "derived": null
+  },
+  "monoShare": {
+   "is": "share of characters in a monospaced face",
+   "derived": null
+  },
+  "heavyShare": {
+   "is": "share of characters at weight 700 or more",
+   "derived": null
+  },
+  "meanWeight": {
+   "is": "character-weighted mean font weight",
+   "derived": null
+  },
+  "displayVh": {
+   "is": "largest type size as a percentage of viewport height",
+   "derived": null
+  },
+  "labelToBody": {
+   "is": "median control label size over body",
+   "derived": "title-sm / F"
+  },
+  "serifShare": {
+   "is": "share of characters set in a serifed face (font-metrics.js)",
+   "derived": null
+  },
+  "strokeContrast": {
+   "is": "thinnest over thickest stroke of o in the body face",
+   "derived": null
+  },
+  "dispContrast": {
+   "is": "the same for the face of the largest type",
+   "derived": null
+  },
+  "faceWeight": {
+   "is": "cap height over stem width of the body face (PANOSE weight ratio)",
+   "derived": null
+  },
+  "dispWeight": {
+   "is": "the same for the face of the largest type",
+   "derived": null
+  },
+  "faceWidth": {
+   "is": "mean advance of a–z over the font size, body face",
+   "derived": null
+  },
+  "nFaces": {
+   "is": "font families each carrying at least 1% of characters",
+   "derived": null
+  },
+  "scaleStep": {
+   "is": "median ratio between adjacent type sizes in use",
+   "derived": null
+  },
+  "lineRatio": {
+   "is": "line height over font size of body text",
+   "derived": null
+  },
+  "lineRatioDisplay": {
+   "is": "the same at the largest type size",
+   "derived": null
+  },
+  "xHeightPx": {
+   "is": "x-height of body text in px",
+   "derived": null
+  },
+  "pageTone": {
+   "is": "HCT tone of the page background",
+   "derived": null
+  },
+  "textTone": {
+   "is": "HCT tone of the body text",
+   "derived": null
+  },
+  "bodyLcAbs": {
+   "is": "APCA Lc of body text on its background, absolute",
+   "derived": null
+  },
+  "lowLcShare": {
+   "is": "share of characters under Lc 60",
+   "derived": null
+  },
+  "wcagFailShare": {
+   "is": "share of characters under 4.5:1, or 3:1 when large",
+   "derived": null
+  },
+  "darkShare": {
+   "is": "share of characters on a ground under tone 50",
+   "derived": null
+  },
+  "textChromaShare": {
+   "is": "share of characters with HCT chroma 16 or more",
+   "derived": null
+  },
+  "fillShare": {
+   "is": "area of fills other than the page ground over page area",
+   "derived": null
+  },
+  "chromaFillShare": {
+   "is": "area of fills with HCT chroma 16 or more over page area",
+   "derived": null
+  },
+  "maxChroma": {
+   "is": "highest HCT chroma in use on at least 0.5% of characters or 0.2% of area",
+   "derived": null
+  },
+  "nHues": {
+   "is": "30° HCT hue bins in use among chromatic colours",
+   "derived": null
+  },
+  "ctlChroma": {
+   "is": "area-weighted median HCT chroma of control fills",
+   "derived": null
+  },
+  "followsScheme": {
+   "is": "1 when the page turns dark under a dark colour-scheme preference",
+   "derived": null
+  },
+  "proximityRatio": {
+   "is": "separation around a nested group over the gap between its members, page median",
+   "derived": null
+  },
+  "regionShare": {
+   "is": "share of multi-child groups with their own border, fill or shadow",
+   "derived": null
+  },
+  "uniformShare": {
+   "is": "share of sibling sets of three or more with equal sizes",
+   "derived": null
+  },
+  "gapEm": {
+   "is": "median gap between siblings over body size",
+   "derived": null
+  },
+  "gridShare4": {
+   "is": "share of sibling gaps that are a multiple of 4px",
+   "derived": null
+  },
+  "nGaps": {
+   "is": "distinct gap values covering 90% of gaps",
+   "derived": null
+  },
+  "circleShare": {
+   "is": "share of painted boxes with equal sides and a full radius",
+   "derived": null
+  },
+  "nRadii": {
+   "is": "distinct corner radii in px on at least 2% of rounded surfaces",
+   "derived": null
+  },
+  "centeredShare": {
+   "is": "share of characters in centred text",
+   "derived": null
+  },
+  "edgeTop3Share": {
+   "is": "share of characters starting on one of the three most common left edges",
+   "derived": null
+  },
+  "bgShare": {
+   "is": "share of first-viewport pixels at the ground colour",
+   "derived": null
+  },
+  "edgeDensity": {
+   "is": "mean luminance difference between neighbouring pixels, first viewport",
+   "derived": null
+  },
+  "jpegKb": {
+   "is": "size of the first viewport as a JPEG at quality 80, KB",
+   "derived": null
+  },
+  "colourCount": {
+   "is": "quantised colours each on at least 0.1% of first-viewport pixels",
+   "derived": null
+  },
+  "colourfulness": {
+   "is": "Hasler and Süsstrunk colourfulness of the first viewport",
+   "derived": null
+  },
+  "mirrorLR": {
+   "is": "overlap of the first viewport's ink with its left-right mirror",
+   "derived": null
+  },
+  "balanceLR": {
+   "is": "left-right balance of first-viewport ink",
+   "derived": null
+  },
+  "maxCols": {
+   "is": "most equal-width siblings side by side in one row",
+   "derived": null
+  },
+  "marginShare": {
+   "is": "left margin of the content over viewport width",
+   "derived": null
+  },
+  "gutterRatio": {
+   "is": "gap between equal columns over their width",
+   "derived": null
+  },
+  "regularity": {
+   "is": "Ngo alignment regularity of first-viewport items",
+   "derived": null
+  },
+  "elements1": {
+   "is": "visible elements in the first viewport",
+   "derived": null
+  },
+  "pagesLong": {
+   "is": "document height in viewports",
+   "derived": null
+  },
+  "bodyRatio": {
+   "is": "body size at 390px over body size at 1440px",
+   "derived": null
+  }
+ },
+ "scale": {
+  "ctlTracking": 0.13,
+  "ctlUpperShare": 0.5,
+  "body": 8,
+  "contrast": 4,
+  "nSizes": 6,
+  "upperShare": 0.17,
+  "textCov": 0.17,
+  "imgCov": 0.95,
+  "occupancy": 0.49,
+  "measure": 55.5,
+  "loft": 1.87,
+  "kappa2": 1,
+  "kappaSurface": 1,
+  "squareShare": 1,
+  "pillShare": 0.5,
+  "iconOnlyShare": 0.59,
+  "iconToBody": 1.06,
+  "borderShare": 0.12,
+  "bwMax": 3,
+  "monoShare": 0.14,
+  "heavyShare": 0.28,
+  "meanWeight": 120,
+  "displayVh": 6.22,
+  "labelToBody": 0.39,
+  "serifShare": 0.4,
+  "strokeContrast": 0.19,
+  "dispContrast": 0.5,
+  "faceWeight": 2.52,
+  "dispWeight": 4.33,
+  "faceWidth": 0.1,
+  "nFaces": 3,
+  "scaleStep": 0.41,
+  "lineRatio": 0.32,
+  "lineRatioDisplay": 0.44,
+  "xHeightPx": 3.95,
+  "pageTone": 94.27,
+  "textTone": 100,
+  "bodyLcAbs": 43.1,
+  "lowLcShare": 0.34,
+  "wcagFailShare": 0.38,
+  "darkShare": 0.97,
+  "textChromaShare": 0.39,
+  "fillShare": 1,
+  "chromaFillShare": 0.2,
+  "maxChroma": 86.71,
+  "nHues": 3,
+  "ctlChroma": 68.99,
+  "followsScheme": 1,
+  "proximityRatio": 4.38,
+  "regionShare": 0.25,
+  "uniformShare": 0.65,
+  "gapEm": 1.38,
+  "gridShare4": 0.76,
+  "nGaps": 8,
+  "circleShare": 0.29,
+  "nRadii": 4,
+  "centeredShare": 0.62,
+  "edgeTop3Share": 0.5,
+  "bgShare": 0.71,
+  "edgeDensity": 0.02,
+  "jpegKb": 93,
+  "colourCount": 51,
+  "colourfulness": 70.53,
+  "mirrorLR": 0.81,
+  "balanceLR": 0.37,
+  "maxCols": 5,
+  "marginShare": 0.17,
+  "gutterRatio": 0.2,
+  "regularity": 0.31,
+  "elements1": 614,
+  "pagesLong": 11.95,
+  "bodyRatio": 0.3
+ },
+ "archetypes": {
+  "instrument": {
+   "family": "application",
+   "near": ["product"],
+   "stance": {
+    "hero": "the control and the work surface",
+    "space": "scarce",
+    "body": "operates, fast and repeatedly"
+   },
+   "pages": 16,
+   "recognised": {
+    "first": 14,
+    "inTwo": 15
+   },
+   "status": "measured",
+   "signature": ["dispWeight", "displayVh", "gridShare4", "iconOnlyShare", "edgeDensity", "textCov"],
+   "dials": {
+    "n": 13,
+    "density": "compact",
+    "kappa": {
+     "control": 0.41,
+     "frame": 0.41,
+     "card": 0.5,
+     "panel": 0.41
+    },
+    "typeCap": "heading-md",
+    "icon": "lg"
+   },
+   "bands": {
+    "body": [13, 14, 16],
+    "contrast": [1.29, 1.38, 1.88],
+    "nSizes": [3, 6, 7],
+    "upperShare": [0, 0.03, 0.06],
+    "textCov": [0, 0.02, 0.03],
+    "imgCov": [0.07, 0.19, 0.27],
+    "occupancy": [0.89, 0.91, 0.95],
+    "measure": [49.4, 80.5, 128.33],
+    "loft": [1.87, 2.08, 2.3],
+    "kappa2": [0.22, 0.41, 0.59],
+    "kappaSurface": [0.03, 0.17, 0.4],
+    "squareShare": [0.25, 0.43, 0.67],
+    "pillShare": [0, 0, 0.07],
+    "iconOnlyShare": [0.3, 0.38, 0.6],
+    "iconToBody": [1.07, 1.5, 2],
+    "borderShare": [0.02, 0.05, 0.08],
+    "bwMax": [1, 2, 3],
+    "monoShare": [0, 0, 0.11],
+    "heavyShare": [0, 0.03, 0.07],
+    "meanWeight": [410, 419, 433],
+    "displayVh": [1.78, 2.02, 3.33],
+    "labelToBody": [0.92, 1, 1],
+    "serifShare": [0, 0, 0],
+    "strokeContrast": [0.78, 0.83, 0.83],
+    "dispContrast": [0.76, 0.81, 0.83],
+    "faceWeight": [7.36, 7.83, 8.49],
+    "dispWeight": [6.56, 7.83, 8.31],
+    "faceWidth": [0.47, 0.48, 0.52],
+    "nFaces": [2, 2, 4],
+    "scaleStep": [1.09, 1.14, 1.2],
+    "lineRatio": [1.5, 1.58, 1.67],
+    "lineRatioDisplay": [1.2, 1.2, 1.78],
+    "xHeightPx": [6.59, 7.21, 8.11],
+    "pageTone": [12.74, 93.05, 100],
+    "textTone": [24.01, 53.97, 93.75],
+    "bodyLcAbs": [65.99, 87.91, 97.12],
+    "lowLcShare": [0.01, 0.04, 0.25],
+    "wcagFailShare": [0, 0.02, 0.12],
+    "darkShare": [0.01, 0.06, 0.99],
+    "textChromaShare": [0.05, 0.08, 0.13],
+    "fillShare": [0.09, 0.38, 0.53],
+    "chromaFillShare": [0, 0, 0.02],
+    "maxChroma": [50.29, 62.24, 80.04],
+    "nHues": [1, 1, 3],
+    "ctlChroma": [2.87, 8.34, 24.66],
+    "followsScheme": [0, 0, 1],
+    "proximityRatio": [1.33, 1.78, 3.75],
+    "regionShare": [0.09, 0.14, 0.22],
+    "uniformShare": [0.14, 0.3, 0.5],
+    "gapEm": [0.31, 0.56, 0.75],
+    "gridShare4": [0.15, 0.35, 0.71],
+    "nGaps": [4, 5, 7],
+    "circleShare": [0, 0, 0.06],
+    "nRadii": [2, 2, 3],
+    "centeredShare": [0.13, 0.19, 0.54],
+    "edgeTop3Share": [0.36, 0.47, 0.71],
+    "bgShare": [0.62, 0.82, 0.92],
+    "edgeDensity": [0.01, 0.01, 0.02],
+    "jpegKb": [48.1, 94.9, 116.7],
+    "colourCount": [11, 15, 22],
+    "colourfulness": [7.37, 13.39, 39.12],
+    "mirrorLR": [0.25, 0.54, 0.85],
+    "balanceLR": [0.82, 0.85, 0.98],
+    "maxCols": [1, 1, 2],
+    "marginShare": [0.01, 0.03, 0.05],
+    "gutterRatio": [0, 0.03, 0.72],
+    "regularity": [0.32, 0.38, 0.42],
+    "elements1": [134, 234, 383],
+    "pagesLong": [1, 1, 1],
+    "bodyRatio": [1, 1, 1]
+   }
+  },
+  "product": {
+   "family": "application",
+   "near": ["instrument"],
+   "stance": {
+    "hero": "the task",
+    "space": "a neutral medium",
+    "body": "operates and reads in turn"
+   },
+   "pages": 11,
+   "recognised": {
+    "first": 4,
+    "inTwo": 7
+   },
+   "status": "default: the middle, with no extreme of its own, so it is recognised least",
+   "signature": ["regularity", "mirrorLR", "faceWidth", "bgShare", "imgCov", "borderShare"],
+   "dials": {
+    "n": 14,
+    "density": "default",
+    "kappa": {
+     "control": 0.5,
+     "frame": 0.5,
+     "card": 0.5,
+     "panel": 0.5
+    },
+    "constants": {
+     "cardRadius": "control",
+     "rhythm": "line"
+    },
+    "typeCap": "heading-lg",
+    "icon": "md"
+   },
+   "bands": {
+    "body": [14, 14, 16],
+    "contrast": [1.71, 2.25, 2.5],
+    "nSizes": [4, 5, 6],
+    "upperShare": [0, 0.03, 0.05],
+    "textCov": [0.09, 0.11, 0.15],
+    "imgCov": [0, 0, 0.01],
+    "occupancy": [0.8, 0.88, 0.92],
+    "loft": [2.13, 2.29, 2.29],
+    "kappa2": [0.24, 0.5, 0.57],
+    "kappaSurface": [0, 0, 0.07],
+    "squareShare": [0.21, 0.55, 0.73],
+    "pillShare": [0, 0, 0.05],
+    "iconOnlyShare": [0.03, 0.06, 0.18],
+    "iconToBody": [0.91, 1, 1.14],
+    "borderShare": [0.03, 0.07, 0.12],
+    "bwMax": [1, 1, 2],
+    "monoShare": [0, 0, 0.05],
+    "heavyShare": [0, 0, 0.05],
+    "meanWeight": [425, 459, 471],
+    "displayVh": [2.67, 3.56, 4],
+    "labelToBody": [1, 1, 1],
+    "serifShare": [0, 0, 0],
+    "strokeContrast": [0.8, 0.83, 0.83],
+    "dispContrast": [0.77, 0.78, 0.79],
+    "faceWeight": [6.47, 7.83, 7.83],
+    "dispWeight": [5.46, 5.53, 5.6],
+    "faceWidth": [0.47, 0.47, 0.53],
+    "nFaces": [1, 1, 2],
+    "scaleStep": [1.14, 1.17, 1.2],
+    "lineRatio": [1.43, 1.43, 1.5],
+    "lineRatioDisplay": [1.1, 1.11, 1.25],
+    "xHeightPx": [6.83, 7.1, 7.63],
+    "pageTone": [98.27, 100, 100],
+    "textTone": [0, 29.39, 41.49],
+    "bodyLcAbs": [80.54, 92.14, 101.26],
+    "lowLcShare": [0, 0, 0.01],
+    "wcagFailShare": [0, 0, 0.03],
+    "darkShare": [0.01, 0.01, 0.03],
+    "textChromaShare": [0, 0.06, 0.23],
+    "fillShare": [0.08, 0.12, 0.21],
+    "chromaFillShare": [0, 0, 0.01],
+    "maxChroma": [16.94, 63.65, 80.43],
+    "nHues": [1, 1, 2],
+    "ctlChroma": [2.8, 11.62, 22.21],
+    "followsScheme": [0, 0, 1],
+    "proximityRatio": [1, 1.75, 3],
+    "regionShare": [0.05, 0.11, 0.21],
+    "uniformShare": [0.05, 0.18, 0.36],
+    "gapEm": [0.57, 0.57, 0.86],
+    "gridShare4": [0.57, 0.76, 0.79],
+    "nGaps": [4, 6, 9],
+    "circleShare": [0, 0, 0.03],
+    "nRadii": [2, 3, 4],
+    "centeredShare": [0.04, 0.09, 0.2],
+    "edgeTop3Share": [0.34, 0.46, 0.58],
+    "bgShare": [0.82, 0.91, 0.94],
+    "edgeDensity": [0.01, 0.02, 0.02],
+    "jpegKb": [66.9, 101.5, 117.1],
+    "colourCount": [14, 16, 26],
+    "colourfulness": [7.35, 11.07, 16.54],
+    "mirrorLR": [0.12, 0.25, 0.46],
+    "balanceLR": [0.65, 0.81, 0.93],
+    "maxCols": [1, 1, 3],
+    "marginShare": [0.03, 0.07, 0.1],
+    "gutterRatio": [0.07, 0.08, 0.21],
+    "regularity": [0.45, 0.53, 0.54],
+    "elements1": [211, 319, 670],
+    "pagesLong": [1, 2.39, 3.07],
+    "bodyRatio": [1, 1.07, 1.14]
+   }
+  },
+  "civic": {
+   "family": "reading",
+   "near": [],
+   "stance": {
+    "hero": "the instruction",
+    "space": "a margin of safety",
+    "body": "reads once, then acts once"
+   },
+   "pages": 12,
+   "recognised": {
+    "first": 12,
+    "inTwo": 12
+   },
+   "status": "measured",
+   "signature": ["bwMax", "marginShare", "heavyShare", "squareShare", "ctlChroma", "edgeTop3Share"],
+   "dials": {
+    "n": 16,
+    "density": "default",
+    "kappa": {
+     "control": 0,
+     "frame": 0,
+     "card": 0,
+     "panel": 0
+    },
+    "constants": {
+     "rhythm": "line"
+    },
+    "typeCap": "heading-lg",
+    "icon": "md",
+    "outsideBand": {
+     "body": "set from a drawn specimen: the owner chose a 16px body over the measured 18 to 19px"
+    }
+   },
+   "bands": {
+    "body": [18, 19, 19],
+    "contrast": [2.17, 2.5, 2.53],
+    "nSizes": [3, 5, 6],
+    "upperShare": [0, 0, 0],
+    "textCov": [0.08, 0.12, 0.18],
+    "imgCov": [0, 0.01, 0.05],
+    "occupancy": [0.61, 0.67, 0.78],
+    "measure": [51, 66, 94],
+    "loft": [2.31, 2.5, 2.51],
+    "kappa2": [0, 0, 0],
+    "kappaSurface": [0, 0, 0],
+    "squareShare": [0.83, 1, 1],
+    "pillShare": [0, 0, 0],
+    "iconOnlyShare": [0, 0.11, 0.14],
+    "iconToBody": [1.11, 1.11, 1.86],
+    "borderShare": [0.04, 0.07, 0.12],
+    "bwMax": [2, 6, 10],
+    "monoShare": [0, 0, 0],
+    "heavyShare": [0.14, 0.2, 0.24],
+    "meanWeight": [445, 461, 472],
+    "displayVh": [4.44, 4.89, 5.33],
+    "labelToBody": [0.84, 0.84, 1],
+    "serifShare": [0, 0, 0],
+    "strokeContrast": [0.74, 0.77, 0.84],
+    "dispContrast": [0.73, 0.75, 0.88],
+    "faceWeight": [7.36, 7.94, 8],
+    "dispWeight": [4.57, 4.91, 4.98],
+    "faceWidth": [0.49, 0.5, 0.53],
+    "nFaces": [1, 1, 2],
+    "scaleStep": [1.13, 1.26, 1.37],
+    "lineRatio": [1.32, 1.5, 1.5],
+    "lineRatioDisplay": [1.04, 1.2, 1.2],
+    "xHeightPx": [8.82, 9.5, 9.69],
+    "pageTone": [100, 100, 100],
+    "textTone": [3.26, 9.26, 16.9],
+    "bodyLcAbs": [101.18, 104.27, 105.75],
+    "lowLcShare": [0, 0, 0.01],
+    "wcagFailShare": [0, 0, 0],
+    "darkShare": [0.02, 0.06, 0.16],
+    "textChromaShare": [0.19, 0.23, 0.32],
+    "fillShare": [0.12, 0.28, 0.36],
+    "chromaFillShare": [0, 0.04, 0.13],
+    "maxChroma": [48.42, 50.14, 59.35],
+    "nHues": [1, 1, 2],
+    "ctlChroma": [19.36, 50.14, 55.61],
+    "followsScheme": [0, 0, 0],
+    "proximityRatio": [1.6, 3, 3],
+    "regionShare": [0.03, 0.06, 0.32],
+    "uniformShare": [0, 0.17, 0.29],
+    "gapEm": [0.42, 0.67, 1.05],
+    "gridShare4": [0.22, 0.56, 0.9],
+    "nGaps": [4, 4, 5],
+    "circleShare": [0, 0, 0],
+    "nRadii": [0, 0, 1],
+    "centeredShare": [0, 0.01, 0.03],
+    "edgeTop3Share": [0.54, 0.78, 0.94],
+    "bgShare": [0.59, 0.8, 0.86],
+    "edgeDensity": [0.02, 0.02, 0.02],
+    "jpegKb": [92.4, 101.5, 113.3],
+    "colourCount": [17, 23, 28],
+    "colourfulness": [33.32, 42.25, 59.97],
+    "mirrorLR": [0.4, 0.62, 0.85],
+    "balanceLR": [0.82, 0.92, 0.98],
+    "maxCols": [1, 2, 3],
+    "marginShare": [0.1, 0.17, 0.17],
+    "gutterRatio": [0, 0, 0.1],
+    "regularity": [0.36, 0.4, 0.41],
+    "elements1": [80, 106, 151],
+    "pagesLong": [2.37, 3.28, 4.45],
+    "bodyRatio": [1, 1, 1]
+   }
+  },
+  "editorial": {
+   "family": "reading",
+   "near": [],
+   "stance": {
+    "hero": "the text",
+    "space": "set by the measure",
+    "body": "reads at length"
+   },
+   "pages": 14,
+   "recognised": {
+    "first": 13,
+    "inTwo": 13
+   },
+   "status": "measured",
+   "signature": ["serifShare", "strokeContrast", "dispContrast", "pagesLong", "circleShare", "textCov"],
+   "dials": {
+    "n": 16,
+    "density": "default",
+    "kappa": {
+     "control": 0.19,
+     "frame": 0.19,
+     "card": 0.5,
+     "panel": 0.19
+    },
+    "constants": {
+     "cardRadius": "control",
+     "rhythm": "line"
+    },
+    "text": {
+     "role": "heading-sm",
+     "line": 1.5
+    },
+    "label": {
+     "case": "upper",
+     "tracking": 0.08,
+     "role": "label",
+     "note": "set from a drawn specimen: the owner asked for capitals on kickers; the tracking is a starting value, and measured reading sites set capitals on 0 to 3 percent of text"
+    },
+    "typeCap": "display-md",
+    "icon": "sm",
+    "outsideBand": {
+     "body": "set from a drawn specimen: the owner chose running text in the heading-sm role, 23.5px, over the measured 20 to 21px"
+    }
+   },
+   "bands": {
+    "body": [20, 20, 21],
+    "contrast": [2, 2.5, 2.56],
+    "nSizes": [5, 7, 8],
+    "upperShare": [0, 0.01, 0.03],
+    "textCov": [0.12, 0.19, 0.24],
+    "imgCov": [0.08, 0.17, 0.3],
+    "occupancy": [0.82, 0.9, 0.92],
+    "measure": [64, 67.25, 69.5],
+    "loft": [2.5, 2.55, 2.86],
+    "kappa2": [0.16, 0.19, 1],
+    "kappaSurface": [0, 0.13, 0.2],
+    "squareShare": [0.38, 0.5, 0.77],
+    "pillShare": [0, 0.13, 0.23],
+    "iconOnlyShare": [0.13, 0.2, 0.5],
+    "iconToBody": [0.8, 1, 1.18],
+    "borderShare": [0.03, 0.04, 0.06],
+    "bwMax": [1, 1, 2],
+    "monoShare": [0, 0, 0],
+    "heavyShare": [0, 0.02, 0.04],
+    "meanWeight": [407, 415, 424],
+    "displayVh": [4.44, 5.33, 5.56],
+    "labelToBody": [0.67, 0.8, 0.9],
+    "serifShare": [0.65, 0.9, 0.93],
+    "strokeContrast": [0.34, 0.4, 0.51],
+    "dispContrast": [0.25, 0.33, 0.41],
+    "faceWeight": [7.18, 7.47, 8.03],
+    "dispWeight": [4.44, 5.83, 7.59],
+    "faceWidth": [0.45, 0.51, 0.54],
+    "nFaces": [2, 3, 3],
+    "scaleStep": [1.14, 1.17, 1.23],
+    "lineRatio": [1.4, 1.5, 1.55],
+    "lineRatioDisplay": [1, 1.14, 1.15],
+    "xHeightPx": [8.82, 9.16, 10],
+    "pageTone": [100, 100, 100],
+    "textTone": [0, 5.06, 9.26],
+    "bodyLcAbs": [102.55, 106.04, 106.04],
+    "lowLcShare": [0, 0, 0.01],
+    "wcagFailShare": [0, 0, 0.01],
+    "darkShare": [0, 0.03, 0.1],
+    "textChromaShare": [0, 0.02, 0.05],
+    "fillShare": [0.18, 0.44, 0.8],
+    "chromaFillShare": [0, 0, 0.08],
+    "maxChroma": [30.07, 57.47, 83.54],
+    "nHues": [1, 1, 2],
+    "ctlChroma": [2.55, 39.59, 57.47],
+    "followsScheme": [0, 0, 0],
+    "proximityRatio": [1.31, 1.67, 3],
+    "regionShare": [0.03, 0.11, 0.13],
+    "uniformShare": [0, 0.14, 0.2],
+    "gapEm": [0.76, 1, 1.27],
+    "gridShare4": [0.39, 0.74, 0.87],
+    "nGaps": [6, 8, 10],
+    "circleShare": [0.14, 0.21, 0.29],
+    "nRadii": [0, 1, 2],
+    "centeredShare": [0.01, 0.08, 0.09],
+    "edgeTop3Share": [0.55, 0.67, 0.81],
+    "bgShare": [0.49, 0.61, 0.89],
+    "edgeDensity": [0.01, 0.02, 0.02],
+    "jpegKb": [67.6, 98, 105.4],
+    "colourCount": [18, 27, 41],
+    "colourfulness": [7.81, 24.23, 32.78],
+    "mirrorLR": [0.24, 0.75, 0.87],
+    "balanceLR": [0.76, 0.94, 0.98],
+    "maxCols": [1, 2, 3],
+    "marginShare": [0.03, 0.09, 0.13],
+    "gutterRatio": [0, 0, 0.05],
+    "regularity": [0.27, 0.33, 0.36],
+    "elements1": [87, 136, 204],
+    "pagesLong": [4.61, 12.95, 17.36],
+    "bodyRatio": [0.82, 0.9, 1]
+   }
+  },
+  "fashion": {
+   "family": "fashion",
+   "near": [],
+   "stance": {
+    "hero": "the object, in the image",
+    "space": "the luxury itself",
+    "body": "browses"
+   },
+   "pages": 20,
+   "recognised": {
+    "first": 19,
+    "inTwo": 20
+   },
+   "status": "measured",
+   "signature": ["upperShare", "maxChroma", "imgCov", "lineRatioDisplay", "squareShare", "nSizes"],
+   "dials": {
+    "n": 14,
+    "density": "default",
+    "kappa": {
+     "control": 0,
+     "frame": 0,
+     "card": 0,
+     "panel": 0
+    },
+    "typeCap": "heading-lg",
+    "icon": "md",
+    "label": {
+     "case": "upper",
+     "tracking": 0.22,
+     "role": "label",
+     "note": "set from a drawn specimen and kept by the owner after measurement: fashion pages set capitals on buttons and navigation but track them lightly, 0.10 at most in navigation (2 of 11 pages above 0.03) and 0.08 on buttons (1 of 20)"
+    },
+    "constants": {
+     "inset": {
+      "compact": 2,
+      "default": 3,
+      "loose": 3.5
+     }
+    }
+   },
+   "bands": {
+    "body": [12, 13, 14],
+    "contrast": [1, 1.67, 2.29],
+    "nSizes": [2, 3, 5],
+    "upperShare": [0.01, 0.23, 0.48],
+    "textCov": [0.01, 0.03, 0.04],
+    "imgCov": [0.53, 0.91, 1],
+    "occupancy": [0.81, 0.92, 0.97],
+    "measure": [56.25, 77.5, 84.5],
+    "loft": [2.69, 3, 3.43],
+    "kappa2": [0, 0, 0],
+    "kappaSurface": [0, 0, 0],
+    "squareShare": [0.67, 0.86, 1],
+    "pillShare": [0, 0, 0],
+    "iconOnlyShare": [0.11, 0.29, 0.43],
+    "iconToBody": [1, 1, 1.33],
+    "borderShare": [0, 0.01, 0.02],
+    "bwMax": [1, 1, 1],
+    "monoShare": [0, 0, 0],
+    "heavyShare": [0, 0, 0.07],
+    "meanWeight": [400, 412, 429],
+    "displayVh": [1.56, 2.56, 3.56],
+    "labelToBody": [1, 1, 1.14],
+    "serifShare": [0, 0, 0],
+    "strokeContrast": [0.78, 0.81, 0.85],
+    "dispContrast": [0.74, 0.81, 0.83],
+    "faceWeight": [7, 7.5, 8.25],
+    "dispWeight": [6.7, 7.53, 8.25],
+    "faceWidth": [0.5, 0.51, 0.53],
+    "nFaces": [1, 2, 3],
+    "scaleStep": [1.17, 1.2, 1.33],
+    "lineRatio": [1.3, 1.4, 1.5],
+    "lineRatioDisplay": [1.23, 1.4, 1.45],
+    "xHeightPx": [5.64, 6.21, 7.28],
+    "pageTone": [99.93, 100, 100],
+    "textTone": [0, 0, 43.19],
+    "bodyLcAbs": [103.52, 106.04, 106.04],
+    "lowLcShare": [0, 0.05, 0.26],
+    "wcagFailShare": [0, 0.05, 0.23],
+    "darkShare": [0, 0.02, 0.17],
+    "textChromaShare": [0, 0, 0],
+    "fillShare": [0, 0.31, 0.97],
+    "chromaFillShare": [0, 0, 0],
+    "maxChroma": [0, 0, 0],
+    "nHues": [0, 0, 0],
+    "ctlChroma": [0, 0.74, 4.92],
+    "followsScheme": [0, 0, 0],
+    "proximityRatio": [1, 2, 3],
+    "regionShare": [0, 0, 0.04],
+    "uniformShare": [0.17, 0.33, 0.5],
+    "gapEm": [0.57, 0.86, 1.33],
+    "gridShare4": [0.2, 0.39, 0.86],
+    "nGaps": [3, 3, 5],
+    "circleShare": [0, 0, 0.29],
+    "nRadii": [0, 0, 0],
+    "centeredShare": [0.02, 0.16, 0.59],
+    "edgeTop3Share": [0.35, 0.54, 0.71],
+    "bgShare": [0.22, 0.39, 0.69],
+    "edgeDensity": [0.01, 0.01, 0.02],
+    "jpegKb": [77.2, 91.6, 98.6],
+    "colourCount": [21, 36, 52],
+    "colourfulness": [5.67, 13.11, 24.9],
+    "mirrorLR": [0.56, 0.8, 0.95],
+    "balanceLR": [0.87, 0.98, 1],
+    "maxCols": [1, 4, 4],
+    "marginShare": [0.01, 0.03, 0.04],
+    "gutterRatio": [0.01, 0.04, 0.12],
+    "regularity": [0.29, 0.38, 0.53],
+    "elements1": [129, 334, 669],
+    "pagesLong": [4.11, 5.04, 8.06],
+    "bodyRatio": [1, 1, 1.14]
+   }
+  },
+  "calm": {
+   "family": "expressive",
+   "near": ["marketing"],
+   "stance": {
+    "hero": "the person's state",
+    "space": "rest",
+    "body": "slows down"
+   },
+   "pages": 10,
+   "recognised": {
+    "first": 6,
+    "inTwo": 7
+   },
+   "status": "measured",
+   "signature": ["pillShare", "kappaSurface", "proximityRatio", "kappa2", "nGaps", "marginShare"],
+   "dials": {
+    "n": 18,
+    "density": "default",
+    "kappa": {
+     "control": 1,
+     "frame": 1,
+     "card": 1,
+     "panel": 1
+    },
+    "constants": {
+     "rhythm": "line"
+    },
+    "typeCap": "display-md",
+    "icon": "md"
+   },
+   "bands": {
+    "body": [16, 18, 20],
+    "contrast": [2.4, 3.64, 4.25],
+    "nSizes": [5, 6, 9],
+    "upperShare": [0, 0.01, 0.01],
+    "textCov": [0.04, 0.09, 0.1],
+    "imgCov": [0.13, 0.39, 0.41],
+    "occupancy": [0.68, 0.79, 0.83],
+    "loft": [2.67, 2.98, 3],
+    "kappa2": [0.75, 1, 1],
+    "kappaSurface": [0.63, 1, 1],
+    "squareShare": [0, 0.06, 0.15],
+    "pillShare": [0.02, 0.69, 0.8],
+    "iconOnlyShare": [0, 0.11, 0.31],
+    "iconToBody": [1, 1.25, 1.6],
+    "borderShare": [0.01, 0.04, 0.06],
+    "bwMax": [1, 2, 2],
+    "monoShare": [0, 0, 0],
+    "heavyShare": [0, 0.04, 0.17],
+    "meanWeight": [400, 473, 513],
+    "displayVh": [5, 7.11, 7.56],
+    "labelToBody": [0.8, 1, 1.13],
+    "serifShare": [0, 0, 0],
+    "strokeContrast": [0.84, 0.86, 0.88],
+    "dispContrast": [0.79, 0.87, 0.88],
+    "faceWeight": [5.96, 7.37, 8],
+    "dispWeight": [5.11, 5.96, 6.66],
+    "faceWidth": [0.5, 0.53, 0.54],
+    "nFaces": [1, 1, 2],
+    "scaleStep": [1.17, 1.25, 1.5],
+    "lineRatio": [1.32, 1.45, 1.5],
+    "lineRatioDisplay": [1, 1.2, 1.44],
+    "xHeightPx": [8.37, 9.38, 10],
+    "pageTone": [11.48, 100, 100],
+    "textTone": [2.76, 28.07, 100],
+    "bodyLcAbs": [93.27, 103.07, 106.04],
+    "lowLcShare": [0, 0, 0.01],
+    "wcagFailShare": [0, 0, 0.02],
+    "darkShare": [0, 0.08, 0.16],
+    "textChromaShare": [0, 0, 0.03],
+    "fillShare": [0.07, 0.29, 0.67],
+    "chromaFillShare": [0, 0, 0.02],
+    "maxChroma": [0, 40.27, 48],
+    "nHues": [0, 1, 2],
+    "ctlChroma": [0.78, 2.07, 2.87],
+    "followsScheme": [0, 0, 0],
+    "proximityRatio": [2.25, 5.5, 6.29],
+    "regionShare": [0, 0.05, 0.06],
+    "uniformShare": [0.07, 0.1, 0.24],
+    "gapEm": [0.31, 1.33, 1.5],
+    "gridShare4": [0.37, 0.6, 0.82],
+    "nGaps": [7, 10, 12],
+    "circleShare": [0, 0, 0.17],
+    "nRadii": [0, 1, 2],
+    "centeredShare": [0.12, 0.33, 0.43],
+    "edgeTop3Share": [0.45, 0.51, 0.81],
+    "bgShare": [0.4, 0.72, 0.83],
+    "edgeDensity": [0, 0.02, 0.02],
+    "jpegKb": [24.7, 97.1, 118.6],
+    "colourCount": [7, 31, 39],
+    "colourfulness": [7.77, 30.11, 48.43],
+    "mirrorLR": [0.14, 0.78, 0.92],
+    "balanceLR": [0.77, 0.93, 0.99],
+    "maxCols": [1, 3, 4],
+    "marginShare": [0.07, 0.13, 0.14],
+    "gutterRatio": [0.09, 0.13, 0.51],
+    "regularity": [0.23, 0.31, 0.44],
+    "elements1": [59, 92, 128],
+    "pagesLong": [1.01, 7.06, 9.54],
+    "bodyRatio": [0.89, 1, 1]
+   }
+  },
+  "toy": {
+   "family": "expressive",
+   "near": ["marketing"],
+   "stance": {
+    "hero": "the act of touching",
+    "space": "filled by the controls",
+    "body": "plays"
+   },
+   "pages": 17,
+   "recognised": {
+    "first": 14,
+    "inTwo": 16
+   },
+   "status": "measured",
+   "signature": ["colourfulness", "meanWeight", "heavyShare", "iconToBody", "dispWeight", "colourCount"],
+   "dials": {
+    "n": 18,
+    "density": "loose",
+    "kappa": {
+     "control": 0.4,
+     "frame": 0.4,
+     "card": 0.5,
+     "panel": 0.4
+    },
+    "constants": {
+     "cardRadius": "control"
+    },
+    "typeCap": "display-sm",
+    "icon": "full",
+    "outsideBand": {
+     "body": "set from a drawn specimen: the owner chose an 18px body over the measured 14 to 17px"
+    }
+   },
+   "bands": {
+    "body": [14, 16, 17],
+    "contrast": [1.56, 2, 2.82],
+    "nSizes": [4, 5, 6],
+    "upperShare": [0, 0.04, 0.1],
+    "textCov": [0.01, 0.02, 0.05],
+    "imgCov": [0.32, 0.4, 0.92],
+    "occupancy": [0.77, 0.89, 0.96],
+    "measure": [56.67, 64.5, 106.5],
+    "loft": [2.6, 2.86, 3.2],
+    "kappa2": [0.31, 0.4, 0.64],
+    "kappaSurface": [0.13, 0.2, 0.34],
+    "squareShare": [0, 0.05, 0.2],
+    "pillShare": [0, 0, 0.13],
+    "iconOnlyShare": [0, 0.17, 0.44],
+    "iconToBody": [1.29, 1.71, 2.29],
+    "borderShare": [0.01, 0.03, 0.07],
+    "bwMax": [2, 2, 2],
+    "monoShare": [0, 0, 0],
+    "heavyShare": [0.07, 0.17, 0.5],
+    "meanWeight": [455, 507, 556],
+    "displayVh": [2.44, 3.56, 5.33],
+    "labelToBody": [0.86, 1, 1.3],
+    "serifShare": [0, 0, 0],
+    "strokeContrast": [0.79, 0.85, 0.86],
+    "dispContrast": [0.75, 0.85, 0.89],
+    "faceWeight": [5, 6.81, 7.53],
+    "dispWeight": [4.13, 4.53, 4.8],
+    "faceWidth": [0.5, 0.53, 0.55],
+    "nFaces": [1, 2, 3],
+    "scaleStep": [1.11, 1.25, 1.4],
+    "lineRatio": [1.41, 1.43, 1.5],
+    "lineRatioDisplay": [0.82, 1.13, 1.25],
+    "xHeightPx": [7.39, 8.29, 8.61],
+    "pageTone": [100, 100, 100],
+    "textTone": [21.25, 40.11, 100],
+    "bodyLcAbs": [72.49, 93.11, 100.72],
+    "lowLcShare": [0, 0.14, 0.24],
+    "wcagFailShare": [0, 0.05, 0.45],
+    "darkShare": [0, 0.06, 0.63],
+    "textChromaShare": [0.05, 0.16, 0.31],
+    "fillShare": [0.36, 0.68, 1],
+    "chromaFillShare": [0, 0.02, 0.35],
+    "maxChroma": [56.2, 67.86, 83.54],
+    "nHues": [2, 2, 4],
+    "ctlChroma": [2.87, 33.74, 69.73],
+    "followsScheme": [0, 0, 0],
+    "proximityRatio": [2, 2, 4],
+    "regionShare": [0, 0.14, 0.31],
+    "uniformShare": [0.13, 0.25, 0.33],
+    "gapEm": [0.56, 0.57, 1.25],
+    "gridShare4": [0.22, 0.64, 0.75],
+    "nGaps": [4, 5, 9],
+    "circleShare": [0, 0, 0.18],
+    "nRadii": [2, 2, 3],
+    "centeredShare": [0.1, 0.35, 0.71],
+    "edgeTop3Share": [0.46, 0.49, 0.71],
+    "bgShare": [0.22, 0.4, 0.67],
+    "edgeDensity": [0.01, 0.02, 0.03],
+    "jpegKb": [86.2, 119.4, 139.2],
+    "colourCount": [34, 49, 60],
+    "colourfulness": [44.96, 85.1, 103.55],
+    "mirrorLR": [0.45, 0.74, 0.85],
+    "balanceLR": [0.89, 0.96, 0.99],
+    "maxCols": [1, 3, 5],
+    "marginShare": [0.03, 0.12, 0.18],
+    "gutterRatio": [0.07, 0.08, 0.09],
+    "regularity": [0.25, 0.3, 0.35],
+    "elements1": [77, 169, 265],
+    "pagesLong": [1, 2.44, 4.63],
+    "bodyRatio": [1, 1, 1]
+   }
+  },
+  "terminal": {
+   "family": "terminal",
+   "near": [],
+   "stance": {
+    "hero": "the character grid",
+    "space": "one cell",
+    "body": "types"
+   },
+   "pages": 6,
+   "recognised": {
+    "first": 5,
+    "inTwo": 5
+   },
+   "status": "thin: 6 pages",
+   "signature": ["monoShare", "darkShare", "faceWidth", "regularity", "occupancy", "nSizes"],
+   "dials": {
+    "n": 16,
+    "density": "compact",
+    "kappa": {
+     "control": 0,
+     "frame": 0,
+     "card": 0,
+     "panel": 0
+    },
+    "typeCap": "title-md",
+    "icon": "md",
+    "outsideBand": {
+     "loft": "set from a drawn specimen: a control with no inset is one line high, as measured, but leaves no spacing"
+    }
+   },
+   "bands": {
+    "body": [13, 15, 16],
+    "contrast": [1, 1, 1.14],
+    "nSizes": [1, 1, 2],
+    "upperShare": [0.03, 0.04, 0.09],
+    "textCov": [0.04, 0.11, 0.12],
+    "imgCov": [0, 0, 0],
+    "occupancy": [0.47, 0.54, 0.61],
+    "measure": [45.69, 47.5, 84.71],
+    "loft": [1.5, 1.58, 1.58],
+    "kappaSurface": [0, 0, 0],
+    "squareShare": [0, 1, 1],
+    "pillShare": [0, 0, 0],
+    "borderShare": [0, 0, 0.02],
+    "bwMax": [1, 2, 2],
+    "monoShare": [0.97, 1, 1],
+    "heavyShare": [0, 0.05, 0.12],
+    "meanWeight": [400, 416, 437],
+    "displayVh": [1.44, 1.78, 1.78],
+    "labelToBody": [0.83, 0.83, 1],
+    "serifShare": [0, 0, 0],
+    "strokeContrast": [0.7, 0.76, 0.77],
+    "dispContrast": [0.69, 0.77, 0.78],
+    "faceWeight": [7.49, 7.73, 7.97],
+    "dispWeight": [7.18, 7.73, 7.97],
+    "faceWidth": [0.6, 0.6, 0.6],
+    "nFaces": [1, 1, 2],
+    "lineRatio": [1.3, 1.5, 1.5],
+    "lineRatioDisplay": [1.2, 1.3, 1.5],
+    "xHeightPx": [5.89, 7.77, 8.77],
+    "pageTone": [0, 100, 100],
+    "textTone": [0, 75.88, 87.74],
+    "bodyLcAbs": [86.49, 106.04, 106.04],
+    "lowLcShare": [0, 0.05, 0.11],
+    "wcagFailShare": [0.01, 0.05, 0.07],
+    "darkShare": [0, 0.99, 1],
+    "textChromaShare": [0.07, 0.14, 0.39],
+    "fillShare": [0, 0, 0.01],
+    "chromaFillShare": [0, 0, 0],
+    "maxChroma": [72.82, 87.23, 92.77],
+    "nHues": [1, 1, 3],
+    "ctlChroma": [2.76, 9.94, 46.4],
+    "followsScheme": [0, 0, 0],
+    "regionShare": [0, 0, 0],
+    "uniformShare": [0, 0.06, 0.2],
+    "gapEm": [0.31, 1, 1.21],
+    "nGaps": [2, 2, 5],
+    "circleShare": [0, 0, 0],
+    "nRadii": [0, 0, 0],
+    "centeredShare": [0, 0.01, 0.08],
+    "edgeTop3Share": [0.24, 0.54, 0.71],
+    "bgShare": [0.89, 0.95, 0.97],
+    "edgeDensity": [0.01, 0.02, 0.03],
+    "jpegKb": [72.9, 92.1, 136.2],
+    "colourCount": [10, 15, 17],
+    "colourfulness": [9.17, 13.25, 13.73],
+    "mirrorLR": [0.09, 0.24, 0.44],
+    "balanceLR": [0.33, 0.83, 0.84],
+    "maxCols": [1, 2, 3],
+    "marginShare": [0.01, 0.03, 0.22],
+    "gutterRatio": [0, 0.11, 0.27],
+    "regularity": [0.41, 0.64, 0.73],
+    "elements1": [78, 144, 306],
+    "pagesLong": [1, 4.03, 4.75],
+    "bodyRatio": [1, 1, 1]
+   }
+  },
+  "marketing": {
+   "family": "expressive",
+   "near": [],
+   "stance": {
+    "hero": "one message about the product",
+    "space": "a stage, one scene per screen",
+    "body": "scrolls, then decides"
+   },
+   "pages": 41,
+   "recognised": {
+    "first": 27,
+    "inTwo": 37
+   },
+   "status": "measured",
+   "signature": ["displayVh", "contrast", "nRadii", "pagesLong", "squareShare", "nSizes"],
+   "dials": {
+    "n": 18,
+    "density": "loose",
+    "kappa": {
+     "control": 1,
+     "frame": 1,
+     "card": 0.5,
+     "panel": 1
+    },
+    "typeCap": "display-md",
+    "icon": "md",
+    "constants": {
+     "rhythm": "line",
+     "levels": {
+      "composite": 0.5,
+      "group": 1,
+      "collection": 2,
+      "panel": 2,
+      "page": {
+       "narrow": 2,
+       "base": 4,
+       "wide": 8
+      }
+     }
+    },
+    "outsideBand": {
+     "body": "set from a drawn specimen: the owner chose an 18px body over the measured 14 to 16px"
+    }
+   },
+   "bands": {
+    "body": [14, 16, 16],
+    "contrast": [3.2, 4, 5],
+    "nSizes": [6, 7, 7],
+    "upperShare": [0, 0.01, 0.04],
+    "textCov": [0.07, 0.1, 0.12],
+    "imgCov": [0.32, 0.45, 0.75],
+    "occupancy": [0.79, 0.87, 0.92],
+    "measure": [43.5, 54.67, 82.5],
+    "loft": [2.5, 2.86, 3.32],
+    "kappa2": [0.34, 0.5, 1],
+    "kappaSurface": [0.06, 0.17, 0.48],
+    "squareShare": [0.01, 0.1, 0.37],
+    "pillShare": [0.03, 0.13, 0.31],
+    "iconOnlyShare": [0.03, 0.13, 0.21],
+    "iconToBody": [0.93, 1.17, 1.29],
+    "borderShare": [0.01, 0.02, 0.05],
+    "bwMax": [1, 1, 2],
+    "monoShare": [0, 0, 0.03],
+    "heavyShare": [0, 0, 0.05],
+    "meanWeight": [406, 426, 457],
+    "displayVh": [6.22, 7.11, 7.36],
+    "labelToBody": [0.89, 1, 1.14],
+    "serifShare": [0, 0, 0],
+    "strokeContrast": [0.8, 0.82, 0.85],
+    "dispContrast": [0.78, 0.81, 0.87],
+    "faceWeight": [7.18, 7.87, 8.31],
+    "dispWeight": [5.4, 6.77, 8.24],
+    "faceWidth": [0.5, 0.53, 0.54],
+    "nFaces": [1, 2, 3],
+    "scaleStep": [1.17, 1.25, 1.38],
+    "lineRatio": [1.4, 1.5, 1.52],
+    "lineRatioDisplay": [1, 1.06, 1.15],
+    "xHeightPx": [7.39, 7.92, 8.45],
+    "pageTone": [97.16, 100, 100],
+    "textTone": [7.74, 40.82, 81.77],
+    "bodyLcAbs": [80.44, 99.06, 105.93],
+    "lowLcShare": [0.01, 0.05, 0.16],
+    "wcagFailShare": [0, 0.05, 0.12],
+    "darkShare": [0.04, 0.26, 0.85],
+    "textChromaShare": [0, 0.02, 0.05],
+    "fillShare": [0.3, 0.51, 0.97],
+    "chromaFillShare": [0, 0.01, 0.02],
+    "maxChroma": [56.16, 68, 80.88],
+    "nHues": [1, 1, 2],
+    "ctlChroma": [2.71, 4.28, 56.16],
+    "followsScheme": [0, 0, 0],
+    "proximityRatio": [1.33, 2, 2.92],
+    "regionShare": [0.05, 0.09, 0.18],
+    "uniformShare": [0.08, 0.17, 0.27],
+    "gapEm": [0.75, 1, 1.38],
+    "gridShare4": [0.55, 0.74, 0.88],
+    "nGaps": [6, 8, 10],
+    "circleShare": [0, 0.06, 0.19],
+    "nRadii": [2, 3, 4],
+    "centeredShare": [0.12, 0.22, 0.43],
+    "edgeTop3Share": [0.34, 0.44, 0.55],
+    "bgShare": [0.57, 0.67, 0.85],
+    "edgeDensity": [0.02, 0.02, 0.02],
+    "jpegKb": [88.6, 106.3, 119.1],
+    "colourCount": [22, 35, 53],
+    "colourfulness": [17.89, 26.56, 44.8],
+    "mirrorLR": [0.34, 0.52, 0.77],
+    "balanceLR": [0.83, 0.93, 0.98],
+    "maxCols": [2, 4, 6],
+    "marginShare": [0.03, 0.06, 0.09],
+    "gutterRatio": [0, 0.07, 0.1],
+    "regularity": [0.29, 0.33, 0.42],
+    "elements1": [130, 198, 451],
+    "pagesLong": [7.12, 8.56, 11.49],
+    "bodyRatio": [1, 1, 1]
+   }
+  }
+ }
+}

@@ -9,7 +9,7 @@ const root=path.resolve(import.meta.dirname,'..'),derivePath=path.resolve(root,'
 const usage='Usage: generate-geometry.mjs [--check] [--density compact|default|loose]';
 const args=process.argv.slice(2),check=args.includes('--check'),rest=args.filter(a=>a!=='--check');
 const dials={
-  preset:'massimo',
+  preset:'standard',
   density:'default',
   // Scope font size n per tier: [n at md/md, px per scale step, px per size step]. Every n stays at or above the preset's 12px minimum.
   tiers:{widget:[13,0.5,0.5],product:[14,1,1],content:[16,1,2],brand:[20,2,2]},

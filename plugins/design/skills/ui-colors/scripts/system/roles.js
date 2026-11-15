@@ -21,14 +21,14 @@ export const trimColor = (css) => css.replace(/-?\d*\.\d+/g, (n) => String(Numbe
 /** Brand and feedback roles: each gets the same semantic steps and its whole ramp. */
 export const SCALE_ROLES = [...BRAND_ROLES, ...FEEDBACK_ROLES];
 /** Semantic steps every scale role carries (Radix step semantics). */
-export const SEMANTIC_STEPS = { solid: 9, 'solid-hover': 10, subtle: 3, 'subtle-hover': 4, border: 7, fg: 11 };
+export const SEMANTIC_STEPS = { solid: 9, 'solid-hover': 10, 'solid-active': 11, subtle: 3, 'subtle-hover': 4, border: 7, fg: 11 };
 const UNIFORM_STEPS = Object.fromEntries(SCALE_ROLES.flatMap((role) => [
     ...Object.entries(SEMANTIC_STEPS).map(([name, step]) => [`${role}-${name}`, [role, step]]),
     ...Array.from({ length: 12 }, (_, i) => [`${role}-${i + 1}`, [role, i + 1]]),
 ]));
 /**
  * Role -> [family role, step], Radix step semantics. Shared by the kit tokens and spectrumCSS.
- * One name per role: <role>-solid, -solid-hover, -subtle, -subtle-hover, -border, -fg and <role>-1…12
+ * One name per role: <role>-solid, -solid-hover, -solid-active, -subtle, -subtle-hover, -border, -fg and <role>-1…12
  * for primary, secondary, neutral, critical, warning, success and info; data-1…6; plus the page roles.
  */
 export const ROLE_STEPS = {

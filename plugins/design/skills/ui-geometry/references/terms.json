@@ -1,0 +1,914 @@
+{
+ "$description": "ui-geometry's symbols and words: one meaning each. names are what the scripts emit (symbol:, alias:, id:, role:, preset:, tier:, flag:, file:); `node scripts/terms.mjs --check` keeps them in step. avoid explains a use to stay away from; avoidExact lists exact phrases that are always wrong, which the same check refuses in SKILL.md and the references.",
+ "version": 1,
+ "principles": [
+  {
+   "id": "one-symbol-one-meaning",
+   "rule": "A symbol or word names one concept.",
+   "why": "A letter read two ways (T as text edge and as hit target) gives two right-looking answers to one question."
+  },
+  {
+   "id": "subscript-the-second",
+   "rule": "When a letter is taken, the newer meaning takes a subscript (T_hit, B_α, D_f).",
+   "why": "Keeps the established notation stable."
+  }
+ ],
+ "concepts": [
+  {
+   "id": "scope-size",
+   "term": "n, F",
+   "layer": "unit",
+   "definition": "The scope's font size in px; F = n is the control text size.",
+   "intent": "The one input every length derives from.",
+   "names": [
+    "symbol:F",
+    "flag:--n"
+   ],
+   "related": [
+    "unit"
+   ]
+  },
+  {
+   "id": "unit",
+   "term": "q",
+   "layer": "unit",
+   "definition": "The unit: q = a_q·n + b_q (standard preset: n/2 − 3px, so 4px at 14).",
+   "intent": "Every length is a multiple of q.",
+   "aliases": [
+    "a_q, b_q (the unit's slope and offset)"
+   ],
+   "avoid": [
+    "a, b for the unit constants (a is an icon size, b a border)"
+   ],
+   "names": [
+    "symbol:q",
+    "preset:unit",
+    "preset:unit.a",
+    "preset:unit.b"
+   ],
+   "related": [
+    "scope-size",
+    "crisp"
+   ]
+  },
+  {
+   "id": "border",
+   "term": "b",
+   "layer": "unit",
+   "definition": "Border width in px; it sits inside the box, so padding becomes d − b and radius R − b.",
+   "intent": "Keeping depth measured from the outer edge.",
+   "not": "Not the unit offset b_q.",
+   "names": [
+    "symbol:b",
+    "preset:border"
+   ]
+  },
+  {
+   "id": "type-role",
+   "term": "type role (m_t, k_t)",
+   "layer": "unit",
+   "definition": "A text style whose size is s_t = F + m_t·q and line height s_t + k_t·q.",
+   "intent": "One type scale tied to q.",
+   "not": "Not a length role (fit) and not a colour role (ui-colors).",
+   "avoid": [
+    "role, alone"
+   ],
+   "names": [
+    "preset:type"
+   ]
+  },
+  {
+   "id": "font-metrics",
+   "term": "A_f, D_f, c_f, w̄",
+   "layer": "unit",
+   "definition": "Font ascent, descent, cap height and average advance, as fractions of the em.",
+   "intent": "Optical text centring and the reading measure.",
+   "avoid": [
+    "A, D, c for font metrics (D is the composite edge)"
+   ],
+   "names": [
+    "preset:font"
+   ]
+  },
+  {
+   "id": "density",
+   "term": "δ, density",
+   "layer": "controls",
+   "definition": "compact, default or loose; reaches spacing only through I.",
+   "intent": "One switch for how tight a scope is.",
+   "names": [
+    "preset:inset.compact",
+    "preset:inset.default",
+    "preset:inset.loose",
+    "flag:--density"
+   ],
+   "related": [
+    "inset"
+   ]
+  },
+  {
+   "id": "inset",
+   "term": "I",
+   "layer": "controls",
+   "definition": "The control inset per density (standard preset 1 / 1.5 / 2 q).",
+   "intent": "The one length density changes.",
+   "names": [
+    "symbol:I",
+    "preset:inset"
+   ]
+  },
+  {
+   "id": "gutter-c",
+   "term": "g_c",
+   "layer": "controls",
+   "definition": "The fixed control gutter (½q): label gaps, separators, the inline control's inset.",
+   "intent": "Spacing that never follows density.",
+   "names": [
+    "symbol:g_c",
+    "preset:gutter",
+    "role:label-gap"
+   ]
+  },
+  {
+   "id": "margin-c",
+   "term": "m_c",
+   "layer": "controls",
+   "definition": "The control margin, I − g_c.",
+   "intent": "The inset of an option inside a host.",
+   "names": [
+    "symbol:m_c"
+   ]
+  },
+  {
+   "id": "slot",
+   "term": "S",
+   "layer": "controls",
+   "definition": "The slot (5q): the box that holds a label line or an icon.",
+   "intent": "A fixed content height inside every control.",
+   "names": [
+    "symbol:S",
+    "preset:slot"
+   ]
+  },
+  {
+   "id": "height",
+   "term": "h",
+   "layer": "controls",
+   "definition": "The control height, S + 2I; also every list and table row.",
+   "intent": "The height buttons, inputs and rows share.",
+   "names": [
+    "symbol:h",
+    "role:height",
+    "role:row",
+    "role:host-height"
+   ],
+   "related": [
+    "item"
+   ]
+  },
+  {
+   "id": "inline-height",
+   "term": "h_o",
+   "layer": "controls",
+   "definition": "The inline height, S + 2g_c (24 at 14px): chips and tags.",
+   "intent": "A smaller control that keeps S.",
+   "names": [
+    "symbol:h_o",
+    "role:inline-control"
+   ]
+  },
+  {
+   "id": "title-bar",
+   "term": "B",
+   "layer": "controls",
+   "definition": "h + 2: a card's title bar or region band.",
+   "intent": "Title bars and region bands, named by one symbol.",
+   "not": "Not the elevation alpha budget (B_α) and not a breakpoint (W_j).",
+   "names": [
+    "symbol:B"
+   ]
+  },
+  {
+   "id": "text-edge",
+   "term": "T",
+   "layer": "controls",
+   "definition": "2I: where text sits from the edge of a control, menu row, list row or table edge cell.",
+   "intent": "One left edge for text in a stack.",
+   "not": "Not a hit target (T_hit).",
+   "names": [
+    "symbol:T",
+    "role:label-inset",
+    "role:field-gap"
+   ]
+  },
+  {
+   "id": "composite-edge",
+   "term": "D",
+   "layer": "controls",
+   "definition": "I/2: the padding of a composite.",
+   "intent": "Padding inside a composite control.",
+   "not": "Not the font descent (D_f).",
+   "names": [
+    "symbol:D"
+   ]
+  },
+  {
+   "id": "icon-size",
+   "term": "a",
+   "layer": "controls",
+   "definition": "An icon's size: sm = F, md 4q, lg 4.5q, full = S.",
+   "intent": "Icons that centre in one S box.",
+   "not": "Not the unit slope a_q.",
+   "names": [
+    "symbol:a.sm",
+    "symbol:a.md",
+    "symbol:a.lg",
+    "symbol:a.full",
+    "preset:icons",
+    "role:icon"
+   ]
+  },
+  {
+   "id": "curvature",
+   "term": "κ",
+   "layer": "controls",
+   "definition": "Curvature in [0, 1] per tier: square 0, soft κ_s (¾), pill 1.",
+   "intent": "One dial for roundness per tier.",
+   "names": [
+    "preset:softAnchor",
+    "preset:soft",
+    "preset:dials.kappa",
+    "flag:--kappa"
+   ],
+   "related": [
+    "radius"
+   ]
+  },
+  {
+   "id": "radius",
+   "term": "r",
+   "layer": "controls",
+   "definition": "The control radius r(κ_control); r_o = r − m_c for an option in a host, r_s = r − I for a key cap in the slot.",
+   "intent": "Concentric corners within the control tier.",
+   "names": [
+    "symbol:r",
+    "symbol:r_o",
+    "symbol:r_s",
+    "role:radius",
+    "role:host-radius"
+   ]
+  },
+  {
+   "id": "mark",
+   "term": "mark",
+   "layer": "controls",
+   "definition": "An unframed checkbox, radio or switch, a badge: sized from a.md and S, density-free.",
+   "intent": "Choices on the content edge.",
+   "names": [
+    "preset:marks",
+    "role:mark"
+   ]
+  },
+  {
+   "id": "control-gap",
+   "term": "control gap",
+   "layer": "controls",
+   "definition": "The gap between sibling controls: 0, g_c, m_c or min(cap, I).",
+   "intent": "Action rows and hosted controls.",
+   "names": [
+    "role:control-gap",
+    "preset:levelGutterCap"
+   ]
+  },
+  {
+   "id": "inset-padding",
+   "term": "block inset",
+   "layer": "controls",
+   "definition": "A control's block padding I.",
+   "intent": "Measuring a control's vertical padding.",
+   "names": [
+    "role:inset"
+   ]
+  },
+  {
+   "id": "focus-ring",
+   "term": "w, o",
+   "layer": "controls",
+   "definition": "Focus ring width w and offset o; outer radius r + o + w.",
+   "intent": "A ring concentric with the control.",
+   "names": [
+    "preset:focus",
+    "role:focus-ring"
+   ]
+  },
+  {
+   "id": "hit-target",
+   "term": "T_hit",
+   "layer": "controls",
+   "definition": "An accessibility floor in px (24 pointer, 44 touch), not a multiple of q.",
+   "intent": "Checking geometry against target size without scaling it.",
+   "aliases": [
+    "T (before 2026-11)"
+   ],
+   "avoid": [
+    "T for a hit target (T is the text edge)"
+   ],
+   "names": [
+    "preset:targets",
+    "alias:T pointer",
+    "alias:T touch"
+   ]
+  },
+  {
+   "id": "hosted-control",
+   "term": "hosted control",
+   "layer": "controls",
+   "definition": "A button inside an input: an item h − 2d_c, inset d_c, radius r − d_c.",
+   "intent": "Steppers, clear buttons and addons that match segments.",
+   "names": [
+    "role:hosted-control"
+   ],
+   "related": [
+    "item"
+   ]
+  },
+  {
+   "id": "crisp",
+   "term": "crisp",
+   "layer": "unit",
+   "definition": "Snapping I and g_c to whole px and S to even px at n, then depths and gaps to whole px.",
+   "intent": "Whole-pixel lengths at any n.",
+   "names": [
+    "preset:unit.nMin"
+   ],
+   "related": [
+    "unit"
+   ]
+  },
+  {
+   "id": "frame",
+   "term": "control frame",
+   "layer": "collections",
+   "definition": "A listbox, menu or select popup: a frame padded d_c around items.",
+   "intent": "Popups whose item plus padding is h.",
+   "not": "Not a card, and not the card depth ladder.",
+   "aliases": [
+    "r_f"
+   ],
+   "avoid": [
+    "frame ladder (for card depths)"
+   ],
+   "avoidExact": [
+    "frame ladder"
+   ],
+   "names": [
+    "role:frame-radius",
+    "symbol:r_frame"
+   ]
+  },
+  {
+   "id": "frame-depth",
+   "term": "d_c",
+   "layer": "collections",
+   "definition": "The padding of a control frame or segmented host (standard preset ¾q); also a popup's offset from its trigger.",
+   "intent": "One padding for menus, listboxes and segmented controls.",
+   "names": [
+    "symbol:d_c",
+    "preset:frameDepth",
+    "role:frame-depth",
+    "role:host-depth",
+    "role:popup-offset"
+   ]
+  },
+  {
+   "id": "item",
+   "term": "item",
+   "layer": "collections",
+   "definition": "An item in a frame or host: h − 2d_c (26 at 14px), corner r_frame − d_c.",
+   "intent": "Menu rows, segments, tabs, hosted controls.",
+   "names": [
+    "preset:frameRow",
+    "role:segment",
+    "role:cell-control",
+    "symbol:r_row",
+    "role:row-radius",
+    "role:segment-radius"
+   ],
+   "related": [
+    "frame-depth",
+    "height"
+   ]
+  },
+  {
+   "id": "host",
+   "term": "host",
+   "layer": "collections",
+   "definition": "A segmented control or tab list: h tall, padded d_c, holding joined items.",
+   "intent": "Segments that share a frame.",
+   "names": [
+    "id:collections.frame.host-pad"
+   ]
+  },
+  {
+   "id": "row-gap",
+   "term": "row gap",
+   "layer": "collections",
+   "definition": "The gap between rows or segments: 0, g_c or a level gutter.",
+   "intent": "Lists without extra spacing.",
+   "names": [
+    "role:row-gap"
+   ]
+  },
+  {
+   "id": "cell-inset",
+   "term": "cell inset",
+   "layer": "collections",
+   "definition": "A table cell's inline padding I; edge cells pad T.",
+   "intent": "Tables that align with buttons.",
+   "names": [
+    "role:cell-inset"
+   ]
+  },
+  {
+   "id": "item-inset",
+   "term": "item inset",
+   "layer": "collections",
+   "definition": "A menu or listbox item's inline padding T − d_c, so its text sits at T.",
+   "intent": "Menu text where the select shows its value.",
+   "names": [
+    "role:item-inset"
+   ]
+  },
+  {
+   "id": "card-depth",
+   "term": "d",
+   "layer": "containers",
+   "definition": "A card's padding from the ladder 0…9; it moves 2·ΔI per density step.",
+   "intent": "Cards that follow density.",
+   "names": [
+    "role:card-depth",
+    "preset:cardDepths",
+    "flag:--card"
+   ]
+  },
+  {
+   "id": "card-radius",
+   "term": "R",
+   "layer": "containers",
+   "definition": "A card's corner: d + min(r(κ_card), soft).",
+   "intent": "Card corners concentric with their content.",
+   "names": [
+    "role:card-radius"
+   ]
+  },
+  {
+   "id": "popover-depth",
+   "term": "d_p",
+   "layer": "containers",
+   "definition": "A popover's padding, ¾d snapped to ½q.",
+   "intent": "Popovers between a frame and a card.",
+   "names": [
+    "preset:spacing.popoverRatio",
+    "role:popover-depth"
+   ]
+  },
+  {
+   "id": "dialog-depth",
+   "term": "d_d",
+   "layer": "containers",
+   "definition": "A dialog's padding, 1½d snapped to ½q.",
+   "intent": "Dialogs deeper than cards.",
+   "names": [
+    "preset:spacing.dialogRatio",
+    "role:dialog-depth"
+   ]
+  },
+  {
+   "id": "nest",
+   "term": "f",
+   "layer": "containers",
+   "definition": "Nesting fraction: a child card has depth (1 − f)·d and radius R − f·d.",
+   "intent": "Nested cards that conserve depth.",
+   "names": [
+    "preset:nest",
+    "preset:spacing.nest",
+    "flag:--nest"
+   ]
+  },
+  {
+   "id": "card-gap",
+   "term": "card gap",
+   "layer": "containers",
+   "definition": "A gap inside a card: d/4, d/2 − I (under a painted, flush title band), d/2 or d (between groups, under a header, before actions).",
+   "intent": "Groups, blocks, title and actions.",
+   "names": [
+    "role:card-gap",
+    "role:title-gap"
+   ]
+  },
+  {
+   "id": "panel-card",
+   "term": "panel",
+   "layer": "containers",
+   "definition": "A card of controls at d = 2I.",
+   "intent": "A tool panel.",
+   "not": "Not the layout level ℓ_panel and not the 72q panel width.",
+   "avoid": [
+    "panel, alone, where a level or width is meant"
+   ],
+   "names": [
+    "id:containers.curvature.r-panel-card-at-2i"
+   ]
+  },
+  {
+   "id": "elevation",
+   "term": "elevation",
+   "layer": "containers",
+   "definition": "A shadow of L layers in a geometric series at a level s (raised ½, popup 1, floating 1½, modal 2).",
+   "intent": "Height read as halo size, not darkness.",
+   "not": "Not paint: ui-materials owns the shadow's colour and its use by relief.",
+   "names": [
+    "preset:elevation",
+    "preset:elevation.levels",
+    "flag:--elevation"
+   ],
+   "related": [
+    "shadow-layer",
+    "alpha-budget"
+   ]
+  },
+  {
+   "id": "shadow-layer",
+   "term": "shadow layer (k)",
+   "layer": "containers",
+   "definition": "One layer k = 0 (contact) … L − 1 of an elevation shadow.",
+   "intent": "Counting and spacing shadow layers.",
+   "not": "Not a ui-materials layer (base or overlay).",
+   "avoid": [
+    "layer, alone, beside ui-materials"
+   ],
+   "names": [
+    "preset:elevation.layers"
+   ]
+  },
+  {
+   "id": "alpha-budget",
+   "term": "B_α",
+   "layer": "containers",
+   "definition": "The sum of a shadow's layer alphas (0.19 light, 0.45 dark), the same at every level.",
+   "intent": "Shadows that don't darken with height.",
+   "aliases": [
+    "B (for the budget, before 2026-11)"
+   ],
+   "avoid": [
+    "B for the budget (B is the title bar)"
+   ],
+   "avoidExact": [
+    "budget B"
+   ],
+   "names": [
+    "preset:elevation.budget"
+   ]
+  },
+  {
+   "id": "scheme",
+   "term": "scheme",
+   "layer": "containers",
+   "definition": "light or dark: picks the alpha budget (`--scheme`).",
+   "intent": "Darker shadows on dark grounds.",
+   "not": "Same meaning as ui-colors' scheme (polarity); ui-colors' modes (dim, contrast) map to their scheme.",
+   "names": [
+    "preset:elevation.budget.light",
+    "preset:elevation.budget.dark",
+    "flag:--scheme"
+   ]
+  },
+  {
+   "id": "layout-level",
+   "term": "layout level ℓ",
+   "layer": "layout",
+   "definition": "A multiplier of I per level: composite ½, group 1, collection 2, panel 2, page 4.",
+   "intent": "Insets that grow from a part to the page.",
+   "not": "Not an elevation level (s). The preset key `levels` is this set; `elevation.levels` is the other.",
+   "avoid": [
+    "level, alone"
+   ],
+   "names": [
+    "preset:levels"
+   ]
+  },
+  {
+   "id": "page-margin",
+   "term": "M",
+   "layer": "layout",
+   "definition": "The page margin, ℓ_page·I = 4I. A preset may step ℓ_page by page width (narrow, base, wide at `marginSteps`); where text is held to a measure the visible margin is what the measure leaves, never less than M.",
+   "intent": "The page edge.",
+   "names": [
+    "symbol:M",
+    "role:margin"
+   ]
+  },
+  {
+   "id": "page-gutter",
+   "term": "G",
+   "layer": "layout",
+   "definition": "The gap between cards or grid columns, M/2.",
+   "intent": "Grid gutters.",
+   "not": "Not gap(relation), the gap function of section 7.",
+   "names": [
+    "symbol:G",
+    "role:gutter"
+   ]
+  },
+  {
+   "id": "multi-count-grid",
+   "term": "u, U, g",
+   "layer": "layout",
+   "definition": "A grid for several column counts: a field of U units with a gutter and a margin of g units each, so the page is U + 2g units and the page unit u = W / (U + 2g), snapped to the device grid. n columns fill the field when n divides U + g.",
+   "intent": "One field that holds passages of 1–6, 10 and 12 columns (U = 58, g = 2).",
+   "not": "Not q (u is the page's own unit, W over the unit count), not g_c (g counts page units), and not the single-count grid of M, G and w.",
+   "names": [
+    "flag:--field",
+    "flag:--gutter",
+    "flag:--max-columns"
+   ],
+   "related": [
+    "page-margin",
+    "page-gutter"
+   ]
+  },
+  {
+   "id": "section-pad",
+   "term": "page section",
+   "layer": "layout",
+   "definition": "A block of headings, text, actions and cards padded 3¼F above and below, 0 at the sides, its contents spaced by the flow gaps.",
+   "intent": "Sections that share the page edge.",
+   "names": [
+    "role:section-pad"
+   ]
+  },
+  {
+   "id": "flow-gap",
+   "term": "flow gap",
+   "layer": "layout",
+   "definition": "A vertical gap between a kicker, a heading, paragraphs, actions and a note running down a page section, a multiple of the body size F: 1, 1¼, 1¼, 2½, 1.",
+   "intent": "Prose and its actions spaced by the text, the same at every density.",
+   "not": "Not a gap from the gap rule (half a container's padding), which stands inside cards, popovers, dialogs, panels and regions.",
+   "names": [
+    "preset:flow",
+    "id:layout.flow.paragraphs"
+   ]
+  },
+  {
+   "id": "floating-width",
+   "term": "w_f",
+   "layer": "layout",
+   "definition": "A floating surface's width: min(max(w_a, min(content, maximum)), W − 2·viewport margin), with w_a the width of the control that opens and fills it, or 0. Its height h_f is min(content, H − 2·viewport margin).",
+   "intent": "Popovers that fit the viewport.",
+   "avoid": [
+    "surface, alone (ui-colors: the neutral family of cards; ui-materials avoids the word and says part)"
+   ],
+   "names": [
+    "preset:widths",
+    "preset:viewportMargin",
+    "id:containers.width.collapse"
+   ]
+  },
+  {
+   "id": "breakpoint",
+   "term": "W_j",
+   "layer": "layout",
+   "definition": "The width at which j columns of at least w_min first fit: j·w_min + (j − 1)·G + 2M.",
+   "intent": "Container breakpoints in q.",
+   "aliases": [
+    "B_k (before 2026-11)"
+   ],
+   "names": [
+    "preset:columnMin"
+   ]
+  },
+  {
+   "id": "measure",
+   "term": "N_ch",
+   "layer": "layout",
+   "definition": "Characters per line (45 / 66 / 75); width N_ch·w̄·F.",
+   "intent": "Reading width checked in characters, not q.",
+   "names": [
+    "preset:measure"
+   ]
+  },
+  {
+   "id": "tier",
+   "term": "tier",
+   "layer": "system",
+   "definition": "One of four groups that own their constants and κ: controls, collections, containers, layout.",
+   "intent": "Fitting, tuning or adopting one group alone.",
+   "not": "Not a ui-materials layer or relief.",
+   "names": [
+    "tier:controls",
+    "tier:collections",
+    "tier:containers",
+    "tier:layout",
+    "flag:--tier"
+   ]
+  },
+  {
+   "id": "preset",
+   "term": "preset",
+   "layer": "system",
+   "definition": "A set of constants (`PRESETS.standard` or a JSON file); the equations never change.",
+   "intent": "Bringing another system.",
+   "not": "The standard preset is the default, not the system. Not a ui-materials preset (a material) or a ui-colors request preset.",
+   "names": [
+    "flag:--preset"
+   ]
+  },
+  {
+   "id": "length-role",
+   "term": "length role",
+   "layer": "fit",
+   "definition": "What a measured length is (height, frame-depth, …), which fixes the target it is compared with.",
+   "intent": "Fitting a project tier by tier.",
+   "not": "Not a colour role (ui-colors) or a type role.",
+   "avoid": [
+    "role, alone"
+   ],
+   "names": [
+    "file:references/fit.md"
+   ]
+  },
+  {
+   "id": "container-ladder",
+   "term": "container ladder",
+   "layer": "system",
+   "definition": "Every container's padding, gap, radius and height, inside out (`--containers`, equations › 19).",
+   "intent": "One table to lay out any container.",
+   "names": [
+    "flag:--containers"
+   ]
+  },
+  {
+   "id": "showcase",
+   "term": "showcase",
+   "layer": "system",
+   "definition": "The content and geometry a specimen sheet must follow (`references/showcase.md`).",
+   "intent": "Proving the system on one page.",
+   "not": "Not the canvas, packing or checks: ui-showcase-bento owns those. A ui-showcase-bento group is a tile, not a layout level.",
+   "names": [
+    "file:references/showcase.md"
+   ]
+  },
+  {
+   "id": "container-padding",
+   "term": "p",
+   "layer": "containers",
+   "definition": "A container's own padding, whichever container it is: d in a card, d_p in a popover, d_d in a dialog, (1 − f)·d in a nested card, ℓ·I in a layout band.",
+   "intent": "Writing the gap rule once: p/2 between blocks, p before actions.",
+   "not": "Not a second card depth: in a card, p is d.",
+   "related": [
+    "card-depth",
+    "card-gap"
+   ]
+  },
+  {
+   "id": "edge",
+   "term": "edge",
+   "layer": "system",
+   "definition": "A side of a box, where the box ends or its content starts: the control edge, a card's content edge, the page edge.",
+   "intent": "Naming where a length is measured from.",
+   "not": "Not ui-materials' bevel (a lighting pass on a raised part). The text edge T and the composite edge D are lengths measured from an edge.",
+   "related": [
+    "text-edge",
+    "composite-edge"
+   ]
+  },
+  {
+   "id": "archetype",
+   "term": "archetype",
+   "layer": "system",
+   "definition": "A named character (instrument, product, marketing, civic, editorial, fashion, calm, toy, terminal) held as a profile: for each observable, the band its measured pages fall in, with dials that land inside the bands a preset can reach.",
+   "intent": "Asking for a character by name, or saying which one a fitted project is nearest.",
+   "not": "Not a preset: many presets belong to one archetype, and a preset is scored against it, never equal to it. Not a ui-materials material or a ui-colors theme.",
+   "names": [
+    "flag:--archetype",
+    "file:references/archetypes.json",
+    "file:scripts/archetypes.mjs"
+   ],
+   "related": [
+    "preset",
+    "archetype-band",
+    "control-height-ratio"
+   ]
+  },
+  {
+   "id": "archetype-band",
+   "term": "band, profile",
+   "layer": "system",
+   "definition": "An observable's 25th percentile, median and 75th percentile over an archetype's pages. A profile is an archetype's bands taken together. Distance is how far a value lies outside a band, over the observable's spread across all pages, capped at 3 and averaged over the observables given.",
+   "intent": "Scoring a preset or a page without requiring it to sit inside every band.",
+   "not": "Not a range a value must satisfy, and not a painted band (a title band or region band).",
+   "names": [],
+   "related": [
+    "archetype"
+   ]
+  },
+  {
+   "id": "control-height-ratio",
+   "term": "h/F",
+   "layer": "controls",
+   "definition": "Control height over the font size: (S + 2I)·q / n. 2 / 2.29 / 2.57 with the standard insets at n = 14. The file's observable `loft`.",
+   "intent": "Comparing control height across systems whose n differs.",
+   "names": [],
+   "related": [
+    "archetype"
+   ]
+  },
+  {
+   "id": "observable",
+   "term": "observable",
+   "layer": "system",
+   "definition": "One measured ratio, count or length of a rendered page, named as in `references/archetypes.json`: 63 from one evaluation of the page observer, 9 more from a screenshot or a second load.",
+   "intent": "Scoring a real page against the archetypes with the same measures the profiles were built from.",
+   "not": "Not a length role (what the fitter compares) and not a constant: nothing is derived from an observable.",
+   "names": [
+    "file:scripts/observe.js",
+    "file:scripts/observe.mjs"
+   ],
+   "related": [
+    "archetype",
+    "archetype-band",
+    "length-role"
+   ]
+  },
+  {
+   "id": "heavy-rule",
+   "term": "heavy rule",
+   "layer": "controls",
+   "definition": "A second rule some systems use beside the hairline b: a bar beside an inset note, under a header band or above a list of related links. It is I wide.",
+   "intent": "Marking a note or a band off with one weight that scales with the unit.",
+   "not": "Not a border weight for fields or cards, which stay b, and not a focus ring.",
+   "names": [
+    "id:controls.border.heavy-rule"
+   ],
+   "related": [
+    "inset"
+   ]
+  },
+  {
+   "id": "tracking",
+   "term": "tracking τ",
+   "layer": "controls",
+   "definition": "Letter spacing on a label, in ems of the label's size F_l. It adds τ·F_l after every letter, so a label of c letters is c·τ·F_l wider and its trailing τ·F_l is taken back to keep the text inset T on both sides.",
+   "intent": "Tracked capitals that stay centred in their control.",
+   "not": "Not kerning (pairs of letters, the typeface's own), and not the text inset T.",
+   "names": [],
+   "related": [
+    "archetype"
+   ]
+  },
+  {
+   "id": "archetype-family",
+   "term": "family",
+   "layer": "system",
+   "definition": "A group of archetypes the measured pages do not separate into distinct groups: application (instrument, product), expressive (marketing, calm, toy), reading (editorial, civic); fashion and terminal are each their own. An archetype's `near` lists those it cannot be told from.",
+   "intent": "Naming what a page is nearest without claiming a distinction the measurements do not support.",
+   "not": "Not a typeface family, and not a ui-colors colour family.",
+   "names": [],
+   "related": [
+    "archetype",
+    "position"
+   ]
+  },
+  {
+   "id": "position",
+   "term": "position, dimension",
+   "layer": "system",
+   "definition": "A dimension is one of the nine principal components the measured pages vary along; six are named (richness, body size, colour, white space, text cover, lightness). A page's position is its score on each, in standard deviations of the measured pages, from at least 40 of the 66 observables used.",
+   "intent": "Saying where a page or a kit sits when it lies between archetypes.",
+   "not": "Not a CSS position, not a dial (nothing is derived from a position), and not an archetype: an archetype is the nearest named region, a position is the coordinates.",
+   "names": [
+    "file:references/dimensions.json",
+    "file:scripts/dimensions.mjs"
+   ],
+   "related": [
+    "archetype",
+    "archetype-family",
+    "observable"
+   ]
+  },
+  {
+   "id": "line-grid",
+   "term": "line grid, half-line",
+   "layer": "system",
+   "definition": "The vertical module of a preset whose rhythm is 'line': L, the body line as an even px that divides by 4, and its half. Text lines, gaps, control boxes and rows are multiples of the half-line; a heading keeps its own line and its block is padded to the grid.",
+   "intent": "One rhythm down the page that can be seen, where line heights by formula share no module.",
+   "not": "Not the q baseline grid (a check on the formula's lines), and not the page grid of columns.",
+   "names": [
+    "preset:rhythm"
+   ],
+   "related": [
+    "multi-count-grid"
+   ]
+  }
+ ]
+}

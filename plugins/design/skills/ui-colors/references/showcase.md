@@ -1,15 +1,15 @@
-# Colour system showcase
+# Color system showcase
 
-Use this brief when asked for a showcase, specimen sheet or overview of what a generated colour system contains, or to review one at a glance. `scripts/system.mjs` builds it when the request has `"showcase": true`; this brief defines its content, layout constraints and acceptance criteria. It is not needed for ordinary generation.
+Use this brief when asked for a showcase, specimen sheet or overview of what a generated color system contains, or to review one at a glance. `scripts/system.mjs` builds it when the request has `"showcase": true`; this brief defines its content, layout constraints and acceptance criteria. It is not needed for ordinary generation.
 
-The colour system supplies every colour. The sheet supplies only neutral page chrome (layout, system type, borders drawn with the run's own border roles). This brief does not prescribe a palette, typeface, icon family or theme.
+The color system supplies every color. The sheet supplies only neutral page chrome (layout, system type, borders drawn with the run's own border roles). This brief does not prescribe a palette, typeface, icon family or theme.
 
 ## Output
 
 One static specimen sheet, `showcase.html`, on a **1280 × 960px canvas**, from a single `system.mjs` run: the default `{}` plus `"showcase": true`, or the user's request with it added. It contains **24 specimens in eight groups**.
 
-- Every colour comes from that run: a CSS variable of its `system.css` (inlined in the page, so the file is self-contained) or a value read from its `system.json` (simulated CVD colours, anchor values, a step's sRGB fallback). Never a hand-picked colour.
-- The sheet adds no styling of its own beyond neutral chrome and system type; its own stylesheet names no colour.
+- Every color comes from that run: a CSS variable of its `system.css` (inlined in the page, so the file is self-contained) or a value read from its `system.json` (simulated CVD colors, anchor values, a step's sRGB fallback). Never a hand-picked color.
+- The sheet adds no styling of its own beyond neutral chrome and system type; its own stylesheet names no color.
 - The sheet itself is the forced light mode; every specimen that depicts another mode sits on a panel carrying that mode's forced selector.
 
 User-supplied requests change what the sheet shows, never its structure: recompute content, keep the 24 specimens.
@@ -89,8 +89,8 @@ On the step-use specimen, label each primary step's APCA Lc against the page nex
 
 - HTML, no script, no interactivity: every state shows immediately.
 - No operable controls: buttons, fields and list rows are drawn spans, out of the tab order, with no interactive roles.
-- Groups are labelled sections, specimens are figures with captions that describe what they show; colour is never the only carrier (steps are numbered, failures carry ✗ and text, the selected row carries ▸).
-- A visual demonstration of the colour system, not evidence of a UI's accessibility conformance.
+- Groups are labelled sections, specimens are figures with captions that describe what they show; color is never the only carrier (steps are numbered, failures carry ✗ and text, the selected row carries ▸).
+- A visual demonstration of the color system, not evidence of a UI's accessibility conformance.
 
 ## Specimen content
 
@@ -102,11 +102,11 @@ On the step-use specimen, label each primary step's APCA Lc against the page nex
 
 1. 24 specimens in the eight groups, three each, every one labelled.
 2. The sheet fits 1280 × 960 with no scrolling, clipping or overlapping specimens.
-3. Every colour resolves from the run's variables or `system.json`; no swatch is blank; the sheet's CSS names no colour.
+3. Every color resolves from the run's variables or `system.json`; no swatch is blank; the sheet's CSS names no color.
 4. Each mode panel takes its mode's variables (forced classes or attributes, scope included).
 5. The construction annotation's Lc, targets, solid Lc and floor, and key run equal `system.json`.
 6. Every flagged failure in `system.json` is shown, and nothing else is flagged.
 7. Light and dark text is legible on its own panel.
 8. Inspected at the target size; if it could not be viewed, say so rather than claiming the layout was verified.
 
-`scripts/check.mjs` checks 1, 3 (colour sources), 4, 5 and 6 on six runs (two with `neutrals`, which also check the Neutral & surfaces content) with negative controls; 2, 3 (blank swatches) and 7 need a browser at 1280 × 960.
+`scripts/check.mjs` checks 1, 3 (color sources), 4, 5 and 6 on six runs (two with `neutrals`, which also check the Neutral & surfaces content) with negative controls; 2, 3 (blank swatches) and 7 need a browser at 1280 × 960.

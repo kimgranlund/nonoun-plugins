@@ -1,7 +1,13 @@
 {
   "generator": "hct-palettes@4",
   "node": "22+",
-  "bundleSha256": "cb14a993bd8bc092f2f2dc6699564dcca5ef26289cd7e6c56bd9d8f56423cf30",
+  "bundleSha256": "42d256720a54d180b3cf90bb2b5e275fc22182c2911fb9700994292edb354e21",
+  "localPatches": [
+    {
+      "bundleSha256Before": "cb14a993bd8bc092f2f2dc6699564dcca5ef26289cd7e6c56bd9d8f56423cf30",
+      "what": "cli: preview.html inlines palettes.css in a <style> instead of <link rel=stylesheet>, so swatches render when the preview is opened as a single file (a static snapshot). Re-apply in the canonical cli.ts on the next rebuild."
+    }
+  ],
   "buildTool": "esbuild@0.25.11",
   "inputs": [
     {
