@@ -8,7 +8,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔴 blocked |
 | T-0852 | [0852-design-skill-updates](0852-design-skill-updates/handoff.md) | Update ui-geometry and ui-colors from the MacBook copies | chore | L2 | P2 | none | 🟡 claimed (branch lane/T-0852-t0852) |
 | T-0853 | [0853-design-skill-imports](0853-design-skill-imports/handoff.md) | Import six ui-* skills into design | chore | L2 | P2 | T-0852 | 🔵 ready |
-| T-0854 | [0854-context-system-update](0854-context-system-update/handoff.md) | Update context-system from the MacBook copy | chore | L2 | P2 | none | 🟡 claimed |
+| T-0854 | [0854-context-system-update](0854-context-system-update/handoff.md) | Update context-system from the MacBook copy | chore | L2 | P2 | none | 🟡 claimed (branch lane/T-0854-t0854) |
 
 Closed: 813 done, 30 dropped (git log or .NNNN-* folders)
 
