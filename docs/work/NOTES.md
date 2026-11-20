@@ -1009,3 +1009,8 @@
 ## T-0865: `gate_lock.py status` shows, for each admitted and queued job, the commit it tests, its working directory and (2026-11-19)
 
 - note: `plugins/sdlc/scripts/gate_lock.py` `run_top` runs `git rev-parse` with `timeout=10`, while `behind_branch` uses the 3 s default. This is harmless, and the design said only that the stale check uses a short timeout.
+
+## T-0868: Two sessions can exchange findings through the mailbox in a light, parseable shape, and either side can list w (2026-11-19)
+
+- note: plugins/sdlc/scripts/messages.py:3705 the `COMMANDS` dict line now runs longer than its neighbors (`'findings': cmd_findings, 'register': ...`); cosmetic only.
+- note: the finding-state reply gate (`reply_state` on the receiver's reply) is not exercised for a reply from a third party; the code at messages.py:1559 checks sender and receiver. The selftest has no case for it.

@@ -10,7 +10,6 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0861 | [0861-rerun-failed-jobs](0861-rerun-failed-jobs/handoff.md) | check.sh reruns only failed or affected jobs after a fix | feature | L2 | P2 | T-0858, T-0860 | 🔵 ready |
 | T-0866 | [0866-ask-without-ticket-root](0866-ask-without-ticket-root/handoff.md) | `/sdlc:ask` in a repo with no ticket root notes 'no tickets' and goes on with the rest of the sweep | bug | L1 | P2 | none | 🔵 ready |
 | T-0867 | [0867-split-notes-prior-links](0867-split-notes-prior-links/handoff.md) | After `steps.py split --supersede`, every prior-report link in a step handoff, the folded `### Notes` included | bug | L1 | P2 | none | 🟡 claimed (branch lane/T-0867-t0867) |
-| T-0868 | [0868-message-finding-shape](0868-message-finding-shape/handoff.md) | Two sessions can exchange findings through the mailbox in a light, parseable shape, and either side can list w | feature | L2 | P2 | none | 🟡 claimed (branch lane/T-0868-t0868) |
 | T-0869 | [0869-verifier-base-from-lane-into](0869-verifier-base-from-lane-into/handoff.md) | A verifier prepared in a lane that merged its integration branch gets a Base sha that keeps the integration br | bug | L2 | P2 | T-0860 | 🔵 ready |
 | T-0870 | [0870-live-lane-kind](0870-live-lane-kind/handoff.md) | Live mode's documented lane flow works without a ticket: open a registered lane, see it in overlap and list, m | bug | L3 | P2 | T-0860 | 🔵 ready |
 | T-0871 | [0871-host-lock-close-hint](0871-host-lock-close-hint/handoff.md) | When a landed host agent worktree is still locked by the harness, the close output says so and gives a removal | bug | L1 | P2 | T-0870 | 🔵 ready |
@@ -24,7 +23,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0880 | [0880-gate-lock-host-capacity](0880-gate-lock-host-capacity/handoff.md) | gate_lock default capacity scales with the host | feature | L2 | P2 | T-0865 | 🟡 claimed (branch lane/T-0880-t0880) |
 | T-0881 | [0881-gate-lock-short-job-slot](0881-gate-lock-short-job-slot/handoff.md) | gate_lock keeps one slot for jobs that declare a short duration | feature | L2 | P2 | T-0880 | 🔵 ready |
 
-Closed: 826 done, 30 dropped (git log or .NNNN-* folders)
+Closed: 827 done, 30 dropped (git log or .NNNN-* folders)
 
 ## Open follow-ups
 

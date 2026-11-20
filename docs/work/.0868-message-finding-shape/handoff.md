@@ -2,7 +2,7 @@
 id: T-0868
 title: "Two sessions can exchange findings through the mailbox in a light, parseable shape, and either side can list w"
 type: feature        # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -41,3 +41,14 @@ Two sessions can exchange findings through the mailbox in a light, parseable sha
 
 ## Constraints
 - Message file format and front matter keys do not change.
+
+## Outcome
+
+2026-11-19 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: 46b469f91c94
+- Changed: see commits
+- Commits: 15118b5 T-0868: messages carry a finding shape and an acknowledgement (#96)
+- Check: 1 selftest exits 0 with the new cases; stubbed reply parser makes the fixed case fail: pass
+- Check: 2 `messages.py send --kind finding ...` still exits 1: pass
+- Check: 3 `check.sh --fast` exits 0 and `git diff --check` is clean: pass
+- Follow-up: note: plugins/sdlc/scripts/messages.py:3705 the COMMANDS dict line now... -> notes.md
+- Follow-up: note: the finding-state reply gate reply_state on the receiver's reply is... -> notes.md
