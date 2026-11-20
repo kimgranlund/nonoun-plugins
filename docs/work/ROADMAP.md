@@ -12,9 +12,8 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0875 | [0875-lane-claims-commit-guard](0875-lane-claims-commit-guard/handoff.md) | A lane cannot land or mark ready a change to a path another lane owns, and a user can wire the same check as a | feature | L2 | P2 | T-0874 | 🔵 ready |
 | T-0877 | [0877-stale-plugin-guard-everywhere](0877-stale-plugin-guard-everywhere/handoff.md) | A session agent that calls sdlc scripts from an older cached version is told so, and refused for state-changin | bug | L2 | P2 | T-0875, T-0867, T-0868 | 🔵 ready |
 | T-0878 | [0878-fanout-keeps-skips-md](0878-fanout-keeps-skips-md/handoff.md) | fanout land keeps a committed skips.md tracked in the closed ticket folder | bug | L1 | P2 | T-0860 | 🟡 claimed (branch lane/T-0878-t0878) |
-| T-0881 | [0881-gate-lock-short-job-slot](0881-gate-lock-short-job-slot/handoff.md) | gate_lock keeps one slot for jobs that declare a short duration | feature | L2 | P2 | T-0880 | 🟡 claimed (branch lane/T-0881-t0881) |
 
-Closed: 836 done, 30 dropped (git log or .NNNN-* folders)
+Closed: 837 done, 30 dropped (git log or .NNNN-* folders)
 
 ## Open follow-ups
 

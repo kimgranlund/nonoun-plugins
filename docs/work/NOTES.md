@@ -1050,3 +1050,8 @@
 
 - note: plugins/sdlc/scripts/hook-selftest.sh:1272 `trap 'rm -rf "$wrt"' EXIT` replaces the earlier EXIT trap at line 501 (`rm -rf "$wtmp"`), so that earlier temp dir is no longer removed on exit. Combine the two into one trap.
 - note: additionalContext delivery to the model is unconfirmed by a live probe; the doc states this (claude-hooks.md:70), as the handoff allowed.
+
+## T-0881: gate_lock keeps one slot for jobs that declare a short duration (2026-11-20)
+
+- note: the installed plugin copy (1.0.2) has no `--expect`, so the verifier gated check.sh through it without a declared duration; unrelated to the build.
+- note: undeclared gates lose one default need of room (one at a time on capacity 6), as the builder reported and CHANGELOG states; this follows the handoff's rule.
