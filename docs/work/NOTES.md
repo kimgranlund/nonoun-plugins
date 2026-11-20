@@ -970,3 +970,22 @@
 
 - note: the solo report says "blocked: plan defect" on `git diff --check`. The handoff's replan already excludes `plugins/design/skills/ui-frameworks` from that criterion, so the block no longer applies and the criterion passes as written.
 - note: the ui-explore-variants `node scripts/check.mjs <project-with-playwright>` run was not performed (no Playwright project in the tree) and is not a criterion. This is the only unverified item the solo report names.
+
+## T-0862: ui-frameworks finds sibling skills inside the plugin (2026-11-19)
+
+- note: with SKILLS_DIR set but lacking a file, the resolver falls through to the plugin folder and `~/.claude/skills` rather than failing; the error appears only when no place has the file. This matches the handoff's resolution order.
+- note: the user should take the same change upstream to the MacBook source of ui-frameworks (builder report says so).
+
+## T-0863: Run the ui-explore-variants browser check with Playwright (2026-11-19)
+
+- note: redck.py deviations printed no `process deviation:` lines; the ticket has no `(red)` criteria.
+
+## T-0858: check.sh --changed runs only the jobs a diff touches (2026-11-19)
+
+- note: plugins/sdlc/scripts/check.sh option parsing for `--changed` prints `nothing to check (base HEAD)` with a base suffix; it still contains the string the criterion names.
+- note: the throwaway worktree tmp:0858-verifier-L2/base was left for dispatch.py record to remove.
+
+## T-0864: When gated checks queue for capacity on an idle machine, the operator sees how to raise the capacity, and a ca (2026-11-19)
+
+- decide: plugins/sdlc/scripts/gate_lock.py:980: the `HINT-STATUS` marker has no mutant control of its own, but the capacity case asserts the status text row and the `--json` key, so removing it would fail that case.
+- decide: plugins/sdlc/scripts/gate_lock.py (`next_head`): `schedule` now uses a function extracted from its inline head selection; the FIFO, priority and round-robin selftests pass unchanged.

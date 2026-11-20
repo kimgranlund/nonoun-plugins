@@ -65,6 +65,7 @@ Use the root validation matrix. Useful focused checks, run from the repository r
 - Runner: `bash plugins/sdlc/scripts/run-selftest.sh`.
 - Hooks: commands in the hook maintenance reference.
 - Full regression suite: `bash plugins/sdlc/scripts/check.sh` (jobs run in parallel; the land gate). Quick tier for builders and CI: `bash plugins/sdlc/scripts/check.sh --fast`.
+- During a ticket, `bash plugins/sdlc/scripts/check.sh --changed [<base>]` runs only the jobs `scripts/check_select.py` picks for the paths changed since `<base>` (default `HEAD`) plus untracked files; it prints `nothing to check` when none apply. `check_select.py select <path>...` shows the pick; a shared module also selects its importers' jobs, and `check.sh`, `check_pool.py` or an unmapped plugin path selects every job.
 
 A role behavior change needs a focused live run on a throwaway project. Benchmark fixtures must expose all names and constraints pinned by hidden checks and demonstrate both failure and success. If a verifier passes while a hidden check fails, resolve the discrepancy before tuning models.
 Raw transcripts and benchmark logs are ignored. A ticket's committed record is its `handoff.md` with the `## Outcome` close writes; role results and run records stay local in the records dir (`.sdlc/runtime/tasks/<folder>/`), so promote a result worth keeping to `docs/` before the close. Dated reports in `docs/reports/` are for releases and retros. Keep dated validation evidence separate from current instructions.
