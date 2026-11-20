@@ -1,18 +1,20 @@
 #!/usr/bin/env python3
 """Check pool: run check.sh's jobs in parallel, keep each job's output whole, and name the failures.
 
-Usage: check_pool.py {run <dir> [--jobs N] | selftest}
+Usage: check_pool.py {run <dir> [--jobs N] [--results FILE] | selftest}
   run       each file in <dir>, in name order, is one job: NUL-terminated fields, the job name and then its
             argv (check.sh writes them; no shell parses a command). Up to N jobs run at once (--jobs, else
             SDLC_CHECK_JOBS, else the core count), stdin /dev/null, stdout and stderr captured per job. A line
             `ok: <name> (Ns)` or `FAIL: <name> (exit X, Ns)` prints as each job ends; after the last, each job's
             output prints in list order under `== <name>: ok|FAIL`, then one summary line: `check: N jobs ok in Ms`,
             or `check: K of N jobs failed in Ms, first <name>: <names>`. Exit 1 when any job failed, 2 on bad input.
+            --results FILE writes {"jobs": [{"name", "rc", "seconds"}]} in list order (check_select.py record reads it).
   selftest  planted jobs: three one-second sleeps overlap (each starts before any ends), --jobs 1 serializes, a planted failing job fails the
             run and is named first with its output kept, a missing command is a failure, not a crash.
 """
 import argparse
 import io
+import json
 import os
 import subprocess
 import sys
@@ -45,10 +47,21 @@ def run_one(job, out):
     return rc, text
 
 
-def run_jobs(jobs, n, out=sys.stdout):
+def run_one_timed(job, out):
+    t = time.monotonic()
+    rc, text = run_one(job, out)
+    return rc, text, time.monotonic() - t
+
+
+def run_jobs(jobs, n, out=sys.stdout, results=None):
     t = time.monotonic()
     with ThreadPoolExecutor(max(1, n)) as ex:
-        res = list(ex.map(lambda j: run_one(j, out), jobs))
+        timed = list(ex.map(lambda j: run_one_timed(j, out), jobs))
+    res = [(rc, text) for rc, text, _ in timed]
+    if results:
+        with open(results, 'w', encoding='utf-8') as fh:
+            json.dump({'jobs': [{'name': name, 'rc': rc, 'seconds': round(sec, 1)}
+                                for (name, _), (rc, _, sec) in zip(jobs, timed)]}, fh)
     failed = []
     for (name, _), (rc, text) in zip(jobs, res):
         print(f'== {name}: {"ok" if rc == 0 else "FAIL"}', file=out)
@@ -91,6 +104,12 @@ def selftest():
                ('late', ['python3', '-c', 'raise SystemExit(1)'])]
     rc, text, _ = timed(planted, 3)
     check('a planted failing job fails the run', rc == 1)
+    with tempfile.TemporaryDirectory() as d:
+        res = os.path.join(d, 'r.json')
+        run_jobs(planted, 3, io.StringIO(), res)
+        with open(res) as fh:
+            got = [(j['name'], j['rc']) for j in json.load(fh)['jobs']]
+        check('--results records each job and its exit code in list order', got == [('pass', 0), ('planted', 3), ('late', 1)])
     check('the first failure is named in list order', 'first planted: planted, late' in text)
     check("the failing job's output is kept under its name", '== planted: FAIL\nboom\n' in text)
     check('a passing job is reported ok', '== pass: ok\nfine\n' in text and 'ok: pass (' in text)
@@ -116,6 +135,7 @@ def main(argv):
     p = sub.add_parser('run', help='run the jobs in a dir in parallel')
     p.add_argument('dir', help='one job file per job, as check.sh writes them')
     p.add_argument('--jobs', type=int, default=0, help='jobs at once (default SDLC_CHECK_JOBS, else the core count)')
+    p.add_argument('--results', help='write each job name, exit code and seconds here as JSON')
     sub.add_parser('selftest', help='planted jobs, no repo state')
     a = ap.parse_args(argv)
     if a.cmd == 'selftest':
@@ -126,7 +146,7 @@ def main(argv):
     except (OSError, ValueError) as e:
         print(f'check_pool.py: {e}', file=sys.stderr)
         return 2
-    return run_jobs(jobs, n)
+    return run_jobs(jobs, n, results=a.results)
 
 
 if __name__ == '__main__':
