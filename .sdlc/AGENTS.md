@@ -73,7 +73,7 @@ Ticket lifecycle:
 
 - Evals: `../docs/work/evals/` holds the dated model and effort experiments and `table-lock.json`; read `../docs/work/evals/AGENTS.md` before changing a model or effort row in `plugins/sdlc-lite/scripts/run.sh` or `plugins/sdlc-lite/adapters/codex/models.json`.
 - Proposals: `../docs/work/proposals/` holds candidate changes that `proposals.py scan` mined from past runs; read `../docs/work/proposals/AGENTS.md` before scanning, accepting, rejecting, or promoting one.
-<!-- sdlc:managed:start v1 sha256:1e8ebfea304c -->
+<!-- sdlc:managed:start v1 sha256:630be9b6bd7a -->
 # Work records
 
 This folder holds SDLC `config`, this router, and the git-ignored `runtime/` and `messages/`. Tickets, task records, `docs/work/ROADMAP.md`, and `docs/work/NOTES.md` are in the work root `docs/work/`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `docs/work/ROADMAP.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -86,7 +86,7 @@ This folder holds SDLC `config`, this router, and the git-ignored `runtime/` and
 ## Stages
 
 - proposed: 0
-- ready: 14
+- ready: 13
   - T-0861 check.sh reruns only failed or affected jobs after a fix (docs/work/0861-rerun-failed-jobs)
   - T-0866 `/sdlc:ask` in a repo with no ticket root notes 'no tickets' and goes on with the rest of the sweep (docs/work/0866-ask-without-ticket-root)
   - T-0869 A verifier prepared in a lane that merged its integration branch gets a Base sha that keeps the integration br (docs/work/0869-verifier-base-from-lane-into)
@@ -99,12 +99,12 @@ This folder holds SDLC `config`, this router, and the git-ignored `runtime/` and
   - T-0876 In a Claude session, a commit or merge that touches a configured risky path reminds the agent once per change (docs/work/0876-risky-change-verify-reminder)
   - T-0877 A session agent that calls sdlc scripts from an older cached version is told so, and refused for state-changin (docs/work/0877-stale-plugin-guard-everywhere)
   - T-0878 fanout land keeps a committed skips.md tracked in the closed ticket folder (docs/work/0878-fanout-keeps-skips-md)
-  - T-0880 gate_lock default capacity scales with the host (docs/work/0880-gate-lock-host-capacity)
   - T-0881 gate_lock keeps one slot for jobs that declare a short duration (docs/work/0881-gate-lock-short-job-slot)
-- claimed: 3
+- claimed: 4
   - T-0860 Cut check.sh wall time by sharding its slowest selftests (docs/work/0860-faster-full-suite), claimed by nonoun-author 2026-11-19, branch lane/T-0860-t0860
   - T-0867 After `steps.py split --supersede`, every prior-report link in a step handoff, the folded `### Notes` included (docs/work/0867-split-notes-prior-links), claimed by nonoun-author 2026-11-19, branch lane/T-0867-t0867
   - T-0868 Two sessions can exchange findings through the mailbox in a light, parseable shape, and either side can list w (docs/work/0868-message-finding-shape), claimed by nonoun-author 2026-11-19, branch lane/T-0868-t0868
+  - T-0880 gate_lock default capacity scales with the host (docs/work/0880-gate-lock-host-capacity), claimed by nonoun-author 2026-11-19
 - paused: 0
 - blocked: 1
   - T-0611 Rehearse a Pi host working tickets beside Claude and Codex (docs/work/0611-pi-host-rehearsal)
