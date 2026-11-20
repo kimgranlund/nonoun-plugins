@@ -6,12 +6,11 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | ID | Ticket | Title | Type | Size | Pri | Depends on | Status |
 |---|---|---|---|---|---|---|---|
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔴 blocked |
-| T-0873 | [0873-lanes-status-view](0873-lanes-status-view/handoff.md) | `lanes.py status` answers 'is anything stuck or about to collide' for every open lane in one table | feature | L2 | P2 | T-0872, T-0865 | 🟡 claimed (branch lane/T-0873-t0873) |
 | T-0874 | [0874-lane-path-claims](0874-lane-path-claims/handoff.md) | The lead can claim paths for one lane, and every lane sees who owns a path before it creates or changes it | feature | L2 | P2 | T-0873 | 🔵 ready |
 | T-0875 | [0875-lane-claims-commit-guard](0875-lane-claims-commit-guard/handoff.md) | A lane cannot land or mark ready a change to a path another lane owns, and a user can wire the same check as a | feature | L2 | P2 | T-0874 | 🔵 ready |
 | T-0877 | [0877-stale-plugin-guard-everywhere](0877-stale-plugin-guard-everywhere/handoff.md) | A session agent that calls sdlc scripts from an older cached version is told so, and refused for state-changin | bug | L2 | P2 | T-0875, T-0867, T-0868 | 🟡 claimed (branch lane/T-0877-t0877) |
 
-Closed: 839 done, 30 dropped (git log or .NNNN-* folders)
+Closed: 840 done, 30 dropped (git log or .NNNN-* folders)
 
 ## Open follow-ups
 

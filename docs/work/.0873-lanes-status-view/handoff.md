@@ -2,7 +2,7 @@
 id: T-0873
 title: "`lanes.py status` answers 'is anything stuck or about to collide' for every open lane in one table"
 type: feature        # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: [T-0872, T-0865]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -40,3 +40,14 @@ router: .sdlc/AGENTS.md  # how to claim and close this ticket
 
 ## Constraints
 - Read-only: no fetch, no lock, no write.
+
+## Outcome
+
+2026-11-20 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: fa7d546d900a
+- Changed: see commits
+- Commits: 7171060 T-0873: lanes.py status shows every lane's progress, drift and overlap (#101)
+- Check: 1 The lanes selftest shard holding the new cases exits 0; with the overlap column stubbed out, the ...: pass
+- Check: 2 In a throwaway repo with two live lanes, `lanes.py status --json` parses and lists both: pass
+- Check: 3 `bash plugins/sdlc/scripts/check.sh --fast` exits 0 and `git diff --check` is clean: pass
+- Follow-up: note: plugins/sdlc/scripts/lanes.py case_status: the docstring says "a... -> notes.md
+- Follow-up: note: no em dashes in the added lines checked with grep on the diff. -> notes.md
