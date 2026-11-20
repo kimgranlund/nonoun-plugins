@@ -2,11 +2,12 @@
 id: T-0872
 title: "Landing a ticketless lane with `lanes.py finish --no-ticket` can never commit conflict markers, resolves confl"
 type: feature        # feature | bug | chore | spike | idea
-status: ready     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L3             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: [T-0871, T-0870]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
 created: 2026-11-19
+claimed_by: nonoun-author 2026-11-20
 router: .sdlc/AGENTS.md  # how to claim and close this ticket
 ---
 
