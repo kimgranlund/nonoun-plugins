@@ -2,7 +2,7 @@
 id: T-0872
 title: "Landing a ticketless lane with `lanes.py finish --no-ticket` can never commit conflict markers, resolves confl"
 type: feature        # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L3             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: [T-0871, T-0870]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -50,3 +50,14 @@ Landing a ticketless lane with `lanes.py finish --no-ticket` can never commit co
 ## Constraints
 - A repo with none of the new config lines lands exactly as before, except that a commit holding conflict markers is now refused.
 - Main moves only by fast-forward.
+
+## Outcome
+
+2026-11-20 · lane: solo L3 · verdict: closed by reason (delivered by the solo agent (level L3); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: a615bcfd63dd
+- Changed: see commits
+- Commits: 0459f86 T-0872: finish --no-ticket gains land guards and lands into a lane's branch (#92)
+- Check: 1 Lanes selftest shard holding the new cases exits 0; with the marker guard removed the marker case...: pass
+- Check: 2 `python3 plugins/sdlc/scripts/lanes.py selftest` with no shard option exits 0: pass
+- Check: 3 `bash plugins/sdlc/scripts/check.sh --fast` exits 0 and `git diff --check` is clean: pass
+- Follow-up: decide: plugins/sdlc/scripts/lanes.py:1639: the marker guard covers finish... -> notes.md
+- Follow-up: decide: plugins/sdlc/scripts/lanes.py:1818: lane_regenerate and... -> notes.md

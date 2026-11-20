@@ -1059,3 +1059,8 @@
 ## T-0878: fanout land keeps a committed skips.md tracked in the closed ticket folder (2026-11-20)
 
 - note: the leftover untracked `docs/work/<NNNN>-<slug>/skips.md` after `lanes.py finish` is not fixed here; the builder says it comes from `lanes.py` carry_records (lanes.py:1500-1511), not the fanout land close path. It is a candidate for a new ticket.
+
+## T-0872: Landing a ticketless lane with `lanes.py finish --no-ticket` can never commit conflict markers, resolves confl (2026-11-20)
+
+- decide: plugins/sdlc/scripts/lanes.py:1639: the marker guard covers `finish --no-ticket` only; ticketed `finish` and `fanout.py land` are unchanged, which matches the Non-goals reading. The builder flagged it as an open question.
+- decide: plugins/sdlc/scripts/lanes.py:1818: `lane_regenerate` and `lane_after_land` run through `sh`, while `land_gate` runs through `bash -c`; documented in the Finish section, so decide: whether to unify.

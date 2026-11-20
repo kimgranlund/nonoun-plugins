@@ -6,13 +6,12 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | ID | Ticket | Title | Type | Size | Pri | Depends on | Status |
 |---|---|---|---|---|---|---|---|
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔴 blocked |
-| T-0872 | [0872-finish-ticketless-land-guards](0872-finish-ticketless-land-guards/handoff.md) | Landing a ticketless lane with `lanes.py finish --no-ticket` can never commit conflict markers, resolves confl | feature | L3 | P2 | T-0871, T-0870 | 🟡 claimed (branch lane/T-0872-t0872) |
 | T-0873 | [0873-lanes-status-view](0873-lanes-status-view/handoff.md) | `lanes.py status` answers 'is anything stuck or about to collide' for every open lane in one table | feature | L2 | P2 | T-0872, T-0865 | 🔵 ready |
 | T-0874 | [0874-lane-path-claims](0874-lane-path-claims/handoff.md) | The lead can claim paths for one lane, and every lane sees who owns a path before it creates or changes it | feature | L2 | P2 | T-0873 | 🔵 ready |
 | T-0875 | [0875-lane-claims-commit-guard](0875-lane-claims-commit-guard/handoff.md) | A lane cannot land or mark ready a change to a path another lane owns, and a user can wire the same check as a | feature | L2 | P2 | T-0874 | 🔵 ready |
 | T-0877 | [0877-stale-plugin-guard-everywhere](0877-stale-plugin-guard-everywhere/handoff.md) | A session agent that calls sdlc scripts from an older cached version is told so, and refused for state-changin | bug | L2 | P2 | T-0875, T-0867, T-0868 | 🔵 ready |
 
-Closed: 838 done, 30 dropped (git log or .NNNN-* folders)
+Closed: 839 done, 30 dropped (git log or .NNNN-* folders)
 
 ## Open follow-ups
 
@@ -147,3 +146,5 @@ Closed: 838 done, 30 dropped (git log or .NNNN-* folders)
 - decide: plugins/sdlc/agents/builder.md:16 and plugins/sdlc/agents/verifier.md:24: the queue sentence moved from "A full test suite" to "A criterion's full suite", which narrows the gate_lock requirement for a role that runs a full suite another way. note: only if that was not intended. (from T-0859: Roles run the checks for their change, once, never the full suite mid-ticket (2026-11-19))
 - decide: plugins/sdlc/scripts/lanes.py open (`--kind live` with `--into <branch>`): the builder reports `finish --no-ticket` stops on a lane whose into is not main, so the #100 command (`--into ui-kit-migration`) opens and readies but does not finish. The handoff criteria do not test it; a follow-up ticket is the builder's proposal. (from T-0870: Live mode's documented lane flow works without a ticket: open a registered lane, see it in overlap and list, m (2026-11-20))
 - decide: plugins/sdlc/scripts/run.sh:527-533: `run.sh` still takes the floor against the main checkout HEAD only (the new `into` rule is `dispatch.py` only, stated in the `sdlc-internals.md` entry); the handoff Constraints ask for a parity case if the base logic is shared. decide: a follow-up ticket for the `run.sh` floor if `run.sh` lanes merge integration branches. (from T-0869: A verifier prepared in a lane that merged its integration branch gets a Base sha that keeps the integration br (2026-11-20))
+- decide: plugins/sdlc/scripts/lanes.py:1639: the marker guard covers `finish --no-ticket` only; ticketed `finish` and `fanout.py land` are unchanged, which matches the Non-goals reading. The builder flagged it as an open question. (from T-0872: Landing a ticketless lane with `lanes.py finish --no-ticket` can never commit conflict markers, resolves confl (2026-11-20))
+- decide: plugins/sdlc/scripts/lanes.py:1818: `lane_regenerate` and `lane_after_land` run through `sh`, while `land_gate` runs through `bash -c`; documented in the Finish section, so decide: whether to unify. (from T-0872: Landing a ticketless lane with `lanes.py finish --no-ticket` can never commit conflict markers, resolves confl (2026-11-20))
