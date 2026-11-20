@@ -195,7 +195,7 @@ sync (T-0654)
   only: never a push, never main.
 
 Solo first (the default driver). For each ticket, after the lane syncs, `steps.py lane <task dir>` decides
-  the lane and appends its record to the task's skips.md (committed with the lane, untracked by the close commit): `solo` (ticket level L1 and
+  the lane and appends its record to the task's skips.md (committed with the lane, kept tracked by the close commit): `solo` (ticket level L1 and
   L2 by default) starts the solo agent (agents/solo.md) from a typed brief at the level's model and effort (Claude:
   `SDLC_ROLE=solo claude -p --agent sdlc:solo` at L1 Sonnet high, L2 Opus medium; Codex: `codex_exec.py solo
   L1|L2|L3`, honoring SDLC_BACKEND), both started through `solo_run.py` so each lane's solo session cost lands in
@@ -345,7 +345,7 @@ run
        <rel>/NNNN-<slug> are rewritten to <rel>/.NNNN-<slug>), and commit `close <id>`
        (`merged`), staging <rel> plus every path outside it that the close changed (a
        `git status --porcelain` snapshot before and after; never the whole worktree); the closed
-       folder's files other than handoff.md and what it tracked before the merge are copied into
+       folder's files other than handoff.md, what it tracked before the merge, and a skips.md the merge tracked are copied into
        its runtime records dir and untracked by that commit, then mirrored into the main checkout; a close
        refusal gives `merged, close refused: <first line>` (without --rewrite-refs, a refusal
        naming that flag adds `; fanout.py run --rewrite-refs rewrites them`) and the merge stands.
@@ -2041,11 +2041,14 @@ def merge_gate_close(ctx, lane, t, lock, ref, cell):
         changed = {path for _, path in porcelain(integ) - pre}
         extra = sorted(path for path in changed
                        if relp != '.' and path != relp and not path.startswith(relp + '/'))
-        # lean records: the closed folder's records move to its runtime records dir; only the handoff and what the
-        # folder tracked before the merge (legacy records, no migration) stay in git
+        # lean records: the closed folder's records move to its runtime records dir; only the handoff, a committed
+        # skips.md, and what the folder tracked before the merge (legacy records, no migration) stay in git
         cf = closed_folder(integ / trel, t.slug)
         kept = {pathlib.PurePosixPath(x).relative_to((trel / t.slug).as_posix()).as_posix()
                 for x in git_out(integ, 'ls-tree', '-r', '--name-only', before, '--', (trel / t.slug).as_posix()).splitlines() if x}
+        # T-0878 (GitHub #85): a skips.md the merge brought in tracked stays tracked, as tickets.py move_skips (T-0797)
+        if git_out(integ, 'ls-tree', '--name-only', 'HEAD', '--', (trel / t.slug / 'skips.md').as_posix()).strip():
+            kept.add('skips.md')
         if cf is not None:
             move_closed_records(cf, folder, kept)
         ad = git(integ, 'add', '-A', '--', relp, *extra)
@@ -4919,14 +4922,16 @@ def selftest(spec=None, listing=False):
         expect(f'case 16 real lane: both solo tickets merge and close with the skips guard live, got rc={pr1.returncode} '
                f'done={done1} out={pr1.stdout[-400:]!r} err={pr1.stderr[-300:]!r}',
                pr1.returncode == 0 and done1 == ['T-0001', 'T-0002'])
-        sk = next((q_.read_text(encoding='utf-8') for q_ in (rr1 / '.sdlc' / 'runtime' / 'tasks' / '0001-one' / 'skips.md',
-                                                          rr1 / '.sdlc' / 'runtime' / 'tasks' / 'one' / 'skips.md') if q_.is_file()), '')
+        def lane_skips(rr_):  # T-0878: the lane commits skips.md, so it stays tracked in the closed folder
+            got_ = sh(rr_, 'show', 'fanout/real:.sdlc/one/skips.md')
+            return got_.stdout if got_.returncode == 0 else ''
+
+        sk = lane_skips(rr1)
         expect(f'case 16 real lane: skips.md records lane solo and a ## Skipped entry for planner and filer, got {sk!r}',
                '- lane: solo' in sk and '- skip: planner; step: all;' in sk and '- skip: filer; step: all;' in sk
                and 'decided: lane' in sk)
         rr0, ll0, pr0 = real_lane('off', True)
-        sk0 = next((q_.read_text(encoding='utf-8') for q_ in (rr0 / '.sdlc' / 'runtime' / 'tasks' / '0001-one' / 'skips.md',
-                                                           rr0 / '.sdlc' / 'runtime' / 'tasks' / 'one' / 'skips.md') if q_.is_file()), '')
+        sk0 = lane_skips(rr0)
         expect(f'case 16 negative control: with the Skipped write off the lane writes no entry and the close by reason '
                f'writes the planner entry, got rc={pr0.returncode} {sk0!r} out={pr0.stdout[-300:]!r}',
                '- lane: solo' in sk0 and 'decided: lane' not in sk0
@@ -5474,7 +5479,9 @@ def selftest(spec=None, listing=False):
 
         lanes_l, integ = tmp / 'land-lanes', 'fanout/l'
         pin = ('--integration', integ, '--lanes-dir', str(lanes_l), '--base', 'main')
-        make_branch(ld, 'worktree-T-0001-solo', {'f1.txt': 'one\n'}, 'T-0001: Ticket t1')
+        # T-0878 (GitHub #85): the T-0001 lane commits its skips.md; the T-0003 lane leaves none for land to write
+        make_branch(ld, 'worktree-T-0001-solo', {'f1.txt': 'one\n', '.sdlc/t1/skips.md': (
+            '# Skips\n\n## Lane\n- lane: solo; point: lane; reasons: committed by the lane\n')}, 'T-0001: Ticket t1')
         make_branch(ld, 'worktree-T-0003-solo', {'f3.txt': 'three\n'}, 'T-0003: Ticket t3')
         l1 = verb(ld, 'land', 'worktree-T-0001-solo', *pin, '--gate', 'test -e f1.txt')
         expect(f'case 23 land: a green gate merges and closes, got rc={l1.returncode} out={l1.stdout[-500:]!r} err={l1.stderr!r}',
@@ -5488,11 +5495,16 @@ def selftest(spec=None, listing=False):
                'Merge worktree-T-0001-solo: T-0001' in subjects and 'close T-0001' in subjects)
         expect('case 23 land: the report carries the Lane line with the level and model',
                '- Lane for `T-0001`: solo (level L1: sonnet high)' in l1.stdout)
-        sk1 = ld / '.sdlc' / 'runtime' / 'tasks' / 't1' / 'skips.md'
-        expect('case 23 land: the solo lane is recorded in the runtime skips.md, and the integration tree no longer tracks it',
-               sk1.is_file() and '- lane: solo' in sk1.read_text(encoding='utf-8')
-               and sh(ld, 'cat-file', '-e', f'{integ}:.sdlc/t1/skips.md').returncode != 0)
+        sk1 = sh(ld, 'show', f'{integ}:.sdlc/t1/skips.md')
+        expect(f'case 23 land (T-0878, GitHub #85): a skips.md the lane committed stays tracked in the closed folder, got '
+               f'rc={sk1.returncode} {sk1.stdout!r} close stat {sh(ld, "show", "--stat", "--format=", integ).stdout!r}',
+               sk1.returncode == 0 and '- lane: solo; point: lane; reasons: committed by the lane' in sk1.stdout)
         l3 = verb(ld, 'land', 'worktree-T-0003-solo', *pin, '--gate', 'test -e f1.txt && test -e f3.txt')
+        sk3 = ld / '.sdlc' / 'runtime' / 'tasks' / 't3' / 'skips.md'
+        expect('case 23 land: an untracked skips.md (the solo lane land records) moves to the runtime records dir, '
+               'and the integration tree does not track it',
+               sk3.is_file() and '- lane: solo' in sk3.read_text(encoding='utf-8')
+               and sh(ld, 'cat-file', '-e', f'{integ}:.sdlc/t3/skips.md').returncode != 0)
         rep_ld = (lanes_l / 'report.md').read_text() if (lanes_l / 'report.md').is_file() else ''
         expect(f'case 23 land: a second land reuses the integration worktree, gates against both, and the report lists both, '
                f'got rc={l3.returncode} out={l3.stdout[-400:]!r} err={l3.stderr!r}',
