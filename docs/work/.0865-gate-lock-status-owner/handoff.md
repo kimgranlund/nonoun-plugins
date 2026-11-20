@@ -2,14 +2,12 @@
 id: T-0865
 title: "`gate_lock.py status` shows, for each admitted and queued job, the commit it tests, its working directory and"
 type: feature        # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: [T-0864]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
 created: 2026-11-19
 claimed_by: nonoun-author 2026-11-19
-branch: lane/T-0865-t0865
-worktree: ../sdlc-lite.worktrees/T-0865-t0865
 router: .sdlc/AGENTS.md  # how to claim and close this ticket
 ---
 
@@ -42,3 +40,13 @@ router: .sdlc/AGENTS.md  # how to claim and close this ticket
 ## Constraints
 - New ledger fields are optional for every reader; protocol stays `sdlc-gate/2`.
 - `status` stays read-only and never stops a process.
+
+## Outcome
+
+2026-11-19 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: 087ab2be06cf
+- Changed: see commits
+- Commits: 9215e4f T-0865: gate_lock status shows commit, worktree and owner (#93)
+- Check: 1 selftest exits 0 with head/cwd/session, older-entry, and behind cases, and the behind case fails ...: pass
+- Check: 2 temp `SDLC_GATE_DIR`, one holder in a git repo, `status --json` shows `cwd` and `head`: pass
+- Check: 3 `bash plugins/sdlc/scripts/check.sh --fast` exits 0 and `git diff --check` is clean: pass
+- Follow-up: note: plugins/sdlc/scripts/gate_lock.py run_top runs git rev-parse with... -> notes.md
