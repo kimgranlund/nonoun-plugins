@@ -83,6 +83,7 @@ Scripts do the merge work, so no lane or tree waits for a later hand sweep.
 - Report a background wake-up only when it changes what the user must do.
 - No timed status polling: a finished role re-invokes the session, and "nothing to do until X reports" is a complete status.
 - The prepared verifier brief already says the build may be uncommitted, foreground only with a timeout, no background or Monitor, no full check.sh, and no git stash; do not add these by hand.
+- Roles test a change with the checks its criteria name (in the sdlc repository `check.sh --changed $SDLC_BASE_SHA`), once, and never run the full suite mid-ticket; the full `check.sh` belongs to the land gate (fanout `--gate`) and a release. Never ask a role or a lane to run it on top.
 - Keep your own context small: it persists, and every later turn pays for it. `footprint.py <task dir> --session <transcript.jsonl>` shows this session's tokens next to the role costs.
 
 ## Modes

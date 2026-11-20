@@ -40,7 +40,7 @@ You are the factory for this repo's tickets (maintainer decision 2026-10-14, `do
 8. Treat a role as stalled only when its transcript and its child processes both stop changing. A `cat` or `read` child idle for minutes is a stdin hang: kill that one pid.
 9. A third planner run, a plan over its level's step cap (T-0553), an `over-budget` attempt in `dispatch.py status` and a `time budget:` refusal go to the user. Approve only with the user's words in `--approved "<who: why>"` (T-0555).
 10. Keep main local until a release. Ask before any tag or push. The one standing push is the backup `git push origin main:wip/main --force-with-lease` after each landing (CI runs only on `v*` tags and manual dispatch, T-0554).
-11. Before a release, run the full `check.sh`. A ticket that changes a shared default also runs it in its lane before you close it.
+11. Before a release, run the full `check.sh`. A ticket that changes a shared default runs `check.sh --changed` in its lane before you close it; the full run waits for the release.
 12. Status replies use the wave table: Wave, Tickets, Progress, Δ.
 
 ## Input you receive

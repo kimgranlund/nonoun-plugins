@@ -10,7 +10,7 @@ Done is better than perfect. Trust that modern, advanced models are very capable
 
 ## Classify each ask
 Size the ask with the ticket levels `steps.py lane` uses (L1 to L5, the level rubric), then say one line, `Live: <why>` or `Lane: <why>`.
-- Live: L1 and L2 asks. Work as `agents/live.md` says: read, edit, run the project's own checks, commit with a one-line message, no ticket or handoff.
+- Live: L1 and L2 asks. Work as `agents/live.md` says: read, edit, run the project's own checks for the change once (never the full suite mid-task; that is the land gate's), commit with a one-line message, no ticket or handoff.
 - Lane: L3 and up, anything the user wants in the background or overnight, and anything touching a path a ticket lists under `hash_bound:`.
 - The user's word overrides the sizing either way.
 
