@@ -2,7 +2,7 @@
 id: T-0875
 title: "A lane cannot land or mark ready a change to a path another lane owns, and a user can wire the same check as a"
 type: feature        # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: [T-0874]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -38,3 +38,13 @@ A lane cannot land or mark ready a change to a path another lane owns, and a use
 
 ## Constraints
 - No file under `.git/hooks` is written by any command.
+
+## Outcome
+
+2026-11-20 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: 39aa8c3dd357
+- Changed: see commits
+- Commits: 92d11da T-0875: ready and finish refuse a change to a path another lane claims (#102)
+- Check: 1 The lanes selftest shard holding the new cases exits 0; with the call removed from `ready`, the r...: pass
+- Check: 2 `bash plugins/sdlc/scripts/check.sh --fast` exits 0 and `git diff --check` is clean: pass
+- Check: 3 Constraint (no file under .git/hooks written): pass
+- Follow-up: note: plugins/sdlc/scripts/lanes.py claims_stop skips the check when the... -> notes.md

@@ -1078,3 +1078,7 @@
 
 - note: plugins/sdlc/scripts/lanes.py store shape is `{glob: [{lane, path, mode, at}]}`, not the handoff's `{glob: {lane, mode, at}}`; the builder reported why (two append claims on one glob must both survive), and no criterion pins the shape.
 - note: the diff adds no commit-time enforcement (CHANGELOG states claims are advisory), matching the Constraint.
+
+## T-0875: A lane cannot land or mark ready a change to a path another lane owns, and a user can wire the same check as a (2026-11-20)
+
+- note: plugins/sdlc/scripts/lanes.py `claims_stop` skips the check when the lane tree is clean and its branch is already in into, so a rerun after the land does not recheck; matches the docstring.
