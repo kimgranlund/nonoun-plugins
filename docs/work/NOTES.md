@@ -1037,3 +1037,11 @@
 ## T-0869: A verifier prepared in a lane that merged its integration branch gets a Base sha that keeps the integration br (2026-11-20)
 
 - decide: plugins/sdlc/scripts/run.sh:527-533: `run.sh` still takes the floor against the main checkout HEAD only (the new `into` rule is `dispatch.py` only, stated in the `sdlc-internals.md` entry); the handoff Constraints ask for a parity case if the base logic is shared. decide: a follow-up ticket for the `run.sh` floor if `run.sh` lanes merge integration branches.
+
+## T-0861: check.sh reruns only failed or affected jobs after a fix (2026-11-20)
+
+- note: the Constraint (a job that never ran green is never reported as passed) holds: check_select.py `rerun` keeps any queued job whose record rc is not 0 or absent, and a rerun record stores per-job sha and tree. The full-tier release rule text in AGENTS.md and nonoun-author.md rule 11 was read, not run.
+
+## T-0871: When a landed host agent worktree is still locked by the harness, the close output says so and gives a removal (2026-11-20)
+
+- note: no `redck.py deviations` lines were printed; the handoff has no `(red)` criterion.

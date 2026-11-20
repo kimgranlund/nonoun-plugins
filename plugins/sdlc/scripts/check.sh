@@ -8,11 +8,14 @@
 # never runs here), the check_pool.py selftest, the wtroot.py selftest (worktree root, owner markers, crash sweep) and the
 # migrate-worktrees.sh selftest (the legacy .worktrees/ and .claude/worktrees/ to sibling-root migration on a fixture repo), a shellcheck pass,
 # plugin manifest validation.
-# Usage: check.sh [--fast | --changed [<base>]] [--jobs N]. The jobs run in parallel through check_pool.py (--jobs N, else SDLC_CHECK_JOBS,
+# Usage: check.sh [--fast | --changed [<base>] | --rerun] [--jobs N]. The jobs run in parallel through check_pool.py (--jobs N, else SDLC_CHECK_JOBS,
 # else the core count), each job's output printed whole in list order, then the failed jobs with the first one named.
 # --fast runs only the jobs tagged fast (structure, generated-file parity, the quick selftests): the builder and CI tier.
 # --changed [<base>] runs only the jobs check_select.py picks for `git diff --name-only <base>` (default HEAD) plus
-# untracked files: the incremental tier during a ticket. The full run, every job, stays the land gate. Jobs are listed slowest first so the long ones start at once.
+# untracked files: the incremental tier during a ticket. The full run, every job, stays the land gate.
+# A full or --fast run writes the run record .sdlc/runtime/check-last.json (head sha, a tree hash of the tracked, dirty and
+# untracked files, each job's exit code and seconds). --rerun reruns the record's failed jobs plus the ones check_select.py
+# picks for the paths changed since the recorded tree, and merges the results back into the record. Jobs are listed slowest first so the long ones start at once.
 # The fanout.py, dispatch.py and lanes.py selftests run as shard jobs (`selftest --shard i/n`, shards.py); the shards-closure
 # job fails when a case is in no shard job or in two.
 set -uo pipefail
@@ -20,17 +23,24 @@ root="$(cd "$(dirname "$0")/.." && pwd)"
 tier=full
 jobs=""
 changed=""
+rerun=""
 while [ $# -gt 0 ]; do
   case $1 in
     --fast) tier=fast ;;
     --jobs) jobs=${2:-}; shift ;;
     --changed) changed=HEAD; case ${2:-} in "" | --*) ;; *) changed=$2; shift ;; esac ;;
-    *) echo "usage: check.sh [--fast | --changed [<base>]] [--jobs N]" >&2; exit 2 ;;
+    --rerun) rerun=1 ;;
+    *) echo "usage: check.sh [--fast | --changed [<base>] | --rerun] [--jobs N]" >&2; exit 2 ;;
   esac
   shift
 done
+if [ -n "$rerun" ] && { [ "$tier" = fast ] || [ -n "$changed" ]; }; then
+  echo "usage: check.sh --rerun takes no --fast or --changed; it reruns the record's own tier" >&2
+  exit 2
+fi
 list="$(mktemp -d "${TMPDIR:-/tmp}/sdlc-check.XXXXXX")" || exit 2
-trap 'rm -rf "$list"' EXIT
+results="$(mktemp "${TMPDIR:-/tmp}/sdlc-check-results.XXXXXX")" || exit 2
+trap 'rm -rf "$list" "$results"' EXIT
 n=0
 job() { # job <fast|full> <name> <command...>: queue one job; --fast leaves out the full ones
   local t=$1
@@ -117,4 +127,21 @@ if [ -n "$changed" ]; then
   [ "$rc" = 3 ] && exit 0
   [ "$rc" = 0 ] || exit "$rc"
 fi
-python3 "$root/scripts/check_pool.py" run "$list" ${jobs:+--jobs "$jobs"}
+if [ -n "$rerun" ]; then
+  python3 "$root/scripts/check_select.py" rerun "$list"
+  rc=$?
+  [ "$rc" = 3 ] && exit 0
+  [ "$rc" = 0 ] || exit "$rc"
+fi
+state=""
+[ -z "$changed" ] && state="$(python3 "$root/scripts/check_select.py" snapshot 2>/dev/null)"
+python3 "$root/scripts/check_pool.py" run "$list" ${jobs:+--jobs "$jobs"} --results "$results"
+rc=$?
+if [ -n "$state" ] && [ -s "$results" ]; then
+  # shellcheck disable=SC2086 # state is `<sha> <tree>`, two words by design
+  python3 "$root/scripts/check_select.py" record "$results" "$tier" $state ${rerun:+--merge} ||
+    echo "check: warning: the run record was not written" >&2
+elif [ -z "$changed" ] && [ -z "$state" ]; then
+  echo "check: no run record (not a git checkout)"
+fi
+exit "$rc"
