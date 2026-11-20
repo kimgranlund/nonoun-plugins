@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """lanes.py: the one home of the lane lifecycle. Open, close, finish, ready, sweep, list, check, port and archive a lane.
 
-  lanes.py open <name> [--base REF] [--into REF] [--ticket ID]... [--tickets ID,ID] [--kind fanout|integration|solo] [--title TEXT]
+  lanes.py open <name> [--base REF] [--into REF] [--ticket ID]... [--tickets ID,ID] [--kind fanout|integration|live|solo] [--title TEXT]
                 [--root .sdlc] [--path DIR] [--branch NAME] [--no-claim | --claim [--by AGENT]] [--dry-run]
   lanes.py close <name|path> [--into REF] [--discard] [--dry-run]
   lanes.py finish <name|path> [--backup REMOTE/REF] [--transcript JSONL] [--verifier-transcript JSONL]
@@ -44,13 +44,15 @@ it, and nothing here changes it. Old and new branch names are read alike; owners
   integration      lanes.py open --kind integration    <lanes root>/<slug of name>         <name> (wave/<N>)     lane_into:, else main      sweep after the fast-forward
   rolling scratch  fanout.py roll                      <lanes-dir>/rolling, detached       none                  none                       roll itself, at its end
   solo worktree    lanes.py open --kind solo           <lanes root>/<ticket>-<slug>        lane/<ticket>-<slug>  lane_into:, else main      sweep
+  live lane        lanes.py open --kind live           <lanes root>/<slug of name>         lane/<slug of name>   --into, else lane_into:, else main  finish --no-ticket, close or sweep
   host lane        the Claude host, isolation:worktree .claude/worktrees/<name> (host-owned) worktree-<name>     the integration branch     dispatch.py prune --done, else sweep
   runner tmp       run.sh, dispatch.py                 <lanes root>/tmp/<name>, detached   none                  none                       run.sh EXIT, remove_tmp, reap-tmp-worktrees.sh, wtroot sweep
   manual           a person                            anywhere                            any                   none                       the person; listed, never touched
   host-owned       Codex (~/.codex/worktrees/*) or Claude Code (.claude/worktrees/agent-*), wtroot.host_owned: sweep prints
                    `kept <path>: host-owned (<host>)` and never closes it, even with a host record; prune --done may (T-0564)
 
-  Names (17.1): kinds fanout and solo need --ticket; the slug is <name> lowercased with every run of characters
+  Names (17.1): kinds fanout and solo need --ticket; kind live (T-0870, a live session's lane) refuses --ticket and
+  --claim, so it writes no ticket line, claim ref or main commit, and is locked as solo is; the slug is <name> lowercased with every run of characters
   outside [a-z0-9-] replaced by -, cut to 40 characters; a leading # is dropped from the ticket in the leaf.
   Integration uses <name> verbatim as its branch. Before open creates anything it runs git check-ref-format
   --branch, the clash test over refs/heads (a flat lane beside lane/x, and the reverse) and refuses a tree path that
@@ -114,6 +116,9 @@ Truth table for close and sweep; the first matching row wins.
   4          an integration tree with an open lane whose into is its branch lanes still open into <b>: <names>                         1
              (T-0743: a clean host-owned tree whose branch is an ancestor of <b> is not open; the close then prints
              `host-owned <path> landed in <b>; remove it yourself: git worktree remove <path>` and leaves the tree;
+             T-0871: when the harness has locked that tree (it holds the lock until its agent ends), the line reads
+             `host-owned <path> landed in <b>; locked by the harness (<reason>), which releases it when its agent ends;
+             once that agent has ended: git worktree unlock <path> && git worktree remove <path>`, and no command removes it;
              T-0762: nor is a host record whose tree is gone and whose branch is an ancestor of <b>)
   5          into does not resolve, or a git read fails                     cannot decide: <reason>                                    1
   6          tracked changes, or untracked files outside .sdlc/, the        uncommitted changes in <lane>: <first path>                1
@@ -203,7 +208,8 @@ steps are skipped` (exit 1). Each step skips itself when its effect is already t
   after the backup step when --backup is given.
 
 Ready (T-0590): `ready [<lane>] [--ticket ID]`, run by the worker when its ticket is done, on any host. The ticket is
---ticket, else the record's first local ticket. It refuses (exit 1, nothing written) when the ticket's handoff (the lane
+--ticket, else the record's first local ticket; a live lane with neither (T-0870) uses its leaf as the <id>, skips the
+criteria test, and names ticket none in the message. It refuses (exit 1, nothing written) when the ticket's handoff (the lane
 tree's copy, else the main checkout's) lists no item under ## Acceptance criteria, or when the lane's state has the tree
 of base_sha (else the merge base with into): `no changes in <lane> since <sha>`. The state is HEAD plus every tracked and
 untracked file git does not ignore (minus *.log, .run.lock, *.running), written through a copy of the index with
@@ -225,25 +231,25 @@ commit on HEAD (subject `sdlc ready snapshot: <id> in <lane>`, a `Lane-Base: <ba
   SDLC_READY_TICKET, SDLC_READY_SHA and SDLC_READY_PATH set; print `notified: CMD rc=<n>`. A non-zero rc prints a
   warning and the ready still exits 0. With it the missing-mailbox warning is not printed; a registered mailbox still
   gets the message.
-list --ready reads refs/sdlc/ready/* and joins each to the lane whose record lists the ticket. A row is stale when the
+list --ready reads refs/sdlc/ready/* and joins each to the lane whose record lists the ticket (a live lane's leaf). A row is stale when the
 lane's HEAD differs from the pinned HEAD (a snapshot's parent, else the sha) or its state's tree from the sha's tree,
 or when no lane holds the ticket. dispatch.py prepare verifier reads the same ref: `Review sha: <sha>`, and Base sha
 from the snapshot's Lane-Base: trailer (pin(), the Python API it shares). Every close deletes
-refs/sdlc/ready/<id> for each local ticket of the record.
+refs/sdlc/ready/<id> for each local ticket of the record, and a live lane's refs/sdlc/ready/<leaf>.
 
 Open also adds /node_modules to <git common dir>/info/exclude (T-0773): .gitignore's node_modules/ does not match a symlink.
 
 Record fields. .lane.json at the tree root, written by open, added to <git common dir>/info/exclude; a host record
 <lanes root>/host/<name>.lane.json has the same fields.
-  lane      the lane name (the tree leaf)          kind      fanout, integration or solo (host for a host record)
+  lane      the lane name (the tree leaf)          kind      fanout, integration, live or solo (host for a host record)
   branch    the lane branch                        base      the --base ref          base_sha  its sha at open
   into      the ref the landed test reads          tickets   the ticket ids          port      a port, or null
   opened    UTC time of open                       run_id    $SDLC_RUN_ID, or null   setup     ok, failed rc=<n> (<cmd>), or null
   lock      the reason open locked the tree with, or null
   open also writes branch.<b>.description as `<ticket> <title>` (cut to 120 characters).
-  Lock (T-0589): the CLI open of a fanout or solo lane (the Python open_lane only with lock=True) runs git worktree lock
+  Lock (T-0589): the CLI open of a fanout, solo or live lane (the Python open_lane only with lock=True) runs git worktree lock
   --reason "<holder> <tickets>" and prints `locked: <reason>`; the holder is refs/sdlc/claims/<id> (T-0588), else the
-  ticket's claimed_by:, its date dropped, else <host>:<session> from the environment. A locked lane is running: list
+  ticket's claimed_by:, its date dropped, else <host>:<session> from the environment (a live lane's whole reason). A locked lane is running: list
   shows `running (<reason>)` where it would show open or closable (`stale, locked` stays), and sweep keeps it. ready
   (T-0590) or a plain close of a landed lane clears that lock; close --discard refuses until `git worktree unlock`.
 
@@ -282,7 +288,7 @@ RECORD = '.lane.json'
 LOCAL_SETTINGS = '.claude/settings.local.json'
 NODE_MODULES = '/node_modules'  # T-0773, #81: .gitignore's `node_modules/` does not match a symlink; the lane exclude does
 FIELDS = ('lane', 'kind', 'branch', 'base', 'base_sha', 'into', 'tickets', 'port', 'opened', 'run_id', 'setup', 'lock')
-KINDS = ('fanout', 'integration', 'solo')
+KINDS = ('fanout', 'integration', 'live', 'solo')
 LOCAL_ID = re.compile(r'T-\d+')
 PRUNE_REL = Path('.sdlc') / 'runtime' / 'prune.json'  # dispatch.py PRUNE_REL
 PRUNE_TTL = 6 * 3600
@@ -753,7 +759,7 @@ def evaluate(ctx, d, lanes, mode, discard=False, into=None, fetch=True, pr=True)
         for w in ctx.wts:
             if w['branch'] == b and not samepath(w['path'], d['path']):
                 return '3', f'branch {b} checked out at {w["path"]}', 1, {}
-    hosts = []  # T-0743: landed host-owned trees that do not hold the integration tree open, named in the close
+    hosts, host_locks = [], {}  # T-0743: landed host-owned trees that do not hold the integration tree open, named in the close
     if d['kind'] == 'integration' and b:
         names = []
         for o in lanes:
@@ -766,6 +772,7 @@ def evaluate(ctx, d, lanes, mode, discard=False, into=None, fetch=True, pr=True)
                         and not git(top, 'merge-base', '--is-ancestor', f'refs/heads/{o["branch"]}', f'refs/heads/{b}').returncode \
                         and first_dirty(o['path']) == (None, None):  # dirty work has not landed
                     hosts.append(o['path'])
+                    host_locks[o['path']] = o['locked']  # T-0871: the harness's lock on a live agent tree
                     continue
                 if not o['exists'] and o['owner'] == 'host' and o['branch'] \
                         and landed_and_gone(top, o['path'], o['branch'], b):  # HOST-GONE
@@ -808,7 +815,7 @@ def evaluate(ctx, d, lanes, mode, discard=False, into=None, fetch=True, pr=True)
             pid = in_use(d['path'])
             if pid:
                 return 'in use', f'in use by pid {pid}', 0, {}
-    info = dict(sha=tip, into=target, note=note, hosts=hosts)
+    info = dict(sha=tip, into=target, note=note, hosts=hosts, host_locks=host_locks)
     if force:
         return '12', f'closed {name} (discarded {tip})', 0, dict(info, how='discarded')
     how, detail = landed(top, f'refs/heads/{b}', ref, branch=b, pr=pr)
@@ -1060,10 +1067,18 @@ def do_close(ctx, d, outcome, info, dry):
                     if tickets.record_branch(Path(top) / '.sdlc', t, None, only=b):
                         mains.append(str(t))
             git(top, 'update-ref', '-d', READY_REFS + str(t))  # T-0590: the review pin goes with its lane
+    if live_pin(d, d['lane']):
+        git(top, 'update-ref', '-d', READY_REFS + d['lane'])  # T-0870: a live lane's pin is named for its leaf
     if mains and short_branch(into) not in ('', 'HEAD', ctx.main):
         cleared += commit_clear(ctx, top, mpre, mains, d['lane'])
     lines = pre + [outcome] + carried + cleared
-    lines += [f'host-owned {p} landed in {b}; remove it yourself: git worktree remove {p}' for p in info.get('hosts', [])]
+    for p in info.get('hosts', []):
+        lock = info.get('host_locks', {}).get(p)
+        if lock is None:
+            lines.append(f'host-owned {p} landed in {b}; remove it yourself: git worktree remove {p}')
+        else:  # T-0871 (#97): the harness locks an agent tree while its agent runs; a plain remove refuses it
+            lines.append(f'host-owned {p} landed in {b}; locked by the harness ({lock or "no reason"}), which releases it '
+                         f'when its agent ends; once that agent has ended: git worktree unlock {p} && git worktree remove {p}')
     pl = port_line(d['port'])
     if pl:
         lines.append(pl)
@@ -1808,9 +1823,11 @@ def open_lane(name, base=None, into=None, tickets=(), kind='fanout', title=None,
     ids = list(tickets or ())
     lines = []
     if kind not in KINDS:
-        return result(2, f'unknown kind {kind}: use fanout, integration or solo')
+        return result(2, f'unknown kind {kind}: use fanout, integration, live or solo')
     if kind in ('fanout', 'solo') and not ids:
         return result(1, f'kind {kind} needs --ticket: no ticket, no lane')
+    if kind == 'live' and ids:  # T-0870: a live lane holds no ticket, so it never writes a ticket file or a claim ref
+        return result(1, f'kind live takes no --ticket: open a ticket lane with --kind solo --ticket {ids[0]}')
     refused = plugin_min.refusal(top)  # T-0593: before any claim, branch or tree
     if refused:
         return result(2, refused)
@@ -1831,6 +1848,9 @@ def open_lane(name, base=None, into=None, tickets=(), kind='fanout', title=None,
             titles[t] = msg
     if kind == 'integration':
         b0, leaf = name, slug(name)
+    elif kind == 'live':  # LIVE-OPEN T-0870: a ticket-free lane for a live session, lane/<slug of name>
+        leaf = slug(name)
+        b0 = f'lane/{leaf}'
     else:
         leaf = f'{ids[0].lstrip("#")}-{slug(name)}'
         b0 = f'lane/{leaf}'
@@ -2087,10 +2107,13 @@ def ready(target=None, ticket=None, cwd='.', notify_cmd=None):
     if not d['owner'] or not d['exists']:
         return result(1, f'not a plugin lane with a tree: {path}', lane=name, path=path, branch=d['branch'])
     tid = ticket or next((t for t in d['tickets'] if LOCAL_ID.fullmatch(str(t))), None)
+    live = not tid and d['kind'] == 'live'  # T-0870: a ticketless live lane pins refs/sdlc/ready/<leaf>, no criteria
+    if live:
+        tid = name
     if not tid:
         return result(1, f'{name} has no local ticket: name it with --ticket', lane=name, path=path, branch=d['branch'])
-    hits = ticket_handoffs(ctx, path, tid)
-    if not any(has_criteria(h) for h in hits):
+    hits = [] if live else ticket_handoffs(ctx, path, tid)
+    if not live and not any(has_criteria(h) for h in hits):
         where = hits[0] if hits else f'the {tid} handoff'
         return result(1, f'{tid} has no acceptance criteria: add them to {where} first', lane=name, path=path, branch=d['branch'])
     head, tree = snapshot(path)
@@ -2116,7 +2139,7 @@ def ready(target=None, ticket=None, cwd='.', notify_cmd=None):
         lines += notify(notify_cmd, ctx.top, tid, sha, path)
     receiver = ctx.cfg['factory'] or 'factory'
     sender = re.sub(r'[^a-z0-9]+', '-', name.lower()).strip('-')[:40].rstrip('-') or 'lane'
-    body = f'{sha} {path}\nticket {tid}, lane {name}, branch {d["branch"] or "none"}: review this sha; lanes.py list --ready flags it stale once the lane moves'
+    body = f'{sha} {path}\nticket {"none" if live else tid}, lane {name}, branch {d["branch"] or "none"}: review this sha; lanes.py list --ready flags it stale once the lane moves'
     # beside tickets.py, the scripts dir this module imports from (a selftest mutant runs from a copy elsewhere)
     r = run([sys.executable, str(Path(tickets.__file__).resolve().parent / 'messages.py'), 'send', '--receiver', receiver, '--sender', sender, '--kind', 'handoff',
              '--topic', f'ready {tid}', '--follow-up', 'false', body], ctx.top)
@@ -2147,6 +2170,11 @@ def ticket_handoffs(ctx, path, tid):
     return res
 
 
+def live_pin(d, key):
+    """T-0870: True when key names the ready ref of live lane d, one with no local ticket (refs/sdlc/ready/<leaf>)."""
+    return d['kind'] == 'live' and d['lane'] == key and not any(LOCAL_ID.fullmatch(str(t)) for t in d['tickets'])
+
+
 def ready_rows(cwd='.'):
     """One row per refs/sdlc/ready/<ticket>: ticket, lane, path, sha, and stale when the lane's HEAD or tree is no longer
     the pinned state (a lane that is gone is stale too)."""
@@ -2156,7 +2184,7 @@ def ready_rows(cwd='.'):
     for line in (out(ctx.top, 'for-each-ref', '--format=%(refname) %(objectname)', READY_REFS) or '').splitlines():
         ref, sha = line.split()
         tid = ref[len(READY_REFS):]
-        d = next((x for x in lanes if x['owner'] and x['exists'] and tid in x['tickets']), None)
+        d = next((x for x in lanes if x['owner'] and x['exists'] and (tid in x['tickets'] or live_pin(x, tid))), None)
         stale = True
         if d is not None:
             try:
@@ -2543,6 +2571,9 @@ def main(argv=None):
     try:
         if a.cmd == 'open':
             ids = merge_tickets(a.ticket, a.tickets)
+            if a.kind == 'live' and (ids or a.claim):  # T-0870: before claim_tickets writes a claim
+                print('kind live takes no --ticket or --claim: a ticket lane is --kind solo --ticket <id> --claim')
+                return 1
             if a.claim:
                 r = claim_tickets(ids, a.root or '.sdlc', a.by)
                 print(r['message'])
@@ -3859,6 +3890,30 @@ def case_host_landed_integration(script, base):
     return fails
 
 
+def case_host_landed_locked(script, base):
+    """T-0871 (GitHub #97): the same landed agent-x tree locked by the harness (`git worktree lock --reason "claude agent x"`)
+    gets the lock-aware hint (reason, who releases it, unlock then remove) and is neither unlocked nor removed."""
+    t = Fixture(base, script, 'hostlock')
+    _, integ, ib = t.open('wave/1', None, '--kind', 'integration')
+    tree = t.top / '.claude' / 'worktrees' / 'agent-x'
+    t.g('worktree', 'add', '-q', '-b', 'worktree-agent-x', str(tree), ib)
+    t.work(tree)
+    t.write({str(t.tree('host') / 'agent-x.lane.json'): json.dumps(dict(lane='agent-x', kind='host', branch='worktree-agent-x',
+                                                                      into=ib))})
+    t.g('worktree', 'lock', '--reason', 'claude agent x', str(tree))
+    t.g('merge', '--no-ff', '-q', '-m', 'merge agent-x', 'refs/heads/worktree-agent-x', cwd=integ)
+    t.g('merge', '-q', '--ff-only', f'refs/heads/{ib}')
+    rc, o = t.lanes('close', ib, '--into', 'main')
+    line = (f'host-owned {tree} landed in {ib}; locked by the harness (claude agent x), which releases it when its agent ends; '
+            f'once that agent has ended: git worktree unlock {tree} && git worktree remove {tree}')
+    fails = []
+    if rc or line not in o.splitlines() or integ.exists():
+        fails.append(f'host landed locked: want the integration tree closed and {line!r}, got {rc}: {o}')
+    if 'remove it yourself' in o or not tree.is_dir() or 'locked' not in t.g('worktree', 'list', '--porcelain'):
+        fails.append(f'host landed locked: the locked agent-x tree must stay, locked, with no plain remove line: {o}')
+    return fails
+
+
 def case_host_removed_integration(script, base):
     """T-0762: a host record whose .claude/worktrees/agent-z tree was removed after its branch landed does not hold the
     integration tree open: close removes the integration tree and prints the remove line for the landed agent-x tree
@@ -4112,6 +4167,73 @@ def case_sweep_mergelock(script, base):
     return fails
 
 
+def case_live_lane(script, base):
+    """T-0870: kind live opens with no ticket, locked by the session, with no ticket record, claim ref or commit in main;
+    list --overlap from main names it, who does not count it; ready pins refs/sdlc/ready/<leaf> with no criteria and
+    mails the factory, list --ready shows it, finish --no-ticket lands it and drops the pin. Live refuses a ticket or
+    --claim, and fanout and solo still refuse an open with no ticket."""
+    t = Fixture(base, script, 'live')
+    fails = []
+    head = t.g('rev-parse', 'main')
+    rc, o = t.lanes('open', 'live-docs', '--kind', 'live')
+    m = re.search(r'opened (\S+) at (.+?) \(branch (\S+),', o)
+    if rc or not m or 'locked: ' not in o:
+        return [f'open live: want exit 0, opened and locked:, got {rc}: {o}']
+    leaf, tree, b = m.group(1), Path(m.group(2)), m.group(3)
+    rec = json.loads((tree / RECORD).read_text())
+    if (leaf, b, rec.get('kind'), rec.get('tickets'), rec.get('into')) != ('live-docs', 'lane/live-docs', 'live', [], 'main') \
+            or not rec.get('lock') or LOCAL_ID.search(str(rec['lock'])):
+        fails.append(f'open live: want leaf live-docs, branch lane/live-docs, kind live, no tickets, into main and a lock, got {leaf} {b} {rec}')
+    if not any(x.startswith(f'worktree {tree}\n') and '\nlocked' in x for x in t.g('worktree', 'list', '--porcelain').split('\n\n')):
+        fails.append('open live: the tree is not locked')
+    if t.g('rev-parse', 'main') != head or t.g('status', '--porcelain') or t.g('for-each-ref', 'refs/sdlc'):
+        fails.append('open live: main moved, is dirty, or a claim or ready ref was written')
+    rc, o = t.lanes('list', '--json')
+    rows = json.loads(o) if not rc else []
+    if [r.get('kind') for r in rows if r.get('lane') == leaf] != ['live']:
+        fails.append(f'open live: list --json does not show kind live, got {rc}: {o}')
+    rc, o = t.lanes('who')
+    if rc or o != 'none':
+        fails.append(f'who: a live lane counted as a factory, got {rc}: {o}')
+    t.work(tree, {'src/a.txt': 'a\n'})
+    t.write({'b.txt': 'b\n'}, cwd=tree)
+    rc, o = t.lanes('list', '--overlap', 'src/a.txt', 'b.txt')
+    if rc or set(o.splitlines()) != {f'overlap {leaf} src/a.txt', f'overlap {leaf} b.txt'}:
+        fails.append(f'overlap: want the live lane named for src/a.txt and b.txt, got {rc}: {o}')
+    reg = subprocess.run([sys.executable, str(HERE / 'messages.py'), 'register', '--name', 'factory', '--harness', 'claude'],
+                         cwd=str(t.top), capture_output=True, text=True)
+    if reg.returncode:
+        return fails + [f'ready live: cannot register the factory: {reg.stderr}']
+    ref = READY_REFS + leaf
+    rc, o = t.lanes('ready', cwd=tree)
+    sha = t.g('rev-parse', '--verify', '-q', ref) if t.ok('rev-parse', '--verify', '-q', ref) else ''
+    if rc or not sha or f'ready: {ref} {sha}' not in o.splitlines() or f'unlocked: {rec.get("lock")}' not in o:
+        fails.append(f'ready live: want {ref} pinned and the lane unlocked, got {rc}: {o}')
+    msgs = list((t.top / '.sdlc' / 'messages' / 'new' / 'factory').glob('*.md'))
+    text = msgs[0].read_text() if len(msgs) == 1 else ''
+    if f'topic: ready {leaf}' not in text or f'{sha} {tree}' not in text:
+        fails.append(f'ready live: want one message `ready {leaf}` carrying the sha and lane path, got {len(msgs)}: {text}')
+    rc, o = t.lanes('list', '--ready')
+    if rc or o.splitlines() != [f'{leaf}  {leaf}  {sha}  {tree}']:
+        fails.append(f'ready live: list --ready want the live row, got {rc}: {o}')
+    rc, o = t.lanes('finish', leaf, '--no-ticket', env=FIN_ENV)
+    if rc or f'finish: {leaf} done' not in o:
+        fails.append(f'finish live: want exit 0 and done, got {rc}: {o}')
+    if not (t.ok('cat-file', '-e', 'main:src/a.txt') and t.ok('cat-file', '-e', 'main:b.txt')):
+        fails.append('finish live: main lacks the lane work')
+    if tree.exists() or t.ok('rev-parse', '--verify', '-q', f'refs/heads/{b}') or t.ok('rev-parse', '--verify', '-q', ref):
+        fails.append('finish live: the lane tree, branch or ready ref is left')
+    for args, want in ((('open', 'tk', '--kind', 'live', '--ticket', 'T-1'), 'kind live takes no --ticket'),
+                       (('open', 'cl', '--kind', 'live', '--claim'), 'kind live takes no --ticket or --claim'),
+                       (('open', 'nf'), 'kind fanout needs --ticket'), (('open', 'ns', '--kind', 'solo'), 'kind solo needs --ticket')):
+        rc, o = t.lanes(*args)
+        if rc != 1 or want not in o:
+            fails.append(f'{" ".join(args)}: want exit 1 and {want!r}, got {rc}: {o}')
+    if t.g('for-each-ref', 'refs/sdlc', 'refs/heads/lane') or t.g('status', '--porcelain'):
+        fails.append('refusals: a claim, ready or lane ref was left, or main is dirty')
+    return fails
+
+
 # markers the mutant copies edit; each is joined so the selftest's own text does not contain the marked line
 MUTANTS = (
     ('HOST-OWNED', "host = wtroot.host_owned(d0['path'])" + '  # HOST-OWNED', 'host = None  # HOST-OWNED', case_host_owned,
@@ -4145,6 +4267,8 @@ MUTANTS = (
     ('HOST-GONE', "and landed_and_gone(top, o['path'], o['branch'], b):"
      + '  # HOST-GONE', 'and True:  # HOST-GONE', case_host_removed_unmerged, 'host removed unmerged',
      'without the ancestor test a removed host tree with unmerged work no longer holds the integration tree open'),
+    ('LIVE-OPEN', "elif kind == 'live':" + '  # LIVE-OPEN', 'elif False:  # LIVE-OPEN', case_live_lane, 'open live:',
+     'without the live branch of open_lane a live lane does not open'),
     ('SWEEP-MINE', 'if wtroot.mine(p, ctx.top):' + '  # SWEEP-MINE', 'if True:  # SWEEP-MINE', case_sweep_other_repo,
      'sweep other repo', "without the own-repo test the sweep names another repo's unmarked folders"),
 )
@@ -4722,6 +4846,8 @@ def run_selftest(script, src, base, cases):
              'a landed Codex tree and a landed agent-x tree with a host record are kept as host-owned (T-0564)')
         need('host landed', case_host_landed_integration(script, base),
              'a landed host-owned agent-x tree does not hold the integration tree open; close prints its cleanup line (T-0743)')
+        need('host landed locked', case_host_landed_locked(script, base),
+             'a landed agent-x tree the harness has locked gets the lock-aware hint (reason, harness releases it, unlock then remove) and stays (T-0871)')
         need('host removed', case_host_removed_integration(script, base),
              'a landed host record whose tree was removed does not hold the integration tree open; the present tree gets its line (T-0762)')
         need('host removed unmerged', case_host_removed_unmerged(script, base),
@@ -4767,6 +4893,9 @@ def run_selftest(script, src, base, cases):
              'list --overlap names each lane touching a path, committed or uncommitted, and not one that does not (T-0821)')
         need('finish no ticket', case_finish_no_ticket(script, base),
              'finish --no-ticket lands a ticketless lane behind the gate, refuses a hash_bound path and a ticket lane (T-0821)')
+        need('live lane', case_live_lane(script, base),
+             'kind live opens with no ticket and locked; overlap names it, who skips it, ready pins refs/sdlc/ready/<leaf>, '
+             'finish --no-ticket lands it; fanout and solo still refuse no ticket (T-0870)')
 
     @cases(39)
     def mutants():

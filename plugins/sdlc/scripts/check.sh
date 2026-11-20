@@ -2,17 +2,20 @@
 # Plugin checks: level-table and agent consistency, the generated Claude and Codex agent definitions (claude_roles.py, codex_roles.py) and the claude_roles.py selftest, the dispatch.py selftest (prepare parity with the run.sh dry run, gate refusals, attempt records; record parity with a stub-claude run.sh run, invalid and failed results, strays, cleanup), the coverage_check, roots.py, tickets.py, board.py,
 # results.py, evals.py, proposals.py, steps.py, redck.py, order.py, fanout.py, gate_lock.py, lanes.py, onboard.py, traces.py, messages.py, footprint.py, fleet_collect.py, session_record.py, solo_stats.py, fleet_detect.py, fleet_config.py, fleet_status.py, report.py, specgate.py, cite_check.py, verify_scope.py, prompt_lint.py (prompt references, one negative per rule), reply_lint.py (reply rules, one observed-red fixture per rule), plan_check.py (the plan-doc rules, one observed mutant per rule), compaction_handoff.py (the compaction handoff section: its three write refusals, replace, clear, and stale status), plan_doc.py, plan_done.py (the plan-doc stop condition, one case per truth-table row), and supervisor.py selftests (fanout: throwaway repos and a stub driver, no model
 # call), the budget.py selftest (per-ticket budget meter), the solo_run.py selftest (solo cost capture; stub claude), the run.sh selftest (result numbering, stream-json result pick, Bash timeout env; stub claude, no model call), the hook selftest
-# (block-background.sh with Bash, Agent, and Monitor fixtures, block-publish.sh, block-pattern-kill.sh, block-stray-worktree.sh, block-repo-format.sh, block-disk-scan.sh, block-role-write.sh, block-role-rm.sh, close-role-stdin.sh, and block-role-spawn.sh on fixture JSON, with the _role.sh resolver), the
+# (block-background.sh with Bash, Agent, and Monitor fixtures, block-publish.sh, block-pattern-kill.sh, block-stray-worktree.sh, block-repo-format.sh, block-disk-scan.sh, block-role-write.sh, block-role-rm.sh, close-role-stdin.sh, warn-risky-change.sh, and block-role-spawn.sh on fixture JSON, with the _role.sh resolver), the
 # hook live probe selftest
 # (hook-live-probe.sh --selftest: offline, a stub claude; the live probe spends a model call and
 # never runs here), the check_pool.py selftest, the wtroot.py selftest (worktree root, owner markers, crash sweep) and the
 # migrate-worktrees.sh selftest (the legacy .worktrees/ and .claude/worktrees/ to sibling-root migration on a fixture repo), a shellcheck pass,
 # plugin manifest validation.
-# Usage: check.sh [--fast | --changed [<base>]] [--jobs N]. The jobs run in parallel through check_pool.py (--jobs N, else SDLC_CHECK_JOBS,
+# Usage: check.sh [--fast | --changed [<base>] | --rerun] [--jobs N]. The jobs run in parallel through check_pool.py (--jobs N, else SDLC_CHECK_JOBS,
 # else the core count), each job's output printed whole in list order, then the failed jobs with the first one named.
 # --fast runs only the jobs tagged fast (structure, generated-file parity, the quick selftests): the builder and CI tier.
 # --changed [<base>] runs only the jobs check_select.py picks for `git diff --name-only <base>` (default HEAD) plus
-# untracked files: the incremental tier during a ticket. The full run, every job, stays the land gate. Jobs are listed slowest first so the long ones start at once.
+# untracked files: the incremental tier during a ticket. The full run, every job, stays the land gate.
+# A full or --fast run writes the run record .sdlc/runtime/check-last.json (head sha, a tree hash of the tracked, dirty and
+# untracked files, each job's exit code and seconds). --rerun reruns the record's failed jobs plus the ones check_select.py
+# picks for the paths changed since the recorded tree, and merges the results back into the record. Jobs are listed slowest first so the long ones start at once.
 # The fanout.py, dispatch.py and lanes.py selftests run as shard jobs (`selftest --shard i/n`, shards.py); the shards-closure
 # job fails when a case is in no shard job or in two.
 set -uo pipefail
@@ -20,17 +23,24 @@ root="$(cd "$(dirname "$0")/.." && pwd)"
 tier=full
 jobs=""
 changed=""
+rerun=""
 while [ $# -gt 0 ]; do
   case $1 in
     --fast) tier=fast ;;
     --jobs) jobs=${2:-}; shift ;;
     --changed) changed=HEAD; case ${2:-} in "" | --*) ;; *) changed=$2; shift ;; esac ;;
-    *) echo "usage: check.sh [--fast | --changed [<base>]] [--jobs N]" >&2; exit 2 ;;
+    --rerun) rerun=1 ;;
+    *) echo "usage: check.sh [--fast | --changed [<base>] | --rerun] [--jobs N]" >&2; exit 2 ;;
   esac
   shift
 done
+if [ -n "$rerun" ] && { [ "$tier" = fast ] || [ -n "$changed" ]; }; then
+  echo "usage: check.sh --rerun takes no --fast or --changed; it reruns the record's own tier" >&2
+  exit 2
+fi
 list="$(mktemp -d "${TMPDIR:-/tmp}/sdlc-check.XXXXXX")" || exit 2
-trap 'rm -rf "$list"' EXIT
+results="$(mktemp "${TMPDIR:-/tmp}/sdlc-check-results.XXXXXX")" || exit 2
+trap 'rm -rf "$list" "$results"' EXIT
 n=0
 job() { # job <fast|full> <name> <command...>: queue one job; --fast leaves out the full ones
   local t=$1
@@ -117,4 +127,21 @@ if [ -n "$changed" ]; then
   [ "$rc" = 3 ] && exit 0
   [ "$rc" = 0 ] || exit "$rc"
 fi
-python3 "$root/scripts/check_pool.py" run "$list" ${jobs:+--jobs "$jobs"}
+if [ -n "$rerun" ]; then
+  python3 "$root/scripts/check_select.py" rerun "$list"
+  rc=$?
+  [ "$rc" = 3 ] && exit 0
+  [ "$rc" = 0 ] || exit "$rc"
+fi
+state=""
+[ -z "$changed" ] && state="$(python3 "$root/scripts/check_select.py" snapshot 2>/dev/null)"
+python3 "$root/scripts/check_pool.py" run "$list" ${jobs:+--jobs "$jobs"} --results "$results"
+rc=$?
+if [ -n "$state" ] && [ -s "$results" ]; then
+  # shellcheck disable=SC2086 # state is `<sha> <tree>`, two words by design
+  python3 "$root/scripts/check_select.py" record "$results" "$tier" $state ${rerun:+--merge} ||
+    echo "check: warning: the run record was not written" >&2
+elif [ -z "$changed" ] && [ -z "$state" ]; then
+  echo "check: no run record (not a git checkout)"
+fi
+exit "$rc"

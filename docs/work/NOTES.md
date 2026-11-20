@@ -1027,3 +1027,26 @@
 ## T-0880: gate_lock default capacity scales with the host (2026-11-20)
 
 - note: docs/specs/sdlc/gate-lock-admission.md:231 documents that there is no per-run capacity flag, while the handoff Context lists "explicit flag" first in the override order; the implemented order is policy.json, SDLC_GATE_CAPACITY, derived, consistent with the handoff's Do and criteria.
+
+## T-0870: Live mode's documented lane flow works without a ticket: open a registered lane, see it in overlap and list, m (2026-11-20)
+
+- decide: plugins/sdlc/scripts/lanes.py open (`--kind live` with `--into <branch>`): the builder reports `finish --no-ticket` stops on a lane whose into is not main, so the #100 command (`--into ui-kit-migration`) opens and readies but does not finish. The handoff criteria do not test it; a follow-up ticket is the builder's proposal.
+- note: plugins/sdlc/agents/live.md:42 still says "Claim a ticket (`tickets.py claim`) when the work matches one", which fits a solo lane, not a live lane that refuses `--ticket`.
+- note: docs/references/sdlc-internals.md:145 still lists lanes.py as serving "fanout, integration and solo worktree lanes".
+
+## T-0869: A verifier prepared in a lane that merged its integration branch gets a Base sha that keeps the integration br (2026-11-20)
+
+- decide: plugins/sdlc/scripts/run.sh:527-533: `run.sh` still takes the floor against the main checkout HEAD only (the new `into` rule is `dispatch.py` only, stated in the `sdlc-internals.md` entry); the handoff Constraints ask for a parity case if the base logic is shared. decide: a follow-up ticket for the `run.sh` floor if `run.sh` lanes merge integration branches.
+
+## T-0861: check.sh reruns only failed or affected jobs after a fix (2026-11-20)
+
+- note: the Constraint (a job that never ran green is never reported as passed) holds: check_select.py `rerun` keeps any queued job whose record rc is not 0 or absent, and a rerun record stores per-job sha and tree. The full-tier release rule text in AGENTS.md and nonoun-author.md rule 11 was read, not run.
+
+## T-0871: When a landed host agent worktree is still locked by the harness, the close output says so and gives a removal (2026-11-20)
+
+- note: no `redck.py deviations` lines were printed; the handoff has no `(red)` criterion.
+
+## T-0876: In a Claude session, a commit or merge that touches a configured risky path reminds the agent once per change (2026-11-20)
+
+- note: plugins/sdlc/scripts/hook-selftest.sh:1272 `trap 'rm -rf "$wrt"' EXIT` replaces the earlier EXIT trap at line 501 (`rm -rf "$wtmp"`), so that earlier temp dir is no longer removed on exit. Combine the two into one trap.
+- note: additionalContext delivery to the model is unconfirmed by a live probe; the doc states this (claude-hooks.md:70), as the handoff allowed.

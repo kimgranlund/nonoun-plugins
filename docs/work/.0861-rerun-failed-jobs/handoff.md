@@ -2,14 +2,12 @@
 id: T-0861
 title: "check.sh reruns only failed or affected jobs after a fix"
 type: feature        # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: [T-0858, T-0860]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
 created: 2026-11-19
 claimed_by: nonoun-author 2026-11-19
-branch: lane/T-0861-t0861
-worktree: ../sdlc-lite.worktrees/T-0861-t0861
 router: .sdlc/AGENTS.md  # how to claim and close this ticket
 ---
 
@@ -35,7 +33,16 @@ After a fix during a release or a land, one command reruns only the jobs that fa
 ## Acceptance criteria
 - Selftest cases cover: a record with one failed job reruns only it; a changed leaf script adds its job; no record refuses; a clean rerun then says `nothing to rerun`. The selftest exits 0.
 - Live: in a throwaway worktree, run `check.sh --fast`, break one fast job's input, run `--fast` again (red), fix it, run `check.sh --rerun`: it runs fewer jobs than `--fast` and exits 0. Put the three summary lines in the report.
-- `bash plugins/sdlc/scripts/check.sh --changed $SDLC_BASE_SHA` exits 0 and `git diff --check` is clean.
+- `python3 plugins/sdlc/scripts/check_pool.py selftest` and `bash plugins/sdlc/scripts/check.sh --fast` exit 0, and `git diff --check` is clean (replan: this ticket edits `check.sh` and `check_pool.py`, so `--changed` selects every job, which is the full suite a verifier never runs; the solo's full run is logged at `.sdlc/runtime/tasks/0861-rerun-failed-jobs/t0861-changed.log`).
 
 ## Constraints
 - A job that never ran green for the recorded tree is never reported as passed.
+
+## Outcome
+
+2026-11-20 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: 702773dc3f67
+- Changed: see commits
+- Commits: 9fc09e3 T-0861: replan criterion 3 for the verifier cap; f2bf483 T-0861: check.sh --rerun reruns only failed or affected jobs
+- Check: 1 Selftest cases cover failed-job-only rerun, changed leaf script, no record refuses, clean rerun s...: pass
+- Check: 3 `check_pool.py selftest` and `check.sh --fast` exit 0, `git diff --check` clean: pass
+- Follow-up: note: the Constraint a job that never ran green is never reported as... -> notes.md
