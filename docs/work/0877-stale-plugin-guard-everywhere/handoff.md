@@ -34,7 +34,7 @@ A session agent that calls sdlc scripts from an older cached version is told so,
 3. Update the T-0808 paragraph in the `plugin_min.py` docstring, the sdlc-internals entry and the CHANGELOG `[Unreleased]`.
 
 ## Acceptance criteria
-- The lanes selftest shard holding the new case and `python3 plugins/sdlc/scripts/tickets.py selftest` exit 0 with the new cases; with the call removed from `lanes.py`, the refusal case fails (state the observed red).
+- `python3 plugins/sdlc/scripts/tickets.py selftest` exits 0 with the new cases, which also run `lanes.py` from a fake cache folder (replan: the lanes case lives in the tickets selftest so `lanes.py` takes one line while T-0873 edits it), and both lanes selftest shards exit 0; with the call removed from `lanes.py`, the refusal case fails (state the observed red).
 - `python3 plugins/sdlc/scripts/steps.py selftest` and `python3 plugins/sdlc/scripts/messages.py selftest` exit 0.
 - `bash plugins/sdlc/scripts/check.sh --fast` exits 0 and `git diff --check` is clean.
 
