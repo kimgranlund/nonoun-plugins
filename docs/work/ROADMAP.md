@@ -9,7 +9,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0857 | [0857-tickets-in-docs-tickets](0857-tickets-in-docs-tickets/handoff.md) | New repos keep tickets in docs/tickets | feature | L2 | P2 | none | 🟡 claimed (branch lane/T-0857-t0857) |
 | T-0858 | [0858-isolated-incremental-testing](0858-isolated-incremental-testing/handoff.md) | check.sh --changed runs only the jobs a diff touches | feature | L2 | P2 | none | 🟡 claimed (branch lane/T-0858-t0858) |
 | T-0859 | [0859-role-test-guidance](0859-role-test-guidance/handoff.md) | Roles run the checks for their change, once, never the full suite mid-ticket | chore | L2 | P2 | T-0858 | 🔵 ready |
-| T-0860 | [0860-faster-full-suite](0860-faster-full-suite/handoff.md) | Cut check.sh wall time by sharding its slowest selftests | chore | L3 | P2 | none | 🟡 claimed |
+| T-0860 | [0860-faster-full-suite](0860-faster-full-suite/handoff.md) | Cut check.sh wall time by sharding its slowest selftests | chore | L3 | P2 | none | 🟡 claimed (branch lane/T-0860-t0860) |
 | T-0861 | [0861-rerun-failed-jobs](0861-rerun-failed-jobs/handoff.md) | check.sh reruns only failed or affected jobs after a fix | feature | L2 | P2 | T-0858, T-0860 | 🔵 ready |
 | T-0862 | [0862-ui-frameworks-sibling-lookup](0862-ui-frameworks-sibling-lookup/handoff.md) | ui-frameworks finds sibling skills inside the plugin | bug | L2 | P2 | none | 🔵 ready |
 | T-0863 | [0863-explore-variants-browser-check](0863-explore-variants-browser-check/handoff.md) | Run the ui-explore-variants browser check with Playwright | chore | L2 | P2 | none | 🔵 ready |
