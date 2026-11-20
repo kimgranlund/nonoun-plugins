@@ -1019,3 +1019,7 @@
 
 - note: the `shards.py check` scratch-copy control needs the scripts beside the copy (the path is `<check.sh dir>/../scripts` resolved via the copy's location only when it sits in a `scripts/` dir), so a bare copy in an arbitrary dir fails for the wrong reason; fine for the real check.
 - note: T-0858 `check_select.py` must map each sharded script to all its shard jobs (solo report open item).
+
+## T-0867: After `steps.py split --supersede`, every prior-report link in a step handoff, the folded `### Notes` included (2026-11-20)
+
+- note: in attempt 3, the exit code of the check.sh run was read from its `22 jobs ok` summary line. zsh `time` hid `PIPESTATUS`.

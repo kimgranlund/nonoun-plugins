@@ -2,7 +2,7 @@
 id: T-0867
 title: "After `steps.py split --supersede`, every prior-report link in a step handoff, the folded `### Notes` included"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -38,3 +38,13 @@ After `steps.py split --supersede`, every prior-report link in a step handoff, t
 
 ## Constraints
 - The printed `steps: step N: rewrote prior-report link` lines may now include Notes links; no other output changes.
+
+## Outcome
+
+2026-11-20 · lane: solo L1 · verdict: closed by reason (delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed; gate: full) · verifier: verifier-L1 (opus) · base: 6c87a4a409bd
+- Changed: see commits
+- Commits: ee8a777 T-0867: replan criterion 3 to check.sh --changed; f6c4aba T-0867: split folds review notes before rewriting prior links (#88)
+- Check: 1 `python3 plugins/sdlc/scripts/steps.py selftest` exits 0 and includes the new case: pass
+- Check: 2 With the old order restored the new case fails: pass
+- Check: 3 `bash plugins/sdlc/scripts/check.sh --changed $SDLC_BASE_SHA` exits 0 and `git diff --check` is c...: pass
+- Follow-up: note: in attempt 3, the exit code of the check.sh run was read from its... -> notes.md
