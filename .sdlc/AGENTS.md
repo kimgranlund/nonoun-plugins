@@ -73,7 +73,7 @@ Ticket lifecycle:
 
 - Evals: `../docs/work/evals/` holds the dated model and effort experiments and `table-lock.json`; read `../docs/work/evals/AGENTS.md` before changing a model or effort row in `plugins/sdlc-lite/scripts/run.sh` or `plugins/sdlc-lite/adapters/codex/models.json`.
 - Proposals: `../docs/work/proposals/` holds candidate changes that `proposals.py scan` mined from past runs; read `../docs/work/proposals/AGENTS.md` before scanning, accepting, rejecting, or promoting one.
-<!-- sdlc:managed:start v1 sha256:04d0c5981658 -->
+<!-- sdlc:managed:start v1 sha256:131937b473b0 -->
 # Work records
 
 This folder holds SDLC `config`, this router, and the git-ignored `runtime/` and `messages/`. Tickets, task records, `docs/work/ROADMAP.md`, and `docs/work/NOTES.md` are in the work root `docs/work/`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `docs/work/ROADMAP.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -85,8 +85,10 @@ This folder holds SDLC `config`, this router, and the git-ignored `runtime/` and
 
 ## Stages
 
-- proposed: 14
-  - T-0864 When gated checks queue for capacity on an idle machine, the operator sees how to raise the capacity, and a ca (docs/work/0864-gate-lock-wait-hints)
+- proposed: 0
+- ready: 15
+  - T-0859 Roles run the checks for their change, once, never the full suite mid-ticket (docs/work/0859-role-test-guidance)
+  - T-0861 check.sh reruns only failed or affected jobs after a fix (docs/work/0861-rerun-failed-jobs)
   - T-0865 `gate_lock.py status` shows, for each admitted and queued job, the commit it tests, its working directory and (docs/work/0865-gate-lock-status-owner)
   - T-0866 `/sdlc:ask` in a repo with no ticket root notes 'no tickets' and goes on with the rest of the sweep (docs/work/0866-ask-without-ticket-root)
   - T-0867 After `steps.py split --supersede`, every prior-report link in a step handoff, the folded `### Notes` included (docs/work/0867-split-notes-prior-links)
@@ -100,13 +102,11 @@ This folder holds SDLC `config`, this router, and the git-ignored `runtime/` and
   - T-0875 A lane cannot land or mark ready a change to a path another lane owns, and a user can wire the same check as a (docs/work/0875-lane-claims-commit-guard)
   - T-0876 In a Claude session, a commit or merge that touches a configured risky path reminds the agent once per change (docs/work/0876-risky-change-verify-reminder)
   - T-0877 A session agent that calls sdlc scripts from an older cached version is told so, and refused for state-changin (docs/work/0877-stale-plugin-guard-everywhere)
-- ready: 2
-  - T-0859 Roles run the checks for their change, once, never the full suite mid-ticket (docs/work/0859-role-test-guidance)
-  - T-0861 check.sh reruns only failed or affected jobs after a fix (docs/work/0861-rerun-failed-jobs)
-- claimed: 3
+- claimed: 4
   - T-0857 New repos keep tickets in docs/tickets (docs/work/0857-tickets-in-docs-tickets), claimed by nonoun-author 2026-11-19, branch lane/T-0857-t0857
   - T-0858 check.sh --changed runs only the jobs a diff touches (docs/work/0858-isolated-incremental-testing), claimed by nonoun-author 2026-11-19, branch lane/T-0858-t0858
   - T-0860 Cut check.sh wall time by sharding its slowest selftests (docs/work/0860-faster-full-suite), claimed by nonoun-author 2026-11-19, branch lane/T-0860-t0860
+  - T-0864 When gated checks queue for capacity on an idle machine, the operator sees how to raise the capacity, and a ca (docs/work/0864-gate-lock-wait-hints), claimed by nonoun-author 2026-11-19
 - paused: 0
 - blocked: 1
   - T-0611 Rehearse a Pi host working tickets beside Claude and Codex (docs/work/0611-pi-host-rehearsal)
