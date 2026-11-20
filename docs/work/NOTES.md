@@ -1033,3 +1033,7 @@
 - decide: plugins/sdlc/scripts/lanes.py open (`--kind live` with `--into <branch>`): the builder reports `finish --no-ticket` stops on a lane whose into is not main, so the #100 command (`--into ui-kit-migration`) opens and readies but does not finish. The handoff criteria do not test it; a follow-up ticket is the builder's proposal.
 - note: plugins/sdlc/agents/live.md:42 still says "Claim a ticket (`tickets.py claim`) when the work matches one", which fits a solo lane, not a live lane that refuses `--ticket`.
 - note: docs/references/sdlc-internals.md:145 still lists lanes.py as serving "fanout, integration and solo worktree lanes".
+
+## T-0869: A verifier prepared in a lane that merged its integration branch gets a Base sha that keeps the integration br (2026-11-20)
+
+- decide: plugins/sdlc/scripts/run.sh:527-533: `run.sh` still takes the floor against the main checkout HEAD only (the new `into` rule is `dispatch.py` only, stated in the `sdlc-internals.md` entry); the handoff Constraints ask for a parity case if the base logic is shared. decide: a follow-up ticket for the `run.sh` floor if `run.sh` lanes merge integration branches.
