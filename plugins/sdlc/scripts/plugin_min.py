@@ -23,7 +23,9 @@ checked.
 T-0808: a script run from an install folder in the plugin cache while a newer version folder sits beside it refuses
 with exit 2 (`check_stale`): a factory's helper that pins an old scripts path would otherwise run old behavior after
 the warning. SDLC_ALLOW_STALE_PLUGIN=1 lets it run with the warning only. A script outside the cache (a source checkout)
-only warns.
+only warns. T-0877: lanes.py, tickets.py, steps.py and messages.py run the same check from main(), so a session agent
+whose prompt pins an older scripts path is refused whichever script it calls; their read-only subcommands (list, who,
+status, blockers, check) only warn, and the refusal line names the restart that loads the newer version.
 """
 import argparse
 import json
@@ -38,6 +40,7 @@ LINE_RE = re.compile(r'\s*plugin_min\s*:\s*(\S*)\s*(?:#.*)?')
 VERSION_RE = re.compile(r'\d+(\.\d+)*')
 MANIFEST = {'claude': '.claude-plugin/plugin.json', 'codex': '.codex-plugin/plugin.json'}
 CACHE = Path.home() / '.claude' / 'plugins' / 'cache' / 'nonoun' / 'sdlc'
+READ_ONLY = frozenset({'list', 'who', 'status', 'blockers', 'check'})  # T-0877: subcommands the stale check only warns for
 UPDATE = {'claude': 'claude plugin marketplace update nonoun && claude plugin update sdlc@nonoun, then start a fresh session',
           'codex': 'codex plugin marketplace upgrade nonoun, then start a fresh Codex session'}
 
@@ -139,21 +142,23 @@ def in_cache(plugin=PLUGIN):
     return Path(os.path.realpath(plugin)).parent == Path(os.path.realpath(cache))
 
 
-def check_stale(plugin=PLUGIN):
+def check_stale(plugin=PLUGIN, warn_only=False):
     """0, or 2 when plugin is an older install folder in the cache beside a newer one (T-0808); prints stale_line on
-    stderr when there is one, plus the refusal line when it refuses. SDLC_ALLOW_STALE_PLUGIN=1 keeps the warning only.
+    stderr when there is one, plus the refusal line, naming the restart that loads the newer version, when it refuses.
+    SDLC_ALLOW_STALE_PLUGIN=1, or warn_only (a read-only subcommand, T-0877), keeps the warning only.
     Never raises: a failed check returns 0."""
     try:
-        line = stale_line(plugin)
-        stop = bool(line) and in_cache(plugin) and os.environ.get('SDLC_ALLOW_STALE_PLUGIN') != '1'
+        got = newer_installed(plugin)
+        line = stale_line(plugin) if got else None
+        stop = bool(line) and not warn_only and in_cache(plugin) and os.environ.get('SDLC_ALLOW_STALE_PLUGIN') != '1'
     except Exception:  # noqa: BLE001 a check failure must not break a script call
         return 0
     if line:
         print(line, file=sys.stderr)
     if not stop:
         return 0
-    print('sdlc: refusing to run old scripts from %s; call the installed version\'s scripts, or set '
-          'SDLC_ALLOW_STALE_PLUGIN=1 to run them anyway' % plugin, file=sys.stderr)
+    print('sdlc: refusing to run old scripts from %s; restart the session to load sdlc %s, call the installed version\'s '
+          'scripts, or set SDLC_ALLOW_STALE_PLUGIN=1 to run them anyway' % (plugin, got[1]), file=sys.stderr)
     return 2
 
 

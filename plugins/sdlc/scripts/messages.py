@@ -3842,11 +3842,22 @@ def parser():
     return ap
 
 
+def stale_check(cmd):
+    """plugin_min.check_stale for cmd; 0 when plugin_min is not beside this file (a selftest copy runs alone)."""
+    try:
+        import plugin_min  # same scripts/ dir in an install or checkout (T-0877)
+    except ImportError:
+        return 0
+    return plugin_min.check_stale(warn_only=cmd in plugin_min.READ_ONLY)
+
+
 def main(argv=None):
     ap = parser()
     a = ap.parse_args(argv)
     if a.cmd is None:
         ap.error('a subcommand is required')
+    if a.cmd != 'selftest' and stale_check(a.cmd):  # T-0808, T-0877: an older cache folder refuses
+        return 2
     try:
         return COMMANDS[a.cmd](a)
     except Refuse as e:
