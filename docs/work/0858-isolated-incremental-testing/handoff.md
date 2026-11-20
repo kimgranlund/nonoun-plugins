@@ -36,7 +36,7 @@ During a ticket, one command runs only the check jobs that cover the files chang
 
 ## Acceptance criteria
 - `python3 plugins/sdlc/scripts/check_select.py selftest` exits 0 with cases for: one leaf script, a shared module (selects its importers' jobs), a docs-only path, a path outside the plugin (nothing), `check.sh` itself (all), and an unmapped plugin path (all).
-- After `touch`-style edits in a throwaway worktree: changing only `plugins/sdlc/scripts/wtroot.py` and running `bash plugins/sdlc/scripts/check.sh --changed` runs fewer than 6 jobs and exits 0; state the job names and wall time in the report.
+- After `touch`-style edits in a throwaway worktree: changing only `plugins/sdlc/scripts/cite_check.py` and running `bash plugins/sdlc/scripts/check.sh --changed` runs fewer than 6 jobs and exits 0; state the job names and wall time in the report (replan: `wtroot.py` is a shared module with eight importers, so by this ticket's own rule it selects 10 jobs).
 - With no changes, `check.sh --changed` prints `nothing to check` and exits 0.
 - `bash plugins/sdlc/scripts/check.sh --fast` exits 0 and `git diff --check` is clean.
 
