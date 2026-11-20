@@ -12,6 +12,7 @@ SDLC releases (named SDLC Lite before 1.0.0), newest first, in [Keep a Changelog
 
 - `sdlc`: `gate_lock.py run` ends its first waiting line, once per run, with `hint: capacity compute_units=<C> is full while load <x> is under <max_load>; an operator can raise it: gate_lock.py policy set compute_units=<N>` when the queue waits on capacity at a quiet load, and `status` ends with the same `hint:` row (`hint` in `--json`, only then); the wait timeout line ends `; command not run`; the docstring and `run-operations.md` show a function for batching named gated runs that zsh does not word-split (T-0864, issues #90, #99).
 - `sdlc`: `onboard.py setup --init` in a new repo with no `.sdlc/config` now writes `work_root: docs/tickets`, so tickets live in `docs/tickets/` and the docs layout names the work home `tickets/` (T-0857). An existing `.sdlc/config` is never changed; a bare `tickets.py new` in a repo never onboarded still records `ticket_root: tickets`.
+- Builders, solos and verifiers run the check a criterion names, or `check.sh --changed $SDLC_BASE_SHA` in the sdlc repository, once after the change and again only after a fix; the full `check.sh` belongs to the land gate and a release, never to a role mid-ticket (T-0859).
 
 ## [1.0.8] - 2026-11-19
 
