@@ -20,6 +20,7 @@ SDLC releases (named SDLC Lite before 1.0.0), newest first, in [Keep a Changelog
 
 ### Fixed
 
+- `dispatch.py prepare verifier` in a lane that merged its integration branch keeps that branch's other tickets out of the Base sha diff: the lane fork floor is taken against the lane record's `into` branch when it resolves, before the main checkout HEAD (T-0869, issue #86).
 - `sdlc`: the `/sdlc:ask` ticket step treats a `not a ticket root` refusal from `tickets.py blockers` as `no tickets` and goes on with the rest of the sweep, instead of starting with an error in a repo that uses live mode without tickets; the root guard in `tickets.py` is unchanged (T-0866, issue #95).
 
 ## [1.0.8] - 2026-11-19
