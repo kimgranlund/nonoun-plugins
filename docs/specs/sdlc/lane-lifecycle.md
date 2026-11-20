@@ -68,7 +68,7 @@ What changes:
 Decision [D]: one new script, imported by fanout.py, solo_run.py, tickets.py, dispatch.py and board.py:
 
 ```
-lanes.py open <name> [--base REF] [--into REF] [--ticket T-NNNN]... [--kind fanout|integration|solo] [--dry-run]
+lanes.py open <name> [--base REF] [--into REF] [--ticket T-NNNN]... [--kind fanout|integration|live|solo] [--dry-run]
 lanes.py close <name|path> [--into REF] [--discard] [--dry-run]
 lanes.py sweep [--dry-run]
 lanes.py wait <name> <pr> [--timeout SECS]
@@ -320,10 +320,11 @@ Maintainer decision 2026-10-10: adopt names, archive refs, the worktree lock, wo
 | Namespace | Holds | Made by | Replaces |
 |---|---|---|---|
 | `lane/<ticket>-<slug>` | one lane's work, for example `lane/T-0424-git-native` | `lanes.py open`, kinds fanout and solo | `<integration>-<lane>` and a solo's `<name>` |
+| `lane/<slug>` | a live session's ticket-free lane, for example `lane/live-docs` (T-0870) | `lanes.py open --kind live` | a hand-made worktree and branch |
 | `wave/<N>` | a fanout integration branch; N is one above the highest `wave/<N>`, legacy `wave<N>` or archived `wave/<N>` | fanout `run`, when `--integration` is not given | `fanout/<date>` |
 | `release/<X.Y.Z>` | a release branch | a person or the release step; lanes.py only reads it | `release-X.Y.Z` |
 
-The slug is lowercase `[a-z0-9-]`, at most 40 characters, from the ticket slug or the lane name; the ticket is `T-NNNN`. A lane that runs several tickets is named for its first. `open` refuses a `lane/` branch with no `--ticket` (section 8.1). The host's `worktree-<name>` stays, because the host names it [I]. Annotated tags `vX.Y.Z` are out of scope here.
+The slug is lowercase `[a-z0-9-]`, at most 40 characters, from the ticket slug or the lane name; the ticket is `T-NNNN`. A lane that runs several tickets is named for its first. `open` refuses a fanout or solo lane with no `--ticket` (section 8.1); kind live (T-0870) is the one ticket-free `lane/` branch: it refuses `--ticket` and `--claim`, writes no ticket line or claim ref, is locked by its session, and lands with `finish --no-ticket`; `ready` pins it as `refs/sdlc/ready/<slug>`. The host's `worktree-<name>` stays, because the host names it [I]. Annotated tags `vX.Y.Z` are out of scope here.
 
 Clash rule [T]: refs are paths, so `lane` and `lane/x` cannot both exist; creating `lane/x` fails with `'refs/heads/lane' exists`, and creating `lane` fails with `'refs/heads/lane/x' exists`.
 

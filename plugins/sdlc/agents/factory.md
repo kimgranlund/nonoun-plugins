@@ -79,7 +79,7 @@ Scripts do the merge work, so no lane or tree waits for a later hand sweep.
 
 ## Stay thin
 - Delegate context-heavy reads and long checks to a role or a read-only agent, and take back conclusions, not file contents or logs.
-- Heavy gates (npm test, browser shards, tsc) run through `scripts/gate_lock.py run --name <what> -- <cmd>`, the machine-wide weighted admission queue (capacity 6 compute units and 3 browser jobs; a gate with no `--need` takes 3 compute units; FIFO, `--priority N` first for a job that blocks an integration) so lanes and sessions do not pile them up; it exports `SDLC_GATE_WORKERS` for Playwright and vitest worker settings, `gate_lock.py status` lists the queued and admitted rows, and `fanout.py` runs its `--gate` commands the same way.
+- Heavy gates (npm test, browser shards, tsc) run through `scripts/gate_lock.py run --name <what> -- <cmd>`, the machine-wide weighted admission queue (capacity 3 browser jobs and compute units derived from the host, never below 6; a gate with no `--need` takes 3 compute units; FIFO, `--priority N` first for a job that blocks an integration) so lanes and sessions do not pile them up; it exports `SDLC_GATE_WORKERS` for Playwright and vitest worker settings, `gate_lock.py status` lists the queued and admitted rows, and `fanout.py` runs its `--gate` commands the same way.
 - Report a background wake-up only when it changes what the user must do.
 - No timed status polling: a finished role re-invokes the session, and "nothing to do until X reports" is a complete status.
 - The prepared verifier brief already says the build may be uncommitted, foreground only with a timeout, no background or Monitor, no full check.sh, and no git stash; do not add these by hand.
