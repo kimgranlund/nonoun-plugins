@@ -2,7 +2,7 @@
 id: T-0879
 title: "specgate allows a later step to repeat an earlier step's check"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -37,3 +37,13 @@ A plan may re-run an earlier step's check in a later step without `specgate.py` 
 
 ## Constraints
 - A duplicate inside one step is still refused.
+
+## Outcome
+
+2026-11-19 · lane: solo L1 · verdict: closed by reason (delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed; gate: full) · verifier: verifier-L2 (sonnet) · base: 5578010745d6
+- Changed: see commits
+- Commits: e4ce18e T-0879: specgate allows a later step to repeat an earlier step's check (#87)
+- Check: 1 `python3 plugins/sdlc/scripts/specgate.py selftest` exits 0 with both new cases; the cross-step c...: pass
+- Check: 2 `bash plugins/sdlc/scripts/check.sh --fast` exits 0 and `git diff --check` is clean: pass
+- Follow-up: note: redck.py deviations printed no process deviation lines the ticket... -> notes.md
+- Follow-up: note: the new inside-one-step check at specgate.py keeps guard and Merge... -> notes.md

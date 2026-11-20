@@ -1000,3 +1000,8 @@
 - decide: plugins/sdlc/agents/solo.md:18: Run-verbatim reads "exactly as written (this run is the check run above, not a second one) (the same text, not a paraphrase)", two adjacent parentheticals. note: merge them into one.
 - decide: plugins/sdlc/skills/fanout/SKILL.md:39: "a role inside a lane runs ... the full check.sh through the same machine-wide queue" now sits beside the new rule that roles do not run the full check.sh mid-ticket. note: reword as "a role that a criterion tells to run the full check.sh runs it through the queue" if the ambiguity matters.
 - decide: plugins/sdlc/agents/builder.md:16 and plugins/sdlc/agents/verifier.md:24: the queue sentence moved from "A full test suite" to "A criterion's full suite", which narrows the gate_lock requirement for a role that runs a full suite another way. note: only if that was not intended.
+
+## T-0879: specgate allows a later step to repeat an earlier step's check (2026-11-19)
+
+- note: `redck.py deviations` printed no process deviation lines (the ticket has no `(red)` tagged criterion).
+- note: the new inside-one-step check at specgate.py keeps `(guard)` and `Merge` exemptions unchanged; the selftest's guard cases still pass.
