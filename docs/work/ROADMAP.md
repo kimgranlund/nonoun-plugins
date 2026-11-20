@@ -11,7 +11,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0859 | [0859-role-test-guidance](0859-role-test-guidance/handoff.md) | Roles run the checks for their change, once, never the full suite mid-ticket | chore | L2 | P2 | T-0858 | 🔵 ready |
 | T-0860 | [0860-faster-full-suite](0860-faster-full-suite/handoff.md) | Cut check.sh wall time by sharding its slowest selftests | chore | L3 | P2 | none | 🟡 claimed (branch lane/T-0860-t0860) |
 | T-0861 | [0861-rerun-failed-jobs](0861-rerun-failed-jobs/handoff.md) | check.sh reruns only failed or affected jobs after a fix | feature | L2 | P2 | T-0858, T-0860 | 🔵 ready |
-| T-0863 | [0863-explore-variants-browser-check](0863-explore-variants-browser-check/handoff.md) | Run the ui-explore-variants browser check with Playwright | chore | L2 | P2 | none | 🔵 ready |
+| T-0863 | [0863-explore-variants-browser-check](0863-explore-variants-browser-check/handoff.md) | Run the ui-explore-variants browser check with Playwright | chore | L2 | P2 | none | 🟡 claimed |
 
 Closed: 819 done, 30 dropped (git log or .NNNN-* folders)
 
