@@ -1069,3 +1069,7 @@
 
 - note: plugins/sdlc/scripts/lanes.py case_status: the docstring says "a commits it twice-ahead"; the case commits keep.txt and a2.txt (two commits), so it reads fine, no change needed.
 - note: no em dashes in the added lines (checked with grep on the diff).
+
+## T-0877: A session agent that calls sdlc scripts from an older cached version is told so, and refused for state-changin (2026-11-20)
+
+- note: messages.py count/read/ack/wait are not in READ_ONLY, so a stale `messages.py count` refuses with exit 2; this matches the ticket's fixed read-only set, and the builder reported a related follow-up on the messages-run.py launcher (plugins/sdlc/scripts/messages.py:3845).
