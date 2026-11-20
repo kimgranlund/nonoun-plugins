@@ -73,7 +73,7 @@ Ticket lifecycle:
 
 - Evals: `../docs/work/evals/` holds the dated model and effort experiments and `table-lock.json`; read `../docs/work/evals/AGENTS.md` before changing a model or effort row in `plugins/sdlc-lite/scripts/run.sh` or `plugins/sdlc-lite/adapters/codex/models.json`.
 - Proposals: `../docs/work/proposals/` holds candidate changes that `proposals.py scan` mined from past runs; read `../docs/work/proposals/AGENTS.md` before scanning, accepting, rejecting, or promoting one.
-<!-- sdlc:managed:start v1 sha256:b2ece103f3b5 -->
+<!-- sdlc:managed:start v1 sha256:6ab912e56b94 -->
 # Work records
 
 This folder holds SDLC `config`, this router, and the git-ignored `runtime/` and `messages/`. Tickets, task records, `docs/work/ROADMAP.md`, and `docs/work/NOTES.md` are in the work root `docs/work/`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `docs/work/ROADMAP.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -96,7 +96,7 @@ This folder holds SDLC `config`, this router, and the git-ignored `runtime/` and
 - claimed: 4
   - T-0861 check.sh reruns only failed or affected jobs after a fix (docs/work/0861-rerun-failed-jobs), claimed by nonoun-author 2026-11-19, branch lane/T-0861-t0861
   - T-0871 When a landed host agent worktree is still locked by the harness, the close output says so and gives a removal (docs/work/0871-host-lock-close-hint), claimed by nonoun-author 2026-11-20, branch lane/T-0871-t0871
-  - T-0876 In a Claude session, a commit or merge that touches a configured risky path reminds the agent once per change (docs/work/0876-risky-change-verify-reminder), claimed by nonoun-author 2026-11-20
+  - T-0876 In a Claude session, a commit or merge that touches a configured risky path reminds the agent once per change (docs/work/0876-risky-change-verify-reminder), claimed by nonoun-author 2026-11-20, branch lane/T-0876-t0876
   - T-0881 gate_lock keeps one slot for jobs that declare a short duration (docs/work/0881-gate-lock-short-job-slot), claimed by nonoun-author 2026-11-20, branch lane/T-0881-t0881
 - paused: 0
 - blocked: 1
