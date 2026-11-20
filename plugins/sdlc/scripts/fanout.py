@@ -324,7 +324,8 @@ run
        `tickets.py roadmap` regenerates them in the merge commit; any other conflict is aborted:
        `merge conflict`); each --gate in order via bash -c, run through
        `gate_lock.py run --name <lane>/<id> --` (T-0303, T-0409: the machine-wide weighted
-       FIFO admission, built-in capacity 6 compute units and 3 browser jobs, two undeclared gates at once;
+       FIFO admission, built-in capacity 3 browser jobs and max(6, min(CPUs // 2, RAM GB // 4)) compute units
+       (T-0880), at least two undeclared gates at once;
        `SDLC_GATE_SLOTS=0` or --no-gate-lock runs the gate
        bare; T-0456: a cheap gate (a command with `check.py` or `check-packaging.py` as a word, or
        `claude_roles.py`/`codex_roles.py generate --check`) asks for `--need compute_units=1`, so it is admitted
@@ -3843,6 +3844,7 @@ def selftest(spec=None, listing=False):
         env['TMPDIR'] = str(gate_tmp)
         env['SDLC_GATE_DIR'] = str(gate_tmp / 'gate-state')
         env['SDLC_GATE_LOAD_FILE'] = str(gate_tmp / 'load-quiet')  # a quiet host, so a busy one never caps prep
+        env['SDLC_GATE_RAM_MB'] = '16384'  # a 16 GB host: gate_lock derives the floor capacity 6 on any real host (T-0880)
         env.update(extra)
         return env
 
