@@ -4,6 +4,8 @@ The design plugin, newest first. Releases before this file are recorded in the r
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-11-19
+
 ### Changed
 
 - `ui-geometry` (T-0856): synced from the MacBook copy at `ec93828`. The ladder preset is the default (30px controls at n = 14), `standard` keeps h = 32 (alias `standard-32`), and the dialog inset is a row, `containers.frame.dialog-inset`; the inspector panel's `geometry-runtime/derive.js` and `provenance.json` are rebuilt with `npm run build`.

@@ -4,6 +4,14 @@ SDLC releases (named SDLC Lite before 1.0.0), newest first, in [Keep a Changelog
 
 ## [Unreleased]
 
+## [1.0.8] - 2026-11-19
+
+Report: [docs/reports/2026-11-19-release-1-0-8.md](docs/reports/2026-11-19-release-1-0-8.md). Marketplace release: `design` 0.5.0; `sdlc` 1.0.3, `context` 0.8.0 and `dev-tools` 0.1.1 are unchanged. 2 tickets (T-0855, T-0856). Details are in [the design changelog](plugins/design/CHANGELOG.md).
+
+### Changed
+
+- `design` 0.5.0: `ui-geometry`, `ui-frameworks`, `ui-explore-variants`, `ui-interaction-dev`, `ui-materials` and `ui-content` are synced from their sources (T-0855, T-0856). `ui-geometry` makes the ladder preset the default (30px controls at n = 14); `ui-frameworks` adds components; `ui-content` and `ui-explore-variants` gain their own checks.
+
 ## [1.0.7] - 2026-11-15
 
 Report: [docs/reports/2026-11-15-release-1-0-7.md](docs/reports/2026-11-15-release-1-0-7.md). Marketplace release: `context` 0.8.0, `design` 0.4.0 and `dev-tools` 0.1.1 and `sdlc` 1.0.3. 9 tickets (T-0846 to T-0854). Details are in [the context changelog](plugins/context/CHANGELOG.md) and [the design changelog](plugins/design/CHANGELOG.md).
