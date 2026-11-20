@@ -4,6 +4,10 @@ The design plugin, newest first. Releases before this file are recorded in the r
 
 ## [Unreleased]
 
+### Changed
+
+- `AGENTS.md` (T-0863): the Checks section names the Playwright scratch project and the commands for the two browser checks, `ui-explore-variants` `scripts/check.mjs` and the inspector panel's `examples/test.mjs`. Both ran green here (33/33 and 134/134).
+
 ### Fixed
 
 - `ui-frameworks` (T-0862): `scripts/tokens.mjs` (and `scripts/panda.mjs`, which builds on it) find `ui-colors`, `ui-geometry` and `ui-materials` inside the plugin's own `skills/` folder, so they run without copies in `~/.claude/skills`. One helper, `scripts/siblings.mjs`, tries `SKILLS_DIR`, then the folder beside the skill, then `~/.claude/skills`, and names every place tried when none has the file. A deliberate difference from the MacBook source. Generated output is unchanged.
