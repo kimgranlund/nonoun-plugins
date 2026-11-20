@@ -17,7 +17,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0876 | [0876-risky-change-verify-reminder](0876-risky-change-verify-reminder/handoff.md) | In a Claude session, a commit or merge that touches a configured risky path reminds the agent once per change | feature | L2 | P2 | T-0870 | 🔵 ready |
 | T-0877 | [0877-stale-plugin-guard-everywhere](0877-stale-plugin-guard-everywhere/handoff.md) | A session agent that calls sdlc scripts from an older cached version is told so, and refused for state-changin | bug | L2 | P2 | T-0875, T-0867, T-0868 | 🔵 ready |
 | T-0878 | [0878-fanout-keeps-skips-md](0878-fanout-keeps-skips-md/handoff.md) | fanout land keeps a committed skips.md tracked in the closed ticket folder | bug | L1 | P2 | T-0860 | 🔵 ready |
-| T-0881 | [0881-gate-lock-short-job-slot](0881-gate-lock-short-job-slot/handoff.md) | gate_lock keeps one slot for jobs that declare a short duration | feature | L2 | P2 | T-0880 | 🔵 ready |
+| T-0881 | [0881-gate-lock-short-job-slot](0881-gate-lock-short-job-slot/handoff.md) | gate_lock keeps one slot for jobs that declare a short duration | feature | L2 | P2 | T-0880 | 🟡 claimed |
 
 Closed: 831 done, 30 dropped (git log or .NNNN-* folders)
 
