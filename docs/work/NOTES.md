@@ -984,3 +984,8 @@
 
 - note: plugins/sdlc/scripts/check.sh option parsing for `--changed` prints `nothing to check (base HEAD)` with a base suffix; it still contains the string the criterion names.
 - note: the throwaway worktree tmp:0858-verifier-L2/base was left for dispatch.py record to remove.
+
+## T-0864: When gated checks queue for capacity on an idle machine, the operator sees how to raise the capacity, and a ca (2026-11-19)
+
+- decide: plugins/sdlc/scripts/gate_lock.py:980: the `HINT-STATUS` marker has no mutant control of its own, but the capacity case asserts the status text row and the `--json` key, so removing it would fail that case.
+- decide: plugins/sdlc/scripts/gate_lock.py (`next_head`): `schedule` now uses a function extracted from its inline head selection; the FIFO, priority and round-robin selftests pass unchanged.
