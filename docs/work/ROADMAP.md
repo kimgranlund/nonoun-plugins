@@ -7,7 +7,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 |---|---|---|---|---|---|---|---|
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔴 blocked |
 | T-0857 | [0857-tickets-in-docs-tickets](0857-tickets-in-docs-tickets/handoff.md) | New repos keep tickets in docs/tickets | feature | L2 | P2 | none | 🟡 claimed (branch lane/T-0857-t0857) |
-| T-0859 | [0859-role-test-guidance](0859-role-test-guidance/handoff.md) | Roles run the checks for their change, once, never the full suite mid-ticket | chore | L2 | P2 | T-0858 | 🟡 claimed |
+| T-0859 | [0859-role-test-guidance](0859-role-test-guidance/handoff.md) | Roles run the checks for their change, once, never the full suite mid-ticket | chore | L2 | P2 | T-0858 | 🟡 claimed (branch lane/T-0859-t0859) |
 | T-0860 | [0860-faster-full-suite](0860-faster-full-suite/handoff.md) | Cut check.sh wall time by sharding its slowest selftests | chore | L3 | P2 | none | 🟡 claimed (branch lane/T-0860-t0860) |
 | T-0861 | [0861-rerun-failed-jobs](0861-rerun-failed-jobs/handoff.md) | check.sh reruns only failed or affected jobs after a fix | feature | L2 | P2 | T-0858, T-0860 | 🔵 ready |
 | T-0864 | [0864-gate-lock-wait-hints](0864-gate-lock-wait-hints/handoff.md) | When gated checks queue for capacity on an idle machine, the operator sees how to raise the capacity, and a ca | feature | L2 | P2 | none | 🟡 claimed (branch lane/T-0864-t0864) |

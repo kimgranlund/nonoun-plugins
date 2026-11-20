@@ -73,7 +73,7 @@ Ticket lifecycle:
 
 - Evals: `../docs/work/evals/` holds the dated model and effort experiments and `table-lock.json`; read `../docs/work/evals/AGENTS.md` before changing a model or effort row in `plugins/sdlc-lite/scripts/run.sh` or `plugins/sdlc-lite/adapters/codex/models.json`.
 - Proposals: `../docs/work/proposals/` holds candidate changes that `proposals.py scan` mined from past runs; read `../docs/work/proposals/AGENTS.md` before scanning, accepting, rejecting, or promoting one.
-<!-- sdlc:managed:start v1 sha256:d75d68e45d61 -->
+<!-- sdlc:managed:start v1 sha256:f2f29fb311f3 -->
 # Work records
 
 This folder holds SDLC `config`, this router, and the git-ignored `runtime/` and `messages/`. Tickets, task records, `docs/work/ROADMAP.md`, and `docs/work/NOTES.md` are in the work root `docs/work/`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `docs/work/ROADMAP.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -107,7 +107,7 @@ This folder holds SDLC `config`, this router, and the git-ignored `runtime/` and
   - T-0881 gate_lock keeps one slot for jobs that declare a short duration (docs/work/0881-gate-lock-short-job-slot)
 - claimed: 4
   - T-0857 New repos keep tickets in docs/tickets (docs/work/0857-tickets-in-docs-tickets), claimed by nonoun-author 2026-11-19, branch lane/T-0857-t0857
-  - T-0859 Roles run the checks for their change, once, never the full suite mid-ticket (docs/work/0859-role-test-guidance), claimed by nonoun-author 2026-11-19
+  - T-0859 Roles run the checks for their change, once, never the full suite mid-ticket (docs/work/0859-role-test-guidance), claimed by nonoun-author 2026-11-19, branch lane/T-0859-t0859
   - T-0860 Cut check.sh wall time by sharding its slowest selftests (docs/work/0860-faster-full-suite), claimed by nonoun-author 2026-11-19, branch lane/T-0860-t0860
   - T-0864 When gated checks queue for capacity on an idle machine, the operator sees how to raise the capacity, and a ca (docs/work/0864-gate-lock-wait-hints), claimed by nonoun-author 2026-11-19, branch lane/T-0864-t0864
 - paused: 0
