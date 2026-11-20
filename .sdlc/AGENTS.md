@@ -73,7 +73,7 @@ Ticket lifecycle:
 
 - Evals: `../docs/work/evals/` holds the dated model and effort experiments and `table-lock.json`; read `../docs/work/evals/AGENTS.md` before changing a model or effort row in `plugins/sdlc-lite/scripts/run.sh` or `plugins/sdlc-lite/adapters/codex/models.json`.
 - Proposals: `../docs/work/proposals/` holds candidate changes that `proposals.py scan` mined from past runs; read `../docs/work/proposals/AGENTS.md` before scanning, accepting, rejecting, or promoting one.
-<!-- sdlc:managed:start v1 sha256:7ccd059a930d -->
+<!-- sdlc:managed:start v1 sha256:b2ece103f3b5 -->
 # Work records
 
 This folder holds SDLC `config`, this router, and the git-ignored `runtime/` and `messages/`. Tickets, task records, `docs/work/ROADMAP.md`, and `docs/work/NOTES.md` are in the work root `docs/work/`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `docs/work/ROADMAP.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -86,17 +86,17 @@ This folder holds SDLC `config`, this router, and the git-ignored `runtime/` and
 ## Stages
 
 - proposed: 0
-- ready: 7
+- ready: 6
   - T-0872 Landing a ticketless lane with `lanes.py finish --no-ticket` can never commit conflict markers, resolves confl (docs/work/0872-finish-ticketless-land-guards)
   - T-0873 `lanes.py status` answers 'is anything stuck or about to collide' for every open lane in one table (docs/work/0873-lanes-status-view)
   - T-0874 The lead can claim paths for one lane, and every lane sees who owns a path before it creates or changes it (docs/work/0874-lane-path-claims)
   - T-0875 A lane cannot land or mark ready a change to a path another lane owns, and a user can wire the same check as a (docs/work/0875-lane-claims-commit-guard)
-  - T-0876 In a Claude session, a commit or merge that touches a configured risky path reminds the agent once per change (docs/work/0876-risky-change-verify-reminder)
   - T-0877 A session agent that calls sdlc scripts from an older cached version is told so, and refused for state-changin (docs/work/0877-stale-plugin-guard-everywhere)
   - T-0878 fanout land keeps a committed skips.md tracked in the closed ticket folder (docs/work/0878-fanout-keeps-skips-md)
-- claimed: 3
+- claimed: 4
   - T-0861 check.sh reruns only failed or affected jobs after a fix (docs/work/0861-rerun-failed-jobs), claimed by nonoun-author 2026-11-19, branch lane/T-0861-t0861
   - T-0871 When a landed host agent worktree is still locked by the harness, the close output says so and gives a removal (docs/work/0871-host-lock-close-hint), claimed by nonoun-author 2026-11-20, branch lane/T-0871-t0871
+  - T-0876 In a Claude session, a commit or merge that touches a configured risky path reminds the agent once per change (docs/work/0876-risky-change-verify-reminder), claimed by nonoun-author 2026-11-20
   - T-0881 gate_lock keeps one slot for jobs that declare a short duration (docs/work/0881-gate-lock-short-job-slot), claimed by nonoun-author 2026-11-20, branch lane/T-0881-t0881
 - paused: 0
 - blocked: 1
