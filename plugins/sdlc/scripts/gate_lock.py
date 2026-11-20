@@ -14,7 +14,11 @@ Usage: gate_lock.py run [--need RES=N[,RES=N...]] [--slots N] [--priority P] [--
           (a command killed by signal n gives 128+n, a command that cannot start gives 127 or 126). Every
           admission failure exits 3 with one first stderr line `gate_lock: <code>: <detail>` (codes: timeout,
           too_large, bad_context, state_unavailable, ledger_corrupt); the wait timeout keeps `gate_lock: timeout
-          after ...`. State root: $SDLC_GATE_DIR (tests), else <home>/.local/state/sdlc/gate-lock from the
+          after ...` and ends `; command not run`. A queued run prints a waiting line every SDLC_GATE_REPORT_SECS
+          (default 15) seconds; the first one that finds the queue waiting on capacity (the head's compute need does
+          not fit and the load is at or under max_load, the cap is off, or no load is reported) ends, once per run,
+          with `hint: capacity compute_units=<C> is full while load <x> is under <max_load>; an operator can raise it:
+          gate_lock.py policy set compute_units=<C + default need>`. State root: $SDLC_GATE_DIR (tests), else <home>/.local/state/sdlc/gate-lock from the
           password database, never TMPDIR. ledger.json holds boot id, grants and queue under a short flock; the
           optional policy.json holds capacity and default_need. Built-in policy (the approved numbers):
           capacity compute_units 6 and browser_jobs 3, default_need compute_units 3 (so two undeclared gates run
@@ -55,7 +59,8 @@ Usage: gate_lock.py run [--need RES=N[,RES=N...]] [--slots N] [--priority P] [--
             set, a queue that waits on the load ends with `waiting: load <n.n> over cap <N>` and a row with how long
             the queue has waited and the top 3 non-gate processes by CPU. --json for tools (it gains `load`: value,
             max_load, over, only when max_load is set, and `stall`: waited_s, top_cpu, only while waiting on the load).
-            The waiting line `run` prints adds the load and the same processes. SDLC_GATE_PS_FILE (tests only)
+            The waiting line `run` prints adds the load and the same processes. A queue that waits on capacity
+            ends with the same `hint:` row the waiting line carries (`hint` in --json, only then). SDLC_GATE_PS_FILE (tests only)
             names a file of `pid ppid pgid pcpu command` lines used in place of ps.
   capabilities  read only: protocol, state root, boot id, the policy in force, legacy holders seen.
   policy / reset  operator only: show, set or reset policy.json; `reset --confirm` replaces an unparseable ledger.
@@ -70,8 +75,13 @@ Usage: gate_lock.py run [--need RES=N[,RES=N...]] [--slots N] [--priority P] [--
           Admission never calls it.
   selftest  real child processes in a temp SDLC_GATE_DIR: weighted caps, FIFO, priority, liveness (a dead holder
           reclaimed, a live group not), nesting, cancel, timeout, reboot, corrupt ledger, receipts, status, the
-          legacy bridge, the load cap and the old exit codes, each control observed failing in a mutant copy of this script;
+          legacy bridge, the load cap, the capacity hint and the old exit codes, each control observed failing in a mutant copy of this script;
           then the reap cases with a fake orphan and a live-parent fake.
+
+Batching: to run many named gates from a shell loop, call a function with explicit arguments, never a command held
+in one variable (`set -- $c` does not split it in zsh, so the whole string becomes one word):
+  gated() { local name=$1; shift; python3 <plugin-root>/scripts/gate_lock.py run --name "$name" -- "$@"; }
+  gated keys-app-shell node scripts/keys.mjs app-shell
 """
 import argparse, contextlib, fcntl, json, os, pathlib, pwd, re, secrets, shlex, shutil, signal, struct, subprocess, sys, tempfile, time
 
@@ -509,6 +519,43 @@ def top_cpu_text(top):
     return '; '.join(f"pid {r['pid']} {r['cpu']:.1f}% {r['command']}" for r in top) or 'none found'
 
 
+def next_head(ledger):
+    """The queue entry whose turn it is: the highest priority, and among the repos at that priority the first one
+    after the repo granted last (round robin), each repo's own entries in arrival order."""
+    heads, first = {}, {}
+    for e in sorted(ledger['queue'], key=order_key):
+        heads.setdefault(e['repo'], e)
+    for e in ledger['queue']:
+        first[e['repo']] = min(first.get(e['repo'], e['seq']), e['seq'])
+    top = min(order_key(h)[0] for h in heads.values())
+    cl = sorted((r for r, h in heads.items() if order_key(h)[0] == top), key=lambda r: first[r])
+    if ledger.get('rr') in cl:
+        i = cl.index(ledger['rr']) + 1
+        cl = cl[i:] + cl[:i]
+    return heads[cl[0]]
+
+
+def capacity_hint(ledger, pol, legacy_n, load):
+    """The operator hint for a queue that waits on capacity, or None. It applies when the head's compute need does not
+    fit beside the compute units held and the load cap does not hold the queue (the load is at or under max_load, the
+    cap is off, or the host reports no load). It names the capacity, the load and the `policy set` that raises the
+    capacity by one default need."""
+    c = pol['capacity'].get(COMPUTE)
+    if not ledger['queue'] or not c:
+        return None
+    max_load = pol.get('max_load')
+    held = bool(ledger['grants'] or legacy_n)
+    if max_load and held and load is not None and load > max_load: return None  # HINT-LOAD
+    step = default_need(pol).get(COMPUTE, 0)
+    used = sum(g['need'].get(COMPUTE, 0) for g in ledger['grants']) + legacy_n * step
+    if used + next_head(ledger)['need'].get(COMPUTE, 0) <= c:
+        return None  # the head waits on another resource, not compute
+    why = ('the host reports no load' if load is None else f'load {load:.1f} is under {max_load}' if max_load
+           else f'load {load:.1f} has no load cap')
+    return (f'capacity {COMPUTE}={c} is full while {why}; an operator can raise it: '
+            f'gate_lock.py policy set {COMPUTE}={c + max(1, step)}')
+
+
 def schedule(ledger, pol, legacy_n=0, load=None):
     """Grant queue heads while they fit: highest priority first, then arrival; among the repos at the top priority
     round robin after the repo granted last; the selected head keeps its turn until it fits (no backfill). With a
@@ -524,17 +571,7 @@ def schedule(ledger, pol, legacy_n=0, load=None):
         add_usage(usage, default_need(pol))
     granted = []
     while ledger['queue']:
-        heads, first = {}, {}
-        for e in sorted(ledger['queue'], key=order_key):
-            heads.setdefault(e['repo'], e)
-        for e in ledger['queue']:
-            first[e['repo']] = min(first.get(e['repo'], e['seq']), e['seq'])
-        top = min(order_key(h)[0] for h in heads.values())
-        cl = sorted((r for r, h in heads.items() if order_key(h)[0] == top), key=lambda r: first[r])
-        if ledger.get('rr') in cl:
-            i = cl.index(ledger['rr']) + 1
-            cl = cl[i:] + cl[:i]
-        entry = heads[cl[0]]
+        entry = next_head(ledger)
         if max_load and load is not None and load > max_load and (ledger['grants'] or legacy_n): break  # LOAD-CAP
         if not fits(usage, entry['need'], cap):
             break
@@ -817,16 +854,19 @@ def run_top(root, pol, need, name, nice, timeout, cmd, priority, repo_arg, recei
             L['queue'].append(me)
             schedule(L, pol, legacy_n)
         next_report, last_legacy = t0 + report, time.monotonic()
+        hinted = False
         while True:
             try:
                 pol, _ = load_policy(root)  # a capacity set by `policy set` after this run queued reaches it
             except GateError:
                 pass  # keep the last good policy for this poll
+            due = not hinted and time.monotonic() >= next_report
             with txn(root) as L:
                 prune(L)
                 schedule(L, pol, legacy_n)
                 mine = next((g for g in L['grants'] if g['id'] == gid), None)
                 if mine is None:
+                    hint = capacity_hint(L, pol, legacy_n, host_load()) if due else None
                     qs = queue_view(L)
                     pos = next((i + 1 for i, e in enumerate(qs) if e['id'] == gid), None)
                     holders = holders_text(L)
@@ -840,13 +880,15 @@ def run_top(root, pol, need, name, nice, timeout, cmd, priority, repo_arg, recei
                 raise GateError('state_unavailable', 'this run\'s queue entry was removed from the ledger')
             if now >= t0 + timeout:
                 outcome = 'timeout'
-                raise GateError('timeout', f'after {timeout:g}s waiting for a grant of {need_text(need)} ({holders})')
+                raise GateError('timeout', f'after {timeout:g}s waiting for a grant of {need_text(need)} ({holders}); command not run')
             if now >= next_report:
                 line = (f'gate_lock: {name} waiting for a slot, position {pos} of {nqueue} (need {need_text(need)}, {int(now - t0)}s so far); '
                         f'admitted: {holders}')
                 load, cap = host_load(), pol.get('max_load')
                 if cap and held and load is not None and load > cap:  # STALL-LINE
                     line += f'; waiting on load {load:.1f} over cap {cap}, top non-gate CPU: {top_cpu_text(outside_cpu(gate))}'
+                if hint:
+                    line, hinted = line + f'; hint: {hint}', True  # HINT-LINE
                 print(line, file=sys.stderr, flush=True)
                 next_report = now + report
             if now - last_legacy > 5:
@@ -928,9 +970,14 @@ def status_data(root):
         ahead += e['need'].get(COMPUTE, 0)
     d = {'protocol': PROTOCOL, 'state_root': str(root), 'boot': L.get('boot', ''), 'grants': grants, 'queue': queue, 'legacy': legacy_holders()}
     try:
-        max_load = load_policy(root)[0].get('max_load')
+        pol = load_policy(root)[0]
     except GateError:
-        max_load = None  # a policy that does not load gives no load fact and never fails status
+        pol = None  # a policy that does not load gives no load fact and no hint, and never fails status
+    max_load = pol.get('max_load') if pol else None
+    if pol and queue:
+        hint = capacity_hint(L, pol, len(d['legacy']), host_load())
+        if hint:  # HINT-STATUS
+            d['hint'] = hint
     if max_load:
         load = host_load()
         d['load'] = {'value': load, 'max_load': max_load,
@@ -968,6 +1015,8 @@ def cmd_status(argv):
         rows.append(f"legacy    name {h['name']}  pid {h['pid']}  {h['slot']} in {h['dir']} (charged the default need; never touched)")
     if d['legacy']:
         rows.append('protection is partial: legacy holders from an older plugin version are running')
+    if d.get('hint'):
+        rows.append(f"hint: {d['hint']}")
     print('\n'.join(rows) or 'no holders')
     return 0
 
@@ -1204,6 +1253,9 @@ M_RSS = "used, pids = tree_rss(child.pid) if cap_mb else (0, [])" + '  # RSS-CAP
 M_STALL = "if d['load']['over'] and queue:" + '  # STALL-NOTE'
 M_DECODE = "text = pathlib.Path(path).read_text(errors='replace')" + '  # STALL-DECODE'
 M_STALLRUN = 'if cap and held and load is not None and load > cap:' + '  # STALL-LINE'
+M_HINT = "line, hinted = line + f'; hint: {hint}', True" + '  # HINT-LINE'
+M_HINTLOAD = 'if max_load and held and load is not None and load > max_load: return None' + '  # HINT-LOAD'
+M_NOTRUN = "({holders}); command not" + " run')"
 M_LOAD = "if max_load and load is not None and load > max_load and (ledger['grants'] or legacy_n): break" + '  # LOAD-CAP'
 # the reap fakes: a python that records its pid and sleeps, its last argument the name that makes it match;
 # the orphaner double forks it so its parent is pid 1 and its own command line carries no matching name
@@ -1585,6 +1637,114 @@ def case_stall(py, base, label, raw=False):
         release_all(m, procs)
 
 
+def waiting_lines(path):
+    try:
+        return [x for x in path.read_text().splitlines() if 'waiting for a slot' in x]
+    except OSError:
+        return []
+
+
+def case_hint(py, base, label):
+    """A queue held by capacity at a quiet load: one holder takes all 6 compute units, a load of 0 is under the cap of 8
+    (SDLC_GATE_CPUS 10), and the waiter's first waiting line names the capacity, the load and `policy set
+    compute_units=9`; later waiting lines do not repeat it. status ends with the same `hint:` row and `status --json`
+    carries it under `hint`; with the queue empty there is no hint."""
+    m, bad, procs = base / f'm-{label}', [], []
+    m.mkdir()
+    env = env_for(base, label, SDLC_GATE_REPORT_SECS='0.3', SDLC_GATE_CPUS='10')
+    want = 'capacity compute_units=6 is full while load 0.0 is under 8; an operator can raise it: gate_lock.py policy set compute_units=9'
+    try:
+        procs = [holder(py, env, m, 1, '--need', 'compute_units=6')]
+        if not waitfor(lambda: (m / 'started-1').exists()):
+            return ['the holder did not start']
+        procs.append(holder(py, env, m, 2))
+        if not waitfor(lambda: len(waiting_lines(m / 'err-2')) >= 3, 10):
+            return [f'the waiter printed fewer than 3 waiting lines, got {(m / "err-2").read_text()!r}']
+        lines = waiting_lines(m / 'err-2')
+        if not lines[0].endswith(f'; hint: {want}'):
+            bad.append(f'the first waiting line carries no capacity hint, got {lines[0]!r}')
+        if any('policy set' in x for x in lines[1:]):
+            bad.append(f'the capacity hint is repeated after the first waiting line, got {lines!r}')
+        rows = gl(py, env, 'status').stdout.splitlines()
+        if not rows or rows[-1] != f'hint: {want}':
+            bad.append(f'status does not end with the hint row, got {rows!r}')
+        try:
+            js = json.loads(gl(py, env, 'status', '--json').stdout)
+        except ValueError:
+            js = {}
+        if js.get('hint') != want:
+            bad.append(f'status --json does not carry the hint, got {js.get("hint")!r}')
+        release_all(m, procs)
+        try:
+            js = json.loads(gl(py, env, 'status', '--json').stdout)
+        except ValueError:
+            js = {'hint': 'status --json did not parse'}
+        if 'hint' in js or js.get('queue'):
+            bad.append(f'status --json has a hint with the queue empty, got {js}')
+        return bad
+    finally:
+        release_all(m, procs)
+
+
+def case_hint_load(py, base, label):
+    """A queue held by the load cap gets no capacity hint: with max_load 24 and a load of 36.5, a holder of all 6 compute
+    units and a waiter, the waiting lines carry the load note and no `policy set`, and status has no hint row or key."""
+    m, bad, procs = base / f'm-{label}', [], []
+    m.mkdir()
+    lf, pf = base / f'load-{label}', base / f'ps-{label}'
+    lf.write_text('36.5\n')
+    pf.write_text('900001 1 900001 50.0 busy\n')
+    env = env_for(base, label, SDLC_GATE_LOAD_FILE=str(lf), SDLC_GATE_PS_FILE=str(pf), SDLC_GATE_REPORT_SECS='0.3')
+    try:
+        r = gl(py, env, 'policy', 'set', 'max_load=24')
+        if r.returncode != 0:
+            return [f'policy set max_load=24 did not take, rc={r.returncode} {r.stderr!r}']
+        procs = [holder(py, env, m, 1, '--need', 'compute_units=6')]
+        if not waitfor(lambda: (m / 'started-1').exists()):
+            return ['the holder did not start (no grant is held, so the load must not hold it)']
+        procs.append(holder(py, env, m, 2))
+        if not waitfor(lambda: len(waiting_lines(m / 'err-2')) >= 2, 10):
+            return [f'the waiter printed fewer than 2 waiting lines, got {(m / "err-2").read_text()!r}']
+        lines = waiting_lines(m / 'err-2')
+        if not all('waiting on load 36.5 over cap 24' in x for x in lines):
+            bad.append(f'the waiting lines do not carry the load note, got {lines!r}')
+        if any('policy set' in x for x in lines):
+            bad.append(f'the waiting line carries a capacity hint under load, got {lines!r}')
+        st = gl(py, env, 'status').stdout
+        try:
+            js = json.loads(gl(py, env, 'status', '--json').stdout)
+        except ValueError:
+            js = {'hint': 'status --json did not parse'}
+        if 'hint:' in st or 'hint' in js:
+            bad.append(f'status shows a capacity hint under load, got {st!r} {js.get("hint")!r}')
+        return bad
+    finally:
+        release_all(m, procs)
+
+
+def case_notrun(py, base, label):
+    """A wait that times out exits 3 with one stderr line that starts `gate_lock: timeout after` and ends `; command not
+    run`, and the command never ran."""
+    m = base / f'm-{label}'
+    m.mkdir()
+    env = env_for(base, label)
+    procs = []
+    try:
+        procs = [holder(py, env, m, 1, '--need', 'compute_units=6')]
+        if not waitfor(lambda: (m / 'started-1').exists()):
+            return ['the holder did not start']
+        r = gl(py, env, 'run', '--timeout', '1', '--', 'touch', str(m / 'ran'))
+        lines = [x for x in r.stderr.splitlines() if x.strip()]
+        if not (r.returncode == 3 and len(lines) == 1 and lines[0].startswith('gate_lock: timeout after')
+                and lines[0].endswith('; command not run')):
+            return [f'the timeout line does not say command not run, got rc={r.returncode} {r.stderr!r}']
+        if (m / 'ran').exists():
+            return ['the command ran after a timeout']
+        return []
+    finally:
+        release_all(m, procs)
+
+
 def case_load_idle(py, base, label):
     """The starvation guard: with max_load 24, a load of 36.5 from outside and no grant held, the first gate is
     admitted at once; a second one then waits on the load while the first holds."""
@@ -1836,7 +1996,10 @@ def selftest():
             ('load cap starvation guard', case_load_idle, M_LOAD,
              "if max_load and load is not None and load > max_load: break  # LOAD-CAP", 'starved head'),
             ('default load cap', case_load_default, M_LOADDEF, 'pass  # LOAD-DEFAULT', 'ran over the default load cap'),
-            ('memory cap', case_rss, M_RSS, 'used, pids = 0, []  # RSS-CAP', 'rss cap missing'))
+            ('memory cap', case_rss, M_RSS, 'used, pids = 0, []  # RSS-CAP', 'rss cap missing'),
+            ('capacity hint', case_hint, M_HINT, 'pass  # HINT-LINE', 'carries no capacity hint'),
+            ('no capacity hint under load', case_hint_load, M_HINTLOAD, 'pass  # HINT-LOAD', 'capacity hint under load'),
+            ('timeout says command not run', case_notrun, M_NOTRUN, "({holders})')", 'does not say command not run'))
         for i, (label, case, marker, repl, tell) in enumerate(controls):
             got = case(script, base, f'real{i}')
             expect(f'{label}: {got}', not got)

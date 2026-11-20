@@ -81,6 +81,15 @@ python3 <plugin-root>/scripts/gate_lock.py run --receipt /abs/path/gate.receipt.
 
 Start it with `run_in_background: true`. Interactive roles may (`hooks/block-background.sh` allows it for them). Then wait for the completion notice. Never poll with `sleep`. When it arrives, read the receipt (`outcome`, `rc`, `wait_ms`, `run_ms`) and the log; the receipt is written last, so a missing receipt means the gate has not finished or died.
 
-`--timeout` bounds only the wait in the admission queue (exit 3, `gate_lock: timeout`), not the command's run time.
+`--timeout` bounds only the wait in the admission queue (exit 3, `gate_lock: timeout ...; command not run`), not the command's run time.
+
+A queue that waits on capacity while the load is quiet says so once: the first waiting line, and the last row of `gate_lock.py status`, end with `hint: capacity compute_units=<C> is full while load <x> is under <max_load>; an operator can raise it: gate_lock.py policy set compute_units=<N>`. `policy set` is an operator command.
+
+To run many named gates from a shell loop, call a function with explicit arguments, never a command held in one variable (`set -- $c` does not split it in zsh):
+
+```sh
+gated() { local name=$1; shift; python3 <plugin-root>/scripts/gate_lock.py run --name "$name" -- "$@"; }
+gated keys-app-shell node scripts/keys.mjs app-shell
+```
 
 To run the gate in the foreground instead, a consumer sets `env.BASH_MAX_TIMEOUT_MS` in its `.claude/settings.json` (for a 90 minute gate, `5400000`). `dispatch.py` sets no environment, so without it a sub-agent keeps the 600000 ms default.
