@@ -1,7 +1,7 @@
 // node --test derive.test.mjs
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { PRESETS, derive, system, validatePreset, multiGrid, multiGridFaults } from './derive.mjs'
+import { PRESETS, DEFAULT_PRESET, derive, system, validatePreset, multiGrid, multiGridFaults } from './derive.mjs'
 
 const P = PRESETS.standard
 const { q, I, mc, h, radius, cardRadius, nested } = system(P)
@@ -11,6 +11,18 @@ const close = (a, b) => assert.ok(Math.abs(a - b) < 1e-9, `${a} ≠ ${b}`)
 test('standard: q is 4px at 14, 5px at 16; h is 28/32/36 at 14', () => {
   close(q(14), 4); close(q(16), 5)
   assert.deepEqual(densities.map((d) => h(d) * q(14)), [28, 32, 36])
+})
+
+test('ladder (the default): crisp h = 6n − 54 at 12, 13, 14, 15, 17 and 19; identities hold; standard-32 is standard', () => {
+  assert.equal(DEFAULT_PRESET, 'ladder')
+  assert.equal(PRESETS['standard-32'], PRESETS.standard)
+  for (const n of [12, 13, 14, 15, 17, 19]) {
+    const px = (s) => derive({ preset: PRESETS.ladder, n }).find((r) => r.symbol === s).px
+    assert.equal(px('h'), 6 * n - 54, `h at ${n}`)
+    assert.equal(px('h'), px('S') + 2 * px('I'), `h = S + 2I at ${n}`)
+  }
+  // A negative control: the standard preset is not on the ladder at 14.
+  assert.notEqual(derive({ preset: PRESETS.standard, n: 14 }).find((r) => r.symbol === 'h').px, 30)
 })
 
 test('identities hold at every density', () => {
@@ -323,6 +335,21 @@ test('form fields sit 2I apart, the same as table columns; labels and help text 
     assert.ok(form.gap[0].q >= 2 * form.gap[1].q, 'fields at least twice as far apart as label and control')
   }
   assert.equal(containers({ n: 14 }).find((r) => r.container === 'Form').gap[0].q * 4, 12)
+})
+
+test('the dialog depth is a row: 18, 24 and 30px at n = 14, equal to the Dialog, sheet line of --containers', async () => {
+  const { derive, containers } = await import('./derive.mjs')
+  const want = { compact: 18, default: 24, loose: 30 }
+  for (const [density, px] of Object.entries(want)) {
+    const row = derive({ n: 14, density }).find((r) => r.id === 'containers.frame.dialog-inset')
+    assert.ok(row, `no containers.frame.dialog-inset row at ${density}`)
+    assert.equal(row.px, px)
+    // negative control: the page inset, which a kit read before this row existed, is a different length off the default density
+    const page = derive({ n: 14, density }).find((r) => r.id === 'containers.frame.page-inset').px
+    if (density !== 'default') assert.notEqual(page, px)
+    const line = containers({ n: 14, density }).find((r) => r.container === 'Dialog, sheet')
+    assert.equal(line.pad[0].q, row.q, `--containers gives another dialog depth at ${density}`)
+  }
 })
 
 test('card depth follows density, one q per step; the band gap holds at 2px; a header has d below as above', async () => {

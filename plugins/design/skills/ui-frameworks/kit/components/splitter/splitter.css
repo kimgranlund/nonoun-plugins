@@ -12,7 +12,7 @@
    The bar is a line of ui-geometry's separator mark (controls.mark.separator) in the material's line colour,
    stronger under the pointer, with a hit area of the pointer's target (controls.target.t_hit-pointer, 24px) across
    it, drawn as its ::after, so it is easy to grab without taking room. Touch on the bar drags it and does not scroll.
-   The focus ring is an outline around the bar. In forced colours the bar is CanvasText, Highlight under the pointer. */
+   The focus ring is an outline around the bar. In forced colours the bar is CanvasText, and under the pointer it draws a CanvasText ring, never Highlight (D124). */
 @layer recipes {
   @scope (ui-splitter) {
     :where(:scope) {
@@ -24,6 +24,7 @@
       --_ring: var(--colors-focus-ring);
       --_ring-width: var(--controls-focus-ring-width-w);
       --_ring-offset: var(--controls-focus-ring-offset-o);
+      --_border: var(--unit-border-b);
     }
     :where(:scope[value="0"]) { --_share: 0; }
     :where(:scope[value="1"]) { --_share: 1; }
@@ -184,8 +185,15 @@
     @media (forced-colors: active) {
       :where(:scope) {
         --_bar-face: CanvasText;
-        --_bar-face-hover: Highlight;
+        --_bar-face-hover: CanvasText;
         --_ring: Highlight;
+      }
+      /* Hover (D124): the ring one border width heavier than at rest, in the boundary colour, inside; no fill, never Highlight. */
+      @media (hover: hover) {
+        :scope > [data-part="bar"]:where(:is(:hover, [data-hover]):where(:not(:is(:disabled, [disabled], [aria-disabled="true"]), :is(:checked, [aria-checked="true"], [checked]:not(input, option)), :is(input[type="checkbox"]:indeterminate, [aria-checked="mixed"], [indeterminate]), :is([aria-pressed="true"], [pressed]), :is([aria-selected="true"], [selected]:not(option)), :is([aria-current]:not([aria-current="false"], [aria-current=""]), [current]), :is([aria-expanded="true"], [expanded]), :is([open], :popover-open)))) {
+          outline: var(--_border) solid CanvasText;
+          outline-offset: 0;
+        }
       }
     }
   }

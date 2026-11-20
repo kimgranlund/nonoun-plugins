@@ -1,0 +1,108 @@
+@layer reset, base, tokens, recipes, utilities;
+
+/* The recipe of the pagination: a native <nav data-ui="pagination"> around a list of anchors and buttons. Its rules: J98 in docs/specs/patterns.md. Its shape: docs/specs/css-contract.md.
+   Each item is an anchor or a button inside the nav, selected by element, a ghost box of a control's height at least as wide as it is tall,
+   with no face at rest. The item marked aria-current is the selected look of a tab: raised, in the plain ink. Hover, active and disabled are
+   the matrix's conditions; the focus ring is the button's. A disabled item takes the faint ink and no hover.
+   Forced colours: the items are Canvas on CanvasText, the current one Highlight on HighlightText, a disabled one GrayText, the ring Highlight.
+   WebKit keeps shadows there and does not recolour outlines, so the current item's shadow is set to none and the ring takes Highlight through the token, not through an outline colour. */
+@layer recipes {
+  @scope ([data-ui="pagination"]) {
+    :where(:scope) {
+      --_face: var(--pagination-item-face, var(--ground-face));
+      --_face-hover: var(--pagination-item-face-hover, var(--pagination-item-face, var(--colors-bg-muted-hover)));
+      --_face-active: var(--pagination-item-face-active, var(--pagination-item-face, var(--pressed-face)));
+      --_face-current: var(--pagination-item-face-current, var(--raised-face));
+      --_shadow-current: var(--raised-shadow-1);
+      --_ink: var(--pagination-item-ink, var(--ink-muted));
+      --_ink-current: var(--pagination-item-ink-current, var(--ink));
+      --_ink-disabled: var(--pagination-item-ink-disabled, var(--ink-faint));
+      --_height: var(--pagination-item-height, var(--controls-control-h));
+      --_inset: var(--pagination-item-inset, var(--controls-control-t));
+      --_gap: var(--pagination-gap, var(--controls-control-m_c));
+      --_radius: var(--pagination-item-radius, var(--controls-curvature-r));
+      --_text: var(--unit-scale-f);
+      --_ring: var(--colors-focus-ring);
+      --_ring-width: var(--controls-focus-ring-width-w);
+      --_ring-offset: var(--controls-focus-ring-offset-o);
+      --_border: var(--unit-border-b);
+    }
+
+    /* The recipe's own boxes are border boxes, with or without a reset (C31). */
+    :where(:scope, [data-part]) { box-sizing: border-box; }
+    :scope :is(ul, ol) {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--_gap);
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+    :scope li { list-style: none; }
+    :scope :is(a, button) {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      box-sizing: border-box;
+      block-size: var(--_height);
+      min-inline-size: var(--_height);
+      margin: 0;
+      padding-block: 0;
+      padding-inline: var(--_inset);
+      border: 0;
+      border-radius: var(--_radius);
+      background-color: var(--_face);
+      color: var(--_ink);
+      font: inherit;
+      font-size: var(--_text);
+      text-decoration: none;
+      white-space: nowrap;
+      cursor: pointer;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+
+    @media (hover: hover) {
+      :scope :is(a, button):where(:is(:hover, [data-hover]):where(:not(:is(:disabled, [disabled], [aria-disabled="true"]), :is(:checked, [aria-checked="true"], [checked]:not(input, option)), :is(input[type="checkbox"]:indeterminate, [aria-checked="mixed"], [indeterminate]), :is([aria-pressed="true"], [pressed]), :is([aria-selected="true"], [selected]:not(option)), :is([aria-current]:not([aria-current="false"], [aria-current=""]), [current]), :is([aria-expanded="true"], [expanded]), :is([open], :popover-open)))) { background-color: var(--_face-hover); }
+    }
+    :scope :is(a, button):where(:is(:focus-visible, [data-focus-visible])) {
+      outline: var(--_ring-width) solid var(--_ring);
+      outline-offset: var(--_ring-offset);
+    }
+    :scope :is(a, button):where(:is(:active, [data-active]):where(:not(:is(:disabled, [disabled], [aria-disabled="true"])))) { background-color: var(--_face-active); }
+    :scope :is(a, button):where(:is([aria-current]:not([aria-current="false"], [aria-current=""]), [current])) {
+      background-color: var(--_face-current);
+      box-shadow: var(--_shadow-current);
+      color: var(--_ink-current);
+    }
+    :scope :is(a, button):where(:is(:disabled, [disabled], [aria-disabled="true"])) {
+      color: var(--_ink-disabled);
+      cursor: default;
+    }
+
+    @media (forced-colors: active) {
+      :where(:scope) {
+        --_face: Canvas;
+        --_face-hover: Canvas;
+        --_face-active: Canvas;
+        --_face-current: Highlight;
+        --_shadow-current: none;
+        --_ink: ButtonText;
+        --_ink-current: HighlightText;
+        --_ink-disabled: GrayText;
+        --_ring: Highlight;
+      }
+      /* Hover (D124): a ring of one border width inside the item, in its ink; no fill, never Highlight. */
+      @media (hover: hover) {
+        :scope :is(a, button):where(:is(:hover, [data-hover]):where(:not(:is(:disabled, [disabled], [aria-disabled="true"]), :is(:checked, [aria-checked="true"], [checked]:not(input, option)), :is(input[type="checkbox"]:indeterminate, [aria-checked="mixed"], [indeterminate]), :is([aria-pressed="true"], [pressed]), :is([aria-selected="true"], [selected]:not(option)), :is([aria-current]:not([aria-current="false"], [aria-current=""]), [current]), :is([aria-expanded="true"], [expanded]), :is([open], :popover-open)))) {
+          outline: var(--_border) solid ButtonText;
+          outline-offset: calc(var(--_border) * -1);
+        }
+      }
+      /* C19, D124: the current page's label sits on its own Highlight face; it opts out of forcing, or Chromium's Canvas
+         backplate covers the face behind the glyphs. Every colour it paints is a system colour above. */
+      :scope :is(a, button):where(:is([aria-current]:not([aria-current="false"], [aria-current=""]), [current])) { forced-color-adjust: none; }
+    }
+  }
+}

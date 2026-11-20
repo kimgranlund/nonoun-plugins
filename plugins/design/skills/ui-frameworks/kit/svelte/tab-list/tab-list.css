@@ -1,0 +1,72 @@
+@layer reset, base, tokens, recipes, utilities;
+
+/* The recipe of <ui-tab-list>. Its shape and rules: docs/specs/css-contract.md. Its conditions: references/states.json.
+   ui-geometry: a host as tall as a control, padded so that a tab and the padding make that height.
+   ui-materials: a recessed tray. The root is a stacking context, so that a tab's hit area, which sits behind
+   the tabs, still lies on the tray's face.
+   C32: ::before is the thumb, the raised face of the selected tab. The selected tab names itself the anchor
+   --tab-list-thumb, the root scopes that name to itself, and the thumb takes the anchor's box, behind the tabs.
+   The root is not positioned, so the scope, not the containing block, keeps a nested list's tab from being
+   this list's anchor. With no selected tab the insets are invalid and the thumb has no size. */
+@layer recipes {
+  @scope ([data-ui="tab-list"]) {
+    :where(:scope) {
+      --_face: var(--tab-list-face, var(--recessed-face));
+      --_shadow: var(--recessed-shadow);
+      --_height: var(--tab-list-height, var(--controls-control-h));
+      --_inset: var(--tab-list-inset, var(--collections-frame-host-pad));
+      --_radius: var(--tab-list-radius, var(--controls-curvature-r));
+      --_border: var(--unit-border-b);
+      --_thumb-face: var(--tab-list-thumb-face, var(--raised-face));
+      --_thumb-shadow: var(--raised-shadow-1);
+      --_thumb-radius: var(--collections-curvature-r_row);
+    }
+
+    /* The recipe's own boxes are border boxes, with or without a reset (C31). */
+    :where(:scope, [data-part]) { box-sizing: border-box; }
+    :scope {
+      display: flex;
+      isolation: isolate;
+      inline-size: fit-content;
+      max-inline-size: 100%;
+      min-block-size: var(--_height);
+      padding: var(--_inset);
+      border-radius: var(--_radius);
+      background-color: var(--_face);
+      box-shadow: var(--_shadow);
+      anchor-scope: --tab-list-thumb;
+    }
+    :scope:where([hidden]:not([hidden="until-found"])) { display: none; }
+    :scope:where(:is([aria-orientation="vertical"], [orientation="vertical"])) { flex-direction: column; }
+    :scope::before {
+      content: "";
+      position: absolute;
+      z-index: -1;
+      position-anchor: --tab-list-thumb;
+      inset-block-start: anchor(--tab-list-thumb start);
+      inset-block-end: anchor(--tab-list-thumb end);
+      inset-inline-start: anchor(--tab-list-thumb start);
+      inset-inline-end: anchor(--tab-list-thumb end);
+      border-radius: var(--_thumb-radius);
+      background-color: var(--_thumb-face);
+      box-shadow: var(--_thumb-shadow);
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+      :scope:where([data-ready])::before { transition: inset-block-start 200ms, inset-block-end 200ms, inset-inline-start 200ms, inset-inline-end 200ms; }
+    }
+
+    @media (forced-colors: active) {
+      :where(:scope) {
+        --_face: Canvas;
+        --_shadow: none;
+        --_thumb-face: Highlight;
+        --_thumb-shadow: none;
+      }
+      :scope {
+        outline: var(--_border) solid ButtonBorder;
+        outline-offset: calc(var(--_border) * -1);
+      }
+    }
+  }
+}

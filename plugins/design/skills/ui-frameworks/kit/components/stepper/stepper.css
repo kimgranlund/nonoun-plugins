@@ -1,0 +1,217 @@
+@layer reset, base, tokens, recipes, utilities;
+
+/* The recipe of the stepper: a native <ol data-ui="stepper"> of <li> steps. Its rule: J124 in docs/specs/patterns.md. Its shape: docs/specs/css-contract.md.
+   Each li draws its mark with ::before, a circle of the smallest control height (controls.control.h_o, 24 at n 14, which is also
+   controls.mark.choice-label) that holds a CSS counter, and the line to the next step with ::after. The mark's content has an empty
+   alternative text, so the number is not read a second time with the list's own numbering (the same device as the breadcrumb's separator).
+   The declaration is written twice: an engine that does not parse the alternative text drops the whole declaration, so the plain one comes first.
+   The step the user is on carries aria-current="step" (the condition of the matrix). A step with a later sibling that is current is done
+   and needs no attribute. Current and done marks are the accent solid; later marks the raised face in the muted ink. The line after a done step
+   is the accent, the others the hairline. Horizontal: the items in a row, the line fills the space after the label. Vertical
+   (data-orientation="vertical"): the items run down, the line is under the mark. Labels below (data-labels="below"): equal steps,
+   each label centred under its mark, the line from mark to mark (D123).
+   Forced colours: later marks are Canvas with a ButtonText boundary, current and done Highlight on HighlightText, the lines CanvasText
+   and, after a done step, Highlight; labels CanvasText. GrayText means disabled only, and no step is disabled (C19, D124). A current
+   or done mark is a flex box that lays out its own number, so it opts out of forcing itself, or Chromium's Canvas backplate covers
+   the Highlight face behind the number.
+   WebKit keeps shadows there, so the mark's shadow is set to none and the boundary is a border in the system colour. */
+@layer recipes {
+  @scope ([data-ui="stepper"]) {
+    :where(:scope) {
+      --_face: var(--stepper-marker-face, var(--raised-face));
+      --_shadow: var(--raised-shadow-1);
+      --_ink-mark: var(--stepper-marker-ink, var(--ink-muted));
+      --_face-current: var(--stepper-marker-face-current, var(--solid-face));
+      --_shadow-current: var(--solid-shadow);
+      --_ink-mark-current: var(--stepper-marker-ink-current, var(--on-solid));
+      --_ink: var(--ink-muted);
+      --_ink-current: var(--ink);
+      --_line: var(--stepper-line, var(--line));
+      --_line-done: var(--solid-face);
+      --_size: var(--stepper-marker-height, var(--controls-control-h_o));
+      --_thick: var(--controls-mark-separator);
+      --_gap: var(--stepper-gap, var(--controls-control-m_c));
+      --_text: var(--unit-scale-f);
+      --_border: var(--unit-border-b);
+      --_label: var(--unit-type-label);
+      --_edge-w: 0;
+      --_edge: var(--line);
+      --_flow: row;
+      --_root-align: flex-start;
+      --_cols: auto auto 1fr;
+      --_cols-last: auto auto;
+      --_rows: none;
+      --_line-col: 3;
+      --_line-row: 1;
+      --_line-justify: stretch;
+      --_line-align: center;
+      --_line-w: auto;
+      --_line-h: var(--_thick);
+      --_line-min-w: var(--_size);
+      --_line-min-h: 0;
+      --_line-lead: 0;
+      --_line-start: 0;
+      --_item-flex: 1 1 auto;
+      --_item-flex-last: 0 0 auto;
+      --_mark-justify: stretch;
+      --_label-align: start;
+      --_row-gap: 0;
+    }
+    /* Labels below (data-labels="below"): every step is one column of equal width, its mark centred with the label centred under
+       it. The mark and the line share the first cell, so the label, a text node the grid places itself, falls into the second row.
+       The line starts a gap after its mark and ends a gap before the next one: the step's width and the list's gap, less a mark and two gaps. */
+    :where(:scope[data-labels="below"]) {
+      --_cols: 1fr;
+      --_cols-last: 1fr;
+      --_rows: auto auto;
+      --_line-col: 1;
+      --_line-justify: start;
+      --_line-w: calc(100% - var(--_size) - var(--_gap));
+      --_line-min-w: 0;
+      --_line-start: calc(50% + var(--_size) / 2 + var(--_gap));
+      --_item-flex: 1 1 0;
+      --_item-flex-last: 1 1 0;
+      --_mark-justify: center;
+      --_label-align: center;
+      --_row-gap: var(--_gap);
+    }
+    :where(:scope[data-orientation="vertical"]) {
+      --_flow: column;
+      --_root-align: stretch;
+      --_cols: var(--_size) 1fr;
+      --_cols-last: var(--_size) 1fr;
+      --_rows: auto 1fr;
+      --_line-col: 1;
+      --_line-row: 2;
+      --_line-justify: center;
+      --_line-align: stretch;
+      --_line-w: var(--_thick);
+      --_line-h: auto;
+      --_line-min-w: 0;
+      --_line-min-h: var(--_size);
+      --_line-lead: var(--_gap);
+      --_line-start: 0;
+      --_item-flex: 1 1 auto;
+      --_item-flex-last: 0 0 auto;
+      --_mark-justify: stretch;
+      --_label-align: start;
+      --_row-gap: 0;
+    }
+
+    /* The recipe's own boxes are border boxes, with or without a reset (C31). */
+    :where(:scope, [data-part]) { box-sizing: border-box; }
+    :scope {
+      display: flex;
+      flex-direction: var(--_flow);
+      align-items: var(--_root-align);
+      gap: var(--_gap);
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      counter-reset: stepper-step;
+      font-size: var(--_text);
+    }
+    :scope:where([hidden]:not([hidden="until-found"])) { display: none; }
+
+    :scope > li {
+      display: grid;
+      grid-template-columns: var(--_cols);
+      grid-template-rows: var(--_rows);
+      align-items: center;
+      column-gap: var(--_gap);
+      row-gap: var(--_row-gap);
+      flex: var(--_item-flex);
+      min-inline-size: 0;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      counter-increment: stepper-step;
+      color: var(--_ink);
+      text-align: var(--_label-align);
+      white-space: nowrap;
+    }
+    :scope > li:last-child {
+      flex: var(--_item-flex-last);
+      grid-template-columns: var(--_cols-last);
+    }
+
+    /* The mark. */
+    :scope > li::before {
+      content: counter(stepper-step);
+      content: counter(stepper-step) / "";
+      grid-column: 1;
+      grid-row: 1;
+      justify-self: var(--_mark-justify);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-sizing: border-box;
+      inline-size: var(--_size);
+      block-size: var(--_size);
+      border: var(--_edge-w) solid var(--_edge);
+      border-radius: 50%;
+      background-color: var(--_face);
+      box-shadow: var(--_shadow);
+      color: var(--_ink-mark);
+      font-size: var(--_label);
+      font-variant-numeric: tabular-nums;
+      line-height: 1;
+    }
+
+    /* The line to the next step. */
+    :scope > li::after {
+      content: "";
+      grid-column: var(--_line-col);
+      grid-row: var(--_line-row);
+      justify-self: var(--_line-justify);
+      align-self: var(--_line-align);
+      inline-size: var(--_line-w);
+      block-size: var(--_line-h);
+      min-inline-size: var(--_line-min-w);
+      min-block-size: var(--_line-min-h);
+      margin-block-start: var(--_line-lead);
+      margin-inline-start: var(--_line-start);
+      border-radius: var(--_thick);
+      background-color: var(--_line);
+    }
+    :scope > li:last-child::after { content: none; }
+
+    /* Done: a later sibling is the current step. Solid, and the line after it in the accent. */
+    :scope > li:has(~ :where(:is([aria-current]:not([aria-current="false"], [aria-current=""]), [current])))::before {
+      background-color: var(--_face-current);
+      box-shadow: var(--_shadow-current);
+      color: var(--_ink-mark-current);
+    }
+    :scope > li:has(~ :where(:is([aria-current]:not([aria-current="false"], [aria-current=""]), [current])))::after { background-color: var(--_line-done); }
+
+    /* Current. */
+    :scope > li:where(:is([aria-current]:not([aria-current="false"], [aria-current=""]), [current])) { color: var(--_ink-current); }
+    :scope > li:where(:is([aria-current]:not([aria-current="false"], [aria-current=""]), [current]))::before {
+      background-color: var(--_face-current);
+      box-shadow: var(--_shadow-current);
+      color: var(--_ink-mark-current);
+    }
+
+    @media (forced-colors: active) {
+      :where(:scope) {
+        --_edge-w: var(--_border);
+        --_face: Canvas;
+        --_shadow: none;
+        --_ink-mark: ButtonText;
+        --_edge: ButtonText;
+        --_face-current: Highlight;
+        --_shadow-current: none;
+        --_ink-mark-current: HighlightText;
+        --_ink: CanvasText;
+        --_ink-current: CanvasText;
+        --_line: CanvasText;
+        --_line-done: Highlight;
+      }
+      :scope > li:has(~ :where(:is([aria-current]:not([aria-current="false"], [aria-current=""]), [current])))::before,
+      :scope > li:where(:is([aria-current]:not([aria-current="false"], [aria-current=""]), [current]))::before {
+        forced-color-adjust: none;
+        border-color: Highlight;
+      }
+    }
+  }
+}

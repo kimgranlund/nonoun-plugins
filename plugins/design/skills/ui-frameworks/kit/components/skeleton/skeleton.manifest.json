@@ -1,0 +1,62 @@
+{
+  "$schema": "../../../references/manifest.schema.json",
+  "schema": 1,
+  "id": "skeleton",
+  "kind": "recipe",
+  "family": "skeleton",
+  "tier": "layout",
+  "pattern": "https://www.w3.org/TR/wai-aria-1.2/#aria-busy",
+  "summary": "A grey shape that holds the place of content that is loading.",
+  "element": "span",
+  "role": null,
+  "focus": "none",
+  "tabindex": null,
+  "formAssociated": false,
+  "attributes": {
+    "variant": {
+      "type": "enum",
+      "values": [
+        "text",
+        "block",
+        "circle"
+      ],
+      "default": "text",
+      "kind": "variant",
+      "description": "The shape: a line of text, a box the author sizes, or a circle."
+    }
+  },
+  "resets": [],
+  "states": [],
+  "parts": {
+    "root": {
+      "kind": "root",
+      "material": {
+        "layer": "base",
+        "relief": "recessed",
+        "face": "neutral"
+      },
+      "note": "A shape in the recessed fill. It pulses only when the user has not asked for reduced motion."
+    }
+  },
+  "tokens": [
+    "--skeleton-face",
+    "--skeleton-height",
+    "--skeleton-radius"
+  ],
+  "behaviours": [],
+  "keys": {},
+  "events": {},
+  "guidance": [
+    {
+      "topic": "naming",
+      "text": "A span with data-ui=\"skeleton\" and aria-hidden=\"true\". Mark the region being loaded with aria-busy=\"true\"."
+    }
+  ],
+  "notYet": [],
+  "targets": {
+    "web-components": "built",
+    "react": "planned",
+    "svelte": "planned",
+    "solid": "planned"
+  }
+}

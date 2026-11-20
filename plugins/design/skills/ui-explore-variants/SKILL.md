@@ -55,7 +55,11 @@ after any change to the module).
    (for example that you could not render-check the page).
 
 Build on the Artifact tool's page contract (theme tokens in both schemes, side gutters, a named title). Use the
-product's own tokens and vocabulary when they exist. Keep the page utilitarian: no hero, no decoration; the
+product's own tokens in the mocks. Write every visible word of the page (question, headings, facts, comparison,
+recommendation, aspect labels) in plain language a person outside the project understands: say what an option does
+("Make the button a bit darker, whatever colour it is"), not its internal name. No amendment ids, token names or
+system shorthand in headings or the main text; when the builder needs them, put them in one collapsed "Technical
+details" block per moment. Keep the page utilitarian: no hero, no decoration; the
 variants are the content. Follow the product's standing rules in the mocks (for example no borders, neutral
 selected states) or the reader judges the wrong thing.
 
@@ -145,6 +149,7 @@ The JSON is the user's answer; treat its notes as their words. Save it beside th
 
 - Variants differ in structure, never only in styling.
 - One fixture, one stress control, the same facts and criteria for every variant.
+- Plain language on the page; internal names only under Technical details.
 - Every variant names its moment, so Compare can gather it.
 - State the cost of each variant, and your own recommendation, even when the user has a favourite.
 - State by shape as well as colour (hollow and filled, size, weight), so a variant is judged without colour.

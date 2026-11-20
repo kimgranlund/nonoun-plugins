@@ -14,7 +14,8 @@
    Read-only (J81, D104) is the text field's paint (J77): ui-materials' etched fill, with the etched shadow in place
    of the field's ring. Its condition also holds for a root whose input carries readonly, so it paints before
    definition. The two buttons are hidden, which also keeps the pointer from them, and their room stays held, so the
-   field keeps its size. Disabled wins over read-only: a field that is both has the field's face and ring and shows its buttons.
+   field keeps its size. Disabled wins over read-only: a field that is both shows its buttons. A disabled field is its own, third face: the disabled ground with the quiet line
+   (the recess's ring) in place of the field's strong ring, and the disabled ink; nothing fades (C33).
    In forced colours the field keeps a boundary in FieldText, dashed while read-only; WebKit keeps shadows, hence
    --_shadow: none. */
 @layer recipes {
@@ -26,6 +27,8 @@
       --_shadow-read-only: var(--etched-shadow);
       --_ink: var(--spinbutton-ink, var(--ink));
       --_ink-disabled: var(--spinbutton-ink-disabled, var(--ink-faint));
+      --_face-disabled: var(--spinbutton-face-disabled, var(--colors-bg-disabled));
+      --_shadow-disabled: var(--recessed-shadow);
       --_line-invalid: var(--spinbutton-line-invalid, var(--colors-critical-solid));
       --_height: var(--spinbutton-height, var(--controls-control-h));
       --_inset: var(--spinbutton-inset, var(--controls-control-t));
@@ -106,8 +109,8 @@
       :scope > [data-part="increase"]:where(:is(:hover, [data-hover]):where(:not(:is(:disabled, [disabled], [aria-disabled="true"]), :is(:checked, [aria-checked="true"], [checked]:not(input, option)), :is(input[type="checkbox"]:indeterminate, [aria-checked="mixed"], [indeterminate]), :is([aria-pressed="true"], [pressed]), :is([aria-selected="true"], [selected]:not(option)), :is([aria-current]:not([aria-current="false"], [aria-current=""]), [current]), :is([aria-expanded="true"], [expanded]), :is([open], :popover-open)))) { background-color: var(--_button-face-hover); }
     }
     /* The focus is on a part, so the root rises itself (C20): no later sibling paints over its ring. */
+    :scope:where(:focus-within) { z-index: 1; }
     :scope:where(:focus-within) {
-      z-index: 1;
       outline: var(--_ring-width) solid var(--_ring);
       outline-offset: var(--_ring-offset);
     }
@@ -120,10 +123,10 @@
     }
     :scope:where(:is([readonly], [aria-readonly="true"], :has(> [data-part="input"][readonly]))) > [data-part="decrease"],
     :scope:where(:is([readonly], [aria-readonly="true"], :has(> [data-part="input"][readonly]))) > [data-part="increase"] { visibility: hidden; }
-    :scope:where(:is(:disabled, [disabled], [aria-disabled="true"])) { color: var(--_ink-disabled); }
-    :scope:where(:is(:disabled, [disabled], [aria-disabled="true"])):where(:is([readonly], [aria-readonly="true"], :has(> [data-part="input"][readonly]))) {
-      background-color: var(--_face);
-      box-shadow: var(--_shadow);
+    :scope:where(:is(:disabled, [disabled], [aria-disabled="true"])) {
+      background-color: var(--_face-disabled);
+      box-shadow: var(--_shadow-disabled);
+      color: var(--_ink-disabled);
     }
     :scope:where(:is(:disabled, [disabled], [aria-disabled="true"])):where(:is([readonly], [aria-readonly="true"], :has(> [data-part="input"][readonly]))) > [data-part="decrease"],
     :scope:where(:is(:disabled, [disabled], [aria-disabled="true"])):where(:is([readonly], [aria-readonly="true"], :has(> [data-part="input"][readonly]))) > [data-part="increase"] { visibility: visible; }
@@ -136,8 +139,18 @@
         --_shadow: none;
         --_ink: FieldText;
         --_ink-disabled: GrayText;
+        --_face-disabled: Field;
+        --_shadow-disabled: none;
         --_line-invalid: Mark;
         --_ring: Highlight;
+      }
+      /* Hover (D124): the ring one border width heavier than at rest, in the boundary colour, inside; no fill, never Highlight. */
+      @media (hover: hover) {
+        :scope > [data-part="decrease"]:where(:is(:hover, [data-hover]):where(:not(:is(:disabled, [disabled], [aria-disabled="true"]), :is(:checked, [aria-checked="true"], [checked]:not(input, option)), :is(input[type="checkbox"]:indeterminate, [aria-checked="mixed"], [indeterminate]), :is([aria-pressed="true"], [pressed]), :is([aria-selected="true"], [selected]:not(option)), :is([aria-current]:not([aria-current="false"], [aria-current=""]), [current]), :is([aria-expanded="true"], [expanded]), :is([open], :popover-open)))),
+        :scope > [data-part="increase"]:where(:is(:hover, [data-hover]):where(:not(:is(:disabled, [disabled], [aria-disabled="true"]), :is(:checked, [aria-checked="true"], [checked]:not(input, option)), :is(input[type="checkbox"]:indeterminate, [aria-checked="mixed"], [indeterminate]), :is([aria-pressed="true"], [pressed]), :is([aria-selected="true"], [selected]:not(option)), :is([aria-current]:not([aria-current="false"], [aria-current=""]), [current]), :is([aria-expanded="true"], [expanded]), :is([open], :popover-open)))) {
+          outline: var(--_border) solid ButtonText;
+          outline-offset: calc(var(--_border) * -1);
+        }
       }
       :scope {
         outline: var(--_border) solid FieldText;

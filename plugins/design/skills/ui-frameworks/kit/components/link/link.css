@@ -5,7 +5,7 @@
 @layer recipes {
   @scope ([data-ui="link"]) {
     :where(:scope) {
-      --_ink: var(--link-ink, var(--colors-primary-fg));
+      --_ink: var(--link-ink, var(--colors-primary-10));
       --_ink-hover: var(--link-ink-hover, var(--link-ink, var(--ink)));
       --_ink-active: var(--link-ink-active, var(--link-ink, var(--ink)));
       --_ink-current: var(--ink);
@@ -47,6 +47,13 @@
         --_ink-active: LinkText;
         --_ink-current: CanvasText;
         --_ring: Highlight;
+      }
+      /* Hover (D124): the ring one border width heavier than at rest, in the boundary colour, inside; no fill, never Highlight. */
+      @media (hover: hover) {
+        :scope:where(:is(:hover, [data-hover]):where(:not(:is(:disabled, [disabled], [aria-disabled="true"]), :is(:checked, [aria-checked="true"], [checked]:not(input, option)), :is(input[type="checkbox"]:indeterminate, [aria-checked="mixed"], [indeterminate]), :is([aria-pressed="true"], [pressed]), :is([aria-selected="true"], [selected]:not(option)), :is([aria-current]:not([aria-current="false"], [aria-current=""]), [current]), :is([aria-expanded="true"], [expanded]), :is([open], :popover-open)))) {
+          outline: var(--_thickness) solid LinkText;
+          outline-offset: 0;
+        }
       }
     }
   }

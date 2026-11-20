@@ -45,6 +45,10 @@
     {
       "topic": "coordination",
       "text": "Its disclosures are its child elements. Each trigger sits inside a heading the author writes, so that the titles are headings to assistive technology."
+    },
+    {
+      "topic": "coordination",
+      "text": "For the usual accordion row, each trigger is a ghost button holding the title and a chevron-down icon marked data-part=\"caret\": the disclosure makes it the full row and turns the caret while open."
     }
   ],
   "notYet": [
@@ -52,8 +56,8 @@
   ],
   "targets": {
     "web-components": "built",
-    "react": "planned",
-    "svelte": "planned",
+    "react": "built",
+    "svelte": "built",
     "solid": "planned"
   }
 }

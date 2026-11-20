@@ -1,0 +1,137 @@
+@layer reset, base, tokens, recipes, utilities;
+
+/* The recipe of <ui-text-field>. Its rules: J47 to J49 in docs/specs/patterns.md. Its shape: docs/specs/css-contract.md.
+   Its conditions: references/states.json.
+   ui-materials: the root is a field, base layer, recessed relief, neutral face, around the author's input, which
+   fills it and draws nothing of its own. The focus ring is the button's outline, on the root while the input
+   inside it has focus. Invalid redraws the field's boundary in the critical colour.
+   ui-geometry: a control's height and radius, text at its text edge (t), an icon or a button beside the input at its inset (I),
+   which is the icon-to-label gap; no narrower than a tooltip's width, as the combobox.
+   Read-only (J77, D104) is ui-materials' etched fill, with the etched shadow in place of the field's ring, and hover
+   keeps it; its condition also holds for a root whose input carries readonly, so it paints before definition (U2).
+   Disabled wins over read-only: ui-materials never etches a disabled part. A disabled field is its own, third face:
+   the disabled ground with the quiet line (the recess's ring) in place of the field's strong ring, and the disabled ink;
+   nothing fades (C33).
+   An input disabled by itself or by a fieldset fades its own text.
+   In forced colours the field keeps a boundary in FieldText, dashed while read-only; WebKit keeps shadows, hence
+   --_shadow: none. */
+@layer recipes {
+  @scope ([data-ui="text-field"]) {
+    :where(:scope) {
+      --_face: var(--text-field-face, var(--recessed-face));
+      --_face-hover: var(--text-field-face-hover, var(--text-field-face, var(--colors-bg-muted-hover)));
+      --_shadow: var(--field-shadow);
+      --_face-read-only: var(--text-field-face-read-only, var(--etched-face));
+      --_shadow-read-only: var(--etched-shadow);
+      --_ink: var(--text-field-ink, var(--ink));
+      --_ink-disabled: var(--text-field-ink-disabled, var(--ink-faint));
+      --_face-disabled: var(--text-field-face-disabled, var(--colors-bg-disabled));
+      --_shadow-disabled: var(--recessed-shadow);
+      --_line-invalid: var(--text-field-line-invalid, var(--colors-critical-solid));
+      --_height: var(--text-field-height, var(--controls-control-h));
+      --_inset: var(--text-field-inset, var(--controls-control-t));
+      --_gap: var(--text-field-gap, var(--controls-control-i));
+      --_radius: var(--text-field-radius, var(--controls-curvature-r));
+      --_width: var(--collections-width-tooltip);
+      --_text: var(--unit-type-body-md);
+      --_ring: var(--colors-focus-ring);
+      --_ring-width: var(--controls-focus-ring-width-w);
+      --_ring-offset: var(--controls-focus-ring-offset-o);
+      --_border: var(--unit-border-b);
+    }
+
+    /* The recipe's own boxes are border boxes, with or without a reset (C31). */
+    :where(:scope, [data-part]) { box-sizing: border-box; }
+    :scope {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--_gap);
+      min-block-size: var(--_height);
+      min-inline-size: var(--_width);
+      padding-inline: var(--_inset);
+      border-radius: var(--_radius);
+      background-color: var(--_face);
+      box-shadow: var(--_shadow);
+      color: var(--_ink);
+      font-size: var(--_text);
+      cursor: text;
+    }
+    :scope:where([hidden]:not([hidden="until-found"])) { display: none; }
+
+    :scope > [data-part="input"] {
+      flex: 1;
+      align-self: stretch;
+      min-inline-size: 0;
+      margin: 0;
+      padding: 0;
+      border: 0;
+      border-radius: 0;
+      outline: none;
+      background: none;
+      box-shadow: none;
+      font: inherit;
+      color: inherit;
+    }
+
+    @media (hover: hover) {
+      :scope:where(:is(:hover, [data-hover]):where(:not(:is(:disabled, [disabled], [aria-disabled="true"]), :is(:checked, [aria-checked="true"], [checked]:not(input, option)), :is(input[type="checkbox"]:indeterminate, [aria-checked="mixed"], [indeterminate]), :is([aria-pressed="true"], [pressed]), :is([aria-selected="true"], [selected]:not(option)), :is([aria-current]:not([aria-current="false"], [aria-current=""]), [current]), :is([aria-expanded="true"], [expanded]), :is([open], :popover-open)))) { background-color: var(--_face-hover); }
+    }
+    /* The focus is on a part, so the root rises itself (C20): no later sibling paints over its ring. */
+    :scope:where(:focus-within) { z-index: 1; }
+    :scope:where(:focus-within) {
+      outline: var(--_ring-width) solid var(--_ring);
+      outline-offset: var(--_ring-offset);
+    }
+    :scope:where(:is([aria-invalid]:not([aria-invalid="false"]), :is(input, select, textarea):user-invalid, [invalid])) { box-shadow: inset 0 0 0 var(--_border) var(--_line-invalid); }
+    :scope:where(:is([readonly], [aria-readonly="true"], :has(> [data-part="input"][readonly]))) {
+      background-color: var(--_face-read-only);
+      box-shadow: var(--_shadow-read-only);
+    }
+    :scope:where(:is(:disabled, [disabled], [aria-disabled="true"])) {
+      background-color: var(--_face-disabled);
+      box-shadow: var(--_shadow-disabled);
+      color: var(--_ink-disabled);
+      cursor: default;
+    }
+    :scope > [data-part="input"]:where(:is(:disabled, [disabled], [aria-disabled="true"])) { color: var(--_ink-disabled); }
+
+    @media (forced-colors: active) {
+      :where(:scope) {
+        --_face: Field;
+        --_face-hover: Field;
+        --_face-read-only: Canvas;
+        --_shadow-read-only: none;
+        --_shadow: none;
+        --_ink: FieldText;
+        --_ink-disabled: GrayText;
+        --_face-disabled: Field;
+        --_shadow-disabled: none;
+        --_line-invalid: Mark;
+        --_ring: Highlight;
+      }
+      :scope {
+        outline: var(--_border) solid FieldText;
+        outline-offset: calc(var(--_border) * -1);
+      }
+      /* Hover (D124): the ring one border width heavier than at rest, in the boundary colour, inside; no fill, never Highlight. */
+      @media (hover: hover) {
+        :scope:where(:is(:hover, [data-hover]):where(:not(:is(:disabled, [disabled], [aria-disabled="true"]), :is(:checked, [aria-checked="true"], [checked]:not(input, option)), :is(input[type="checkbox"]:indeterminate, [aria-checked="mixed"], [indeterminate]), :is([aria-pressed="true"], [pressed]), :is([aria-selected="true"], [selected]:not(option)), :is([aria-current]:not([aria-current="false"], [aria-current=""]), [current]), :is([aria-expanded="true"], [expanded]), :is([open], :popover-open)))) {
+          outline: calc(var(--_border) * 2) solid FieldText;
+          outline-offset: calc(var(--_border) * -2);
+        }
+      }
+      :scope:where(:focus-within) {
+        outline: var(--_ring-width) solid var(--_ring);
+        outline-offset: var(--_ring-offset);
+      }
+      :scope:where(:is([aria-invalid]:not([aria-invalid="false"]), :is(input, select, textarea):user-invalid, [invalid])) {
+        box-shadow: none;
+        outline-color: var(--_line-invalid);
+      }
+      :scope:where(:is([readonly], [aria-readonly="true"], :has(> [data-part="input"][readonly]))) { outline-style: dashed; }
+      :scope:where(:is(:disabled, [disabled], [aria-disabled="true"])) { outline-color: GrayText; }
+      /* The ring stays solid on a read-only field. */
+      :scope:where(:focus-within) { outline-style: solid; }
+    }
+  }
+}

@@ -1,0 +1,85 @@
+{
+  "$schema": "../../../references/manifest.schema.json",
+  "schema": 1,
+  "id": "stepper",
+  "kind": "recipe",
+  "family": "stepper",
+  "tier": "collections",
+  "pattern": "https://www.w3.org/TR/wai-aria-1.2/#aria-current",
+  "summary": "The steps of a task in order, showing which are done and which one the user is on.",
+  "element": "ol",
+  "role": null,
+  "focus": "none",
+  "tabindex": null,
+  "formAssociated": false,
+  "attributes": {
+    "orientation": {
+      "type": "enum",
+      "values": [
+        "horizontal",
+        "vertical"
+      ],
+      "default": "horizontal",
+      "kind": "variant",
+      "description": "The way the steps run."
+    },
+    "labels": {
+      "type": "enum",
+      "values": [
+        "inline",
+        "below"
+      ],
+      "default": "inline",
+      "kind": "variant",
+      "description": "Where a step's label sits in a horizontal stepper: beside its mark, or centred under it."
+    }
+  },
+  "resets": [],
+  "states": [
+    "current"
+  ],
+  "parts": {
+    "root": {
+      "kind": "root",
+      "material": null,
+      "note": "An ol with data-ui=\"stepper\": its items in a row, each with a numbered mark, joined by a line."
+    },
+    "marker": {
+      "kind": "pseudo",
+      "pseudo": "::before",
+      "material": {
+        "layer": "base",
+        "relief": "raised",
+        "face": "neutral"
+      },
+      "note": "Each item's mark: its number in a circle. Solid for the current step and for the steps before it."
+    }
+  },
+  "tokens": [
+    "--stepper-gap",
+    "--stepper-line",
+    "--stepper-marker-face",
+    "--stepper-marker-face-current",
+    "--stepper-marker-ink",
+    "--stepper-marker-ink-current",
+    "--stepper-marker-height"
+  ],
+  "behaviours": [],
+  "keys": {},
+  "events": {},
+  "guidance": [
+    {
+      "topic": "naming",
+      "text": "An ol with data-ui=\"stepper\", named with aria-label. Mark the step the user is on with aria-current=\"step\"; the items before it are painted as done."
+    }
+  ],
+  "notYet": [
+    "A mark other than the step's number, such as a tick for a done step."
+  ],
+  "targets": {
+    "web-components": "built",
+    "react": "planned",
+    "svelte": "planned",
+    "solid": "planned"
+  }
+}

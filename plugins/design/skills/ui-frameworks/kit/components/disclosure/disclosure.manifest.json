@@ -32,6 +32,11 @@
       "kind": "author",
       "material": null,
       "note": "The content that shows while open. The author marks it with data-part=\"panel\"."
+    },
+    "caret": {
+      "kind": "author",
+      "material": null,
+      "note": "Optional: the icon in the trigger that the author marks with data-part=\"caret\". It turns while open: a half turn, or a quarter toward the block end for a chevron-right, which is mirrored in right-to-left text."
     }
   },
   "tokens": [
@@ -57,16 +62,19 @@
     {
       "topic": "coordination",
       "text": "The trigger is the first element with the button role, or native button, that is not inside the panel. It may sit inside a heading. The panel gets an id only when it has none."
+    },
+    {
+      "topic": "coordination",
+      "text": "A ghost button as the trigger is the row: the heading that holds it and the button span the disclosure, at least a control tall, with the title at the start and a caret marked data-part=\"caret\" at the end. A neutral or primary trigger keeps its own box."
     }
   ],
   "notYet": [
-    "A chevron that turns: the author writes an icon in the trigger.",
     "Opening with a transition."
   ],
   "targets": {
     "web-components": "built",
-    "react": "planned",
-    "svelte": "planned",
+    "react": "built",
+    "svelte": "built",
     "solid": "planned"
   }
 }

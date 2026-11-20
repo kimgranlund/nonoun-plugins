@@ -18,7 +18,8 @@ const ORDER = ['hover', 'focus-visible', 'active', 'checked', 'indeterminate', '
 const FOLLOWS_BASE = ['hover', 'active'];
 /** A property that paints. A recipe that sets one needs a forced-colours block (C19). */
 const PAINTS = /^(background|color$|box-shadow|border(?!-radius)|outline|fill$|stroke)/;
-const PAINT_ONLY = ['background-color', 'color', 'box-shadow', 'border-color', 'outline-color', 'fill', 'stroke', 'opacity'];
+/** What a hover rule may set (D63). An outline takes no room, so the forced-colours hover ring (D124) is paint too. */
+const PAINT_ONLY = ['background-color', 'color', 'box-shadow', 'border-color', 'outline-color', 'outline', 'outline-width', 'outline-style', 'outline-offset', 'fill', 'stroke', 'opacity'];
 const SYSTEM_COLOURS = ['Canvas', 'CanvasText', 'ButtonFace', 'ButtonText', 'ButtonBorder', 'Highlight', 'HighlightText', 'GrayText', 'Mark', 'MarkText', 'LinkText', 'VisitedText', 'Field', 'FieldText', 'AccentColor', 'AccentColorText', 'SelectedItem', 'SelectedItemText'];
 const NAMED_COLOURS = ['black', 'white', 'red', 'green', 'blue', 'yellow', 'orange', 'purple', 'pink', 'gray', 'grey', 'silver', 'navy', 'teal', 'aqua', 'lime', 'maroon', 'olive', 'fuchsia', 'transparent'];
 const LENGTH = /(?<![\w.-])-?\d*\.?\d+(px|rem|em|ch|ex|vh|vw|vmin|vmax|cm|mm|in|pt|pc|lh|rlh|cqw|cqh|cqi|cqb)\b/;
@@ -93,8 +94,12 @@ export function lint(id, css, context) {
   const blocks = top.filter((n) => n.children);
   if (blocks.length !== 1 || blocks[0].prelude !== '@layer recipes') { fail('C2', 'everything after the order statement must sit in one "@layer recipes" block'); return problems; }
   if (top.some((n) => n.prop || (n.statement && n.statement + ';' !== LAYERS))) fail('C1', 'a rule sits outside the recipes cascade layer');
-  const scopes = blocks[0].children;
+  // D108: after the scope the layer may hold keyframes, each named for the recipe: @keyframes <id>-<word>.
+  const frames = blocks[0].children.filter((n) => n.prelude?.startsWith('@keyframes'));
+  for (const f of frames) if (!new RegExp(`^@keyframes ${id}-[a-z]+(?:-[a-z]+)*$`).test(f.prelude)) fail('D108', `"${f.prelude}" is not named ${id}-<word>`);
+  const scopes = blocks[0].children.filter((n) => !frames.includes(n));
   if (scopes.length !== 1 || scopes[0].prelude !== `@scope (${tag})`) { fail('D53', `the recipes layer must hold exactly one "@scope (${tag})" block`); return problems; }
+  if (frames.length && blocks[0].children[0] !== scopes[0]) fail('D108', 'keyframes come after the scope');
 
   const declaredPrivate = new Set();
   const publicRead = new Set();
@@ -124,6 +129,14 @@ export function lint(id, css, context) {
       if (node.children.some((n) => n.children)) fail('D53', `"${node.prelude}" nests another rule`);
       const isTokenBlock = node.prelude === ':where(:scope)';
       const isVariantBlock = /^:where\(:scope\[[a-z-]+="[^"]+"\]\)$/.test(node.prelude);
+      // C5 as amended: the two rules other than the token and variant blocks that may set a private token.
+      // A coordinator hands its items its disabled state: a rule on the root whose only condition is disabled
+      // sets a token its token block declares to empty. A part rule with no condition stops a token the root
+      // hands down at that part: it sets a token its token block declares to `initial`.
+      const ruleSelectors = isTokenBlock || isVariantBlock ? [] : splitSelectors(node.prelude);
+      const handsDisabled = !media.length && ruleSelectors.length > 0 && ruleSelectors.every((s) => s === `:scope:where(${context.conditions.disabled})`);
+      const stopsAtPart = !media.length && ruleSelectors.length > 0 && ruleSelectors.every((s) => /^:scope > \[data-part="[a-z-]+"\]$/.test(s));
+      const mayDeclare = (d) => d.prop.startsWith('--_') && declaredPrivate.has(d.prop) && ((handsDisabled && d.value === '') || (stopsAtPart && d.value === 'initial'));
 
       for (const d of declarations) {
         const bare = stripUrls(d.value);
@@ -137,11 +150,13 @@ export function lint(id, css, context) {
         // C22: logical properties only.
         if (/(^|-)(left|right)(-|$)/.test(d.prop)) fail('C22', `the physical property "${d.prop}"`);
         // D61: motion only for a ready root, and only when motion is allowed.
-        if (/^(transition|animation)/.test(d.prop) && !(media.includes('@media (prefers-reduced-motion: no-preference)') && node.prelude.includes(`:where(${context.conditions.ready})`))) fail('D61', `"${d.prop}" outside a ready root or outside the motion query`);
+        if (/^(transition|animation)/.test(d.prop) && !(media.includes('@media (prefers-reduced-motion: no-preference)') && (context.styleOnly || node.prelude.includes(`:where(${context.conditions.ready})`)))) fail('D61', `"${d.prop}" outside a ready root or outside the motion query`);
 
         if (isTokenBlock || isVariantBlock) {
           if (!d.prop.startsWith('--_')) fail(isVariantBlock ? 'D58' : 'C5', `"${d.prop}" is declared in a ${isVariantBlock ? 'variant' : 'token'} block; only private tokens may be`);
           if (isTokenBlock && !forced) declaredPrivate.add(d.prop);
+          // C33: nothing fades. A disabled part is painted with colour tokens, so no recipe has a token for a fade.
+          if (/^--_fade(-|$)/.test(d.prop)) fail('C33', `"${d.prop}" is a token for a fade; a disabled part is painted with colour tokens, never faded`);
           const names = reads(d.value);
           for (const name of names.filter((n) => n.startsWith(`--${id}-`))) {
             publicRead.add(name);
@@ -151,8 +166,10 @@ export function lint(id, css, context) {
           const m = first && publicName.exec(first);
           if (m && m[3]) {
             const suffix = m[3].slice(1);
-            // A suffix that is no state of the matrix is a variant.
-            if (suffix in context.conditions && !FOLLOWS_BASE.includes(suffix)) {
+            // A suffix that is no state of the matrix is a variant. A suffix of several states, such as checked-disabled,
+            // is the token of a state too (C30).
+            const states = (rest) => rest === '' || Object.keys(context.conditions).some((s) => (rest === s || rest.startsWith(`${s}-`)) && states(rest.slice(s.length + 1)));
+            if (states(suffix) && !FOLLOWS_BASE.includes(suffix)) {
               const other = names.slice(1).find((n) => n.startsWith(`--${id}-`) || n.startsWith('--_'));
               if (other) fail('D54', `"${d.prop}": ${first} is the token of a state other than ${FOLLOWS_BASE.join(' and ')}; it falls back to the kit's value, not to ${other}`);
             } else {
@@ -164,7 +181,7 @@ export function lint(id, css, context) {
           }
         } else {
           if (!forced && PAINTS.test(d.prop)) paints = true;
-          if (d.prop.startsWith('--')) fail('C5', `the custom property "${d.prop}" is declared outside the token block`);
+          if (d.prop.startsWith('--') && !mayDeclare(d)) fail('C5', `the custom property "${d.prop}" is declared outside the token block`);
           for (const name of reads(d.value)) if (!name.startsWith('--_')) fail('C6', `"${d.prop}" reads ${name}; a rule may read private tokens only`);
         }
         for (const name of reads(d.value)) {
@@ -195,8 +212,14 @@ export function lint(id, css, context) {
           if (!media.includes('@media (hover: hover)')) fail('D64', 'a hover rule sits outside @media (hover: hover)');
           for (const d of declarations) if (!PAINT_ONLY.includes(d.prop)) fail('D63', `a hover rule sets "${d.prop}", which is not paint`);
         }
+        // C33: a rule whose selector holds the disabled condition declares no opacity, in any media block.
+        if (states.includes('disabled') && declarations.some((d) => d.prop === 'opacity')) fail('C33', `"${selector.slice(0, 50)}" fades a disabled part with opacity; paint it with colour tokens`);
         if (states.includes('hidden') && declarations.some((d) => d.prop === 'display' && d.value === 'none')) restatesHidden = true;
         if (states.includes('focus-visible') && rest === ':scope' && declarations.some((d) => d.prop === 'outline')) hasFocusRing = true;
+        // A root whose operable mark is its own pseudo-element may draw the ring on that mark, with the kit's ring tokens.
+        if (states.includes('focus-visible') && /^:scope::(before|after)$/.test(rest)
+          && declarations.some((d) => d.prop === 'outline' && /var\(--_ring-width\)/.test(d.value) && /var\(--_ring\)/.test(d.value))
+          && declarations.some((d) => d.prop === 'outline-offset' && /var\(--_ring-offset\)/.test(d.value))) hasFocusRing = true;
         if (selector === ':scope' && !media.length && declarations.some((d) => d.prop === 'display')) rootSetsDisplay = true;
         const ordered = states.filter((s) => ORDER.includes(s));
         if (ordered.length) (sequences[forced ? 'forced' : 'main'] ??= []).push(ordered[0]);
@@ -204,6 +227,7 @@ export function lint(id, css, context) {
     }
   };
   walk(scopes[0].children, []);
+  forcedPaint(scopes[0].children, context, fail);
 
   for (const [where, sequence] of Object.entries(sequences)) {
     for (let n = 1; n < sequence.length; n++) {
@@ -216,13 +240,92 @@ export function lint(id, css, context) {
   if (!hasBoxSizing) fail('C31', 'no rule makes the root and the parts border boxes: ":where(:scope, [data-part]) { box-sizing: border-box; }"');
   if (rootSetsDisplay && !restatesHidden) fail('C16', 'the root sets display, but no rule keeps a hidden root from showing');
   if (paints && !hasForcedColours) fail('D15', 'the recipe paints, but there is no @media (forced-colors: active) block');
-  if (context.focusable !== false && !hasFocusRing) fail('C20', 'no rule draws an outline on the focus-visible condition');
+  if (context.focusable !== false && !hasFocusRing) fail('C20', 'no rule draws an outline on the focus-visible condition, on the root or, with the ring tokens, on its ::before or ::after');
   if (context.manifestTokens) {
     const listed = new Set(context.manifestTokens);
     for (const name of publicRead) if (!listed.has(name)) fail('D13', `the recipe reads ${name}, which the manifest does not list`);
     for (const name of listed) if (!publicRead.has(name)) fail('D13', `the manifest lists ${name}, which the recipe does not read`);
   }
   return problems;
+}
+
+/**
+ * C19 as amended (D124), two checks on what a recipe paints under forced colours.
+ *  - GrayText means disabled: it appears in a forced-colours block only in a rule that holds the disabled condition or
+ *    selects a placeholder (`[data-placeholder]`, `::placeholder`), or in a private token that is named for disabled,
+ *    is guarded by the inherited `--_group-disabled`, or is read only by such rules.
+ *  - A label in HighlightText sits on a Highlight face, and Chromium's backplate (Firefox's, over a thumb) hides that face
+ *    behind its glyphs unless the element opts out of forcing. So every rule whose `color` resolves to HighlightText under
+ *    forced colours, in any variant and with any inherited switch on or off, needs a forced-colours rule for the same
+ *    selector, or for its part with no condition, whose `forced-color-adjust` resolves to none there.
+ */
+function forcedPaint(nodes, context, fail) {
+  const rules = [];
+  const collect = (list, media) => { for (const n of list) { if (!n.children) continue; if (n.prelude.startsWith('@')) collect(n.children, [...media, n.prelude]); else rules.push({ prelude: n.prelude, media, decls: n.children.filter((d) => d.prop) }); } };
+  collect(nodes, []);
+  const forced = (r) => r.media.includes('@media (forced-colors: active)');
+  const isToken = (r) => r.prelude === ':where(:scope)' || /^:where\(:scope\[[a-z-]+="[^"]+"\]\)$/.test(r.prelude);
+  const disabled = `:where(${context.conditions.disabled})`;
+  const placeholder = (sel) => /\[data-placeholder\]|::placeholder/.test(sel);
+  const allowed = (prelude) => splitSelectors(prelude).every((sel) => sel.includes(disabled) || placeholder(sel));
+  // Which rules read a private token, directly or through other tokens.
+  const tokenReads = new Map();
+  for (const r of rules.filter(isToken)) for (const d of r.decls) for (const name of reads(d.value)) { if (!tokenReads.has(name)) tokenReads.set(name, new Set()); tokenReads.get(name).add(d.prop); }
+  const readers = (name, seen = new Set()) => {
+    if (seen.has(name)) return []; seen.add(name);
+    const direct = rules.filter((r) => !isToken(r) && r.decls.some((d) => reads(d.value).includes(name)));
+    return [...direct, ...[...(tokenReads.get(name) ?? [])].flatMap((t) => readers(t, seen))];
+  };
+  for (const r of rules.filter(forced)) for (const d of r.decls) {
+    if (!/\bGrayText\b/.test(d.value)) continue;
+    if (isToken(r)) {
+      if (/disabled/.test(d.prop) || /^var\(--_group-disabled\)/.test(d.value)) continue;
+      const by = readers(d.prop);
+      if (by.length && by.every((x) => allowed(x.prelude))) continue;
+      fail('C19', `${d.prop} is GrayText under forced colours, but is read by a rule that is neither disabled nor a placeholder; GrayText means disabled`);
+    } else if (!allowed(r.prelude)) fail('C19', `"${r.prelude.slice(0, 60)}" paints GrayText under forced colours without the disabled condition; GrayText means disabled`);
+  }
+  // Token values per scenario: each variant, each inherited switch on (empty) or off (invalid).
+  const INVALID = Symbol('invalid');
+  const variants = [null, ...new Set(rules.filter(isToken).map((r) => r.prelude.match(/\[([a-z-]+="[^"]+")\]/)?.[1]).filter(Boolean))];
+  const switches = rules.filter((r) => r.prelude === ':where(:scope)' && !forced(r)).flatMap((r) => r.decls.filter((d) => d.prop.startsWith('--_') && d.value === 'inherit').map((d) => d.prop));
+  const combos = switches.reduce((all, s) => all.flatMap((c) => [{ ...c, [s]: INVALID }, { ...c, [s]: '' }]), [{}]);
+  for (const variant of variants) for (const combo of combos) {
+    const tokens = {};
+    for (const f of [false, true]) for (const r of rules.filter((x) => isToken(x) && forced(x) === f)) {
+      const v = r.prelude.match(/\[([a-z-]+="[^"]+")\]/)?.[1] ?? null;
+      if (v === null || v === variant) for (const d of r.decls) if (d.prop.startsWith('--_')) tokens[d.prop] = d.value;
+    }
+    Object.assign(tokens, combo);
+    const resolve = (value, seen = new Set()) => {
+      let out = '', at = 0;
+      for (;;) {
+        const k = value.indexOf('var(', at);
+        if (k < 0) { out += value.slice(at); break; }
+        out += value.slice(at, k);
+        let depth = 0, j = k + 3;
+        for (; j < value.length; j++) { if (value[j] === '(') depth++; if (value[j] === ')' && --depth === 0) break; }
+        const inner = value.slice(k + 4, j); at = j + 1;
+        const comma = inner.indexOf(','), name = (comma < 0 ? inner : inner.slice(0, comma)).trim(), fallback = comma < 0 ? null : inner.slice(comma + 1).trim();
+        let got = !name.startsWith('--_') || seen.has(name) ? INVALID : tokens[name] ?? INVALID;
+        if (got !== INVALID && typeof got === 'string') got = ['initial', 'inherit'].includes(got) ? INVALID : resolve(got, new Set([...seen, name]));
+        if (got === INVALID) got = fallback === null ? INVALID : resolve(fallback, seen);
+        if (got === INVALID) return INVALID;
+        out += got;
+      }
+      return out.trim();
+    };
+    const optOuts = rules.filter((r) => forced(r) && !isToken(r) && r.decls.some((d) => d.prop === 'forced-color-adjust' && resolve(d.value) === 'none')).flatMap((r) => splitSelectors(r.prelude));
+    const bare = (sel) => whereParts(sel).reduceRight((s, p) => s.slice(0, p.start) + s.slice(p.end), sel);
+    for (const r of rules.filter((x) => !isToken(x))) {
+      const color = r.decls.filter((d) => d.prop === 'color').pop();
+      if (!color || resolve(color.value) !== 'HighlightText') continue;
+      for (const sel of splitSelectors(r.prelude)) {
+        if (optOuts.includes(sel) || optOuts.includes(bare(sel))) continue;
+        fail('C19', `"${sel.slice(0, 60)}" paints its label HighlightText under forced colours${variant ? ` (${variant})` : ''} with no forced-color-adjust: none for it; the engine's backplate hides the Highlight face behind the glyphs`);
+      }
+    }
+  }
 }
 
 /** Whether a component's root ever takes focus: it has a tabindex of its own, or its tab list or menu gives it one. @param {any} manifest */

@@ -1,14 +1,21 @@
 @layer reset, base, tokens, recipes, utilities;
 
 /* The recipe of the table: a native <table data-ui="table">. Its rules: J67 in docs/specs/patterns.md. Its shape: docs/specs/css-contract.md.
-   Full width, rows as tall as ui-geometry's row, a hairline under each row, header cells in the muted ink. The cells are the
-   table's own elements, selected from the root by element. data-align="end" on a cell aligns its text to the end, for numbers. */
+   Full width, rows as tall as ui-geometry's row, a hairline under each row. A column header (a th in the thead) is a label,
+   printed on the ground with no face: ui-geometry's label type, the medium weight the recipes use for emphasis, the muted ink,
+   and the strong line under the last header row. A row header (a th in the body) is data: the ink, with the same weight.
+   The cells are the table's own elements, selected from the root by element. data-align="end" on a cell aligns its text to
+   the end, for numbers, header included. */
 @layer recipes {
   @scope ([data-ui="table"]) {
     :where(:scope) {
       --_ink: var(--table-ink, var(--ink));
-      --_ink-head: var(--ink-muted);
+      --_ink-head: var(--table-header-ink, var(--ink-muted));
+      --_ink-caption: var(--ink-muted);
       --_line: var(--table-line, var(--line));
+      --_line-head: var(--table-header-line, var(--line-strong));
+      --_text-head: var(--unit-type-label);
+      --_leading-head: var(--unit-type-label-line);
       --_height: var(--table-height, var(--collections-rows-row));
       --_inset: var(--table-inset, var(--collections-rows-cell-inline-padding));
       --_gap: var(--containers-gap-group-caption-content);
@@ -27,7 +34,7 @@
       padding-block-end: var(--_gap);
       padding-inline: var(--_inset);
       text-align: start;
-      color: var(--_ink-head);
+      color: var(--_ink-caption);
     }
     :scope th,
     :scope td {
@@ -37,10 +44,13 @@
       text-align: start;
       vertical-align: middle;
     }
-    :scope th {
+    :scope th { font-weight: 600; }
+    :scope thead th {
       color: var(--_ink-head);
-      font-weight: normal;
+      font-size: var(--_text-head);
+      line-height: var(--_leading-head);
     }
+    :scope thead > tr:last-child > :is(th, td) { border-block-end-color: var(--_line-head); }
     :scope :is(th, td)[data-align=end] {
       text-align: end;
       font-variant-numeric: tabular-nums;
@@ -52,8 +62,18 @@
 
     @media (forced-colors: active) {
       :where(:scope) {
+        --_ink-head: CanvasText;
+        --_ink-caption: CanvasText; /* Chromium and Firefox already force the ink; WebKit needs both inks said */
         --_line: CanvasText;
+        --_line-head: CanvasText;
         --_tint: Canvas;
+      }
+      /* Hover (D124): the ring one border width heavier than at rest, in the boundary colour, inside; no fill, never Highlight. */
+      @media (hover: hover) {
+        :scope tbody tr:where(:is(:hover, [data-hover]):where(:not(:is(:disabled, [disabled], [aria-disabled="true"]), :is(:checked, [aria-checked="true"], [checked]:not(input, option)), :is(input[type="checkbox"]:indeterminate, [aria-checked="mixed"], [indeterminate]), :is([aria-pressed="true"], [pressed]), :is([aria-selected="true"], [selected]:not(option)), :is([aria-current]:not([aria-current="false"], [aria-current=""]), [current]), :is([aria-expanded="true"], [expanded]), :is([open], :popover-open)))) {
+          outline: var(--_border) solid CanvasText;
+          outline-offset: calc(var(--_border) * -1);
+        }
       }
     }
   }

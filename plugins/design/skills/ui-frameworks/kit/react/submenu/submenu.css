@@ -1,0 +1,35 @@
+@layer reset, base, tokens, recipes, utilities;
+
+/* The recipe of <ui-submenu>, the element that holds a menu item and the menu it opens. Its shape and rules:
+   docs/specs/css-contract.md. A block around the item, one row of the menu around it: the anchor its own menu
+   is placed against (D77), under a name of its own, so the menu of a menu button and the menu of a submenu
+   inside it each find theirs. anchor-scope keeps the name to this element, and a submenu nested deeper is
+   later in the document, so a menu finds its nearest submenu.
+   Placement (J25): the menu that is this element's child sits beside the item, its start edge at the item's
+   end and its top at the item's top, and goes to the item's start side where there is no room at its end.
+   The self- keywords take the writing direction from the menu, not from the top layer, which is the page's.
+   This rule overrides the menu's own placement, below its menu button: two selectors of the same layer, and
+   this one has the higher specificity, (0,2,0) against (0,1,0); at equal specificity the menu's own scope,
+   nearer, would win. The menu is selected by its role, unquoted, because the recipe lint reads a quoted
+   attribute as a variant, and a recipe names no other component's tag; and as the last child, as the author
+   writes it, because before it is defined the menu has no role yet, and defining it must move nothing (U1).
+   It paints nothing, so it has no forced-colours block. */
+@layer recipes {
+  @scope ([data-ui="submenu"]) {
+    /* The recipe's own boxes are border boxes, with or without a reset (C31). */
+    :where(:scope, [data-part]) { box-sizing: border-box; }
+    :scope {
+      display: block;
+      anchor-name: --submenu;
+      anchor-scope: --submenu;
+    }
+    :scope:where([hidden]:not([hidden="until-found"])) { display: none; }
+
+    :scope > :is([role=menu], :last-child) {
+      margin: 0;
+      position-anchor: --submenu;
+      position-area: self-inline-end span-self-block-end;
+      position-try-fallbacks: flip-inline;
+    }
+  }
+}

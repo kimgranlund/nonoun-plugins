@@ -1,0 +1,67 @@
+@layer reset, base, tokens, recipes, utilities;
+
+/* The recipe of <ui-disclosure>, the element that holds a trigger and its panel. Its shape and rules:
+   docs/specs/css-contract.md. Its conditions: references/states.json. It stacks the trigger and the panel
+   with ui-geometry's gap between a caption and its content. The panel is displayed exactly while the root has
+   `open`: the recipe alone decides, so the state is right before the element is defined (J10). It paints
+   nothing, so it has no forced-colours block.
+   The trigger is the author's: a child of the root or of a heading that is a child of the root, where the class
+   looks for it. A ghost trigger is the row: the button's manifest gives a ghost no box of its own, for a control
+   that a row shapes. So the recipe makes a heading that holds the trigger as wide as the root, and a ghost
+   trigger as wide as its column and at least a control tall, with its title at the start and its caret at the end.
+   A raised trigger keeps its own box. Those rules outrank the button's own root rule by specificity, and set only
+   layout: the width, the least height, where the content sits and whether the title wraps. Both spellings of the
+   variant are named, the Web Component's attribute and the data attribute of the other targets, because the
+   rewrite of C24 rewrites only this root's own variants.
+   The caret is the icon the author marks data-part="caret" in the trigger. It turns while the root is open, from
+   the root's own attribute, so it is right before anything is defined: a half turn, so that a chevron pointing
+   down points up; and a chevron-right, which points to the inline end, a quarter turn toward the block end. In
+   right-to-left text that chevron is mirrored so it still points to the inline end, and turns the other way.
+   The turn is a transition only for a ready root and when motion is allowed (C18). */
+@layer recipes {
+  @scope ([data-ui="disclosure"]) {
+    :where(:scope) {
+      --_gap: var(--disclosure-gap, var(--containers-gap-group-caption-content));
+      --_row: var(--controls-control-h);
+    }
+
+    /* The recipe's own boxes are border boxes, with or without a reset (C31). */
+    :where(:scope, [data-part]) { box-sizing: border-box; }
+    :scope {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      justify-items: start;
+      gap: var(--_gap);
+    }
+    :scope:where([hidden]:not([hidden="until-found"])) { display: none; }
+
+    :scope > :is(h1, h2, h3, h4, h5, h6, [role="heading"]) { justify-self: stretch; }
+    :scope > :is([variant="ghost"], [data-variant="ghost"]),
+    :scope > :is(h1, h2, h3, h4, h5, h6, [role="heading"]) > :is([variant="ghost"], [data-variant="ghost"]) {
+      inline-size: 100%;
+      min-block-size: var(--_row);
+      justify-content: space-between;
+      white-space: normal;
+    }
+    :scope > * > [data-part=caret][name="chevron-right"]:dir(rtl),
+    :scope > :is(h1, h2, h3, h4, h5, h6, [role="heading"]) > * > [data-part=caret][name="chevron-right"]:dir(rtl) { scale: -1 1; }
+
+    :scope > [data-part=panel] {
+      display: none;
+      justify-self: stretch;
+    }
+
+    :scope:where(:is([open], :popover-open)) > [data-part=panel] { display: block; }
+    :scope:where(:is([open], :popover-open)) > * > [data-part=caret],
+    :scope:where(:is([open], :popover-open)) > :is(h1, h2, h3, h4, h5, h6, [role="heading"]) > * > [data-part=caret] { rotate: 0.5turn; }
+    :scope:where(:is([open], :popover-open)) > * > [data-part=caret][name="chevron-right"],
+    :scope:where(:is([open], :popover-open)) > :is(h1, h2, h3, h4, h5, h6, [role="heading"]) > * > [data-part=caret][name="chevron-right"] { rotate: 0.25turn; }
+    :scope:where(:is([open], :popover-open)) > * > [data-part=caret][name="chevron-right"]:dir(rtl),
+    :scope:where(:is([open], :popover-open)) > :is(h1, h2, h3, h4, h5, h6, [role="heading"]) > * > [data-part=caret][name="chevron-right"]:dir(rtl) { rotate: -0.25turn; }
+
+    @media (prefers-reduced-motion: no-preference) {
+      :scope:where([data-ready]) > * > [data-part=caret],
+      :scope:where([data-ready]) > :is(h1, h2, h3, h4, h5, h6, [role="heading"]) > * > [data-part=caret] { transition: rotate 200ms; }
+    }
+  }
+}

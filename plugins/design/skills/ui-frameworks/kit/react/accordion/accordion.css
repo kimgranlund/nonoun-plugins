@@ -1,0 +1,31 @@
+@layer reset, base, tokens, recipes, utilities;
+
+/* The recipe of <ui-accordion>, the element that stacks disclosures. Its shape and rules:
+   docs/specs/css-contract.md. ui-geometry: a separator, a hairline of the border unit between two children,
+   drawn on every child but the first, so the first and the last have no line outside them (J12). */
+@layer recipes {
+  @scope ([data-ui="accordion"]) {
+    :where(:scope) {
+      --_line: var(--accordion-line, var(--line));
+      --_border: var(--unit-border-b);
+    }
+
+    /* The recipe's own boxes are border boxes, with or without a reset (C31). */
+    :where(:scope, [data-part]) { box-sizing: border-box; }
+    :scope {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+    }
+    :scope:where([hidden]:not([hidden="until-found"])) { display: none; }
+
+    :scope > * + * {
+      border-block-start: var(--_border) solid var(--_line);
+    }
+
+    @media (forced-colors: active) {
+      :where(:scope) {
+        --_line: CanvasText;
+      }
+    }
+  }
+}

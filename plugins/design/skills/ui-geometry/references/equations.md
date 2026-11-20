@@ -9,9 +9,12 @@ For another preset, substitute its constants: a_q, b_q in q = a_q·n + b_q; I_δ
 | Symbol | Equation | n = 12 | 14 | 15 | 16 | 18 | 20 |
 |---|---|---|---|---|---|---|---|
 | q | n/2 − 3 | 3 | 4 | 4.5 | 5 | 6 | 7 |
+| q (ladder) | ¾n − 6.75 | 2.25 | 3.75 | 4.5 | 5.25 | 6.75 | 8.25 |
+| h (ladder, crisp) | 8q = 6n − 54 | 18 | 30 | 36 | 42 | 54 | 66 |
 
 - Pixel grid: n·q is a whole px when n·(n/2 − 3) is an integer.
 - All four icon sizes land on whole px when n ≡ 2 (mod 4), that is n = 10, 14, 18 or 22. Icon md (4q) is whole for every whole n.
+- **The ladder preset (the default).** h = 6n − 54 straight from the scope's size (18, 24, 30, 36, 48, 60 at n 12, 13, 14, 15, 17, 19), q = h/8 = ¾n − 6.75; every other constant is the standard preset's, and crisp snapping lands each ladder step on whole px (at 14: I 6, S 18, g_c 2). A kit may name its sizes as steps of one ladder of n taken from the scope (sm one step down, lg one up), so a nested control reads its n from its parent, never the root; step tokens must then resolve on the element that uses them. The worked values below are the standard preset's (`--preset standard`).
 
 ## 2. Type
 
@@ -91,7 +94,7 @@ The same rule serves chips, segments and menu rows with an optional icon at eith
 
 ## 4b. Marks, tracks and rows
 
-Marks and tracks ignore density. A choice (checkbox, radio, switch) is a row h tall with no shape around it, so its mark is the visible edge and starts on the content edge, like headings, captions and shapes; the label follows at I + (S − a)/2 (8 at 14px, so the label sits at 24). One left edge holds for everything outside a shape; text inside a shape sits at T, and a field label sits at T over its control's value.
+Marks and tracks ignore density. A cell of a one-time code is square (1:1) at every width: when the code fills its host, the cells grow by aspect-ratio, never in width alone. A choice (checkbox, radio, switch) is a row h tall with no shape around it, so its mark is the visible edge and starts on the content edge, like headings, captions and shapes; the label follows at I + (S − a)/2 (8 at 14px, so the label sits at 24). One left edge holds for everything outside a shape; text inside a shape sits at T, and a field label sits at T over its control's value.
 
 A group caption (a kicker) over shapes that hold text (a navigation section's heading, a menu's, listbox's or command list's group) is built as a field label is: a wrapper padded T at its text edge, so its text lands on T, where a text-only button's label, a row's text with no icon and an input's value land, also over rows that lead with an icon. Only a caption over loose content (headings, paragraphs, unframed marks) stays on the content edge. Inside a control frame the wrapper pads T − d_c from the frame's padding, as the rows do.
 
@@ -159,6 +162,7 @@ Concentric operators:
 
 - Composition: a chain carries one κ. A child in a different tier recomputes from its own κ, never from the parent's R.
 - When κ_card = κ_control and r ≤ 3, a control at nest inset 1 inside a card is concentric for free: R − d = r. At the standard preset's κ_card ½, R − d = 2q and controls inside keep their own 3q.
+- **Mixed corners on one box.** Where two adjacent radii sum past the side they share, the browser scales every radius of the box by one factor (CSS Backgrounds, corner overlap). A pill written as a huge length (9999px) beside a small corner sends the small one to almost 0, so a joined control's inner corner renders square though its computed value is right. Write a pill as h/2, or cap every corner at min(r, h/2), before giving one corner its own value. Check the rendered shape, not the computed radius.
 
 ## 6. Frames
 
@@ -218,6 +222,7 @@ Write a gap as gap(relation). G alone is the page gutter (section 8).
 - Inside a padded container (popover, card, nested card, dialog, region, page section, page), no gap exceeds that container's largest padding. Containers padded 0 (a control row, a table, a form) are spaced by their gaps alone. Checked by `derive.test.mjs` › "no gap exceeds its container's padding".
 - A control's own parts are spaced by its paddings and the icon gap I, never by a sibling gap from this table.
 - A pair that acts as one control but whose halves each have their own fill, states and ring (a split button) is two controls a grouped gap apart, each with its full corner r. Join them (gap 0, r on the outside only) only when the pair is one shape, and then draw the ring inside (section 10).
+- **A run** (a button group, a split button, a stepper's − value +) can sit between the two: whole controls a frame (2px) apart, r outside, and the corners that face each other closed to a fraction of h (h/3 chosen by an owner over h/5, which read as sharp), so the run reads as one shape with seams and each member keeps its own fill and ring. A run's members never dip on press, or the seams open.
 
 ## 8. Page grid
 
@@ -357,6 +362,7 @@ n(W) = clamp(min(n1, n2), n1 + (W − w1)·(n2 − n1)/(w2 − w1), max(n1, n2))
 - **Steps.** step 2 keeps q whole. step 4 with align 2 keeps half-q lengths whole. step 8 with align 6 keeps every length whole. Since every length is a multiple of q, the whole system scales with n.
 - **Breakpoints.** The width at which a layout of j columns, each at least w_min wide, first fits is W_j = j·w_min + (j − 1)·G + 2M. At 14px with w_min = 40q: 208, 380, 552, 724, 896 and 1068px for 1 to 6 columns.
 - **Container queries.** Measure W against the container instead of the viewport.
+- **Threshold order.** A build tool that orders container or media queries by their text (Panda CSS does) puts `108em` before `54em`, so the wider rule loses. Write thresholds at a fixed digit count (`054em`, `108em`) and check the order in the built CSS.
 - **Fit count.** A row of N items with natural widths w_1 … w_N (each as it renders unfolded, at its own scope and density) has a room W_r: its content box less its own padding. All N stay when Σw_i ≤ W_r + ε. Otherwise the first k stay, for the largest k < N with w_1 + … + w_k + w_more ≤ W_r + ε, and the rest fold into a trailing trigger w_more wide; k may be 0, the trigger alone. Reserve w_more only when something folds. When the trigger stands in for a folded item, w_more is that item's width plus the trigger's caret. ε = ½px absorbs the rounding of measured widths, so an item that fits is never folded.
 - **Fold gap.** A fit read from natural widths against a room the fold does not change is stable and needs no margin: one threshold serves both ways. Where folding changes the room by δ (a sibling that narrows or widens with the fold), unfold only when W_r ≥ Σw_i + g with g ≥ δ; a smaller g still switches back and forth across a band δ − g wide. Where the fit is read from the live items (does the row overflow as it stands), a folded row never overflows, so keep the unfolded width from the moment of folding and unfold only when W_r exceeds it. Sticky bands take the same kind of gap (section 8).
 
@@ -438,7 +444,7 @@ The table is generated from `containers()` (`node scripts/docs.mjs`); `node scri
 
 - **Items.** Menus, listboxes, segmented controls and tab lists run items of h − 2d_c (22 / 26 / 30 by density) in a frame or host padded d_c = ¾q, so one item plus its padding is exactly h, the height of the select that opens the menu. Items take the corner r_f − d_c. A button inside an input (a hosted control) and a control in a table cell are items too: h − 2d_c, inset d_c.
 - **Heights.** Three heights: h = S + 2I for a control and a list or table row, h − 2d_c for an item, h_o = S + 2g_c for an inline control (chip, tag).
-- **Lists and tables.** They take the control radius r on their outline (rows clip to it), keep rows h with the hairline drawn inside the row, sit on the content edge with buttons and inputs, and pad their edge cells T = 2I, so cell text lines up with a button label. An inset list pads d_c, with a concentric selection r − d_c and text at T. A table may run its own density.
+- **Lists and tables.** They take the control radius r on their outline (rows clip to it), keep rows h with the hairline drawn inside the row, sit on the content edge with buttons and inputs, and pad their edge cells T = 2I, so cell text lines up with a button label. Between columns, each cell pads half the column gap on each side, so neighbours split it and columns stand one gap apart, not two; only the edge cells keep T. A checkbox column centres its box where a leading icon would sit and keeps the half gap on its far side. A row height that is a fractional multiple of h (1.25h) lands on half px at some n: prefer h, or h plus whole q. An inset list pads d_c, with a concentric selection r − d_c and text at T. A table may run its own density.
 - **Gaps from the card tier out.** The gap is half the padding (p/2), the gap under a header is the full padding (equal space above and below its text), the gap under a painted, flush title band gives back the row's inset (p/2 − I), and the gap before actions is the full padding. Gaps snap to ½q, then to whole px under crisp (section 12).
 - **Popover and dialog** depths follow the card depth, ¾d and 1½d (`spacing.popoverRatio`, `spacing.dialogRatio`); nesting f is the one free rung. Cards default to κ = ½ (`dials.kappa.card`), so their corner is d + 2q and the content area inside has 2q corners. Controls in the card keep their own r, because the chain restarts at the tier boundary. At κ_card = ¾ the corner is d + 3q.
 - **Layout** levels: region 2I and page margin M = 4I, each with gaps of half that. A page section is padded 3¼F above and below and 0 at the sides (it shares the page's side edge, so content never sits 2M in); its gaps are the flow gaps of section 7.

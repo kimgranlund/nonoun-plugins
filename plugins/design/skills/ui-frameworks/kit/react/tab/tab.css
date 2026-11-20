@@ -1,7 +1,8 @@
 @layer reset, base, tokens, recipes, utilities;
 
 /* The recipe of <ui-tab>. Its shape and rules: docs/specs/css-contract.md. Its conditions: references/states.json.
-   ui-materials: a tab has no face at rest; the selected tab is raised and neutral, never the solid face.
+   ui-materials: a tab has no face at rest. The selected tab's raised face is its tab list's thumb (C32): the tab
+   names itself the thumb's anchor and paints no face of its own, even while it is pressed.
    ui-geometry: an item inside a host, with its text at T from the host's edge and its focus ring drawn inside.
    ::before is the hit area. It reaches over the host's padding, and sits behind the tabs so that it never
    covers a neighbour in a vertical list. */
@@ -10,8 +11,6 @@
     :where(:scope) {
       --_face-hover: var(--tab-face-hover, var(--colors-bg-muted-hover));
       --_face-active: var(--tab-face-active, var(--pressed-face));
-      --_face-selected: var(--tab-face-selected, var(--raised-face));
-      --_shadow-selected: var(--raised-shadow-1);
       --_ink: var(--tab-ink, var(--ink-muted));
       --_ink-selected: var(--tab-ink-selected, var(--ink));
       --_ink-disabled: var(--tab-ink-disabled, var(--ink-faint));
@@ -24,6 +23,7 @@
       --_ring-width: var(--controls-focus-ring-width-w);
       --_pad: var(--collections-frame-host-pad);
       --_reach: var(--controls-target-expansion-of-h-touch);
+      --_border: var(--unit-border-b);
     }
 
     /* The recipe's own boxes are border boxes, with or without a reset (C31). */
@@ -61,8 +61,8 @@
     }
     :scope:where(:is(:active, [data-active]):where(:not(:is(:disabled, [disabled], [aria-disabled="true"])))) { background-color: var(--_face-active); }
     :scope:where(:is([aria-selected="true"], [selected]:not(option))) {
-      background-color: var(--_face-selected);
-      box-shadow: var(--_shadow-selected);
+      anchor-name: --tab-list-thumb;
+      background-color: initial;
       color: var(--_ink-selected);
     }
     :scope:where(:is(:disabled, [disabled], [aria-disabled="true"])) {
@@ -80,14 +80,22 @@
       :where(:scope) {
         --_face-hover: Canvas;
         --_face-active: Canvas;
-        --_face-selected: Highlight;
-        --_shadow-selected: none;
         --_ink: ButtonText;
         --_ink-selected: HighlightText;
         --_ink-disabled: GrayText;
         --_ring: Highlight;
       }
-      :scope:where(:is([aria-selected="true"], [selected]:not(option))) { outline-color: HighlightText; }
+      /* Hover: a ring of one border width inside the tab, in its ink; no fill, never Highlight (D124). */
+      @media (hover: hover) {
+        :scope:where(:is(:hover, [data-hover]):where(:not(:is(:disabled, [disabled], [aria-disabled="true"]), :is(:checked, [aria-checked="true"], [checked]:not(input, option)), :is(input[type="checkbox"]:indeterminate, [aria-checked="mixed"], [indeterminate]), :is([aria-pressed="true"], [pressed]), :is([aria-selected="true"], [selected]:not(option)), :is([aria-current]:not([aria-current="false"], [aria-current=""]), [current]), :is([aria-expanded="true"], [expanded]), :is([open], :popover-open)))) {
+          outline: var(--_border) solid ButtonText;
+          outline-offset: calc(var(--_border) * -1);
+        }
+      }
+      /* C19, D124: the selected tab's label sits on the list's Highlight thumb, a sibling's pseudo-element. Chromium's backplate,
+         and Firefox's, which takes the nearest ancestor's background, would cover the thumb behind the glyphs; so the tab opts
+         out of forcing, and every colour it paints there is already a system colour. */
+      :scope:where(:is([aria-selected="true"], [selected]:not(option))) { forced-color-adjust: none; outline-color: HighlightText; }
     }
   }
 }

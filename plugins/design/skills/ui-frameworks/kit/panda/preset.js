@@ -103,6 +103,12 @@ export default {
             "bg-muted-hover": {
               "value": "var(--colors-bg-muted-hover)"
             },
+            "bg-overlay": {
+              "value": "var(--colors-bg-overlay)"
+            },
+            "bg-overlay-muted": {
+              "value": "var(--colors-bg-overlay-muted)"
+            },
             "bg-selected": {
               "value": "var(--colors-bg-selected)"
             },
@@ -397,6 +403,42 @@ export default {
             "gray-9": {
               "value": "var(--colors-gray-9)"
             },
+            "ground-1": {
+              "value": "var(--colors-ground-1)"
+            },
+            "ground-10": {
+              "value": "var(--colors-ground-10)"
+            },
+            "ground-11": {
+              "value": "var(--colors-ground-11)"
+            },
+            "ground-12": {
+              "value": "var(--colors-ground-12)"
+            },
+            "ground-2": {
+              "value": "var(--colors-ground-2)"
+            },
+            "ground-3": {
+              "value": "var(--colors-ground-3)"
+            },
+            "ground-4": {
+              "value": "var(--colors-ground-4)"
+            },
+            "ground-5": {
+              "value": "var(--colors-ground-5)"
+            },
+            "ground-6": {
+              "value": "var(--colors-ground-6)"
+            },
+            "ground-7": {
+              "value": "var(--colors-ground-7)"
+            },
+            "ground-8": {
+              "value": "var(--colors-ground-8)"
+            },
+            "ground-9": {
+              "value": "var(--colors-ground-9)"
+            },
             "indigo-1": {
               "value": "var(--colors-indigo-1)"
             },
@@ -495,6 +537,42 @@ export default {
             },
             "info-subtle-hover": {
               "value": "var(--colors-info-subtle-hover)"
+            },
+            "ink-1": {
+              "value": "var(--colors-ink-1)"
+            },
+            "ink-10": {
+              "value": "var(--colors-ink-10)"
+            },
+            "ink-11": {
+              "value": "var(--colors-ink-11)"
+            },
+            "ink-12": {
+              "value": "var(--colors-ink-12)"
+            },
+            "ink-2": {
+              "value": "var(--colors-ink-2)"
+            },
+            "ink-3": {
+              "value": "var(--colors-ink-3)"
+            },
+            "ink-4": {
+              "value": "var(--colors-ink-4)"
+            },
+            "ink-5": {
+              "value": "var(--colors-ink-5)"
+            },
+            "ink-6": {
+              "value": "var(--colors-ink-6)"
+            },
+            "ink-7": {
+              "value": "var(--colors-ink-7)"
+            },
+            "ink-8": {
+              "value": "var(--colors-ink-8)"
+            },
+            "ink-9": {
+              "value": "var(--colors-ink-9)"
             },
             "jade-1": {
               "value": "var(--colors-jade-1)"
@@ -895,6 +973,51 @@ export default {
             "success-subtle-hover": {
               "value": "var(--colors-success-subtle-hover)"
             },
+            "surface": {
+              "value": "var(--colors-surface)"
+            },
+            "surface-1": {
+              "value": "var(--colors-surface-1)"
+            },
+            "surface-10": {
+              "value": "var(--colors-surface-10)"
+            },
+            "surface-11": {
+              "value": "var(--colors-surface-11)"
+            },
+            "surface-12": {
+              "value": "var(--colors-surface-12)"
+            },
+            "surface-2": {
+              "value": "var(--colors-surface-2)"
+            },
+            "surface-3": {
+              "value": "var(--colors-surface-3)"
+            },
+            "surface-4": {
+              "value": "var(--colors-surface-4)"
+            },
+            "surface-5": {
+              "value": "var(--colors-surface-5)"
+            },
+            "surface-6": {
+              "value": "var(--colors-surface-6)"
+            },
+            "surface-7": {
+              "value": "var(--colors-surface-7)"
+            },
+            "surface-8": {
+              "value": "var(--colors-surface-8)"
+            },
+            "surface-9": {
+              "value": "var(--colors-surface-9)"
+            },
+            "surface-muted": {
+              "value": "var(--colors-surface-muted)"
+            },
+            "surface-subtle": {
+              "value": "var(--colors-surface-subtle)"
+            },
             "teal-1": {
               "value": "var(--colors-teal-1)"
             },
@@ -1188,11 +1311,14 @@ export default {
             "collections-width-tooltip": {
               "value": "var(--collections-width-tooltip)"
             },
+            "containers-frame-dialog-inset": {
+              "value": "var(--containers-frame-dialog-inset)"
+            },
+            "containers-frame-nest-f-0-25-depth": {
+              "value": "var(--containers-frame-nest-f-0-25-depth)"
+            },
             "containers-frame-nest-f-0-depth": {
               "value": "var(--containers-frame-nest-f-0-depth)"
-            },
-            "containers-frame-page-inset": {
-              "value": "var(--containers-frame-page-inset)"
             },
             "containers-frame-panel-inset": {
               "value": "var(--containers-frame-panel-inset)"
@@ -1209,14 +1335,26 @@ export default {
             "containers-width-dialog": {
               "value": "var(--containers-width-dialog)"
             },
+            "containers-width-panel": {
+              "value": "var(--containers-width-panel)"
+            },
+            "controls-control-g_c": {
+              "value": "var(--controls-control-g_c)"
+            },
             "controls-control-h": {
               "value": "var(--controls-control-h)"
+            },
+            "controls-control-h_o": {
+              "value": "var(--controls-control-h_o)"
             },
             "controls-control-i": {
               "value": "var(--controls-control-i)"
             },
             "controls-control-m_c": {
               "value": "var(--controls-control-m_c)"
+            },
+            "controls-control-s": {
+              "value": "var(--controls-control-s)"
             },
             "controls-control-t": {
               "value": "var(--controls-control-t)"
@@ -1230,6 +1368,9 @@ export default {
             "controls-gap-grouped": {
               "value": "var(--controls-gap-grouped)"
             },
+            "controls-gap-seam": {
+              "value": "var(--controls-gap-seam)"
+            },
             "controls-icon-a-full": {
               "value": "var(--controls-icon-a-full)"
             },
@@ -1238,6 +1379,9 @@ export default {
             },
             "controls-icon-a-md": {
               "value": "var(--controls-icon-a-md)"
+            },
+            "controls-icon-a-md-offset": {
+              "value": "var(--controls-icon-a-md-offset)"
             },
             "controls-icon-a-sm": {
               "value": "var(--controls-icon-a-sm)"
@@ -1272,6 +1416,21 @@ export default {
             "controls-mark-tree-indent": {
               "value": "var(--controls-mark-tree-indent)"
             },
+            "controls-media-avatar-lg": {
+              "value": "var(--controls-media-avatar-lg)"
+            },
+            "controls-media-avatar-md": {
+              "value": "var(--controls-media-avatar-md)"
+            },
+            "controls-media-avatar-sm": {
+              "value": "var(--controls-media-avatar-sm)"
+            },
+            "controls-media-avatar-xl": {
+              "value": "var(--controls-media-avatar-xl)"
+            },
+            "controls-media-avatar-xs": {
+              "value": "var(--controls-media-avatar-xs)"
+            },
             "controls-target-expansion-of-h-touch": {
               "value": "var(--controls-target-expansion-of-h-touch)"
             },
@@ -1299,6 +1458,9 @@ export default {
             "layout-gap-card": {
               "value": "var(--layout-gap-card)"
             },
+            "layout-width-viewport-margin": {
+              "value": "var(--layout-width-viewport-margin)"
+            },
             "unit-border-b": {
               "value": "var(--unit-border-b)"
             },
@@ -1316,6 +1478,18 @@ export default {
             },
             "unit-type-body-sm-line": {
               "value": "var(--unit-type-body-sm-line)"
+            },
+            "unit-type-heading-sm": {
+              "value": "var(--unit-type-heading-sm)"
+            },
+            "unit-type-heading-sm-line": {
+              "value": "var(--unit-type-heading-sm-line)"
+            },
+            "unit-type-kicker-sm": {
+              "value": "var(--unit-type-kicker-sm)"
+            },
+            "unit-type-kicker-sm-line": {
+              "value": "var(--unit-type-kicker-sm-line)"
             },
             "unit-type-label": {
               "value": "var(--unit-type-label)"
@@ -1354,11 +1528,14 @@ export default {
             "collections-width-tooltip": {
               "value": "var(--collections-width-tooltip)"
             },
+            "containers-frame-dialog-inset": {
+              "value": "var(--containers-frame-dialog-inset)"
+            },
+            "containers-frame-nest-f-0-25-depth": {
+              "value": "var(--containers-frame-nest-f-0-25-depth)"
+            },
             "containers-frame-nest-f-0-depth": {
               "value": "var(--containers-frame-nest-f-0-depth)"
-            },
-            "containers-frame-page-inset": {
-              "value": "var(--containers-frame-page-inset)"
             },
             "containers-frame-panel-inset": {
               "value": "var(--containers-frame-panel-inset)"
@@ -1375,14 +1552,26 @@ export default {
             "containers-width-dialog": {
               "value": "var(--containers-width-dialog)"
             },
+            "containers-width-panel": {
+              "value": "var(--containers-width-panel)"
+            },
+            "controls-control-g_c": {
+              "value": "var(--controls-control-g_c)"
+            },
             "controls-control-h": {
               "value": "var(--controls-control-h)"
+            },
+            "controls-control-h_o": {
+              "value": "var(--controls-control-h_o)"
             },
             "controls-control-i": {
               "value": "var(--controls-control-i)"
             },
             "controls-control-m_c": {
               "value": "var(--controls-control-m_c)"
+            },
+            "controls-control-s": {
+              "value": "var(--controls-control-s)"
             },
             "controls-control-t": {
               "value": "var(--controls-control-t)"
@@ -1396,6 +1585,9 @@ export default {
             "controls-gap-grouped": {
               "value": "var(--controls-gap-grouped)"
             },
+            "controls-gap-seam": {
+              "value": "var(--controls-gap-seam)"
+            },
             "controls-icon-a-full": {
               "value": "var(--controls-icon-a-full)"
             },
@@ -1404,6 +1596,9 @@ export default {
             },
             "controls-icon-a-md": {
               "value": "var(--controls-icon-a-md)"
+            },
+            "controls-icon-a-md-offset": {
+              "value": "var(--controls-icon-a-md-offset)"
             },
             "controls-icon-a-sm": {
               "value": "var(--controls-icon-a-sm)"
@@ -1438,6 +1633,21 @@ export default {
             "controls-mark-tree-indent": {
               "value": "var(--controls-mark-tree-indent)"
             },
+            "controls-media-avatar-lg": {
+              "value": "var(--controls-media-avatar-lg)"
+            },
+            "controls-media-avatar-md": {
+              "value": "var(--controls-media-avatar-md)"
+            },
+            "controls-media-avatar-sm": {
+              "value": "var(--controls-media-avatar-sm)"
+            },
+            "controls-media-avatar-xl": {
+              "value": "var(--controls-media-avatar-xl)"
+            },
+            "controls-media-avatar-xs": {
+              "value": "var(--controls-media-avatar-xs)"
+            },
             "controls-target-expansion-of-h-touch": {
               "value": "var(--controls-target-expansion-of-h-touch)"
             },
@@ -1465,6 +1675,9 @@ export default {
             "layout-gap-card": {
               "value": "var(--layout-gap-card)"
             },
+            "layout-width-viewport-margin": {
+              "value": "var(--layout-width-viewport-margin)"
+            },
             "unit-border-b": {
               "value": "var(--unit-border-b)"
             },
@@ -1483,6 +1696,18 @@ export default {
             "unit-type-body-sm-line": {
               "value": "var(--unit-type-body-sm-line)"
             },
+            "unit-type-heading-sm": {
+              "value": "var(--unit-type-heading-sm)"
+            },
+            "unit-type-heading-sm-line": {
+              "value": "var(--unit-type-heading-sm-line)"
+            },
+            "unit-type-kicker-sm": {
+              "value": "var(--unit-type-kicker-sm)"
+            },
+            "unit-type-kicker-sm-line": {
+              "value": "var(--unit-type-kicker-sm-line)"
+            },
             "unit-type-label": {
               "value": "var(--unit-type-label)"
             },
@@ -1499,8 +1724,14 @@ export default {
             "collections-curvature-r_row": {
               "value": "var(--collections-curvature-r_row)"
             },
+            "containers-curvature-nest-f-0-25-in-card-4": {
+              "value": "var(--containers-curvature-nest-f-0-25-in-card-4)"
+            },
             "containers-curvature-r-card-4": {
               "value": "var(--containers-curvature-r-card-4)"
+            },
+            "containers-curvature-r-panel-card-at-2i": {
+              "value": "var(--containers-curvature-r-panel-card-at-2i)"
             },
             "controls-curvature-r": {
               "value": "var(--controls-curvature-r)"

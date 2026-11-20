@@ -1,0 +1,131 @@
+@layer reset, base, tokens, recipes, utilities;
+
+/* The recipe of <ui-range-slider>. Its rules: J56 and J58 in docs/specs/patterns.md. Its shape: docs/specs/css-contract.md.
+   The root is the hit area, ui-geometry's slider hit area tall, and draws no face. ::before is the track, centred in
+   it: a recessed tray as tall as a thumb (ui-geometry gives a slider's thumb no pad inside its track), fully rounded.
+   Each thumb is a raised part inside the track whose centre travels the track's length less one thumb, so it never
+   overhangs an end; each takes focus and draws the ring round itself. The fill is the track's second layer, its content box, which the paddings at both ends confine to the share
+   between the thumbs. The thumbs are the parts low and high, which the class creates. Everything is placed from
+   --_low and --_high, which the class writes on the root's inline style (the whole track until the element is
+   defined), and on the inline axis, so it follows the writing direction and a change of value moves no box of the root. */
+@layer recipes {
+  @scope ([data-ui="range-slider"]) {
+    :where(:scope) {
+      --_low: 0;
+      --_high: 1;
+      --_track-face: var(--range-slider-track-face, var(--recessed-face));
+      --_fill-face: var(--range-slider-fill-face, var(--solid-face));
+      --_low-face: var(--range-slider-low-face, var(--raised-face));
+      --_high-face: var(--range-slider-high-face, var(--raised-face));
+      --_fill-face-disabled: var(--range-slider-fill-face-disabled, var(--line-strong));
+      --_track-shadow: var(--recessed-shadow);
+      --_thumb-shadow: var(--raised-shadow-1);
+      --_height: var(--range-slider-height, var(--controls-track-slider-hit-area));
+      --_track: var(--_thumb);
+      --_radius: calc(var(--_track) / 2);
+      --_thumb: var(--controls-track-slider-thumb);
+      --_thumb-radius: calc(var(--_thumb) / 2);
+      --_length: var(--controls-track-slider-minimum-length);
+      --_touch: max(var(--_height), var(--controls-target-t_hit-touch));
+      --_run: calc(100% - var(--_thumb));
+      --_ring: var(--colors-focus-ring);
+      --_ring-width: var(--controls-focus-ring-width-w);
+      --_ring-offset: var(--controls-focus-ring-offset-o);
+      --_border: var(--unit-border-b);
+    }
+
+    /* The recipe's own boxes are border boxes, with or without a reset (C31). */
+    :where(:scope, [data-part]) { box-sizing: border-box; }
+    :scope {
+      display: block;
+      position: relative;
+      block-size: var(--_height);
+      min-inline-size: var(--_length);
+      cursor: pointer;
+      touch-action: pan-y;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+    :scope:where([hidden]:not([hidden="until-found"])) { display: none; }
+
+    :scope::before {
+      content: "";
+      position: absolute;
+      inset-block: 0;
+      inset-inline: 0;
+      margin-block: auto;
+      block-size: var(--_track);
+      padding-inline-start: calc(var(--_thumb) / 2 + var(--_low) * var(--_run));
+      padding-inline-end: calc(var(--_thumb) / 2 + (1 - var(--_high)) * var(--_run));
+      border-radius: var(--_radius);
+      background-color: var(--_track-face);
+      background-image: linear-gradient(var(--_fill-face), var(--_fill-face)), none;
+      background-clip: content-box, border-box;
+      box-shadow: var(--_track-shadow);
+    }
+    :scope > [data-part="low"],
+    :scope > [data-part="high"] {
+      position: absolute;
+      inset-block: 0;
+      margin-block: auto;
+      inline-size: var(--_thumb);
+      block-size: var(--_thumb);
+      border-radius: var(--_thumb-radius);
+      box-shadow: var(--_thumb-shadow);
+    }
+    :scope > [data-part="low"] {
+      inset-inline-start: calc(var(--_low) * var(--_run));
+      background-color: var(--_low-face);
+    }
+    :scope > [data-part="high"] {
+      inset-inline-start: calc(var(--_high) * var(--_run));
+      background-color: var(--_high-face);
+    }
+
+    :scope > [data-part]:where(:is(:focus-visible, [data-focus-visible])) {
+      outline: var(--_ring-width) solid var(--_ring);
+      outline-offset: var(--_ring-offset);
+    }
+    :scope:where(:is(:disabled, [disabled], [aria-disabled="true"])) { cursor: default; }
+    :scope:where(:is(:disabled, [disabled], [aria-disabled="true"]))::before { background-image: linear-gradient(var(--_fill-face-disabled), var(--_fill-face-disabled)), none; }
+
+    @media (pointer: coarse) {
+      :scope {
+        block-size: var(--_touch);
+        margin-block: calc((var(--_height) - var(--_touch)) / 2);
+      }
+    }
+    @media (forced-colors: active) {
+      :where(:scope) {
+        --_track-face: Canvas;
+        --_fill-face: Highlight;
+        --_low-face: ButtonFace;
+        --_high-face: ButtonFace;
+        --_track-shadow: none;
+        --_thumb-shadow: none;
+        --_ring: Highlight;
+      }
+      :scope::before {
+        forced-color-adjust: none;
+        outline: var(--_border) solid ButtonText;
+        outline-offset: calc(var(--_border) * -1);
+      }
+      /* A thumb's boundary is its outline, inside it; the focus ring takes its place. WebKit does not recolour an
+         outline here and keeps shadows, so both are written. */
+      :scope > [data-part="low"],
+      :scope > [data-part="high"] {
+        outline: var(--_border) solid ButtonBorder;
+        outline-offset: calc(var(--_border) * -1);
+      }
+      :scope > [data-part]:where(:is(:focus-visible, [data-focus-visible])) {
+        outline: var(--_ring-width) solid var(--_ring);
+        outline-offset: var(--_ring-offset);
+      }
+      :scope:where(:is(:disabled, [disabled], [aria-disabled="true"]))::before {
+        outline-color: GrayText;
+        background-image: linear-gradient(GrayText, GrayText), none;
+      }
+      :scope:where(:is(:disabled, [disabled], [aria-disabled="true"])) > [data-part] { outline-color: GrayText; }
+    }
+  }
+}

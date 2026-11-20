@@ -8,12 +8,18 @@
    that is not a system colour to Canvas, so a background in currentColor vanishes there, while the border colour
    reverts to the text colour, which is the system colour of whatever the icon sits in. The border is one side as
    wide as the box, so no join or rounding opens a gap down the middle. In forced colours the ink is the text colour
-   even when --icon-ink is set: Chromium and Firefox force the border colour so themselves, WebKit needs the block. */
+   even when --icon-ink is set: Chromium and Firefox force the border colour so themselves, WebKit needs the block.
+   In a button the icon sits in an S-square slot that the button pulls in to I from its edge (ui-geometry, "controls
+   pad by edge"): the button sets --_icon-pull, the one private token the icon inherits (D110), and the icon adds
+   (S − a)/2 for its own size a, on both inline sides, so it lands right at either edge without knowing which. Outside
+   a button, and in a ghost, the token is not a length, the margin is invalid, and the icon has none. */
 @layer recipes {
   @scope (ui-icon) {
     :where(:scope) {
       --_ink: var(--icon-ink, currentColor);
       --_height: var(--icon-height, var(--controls-icon-a-md));
+      --_icon-pull: inherit;
+      --_slot: var(--controls-control-s);
       --_glyph: var(--glyph, url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1'/%3E"));
     }
     :where(:scope[size="sm"]) { --_height: var(--icon-height, var(--controls-icon-a-sm)); }
@@ -30,6 +36,7 @@
       inline-size: var(--_height);
       block-size: var(--_height);
       vertical-align: middle;
+      margin-inline: calc(var(--_icon-pull) + (var(--_slot) - var(--_height)) / 2);
       border: 0 solid var(--_ink);
       border-inline-start-width: var(--_height);
       mask: var(--_glyph) center / contain no-repeat;

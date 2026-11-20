@@ -8,6 +8,16 @@ export const props = {
   },
   "alert": {
     "type": "boolean"
+  },
+  "side": {
+    "type": "enum",
+    "values": [
+      "center",
+      "inline-start",
+      "inline-end",
+      "block-end"
+    ],
+    "default": "center"
   }
 };
 

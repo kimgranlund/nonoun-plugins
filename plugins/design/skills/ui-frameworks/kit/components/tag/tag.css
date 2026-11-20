@@ -1,0 +1,216 @@
+@layer reset, base, tokens, recipes, utilities;
+
+/* The recipe of the tag: a native <span data-ui="tag"> with an optional <button data-part="remove"> at its end. Its rules: J99 in docs/specs/patterns.md. Its shape: docs/specs/css-contract.md.
+   A small rounded box as tall as ui-geometry's inline control height (controls.control.h_o), the smallest control height there is: ui-geometry has no row for a tag or a chip.
+   Its face, ink and line are the subtle fill, the text colour and the border of the ui-colors role of data-variant (neutral by default), as the alert paints them; the line is an inset shadow and takes no room.
+   The remove button is an action over content, so it is a fade (ui-materials, construction): it takes no room in the flow, and a tag is as wide as its
+   label and inset with or without it. It lies over the end of the tag, flush with the end and as tall as the tag, a ghost glyph with no relief and no face
+   of its own. Under the glyph its ::after paints the tag's own face, inside the tag's line, seen through a mask of two layers: a ramp from clear to whole
+   over the tag's inset, then whole under the gap, the glyph (an icon of ui-geometry's small size) and the edge. The mask is an SVG image, because the kit
+   computes no colour and the lint refuses a literal clear stop; the face below it is whatever --tag-face or the variant says. Right to left, the ::after
+   is mirrored. The button is not painted (opacity 0, so it stays in the accessibility tree and the tab order) until the pointer is over the tag or focus
+   is inside it, and it is always painted where the main pointer cannot hover. Hover and press change its glyph's ink only, by a step of the role's scale.
+   Its ::before reaches it out to ui-geometry's pointer target (24 CSS pixels); its ring is drawn inside it, so the tag's end does not clip it.
+   A disabled remove button is never shown: it is hidden, so it also leaves the tab order and the accessibility tree,
+   and the tag looks like a tag without one.
+   An icon inside pulls in by the icon edge, as in a button (the one token an icon inherits from its host, D110):
+   --_icon-pull is (h − S)/2 − I, and the gap is the tag's gap less the pull, so a tag holding one icon is as wide as
+   it is tall, a leading icon sits (h − a)/2 from the edge and a label keeps its gap from the icon's box. The remove
+   button holds its own small glyph, placed by its own padding, so the pull stops there (C5 as amended).
+   Disabled fades nothing (C33). A tag in a disabled tag group, or a tag marked disabled, of any variant, takes the
+   disabled ground, the quiet line and the disabled ink. A tag cannot see its group (C8), so the group hands it its
+   disabled state through --_group-disabled: empty while the group is disabled, guaranteed-invalid otherwise. */
+@layer recipes {
+  @scope ([data-ui="tag"]) {
+    :where(:scope) {
+      --_face: var(--tag-face, var(--colors-neutral-subtle));
+      --_ink: var(--tag-ink, var(--colors-neutral-fg));
+      --_line: var(--tag-line, var(--colors-neutral-border));
+      --_remove-ink-hover: var(--colors-neutral-12);
+      --_remove-ink-active: var(--colors-neutral-10);
+      --_face-disabled: var(--tag-face-disabled, var(--colors-bg-disabled));
+      --_ink-disabled: var(--tag-ink-disabled, var(--ink-faint));
+      --_line-disabled: var(--tag-line-disabled, var(--line));
+      --_group-disabled: inherit;
+      --_paint-face: var(--_face-off, var(--_face));
+      --_paint-ink: var(--_ink-off, var(--_ink));
+      --_paint-line: var(--_line-off, var(--_line));
+      --_face-off: var(--_group-disabled) var(--_face-disabled);
+      --_ink-off: var(--_group-disabled) var(--_ink-disabled);
+      --_line-off: var(--_group-disabled) var(--_line-disabled);
+      --_height: var(--tag-height, var(--controls-control-h_o));
+      --_inset: var(--tag-inset, var(--controls-control-i));
+      --_gap: var(--tag-gap, var(--controls-control-g_c));
+      --_icon-pull: calc((var(--_height) - var(--controls-control-s)) / 2 - var(--_inset));
+      --_space: calc(var(--_gap) - var(--_icon-pull));
+      --_radius: var(--tag-radius, var(--controls-curvature-r_o));
+      --_text: var(--unit-type-label);
+      --_border: var(--unit-border-b);
+      --_edge: var(--controls-control-m_c);
+      --_glyph: var(--controls-icon-a-sm);
+      --_hit: var(--controls-target-t_hit-pointer);
+      --_ring: var(--colors-focus-ring);
+      --_ring-width: var(--controls-focus-ring-width-w);
+      --_ring-offset: var(--controls-focus-ring-offset-o);
+      --_ramp: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1' preserveAspectRatio='none'%3E%3ClinearGradient id='g'%3E%3Cstop offset='0' stop-opacity='0'/%3E%3Cstop offset='1'/%3E%3C/linearGradient%3E%3Crect width='1' height='1' fill='url(%23g)'/%3E%3C/svg%3E");
+      --_whole: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1' preserveAspectRatio='none'%3E%3Crect width='1' height='1'/%3E%3C/svg%3E");
+    }
+    :where(:scope[data-variant="info"]) {
+      --_face: var(--tag-face, var(--colors-info-subtle));
+      --_ink: var(--tag-ink, var(--colors-info-fg));
+      --_line: var(--tag-line, var(--colors-info-border));
+      --_remove-ink-hover: var(--colors-info-12);
+      --_remove-ink-active: var(--colors-info-10);
+    }
+    :where(:scope[data-variant="success"]) {
+      --_face: var(--tag-face, var(--colors-success-subtle));
+      --_ink: var(--tag-ink, var(--colors-success-fg));
+      --_line: var(--tag-line, var(--colors-success-border));
+      --_remove-ink-hover: var(--colors-success-12);
+      --_remove-ink-active: var(--colors-success-10);
+    }
+    :where(:scope[data-variant="warning"]) {
+      --_face: var(--tag-face, var(--colors-warning-subtle));
+      --_ink: var(--tag-ink, var(--colors-warning-fg));
+      --_line: var(--tag-line, var(--colors-warning-border));
+      --_remove-ink-hover: var(--colors-warning-12);
+      --_remove-ink-active: var(--colors-warning-10);
+    }
+    :where(:scope[data-variant="critical"]) {
+      --_face: var(--tag-face, var(--colors-critical-subtle));
+      --_ink: var(--tag-ink, var(--colors-critical-fg));
+      --_line: var(--tag-line, var(--colors-critical-border));
+      --_remove-ink-hover: var(--colors-critical-12);
+      --_remove-ink-active: var(--colors-critical-10);
+    }
+
+    /* The recipe's own boxes are border boxes, with or without a reset (C31). */
+    :where(:scope, [data-part]) { box-sizing: border-box; }
+    :scope {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--_space);
+      position: relative;
+      block-size: var(--_height);
+      padding-inline: var(--_inset);
+      border-radius: var(--_radius);
+      background-color: var(--_paint-face);
+      box-shadow: inset 0 0 0 var(--_border) var(--_paint-line);
+      color: var(--_paint-ink);
+      font-size: var(--_text);
+      white-space: nowrap;
+    }
+    :scope:where([hidden]:not([hidden="until-found"])) { display: none; }
+    :scope > [data-part="remove"] {
+      --_icon-pull: initial;
+      display: inline-flex;
+      align-items: center;
+      justify-content: flex-end;
+      position: absolute;
+      inset-block: 0;
+      inset-inline-end: 0;
+      isolation: isolate;
+      inline-size: calc(var(--_inset) + var(--_gap) + var(--_glyph) + var(--_edge));
+      margin: 0;
+      padding: 0;
+      padding-inline-end: var(--_edge);
+      border: 0;
+      border-radius: 0;
+      border-start-end-radius: var(--_radius);
+      border-end-end-radius: var(--_radius);
+      background: none;
+      color: inherit;
+      font: inherit;
+      line-height: 1;
+      opacity: 0;
+      cursor: pointer;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+    :scope > [data-part="remove"]::before {
+      content: "";
+      position: absolute;
+      inset-block-start: 50%;
+      inset-inline-start: 50%;
+      block-size: var(--_hit);
+      inline-size: var(--_hit);
+      translate: -50% -50%;
+    }
+    :scope > [data-part="remove"]::after {
+      content: "";
+      position: absolute;
+      inset-block: var(--_border);
+      inset-inline-start: 0;
+      inset-inline-end: var(--_border);
+      z-index: -1;
+      border-start-end-radius: calc(var(--_radius) - var(--_border));
+      border-end-end-radius: calc(var(--_radius) - var(--_border));
+      background-color: var(--_paint-face);
+      mask:
+        var(--_ramp) 0 0 / var(--_inset) 100% no-repeat,
+        var(--_whole) var(--_inset) 0 / 100% 100% no-repeat;
+    }
+    :scope:dir(rtl) > [data-part="remove"]::before { translate: 50% -50%; }
+    :scope:dir(rtl) > [data-part="remove"]::after { scale: -1 1; }
+
+    @media (hover: hover) {
+      :scope:where(:is(:hover, [data-hover]):where(:not(:is(:disabled, [disabled], [aria-disabled="true"]), :is(:checked, [aria-checked="true"], [checked]:not(input, option)), :is(input[type="checkbox"]:indeterminate, [aria-checked="mixed"], [indeterminate]), :is([aria-pressed="true"], [pressed]), :is([aria-selected="true"], [selected]:not(option)), :is([aria-current]:not([aria-current="false"], [aria-current=""]), [current]), :is([aria-expanded="true"], [expanded]), :is([open], :popover-open)))) > [data-part="remove"] { opacity: 1; }
+      :scope > [data-part="remove"]:where(:is(:hover, [data-hover]):where(:not(:is(:disabled, [disabled], [aria-disabled="true"]), :is(:checked, [aria-checked="true"], [checked]:not(input, option)), :is(input[type="checkbox"]:indeterminate, [aria-checked="mixed"], [indeterminate]), :is([aria-pressed="true"], [pressed]), :is([aria-selected="true"], [selected]:not(option)), :is([aria-current]:not([aria-current="false"], [aria-current=""]), [current]), :is([aria-expanded="true"], [expanded]), :is([open], :popover-open)))) { color: var(--_remove-ink-hover); }
+    }
+    :scope > [data-part="remove"]:where(:is(:focus-visible, [data-focus-visible])) {
+      outline: var(--_ring-width) solid var(--_ring);
+      outline-offset: calc(var(--_ring-width) * -1);
+    }
+    :scope:where(:focus-within) > [data-part="remove"] { opacity: 1; }
+    :scope > [data-part="remove"]:where(:is(:active, [data-active]):where(:not(:is(:disabled, [disabled], [aria-disabled="true"])))) { color: var(--_remove-ink-active); }
+    :scope:where(:is(:disabled, [disabled], [aria-disabled="true"])) {
+      background-color: var(--_face-disabled);
+      box-shadow: inset 0 0 0 var(--_border) var(--_line-disabled);
+      color: var(--_ink-disabled);
+    }
+    :scope:where(:is(:disabled, [disabled], [aria-disabled="true"])) > [data-part="remove"]::after { background-color: var(--_face-disabled); }
+    :scope > [data-part="remove"]:where(:is(:disabled, [disabled], [aria-disabled="true"])) {
+      visibility: hidden;
+      cursor: default;
+    }
+
+    /* Where the main pointer cannot hover, the button is always painted, so that touch can reach it; a disabled one still is not. */
+    @media (hover: none) {
+      :scope > [data-part="remove"] { opacity: 1; }
+    }
+    @media (prefers-reduced-motion: no-preference) {
+      :scope > [data-part="remove"] { transition: opacity 100ms; }
+    }
+
+    @media (forced-colors: active) {
+      :where(:scope) {
+        --_face: Canvas;
+        --_ink: CanvasText;
+        --_line: CanvasText;
+        --_remove-ink-hover: CanvasText;
+        --_remove-ink-active: Highlight;
+        --_face-disabled: Canvas;
+        --_ink-disabled: GrayText;
+        --_line-disabled: GrayText;
+        --_ring: Highlight;
+      }
+      /* Hover (D124): the ring one border width heavier than at rest, in the boundary colour, inside; no fill, never Highlight. */
+      @media (hover: hover) {
+        :scope > [data-part="remove"]:where(:is(:hover, [data-hover]):where(:not(:is(:disabled, [disabled], [aria-disabled="true"]), :is(:checked, [aria-checked="true"], [checked]:not(input, option)), :is(input[type="checkbox"]:indeterminate, [aria-checked="mixed"], [indeterminate]), :is([aria-pressed="true"], [pressed]), :is([aria-selected="true"], [selected]:not(option)), :is([aria-current]:not([aria-current="false"], [aria-current=""]), [current]), :is([aria-expanded="true"], [expanded]), :is([open], :popover-open)))) {
+          outline: var(--_border) solid CanvasText;
+          outline-offset: calc(var(--_border) * -1);
+        }
+      }
+      :scope {
+        box-shadow: none;
+        outline: var(--_border) solid var(--_paint-line);
+        outline-offset: calc(var(--_border) * -1);
+      }
+      :scope:where(:is(:disabled, [disabled], [aria-disabled="true"])) {
+        box-shadow: none;
+        outline-color: var(--_line-disabled);
+      }
+      :scope > [data-part="remove"]::after { mask: none; }
+    }
+  }
+}

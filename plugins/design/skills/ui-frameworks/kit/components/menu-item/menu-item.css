@@ -59,7 +59,10 @@
         --_ink-disabled: GrayText;
         --_ring: HighlightText; /* Chromium and Firefox already draw the ring in the ink; WebKit 27.2 needs it said */
       }
-      :scope:where(:is(:focus, [data-focus])) { color: HighlightText; }
+      /* C19, D124: the focused or pressed item's label sits on its own Highlight face; it opts out of forcing, or Chromium's
+         Canvas backplate covers the face behind the glyphs. Every colour it paints there is a system colour. */
+      :scope:where(:is(:focus, [data-focus])) { forced-color-adjust: none; color: HighlightText; }
+      :scope:where(:is(:active, [data-active]):where(:not(:is(:disabled, [disabled], [aria-disabled="true"])))) { forced-color-adjust: none; color: HighlightText; }
     }
   }
 }

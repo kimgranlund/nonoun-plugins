@@ -20,6 +20,18 @@
     "alert": {
       "type": "boolean",
       "description": "The dialog interrupts with a message that needs an answer: it gets the alertdialog role."
+    },
+    "side": {
+      "type": "enum",
+      "values": [
+        "center",
+        "inline-start",
+        "inline-end",
+        "block-end"
+      ],
+      "default": "center",
+      "kind": "variant",
+      "description": "Where the panel sits. A side makes it a drawer: a panel along that edge of the window, as long as the edge."
     }
   },
   "resets": [],
@@ -44,18 +56,24 @@
     "title": {
       "kind": "author",
       "material": null,
-      "note": "Inside the dialog: the heading the dialog is named after."
+      "note": "Inside the dialog: the heading the dialog is named after, in ui-geometry's heading-sm type."
     },
     "description": {
       "kind": "author",
       "material": null,
-      "note": "Inside the dialog: the text the dialog is described by. An alert dialog needs one."
+      "note": "Inside the dialog: the text the dialog is described by, in the body type and the muted ink. An alert dialog needs one."
+    },
+    "actions": {
+      "kind": "author",
+      "material": null,
+      "note": "Optional, inside the dialog: the element that holds the dialog's buttons, as a row at the inline end. A form with method=\"dialog\" that holds only buttons is the actions without it."
     }
   },
   "tokens": [
     "--dialog-panel-face",
     "--dialog-panel-ink",
     "--dialog-panel-inset",
+    "--dialog-panel-gap",
     "--dialog-panel-radius"
   ],
   "behaviours": [],
@@ -69,17 +87,21 @@
   "guidance": [
     {
       "topic": "coordination",
-      "text": "A button inside a form with method=\"dialog\" closes the dialog, as in plain HTML. When it opens, focus goes to the element the author marked with autofocus, or else to the first control; when it closes, focus returns to where it was."
+      "text": "A button inside a form with method=\"dialog\" closes the dialog, as in plain HTML. When it opens, focus goes to the element the author marked with autofocus, or else to the first control; when it closes, focus returns to where it was. side=\"inline-start\", \"inline-end\" or \"block-end\" makes a drawer: the same parts, the panel against that edge of the window. It is as long as the edge and ui-geometry's panel width across, or at the block end as wide as the window and as tall as its content. Right to left mirrors the inline sides. With motion allowed it slides in from its edge. The panel is the browser's dialog element, so its own attributes hold: closedby=\"any\" on it closes the dialog on a press outside, and a native button with commandfor=\"<the panel's id>\" and command=\"show-modal\" or \"close\" opens or closes it with no script; the root's open follows either way. A kit button cannot carry commandfor: the browser reads it only on a native button."
+    },
+    {
+      "topic": "naming",
+      "text": "The panel's own children are a column with no margins of their own: the first starts at the padding and the last ends at it, and each is half the padding from the next (ui-geometry's body-block gap of a dialog, d_d / 2; --dialog-panel-gap changes it). The actions sit the full padding below the content above them: write them as the form with method=\"dialog\" that holds the buttons, or wrap them in an element with data-part=\"actions\". Anything else the author writes, such as a div or a form field, is a block of the column. Wrap content in one element to give it a rhythm of its own."
     }
   ],
   "notYet": [
-    "Closing on a press outside the dialog.",
+    "A drawer that slides out as it closes (it slides in only).",
     "A dialog that is not modal."
   ],
   "targets": {
     "web-components": "built",
-    "react": "planned",
-    "svelte": "planned",
+    "react": "built",
+    "svelte": "built",
     "solid": "planned"
   }
 }

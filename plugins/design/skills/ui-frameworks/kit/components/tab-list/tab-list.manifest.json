@@ -36,10 +36,21 @@
         "face": "neutral"
       },
       "note": "A tray: the same paint as a switch's off track."
+    },
+    "thumb": {
+      "kind": "pseudo",
+      "pseudo": "::before",
+      "material": {
+        "layer": "base",
+        "relief": "raised",
+        "face": "neutral"
+      },
+      "note": "The face of the selected tab, never the solid face. It takes the box of the selected tab, its anchor, and moves to the next one selected (C32). Drawn as a pseudo-element, so it is in place before the elements are defined."
     }
   },
   "tokens": [
     "--tab-list-face",
+    "--tab-list-thumb-face",
     "--tab-list-height",
     "--tab-list-inset",
     "--tab-list-radius"
@@ -69,7 +80,7 @@
   "targets": {
     "web-components": "built",
     "react": "built",
-    "svelte": "planned",
+    "svelte": "built",
     "solid": "planned"
   }
 }

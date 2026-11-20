@@ -39,13 +39,12 @@
     "root": {
       "kind": "root",
       "material": null,
-      "note": "No face at rest. selected: layer base, relief raised, face neutral, never the solid face."
+      "note": "No face at rest. selected: the tab list's thumb is its face (layer base, relief raised, face neutral, never the solid face); the tab names itself the thumb's anchor and keeps its ink."
     }
   },
   "tokens": [
     "--tab-face-hover",
     "--tab-face-active",
-    "--tab-face-selected",
     "--tab-ink",
     "--tab-ink-selected",
     "--tab-ink-disabled",
@@ -70,7 +69,7 @@
   "targets": {
     "web-components": "built",
     "react": "built",
-    "svelte": "planned",
+    "svelte": "built",
     "solid": "planned"
   }
 }

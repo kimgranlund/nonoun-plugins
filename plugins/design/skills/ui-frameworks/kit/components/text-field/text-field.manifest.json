@@ -48,6 +48,7 @@
     "--text-field-face-read-only",
     "--text-field-ink",
     "--text-field-ink-disabled",
+    "--text-field-face-disabled",
     "--text-field-line-invalid",
     "--text-field-height",
     "--text-field-inset",
@@ -78,8 +79,8 @@
   ],
   "targets": {
     "web-components": "built",
-    "react": "planned",
-    "svelte": "planned",
+    "react": "built",
+    "svelte": "built",
     "solid": "planned"
   }
 }

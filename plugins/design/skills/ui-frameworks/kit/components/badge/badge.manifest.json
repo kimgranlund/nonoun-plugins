@@ -45,6 +45,7 @@
     "--badge-ink",
     "--badge-height",
     "--badge-inset",
+    "--badge-gap",
     "--badge-radius"
   ],
   "behaviours": [],

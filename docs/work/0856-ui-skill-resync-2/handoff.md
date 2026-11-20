@@ -38,7 +38,7 @@ router: .sdlc/AGENTS.md  # how to claim and close this ticket
 - For each of the five, `diff -rq --exclude .git --exclude .gitignore --exclude .DS_Store --exclude node_modules --exclude agents /Volumes/kimba/.claude/skills/<name> plugins/design/skills/<name>` prints nothing, and `test -f plugins/design/skills/ui-geometry/agents/openai.yaml` exits 0.
 - `node --test` exits 0 in `ui-geometry`; `node scripts/check.mjs` exits 0 in `ui-materials`; `node scripts/manifests.mjs --check` and `node scripts/lint-recipes.mjs` exit 0 in `ui-frameworks` (or the commands its synced SKILL.md now names, stated in the report); any test `ui-content/scripts` ships exits 0.
 - `node scripts/check-build.mjs` exits 0 in `component-variants`, `npm test` exits 0 in `ui-kit-inspector/examples/inspector-panel`, and `node scripts/generate-geometry.mjs --check` exits 0 in `wireframe-review`.
-- `SDLC_ALLOW_STALE_PLUGIN=1 python3 plugins/sdlc/scripts/check.py` exits 0, `python3 scripts/check-packaging.py` exits 0 and `git diff --check` is clean.
+- `SDLC_ALLOW_STALE_PLUGIN=1 python3 plugins/sdlc/scripts/check.py` exits 0, `python3 scripts/check-packaging.py` exits 0 and `git diff --check $SDLC_BASE_SHA -- . ':!plugins/design/skills/ui-frameworks'` is clean (replan: two synced `ui-frameworks` source files end in a blank line, and synced files are not hand-edited).
 
 ## Constraints
 - Never write under `/Volumes/kimba`.

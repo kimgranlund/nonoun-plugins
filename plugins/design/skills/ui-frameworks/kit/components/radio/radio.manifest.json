@@ -39,7 +39,7 @@
     "root": {
       "kind": "root",
       "material": null,
-      "note": "Holds the author's label text and draws no face of its own."
+      "note": "Holds the author's label text and draws no face and no focus ring of its own. In a segmented group it is the segment: no face at rest, its ink taken from the group; while checked it is the anchor of the group's thumb, which is its raised face (C32), and paints none of its own; there it draws the focus ring, inside itself."
     },
     "well": {
       "kind": "pseudo",
@@ -49,7 +49,7 @@
         "relief": "recessed",
         "face": "neutral"
       },
-      "note": "Round."
+      "note": "Round, the full icon size of ui-geometry (a.full, one q more than a.md). Keyboard focus draws the ring round it. Not drawn in a segmented group, where ::before has no paint and is the segment's hit area over the track's padding."
     },
     "bead": {
       "kind": "pseudo",
@@ -59,7 +59,7 @@
         "relief": "raised",
         "face": "solid"
       },
-      "note": "Shown while checked."
+      "note": "Shown while checked: the radio-dot row, half the a.md glyph of the well's icon box, centred. Not generated in a segmented group."
     }
   },
   "tokens": [
@@ -67,6 +67,7 @@
     "--radio-face-hover",
     "--radio-face-active",
     "--radio-face-checked",
+    "--radio-face-checked-disabled",
     "--radio-ink",
     "--radio-ink-disabled",
     "--radio-height",
@@ -86,8 +87,8 @@
   ],
   "targets": {
     "web-components": "built",
-    "react": "planned",
-    "svelte": "planned",
+    "react": "built",
+    "svelte": "built",
     "solid": "planned"
   }
 }

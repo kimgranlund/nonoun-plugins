@@ -1,0 +1,219 @@
+@layer reset, base, tokens, recipes, utilities;
+
+/* The recipe of <ui-date-field>. Its rules: J114, and J77 that J113 cites, in docs/specs/patterns.md. Its shape:
+   docs/specs/css-contract.md. Its conditions: references/states.json.
+   ui-materials: the root is a field, base layer, recessed relief, neutral face, painted as the text field: the
+   author's input fills it and draws nothing of its own, the focus ring is on the root while focus is inside it, an
+   invalid field has a ring of the critical colour, a disabled one fainter ink. Read-only (J77, D104) is the etched
+   fill with the etched shadow; its condition also holds for a root whose input carries readonly, so it paints before
+   definition. Disabled wins over read-only, as in the spinbutton. A disabled field is its own, third face: the disabled ground with the quiet line
+   (the recess's ring) in place of the field's strong ring, and the disabled ink; nothing fades (C33).
+   ui-geometry: a control's height and radius, the text at the text edge (controls.control.t), no narrower than a
+   tooltip's width, as the text field. The toggle is a square of the pointer's hit target
+   (controls.target.t_hit-pointer) at the end, centred on the height with the radius concentric to the field's. Its
+   room is held as the root's end padding and it is placed in it absolutely, so the field has its size before the
+   element is defined and creates it (U1). While read-only the toggle is hidden in the same room.
+   The mark is Phosphor "calendar-blank", regular weight (MIT, phosphoricons.com), drawn as a border in the ink seen
+   through a mask, as the icon is, so that forced colours keep it. The kit's icon glyphs cannot be read from another
+   element's rule, hence the copy.
+   The popup: a raised overlay panel, the overlay face and shadow with a popover's padding and radius, below the
+   field, start edges aligned, above it where there is no room below. The root is the anchor (D77): anchor-scope
+   keeps its name to it, so each popup finds its own field. The same rules place a popup written open before the
+   element is defined, and keep a closed one from taking room.
+   In forced colours the field keeps a boundary in FieldText, dashed while read-only, the popup an outline in
+   CanvasText; WebKit keeps shadows, hence --_shadow: none. */
+@layer recipes {
+  @scope ([data-ui="date-field"]) {
+    :where(:scope) {
+      --_face: var(--date-field-face, var(--recessed-face));
+      --_face-hover: var(--date-field-face-hover, var(--date-field-face, var(--colors-bg-muted-hover)));
+      --_shadow: var(--field-shadow);
+      --_face-read-only: var(--date-field-face-read-only, var(--etched-face));
+      --_shadow-read-only: var(--etched-shadow);
+      --_ink: var(--date-field-ink, var(--ink));
+      --_ink-disabled: var(--date-field-ink-disabled, var(--ink-faint));
+      --_face-disabled: var(--date-field-face-disabled, var(--colors-bg-disabled));
+      --_shadow-disabled: var(--recessed-shadow);
+      --_line-invalid: var(--date-field-line-invalid, var(--colors-critical-solid));
+      --_height: var(--date-field-height, var(--controls-control-h));
+      --_inset: var(--date-field-inset, var(--controls-control-t));
+      --_gap: var(--date-field-gap, var(--controls-control-i));
+      --_radius: var(--date-field-radius, var(--controls-curvature-r));
+      --_width: var(--collections-width-tooltip);
+      --_button: var(--controls-target-t_hit-pointer);
+      --_button-radius: var(--controls-curvature-r_o);
+      --_button-face-hover: var(--raised-face);
+      --_button-face-active: var(--pressed-face);
+      --_glyph: var(--controls-icon-a-md);
+      --_popup-face: var(--date-field-popup-face, var(--overlay-face));
+      --_popup-shadow: var(--overlay-shadow);
+      --_popup-inset: var(--date-field-popup-inset, var(--containers-frame-nest-f-0-25-depth));
+      --_popup-radius: var(--date-field-popup-radius, var(--containers-curvature-nest-f-0-25-in-card-4));
+      --_popup-gap: var(--date-field-popup-gap, var(--collections-gap-popup-offset-from-its-trigger));
+      --_text: var(--unit-type-body-md);
+      --_ring: var(--colors-focus-ring);
+      --_ring-width: var(--controls-focus-ring-width-w);
+      --_ring-offset: var(--controls-focus-ring-offset-o);
+      --_border: var(--unit-border-b);
+      --_calendar: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256'%3E%3Cpath d='M208,32H184V24a8,8,0,0,0-16,0v8H88V24a8,8,0,0,0-16,0v8H48A16,16,0,0,0,32,48V208a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V48A16,16,0,0,0,208,32ZM72,48v8a8,8,0,0,0,16,0V48h80v8a8,8,0,0,0,16,0V48h24V80H48V48ZM208,208H48V96H208V208Z'/%3E%3C/svg%3E");
+    }
+
+    /* The recipe's own boxes are border boxes, with or without a reset (C31). */
+    :where(:scope, [data-part]) { box-sizing: border-box; }
+    :scope {
+      display: inline-flex;
+      align-items: center;
+      position: relative;
+      min-block-size: var(--_height);
+      min-inline-size: var(--_width);
+      padding-inline-start: var(--_inset);
+      padding-inline-end: calc(var(--_gap) + var(--_button) + (var(--_height) - var(--_button)) / 2);
+      border-radius: var(--_radius);
+      background-color: var(--_face);
+      box-shadow: var(--_shadow);
+      color: var(--_ink);
+      font-size: var(--_text);
+      vertical-align: middle;
+      cursor: text;
+      anchor-name: --date-field;
+      anchor-scope: --date-field;
+    }
+    :scope:where([hidden]:not([hidden="until-found"])) { display: none; }
+
+    :scope > [data-part="input"] {
+      flex: 1;
+      align-self: stretch;
+      min-inline-size: 0;
+      margin: 0;
+      padding: 0;
+      border: 0;
+      border-radius: 0;
+      outline: none;
+      background: none;
+      box-shadow: none;
+      font: inherit;
+      color: inherit;
+    }
+    :scope > [data-part="toggle"] {
+      display: grid;
+      place-items: center;
+      position: absolute;
+      inset-block: 0;
+      inset-inline-end: calc((var(--_height) - var(--_button)) / 2);
+      margin-block: auto;
+      inline-size: var(--_button);
+      block-size: var(--_button);
+      border-radius: var(--_button-radius);
+      cursor: default;
+      user-select: none;
+    }
+    :scope > [data-part="toggle"]::before {
+      content: "";
+      box-sizing: border-box;
+      inline-size: var(--_glyph);
+      block-size: var(--_glyph);
+      border: 0 solid currentColor;
+      border-inline-start-width: var(--_glyph);
+      mask: var(--_calendar) center / contain no-repeat;
+    }
+    :scope > [data-part="popup"] {
+      display: none;
+      position: fixed;
+      margin-block: var(--_popup-gap);
+      margin-inline: 0;
+      position-anchor: --date-field;
+      position-area: block-end span-inline-end;
+      position-try-fallbacks: flip-block;
+      padding: var(--_popup-inset);
+      border: 0;
+      border-radius: var(--_popup-radius);
+      overflow: visible;
+      background-color: var(--_popup-face);
+      box-shadow: var(--_popup-shadow);
+      color: var(--_ink);
+      cursor: default;
+    }
+
+    @media (hover: hover) {
+      :scope:where(:is(:hover, [data-hover]):where(:not(:is(:disabled, [disabled], [aria-disabled="true"]), :is(:checked, [aria-checked="true"], [checked]:not(input, option)), :is(input[type="checkbox"]:indeterminate, [aria-checked="mixed"], [indeterminate]), :is([aria-pressed="true"], [pressed]), :is([aria-selected="true"], [selected]:not(option)), :is([aria-current]:not([aria-current="false"], [aria-current=""]), [current]), :is([aria-expanded="true"], [expanded]), :is([open], :popover-open)))) { background-color: var(--_face-hover); }
+      :scope > [data-part="toggle"]:where(:is(:hover, [data-hover]):where(:not(:is(:disabled, [disabled], [aria-disabled="true"]), :is(:checked, [aria-checked="true"], [checked]:not(input, option)), :is(input[type="checkbox"]:indeterminate, [aria-checked="mixed"], [indeterminate]), :is([aria-pressed="true"], [pressed]), :is([aria-selected="true"], [selected]:not(option)), :is([aria-current]:not([aria-current="false"], [aria-current=""]), [current]), :is([aria-expanded="true"], [expanded]), :is([open], :popover-open)))) { background-color: var(--_button-face-hover); }
+    }
+    /* The focus is on a part, so the root rises itself (C20): no later sibling paints over its ring. */
+    :scope:where(:focus-within) { z-index: 1; }
+    :scope:where(:focus-within) {
+      outline: var(--_ring-width) solid var(--_ring);
+      outline-offset: var(--_ring-offset);
+    }
+    :scope > [data-part="toggle"]:where(:is(:active, [data-active]):where(:not(:is(:disabled, [disabled], [aria-disabled="true"])))) { background-color: var(--_button-face-active); }
+    :scope:where(:is([open], :popover-open)) > [data-part="popup"] { display: block; }
+    :scope:where(:is([aria-invalid]:not([aria-invalid="false"]), :is(input, select, textarea):user-invalid, [invalid])) { box-shadow: inset 0 0 0 var(--_border) var(--_line-invalid); }
+    :scope:where(:is([readonly], [aria-readonly="true"], :has(> [data-part="input"][readonly]))) {
+      background-color: var(--_face-read-only);
+      box-shadow: var(--_shadow-read-only);
+    }
+    :scope:where(:is([readonly], [aria-readonly="true"], :has(> [data-part="input"][readonly]))) > [data-part="toggle"] { visibility: hidden; }
+    :scope:where(:is(:disabled, [disabled], [aria-disabled="true"])) {
+      background-color: var(--_face-disabled);
+      box-shadow: var(--_shadow-disabled);
+      color: var(--_ink-disabled);
+      cursor: default;
+    }
+    :scope:where(:is(:disabled, [disabled], [aria-disabled="true"])) > [data-part="toggle"] { visibility: visible; }
+    :scope > [data-part="input"]:where(:is(:disabled, [disabled], [aria-disabled="true"])) { color: var(--_ink-disabled); }
+
+    @media (forced-colors: active) {
+      :where(:scope) {
+        --_face: Field;
+        --_face-hover: Field;
+        --_face-read-only: Canvas;
+        --_shadow-read-only: none;
+        --_shadow: none;
+        --_ink: FieldText;
+        --_ink-disabled: GrayText;
+        --_face-disabled: Field;
+        --_shadow-disabled: none;
+        --_line-invalid: Mark;
+        --_ring: Highlight;
+        --_button-face-hover: Field;
+        --_button-face-active: Field;
+        --_popup-face: Canvas;
+        --_popup-shadow: none;
+      }
+      :scope {
+        outline: var(--_border) solid FieldText;
+        outline-offset: calc(var(--_border) * -1);
+      }
+      :scope > [data-part="popup"] {
+        color: CanvasText;
+        outline: var(--_border) solid CanvasText;
+        outline-offset: calc(var(--_border) * -1);
+      }
+      /* Hover (D124): the ring one border width heavier than at rest, in the boundary colour, inside; no fill, never Highlight. */
+      @media (hover: hover) {
+        :scope:where(:is(:hover, [data-hover]):where(:not(:is(:disabled, [disabled], [aria-disabled="true"]), :is(:checked, [aria-checked="true"], [checked]:not(input, option)), :is(input[type="checkbox"]:indeterminate, [aria-checked="mixed"], [indeterminate]), :is([aria-pressed="true"], [pressed]), :is([aria-selected="true"], [selected]:not(option)), :is([aria-current]:not([aria-current="false"], [aria-current=""]), [current]), :is([aria-expanded="true"], [expanded]), :is([open], :popover-open)))) {
+          outline: calc(var(--_border) * 2) solid FieldText;
+          outline-offset: calc(var(--_border) * -2);
+        }
+        :scope > [data-part="toggle"]:where(:is(:hover, [data-hover]):where(:not(:is(:disabled, [disabled], [aria-disabled="true"]), :is(:checked, [aria-checked="true"], [checked]:not(input, option)), :is(input[type="checkbox"]:indeterminate, [aria-checked="mixed"], [indeterminate]), :is([aria-pressed="true"], [pressed]), :is([aria-selected="true"], [selected]:not(option)), :is([aria-current]:not([aria-current="false"], [aria-current=""]), [current]), :is([aria-expanded="true"], [expanded]), :is([open], :popover-open)))) {
+          outline: var(--_border) solid ButtonText;
+          outline-offset: calc(var(--_border) * -1);
+        }
+      }
+      :scope:where(:focus-within) {
+        outline: var(--_ring-width) solid var(--_ring);
+        outline-offset: var(--_ring-offset);
+      }
+      :scope:where(:is([aria-invalid]:not([aria-invalid="false"]), :is(input, select, textarea):user-invalid, [invalid])) {
+        box-shadow: none;
+        outline-color: var(--_line-invalid);
+      }
+      :scope:where(:is([readonly], [aria-readonly="true"], :has(> [data-part="input"][readonly]))) { outline-style: dashed; }
+      :scope:where(:is(:disabled, [disabled], [aria-disabled="true"])) {
+        outline-color: GrayText;
+        outline-style: solid;
+      }
+      /* The ring stays solid on a read-only field. */
+      :scope:where(:focus-within) { outline-style: solid; }
+    }
+  }
+}

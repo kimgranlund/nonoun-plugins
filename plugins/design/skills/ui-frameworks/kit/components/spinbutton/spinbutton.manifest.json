@@ -82,6 +82,7 @@
     "--spinbutton-face-read-only",
     "--spinbutton-ink",
     "--spinbutton-ink-disabled",
+    "--spinbutton-face-disabled",
     "--spinbutton-line-invalid",
     "--spinbutton-height",
     "--spinbutton-inset",
@@ -122,8 +123,8 @@
   ],
   "targets": {
     "web-components": "built",
-    "react": "planned",
-    "svelte": "planned",
+    "react": "built",
+    "svelte": "built",
     "solid": "planned"
   }
 }

@@ -21,14 +21,21 @@
     "root": {
       "kind": "root",
       "material": null,
-      "note": "Full width, rows as tall as ui-geometry's row, a hairline under each row, header cells in the muted ink."
+      "note": "Full width, rows as tall as ui-geometry's row, a hairline under each row; the column headers are labels closed off by the strong line."
+    },
+    "header": {
+      "kind": "author",
+      "material": null,
+      "note": "The column headers: the author's th cells in the thead, not marked. A label printed on the ground, with no face: ui-geometry's label type in a medium weight and the muted ink, the cell's height, inset and alignment, and the strong line under the last header row. A th in the body is a row header: data in the ink, with the same weight."
     }
   },
   "tokens": [
     "--table-ink",
     "--table-line",
     "--table-height",
-    "--table-inset"
+    "--table-inset",
+    "--table-header-ink",
+    "--table-header-line"
   ],
   "behaviours": [],
   "keys": {},

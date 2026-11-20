@@ -40,15 +40,15 @@
     "root": {
       "kind": "root",
       "material": null,
-      "note": "A row. highlighted: a tint. selected: face solid, no relief."
+      "note": "A row. highlighted: its listbox's thumb is its tint (C32); the option names itself the thumb's anchor and paints no face of its own for it. selected: face solid, no relief, over the thumb."
     }
   },
   "tokens": [
     "--option-face-hover",
-    "--option-face-highlighted",
     "--option-face-active",
     "--option-face-selected",
     "--option-ink-selected",
+    "--option-face-selected-disabled",
     "--option-ink-disabled",
     "--option-height",
     "--option-inset",
@@ -62,8 +62,8 @@
   ],
   "targets": {
     "web-components": "built",
-    "react": "planned",
-    "svelte": "planned",
+    "react": "built",
+    "svelte": "built",
     "solid": "planned"
   }
 }

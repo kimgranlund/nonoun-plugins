@@ -5,7 +5,7 @@ description: Derives every length of a UI from a root font size n and one unit q
 
 # UI geometry
 
-One input, the scope font size n in px, and four dials: density δ, curvature κ (one each for controls, frames, cards and panels), card depth d, and a preset. Every length is a multiple of one unit q, snapped to whole px by default (crisp). Answer in symbols and multiples of q first, then px at n. The standard preset is the default, not the system: every equation takes any preset's constants.
+One input, the scope font size n in px, and four dials: density δ, curvature κ (one each for controls, frames, cards and panels), card depth d, and a preset. Every length is a multiple of one unit q, snapped to whole px by default (crisp). Answer in symbols and multiples of q first, then px at n. The default preset is **ladder** (q = ¾n − 6.75, so h = 8q = 6n − 54: 30px controls at 14, 24 at 13, 36 at 15, 48 at 17, 60 at 19); **standard** (q = n/2 − 3, h = 32 at 14, alias `standard-32`) is the other shipped preset, and the one the worked values in `references/equations.md` and the archetypes use. Every equation takes any preset's constants.
 
 Contents: [Route](#route) · [Axioms](#axioms) · [Presets](#presets) · [Procedure](#procedure) · [Identities](#identities) · [Tiers](#tiers) · [Fitting a project](#fitting-a-project) · [Commands](#commands) · [Files](#files)
 
@@ -39,11 +39,11 @@ Read the row whose question is open. Paths are relative to this file.
 
 ## Presets
 
-A preset fixes the constants. The equations never change.
+A preset fixes the constants. The equations never change. **ladder** is standard on another unit, every other constant shared:
 
 | Constant | Meaning | standard |
 |---|---|---|
-| a_q, b_q | unit q = a_q·n + b_q (preset key `unit.a`, `unit.b`) | ½, −3 (q = 4px at 14) |
+| a_q, b_q | unit q = a_q·n + b_q (preset key `unit.a`, `unit.b`) | ½, −3 (q = 4px at 14); ladder ¾, −6.75 (q = 3.75px, h = 30 at 14) |
 | I_δ | inset by density | 1 / 1.5 / 2 |
 | g_c | control gutter | ½ |
 | S | slot | 5 |
@@ -72,7 +72,7 @@ To define another system, write a JSON file with any of the keys from `PRESETS.s
 
 ## Procedure
 
-1. Fix the preset, n, δ, κ for each tier and d. The defaults are standard, δ = default, κ = κ_s for controls, lists and panels, κ = ½ for cards (so R = d + 2q at default density), and d = 4.
+1. Fix the preset, n, δ, κ for each tier and d. The defaults are ladder (the CLI's default; `--preset standard` for the 32px system, which an `--archetype` starts from), δ = default, κ = κ_s for controls, lists and panels, κ = ½ for cards (so R = d + 2q at default density), and d = 4.
 2. Compute q, I, m_c and h. Then compute the tier that is asked for, from `references/equations.md`.
 3. For a full table, run `node scripts/derive.mjs --n <n> --density <δ> --kappa <κ>`. Add `--kappa-control`, `--kappa-frame`, `--kappa-card` or `--kappa-panel` to split tiers. Use `--card <d>`, `--width <px> --columns <N>` for a grid, `--preset <file.json>` for another system, `--archetype <name>` to start from an archetype's n, density and κ and print its bands beside the derived values, and `--json` for data. Use `--viewport <px>` to take n from the fluid scale and `--dpr <x>` to list lengths off the device grid. For the padding, gap and radius of every container, inside out, run `node scripts/derive.mjs --containers [--card 4 --nest 0.5]` (section 19); popover and dialog default to ¾d and 1½d, and `--popover`/`--dialog` fix them. For shadows run `node scripts/derive.mjs --elevation <level|s|all> [--layers 5] [--scheme dark]`.
 4. Check that the identities below hold. A value that breaks one is wrong.
@@ -87,10 +87,12 @@ To define another system, write a JSON file with any of the keys from `PRESETS.s
 - For a card at d > 0 and κ_card > 0, R − d = min(r(κ_card), soft) (at κ_card 0 the card is square, R = 0): 2q at the standard preset's κ_card ½, so every card's content corner is 2q. Checked: "standard cards default to κ ½".
 - Nesting at f: the child has depth (1 − f)·d and radius R − f·d, so depth is conserved. Checked: "nesting keeps the parent curve".
 - No radius is negative or larger than half its box. Checked: "chains never go negative at square".
+- Mixed corners stay at or under h/2, or the browser scales all of them and a small one renders square (`references/equations.md` › 5; runs › 7). Measure the rendered shape.
 - Grid: N·w + (N − 1)·G + 2M = W. Checked: "grid columns fill the width exactly".
 - Grid for several counts: margin = gutter = g·u, u = W / (U + 2g); n columns when n divides U + g (`--field`, `references/equations.md` › 8). Checked: "every listed count fills the field in whole units".
 - Focus ring outer radius = r + o + w. A border leaves R − b and d − b inside. Checked: `checkIdentities()`, "focus ring" and "borders eat padding and radius".
 - A target never shrinks the box: expansion = max(0, (T_hit − h)/2). Checked: "hit targets".
+- Ladder: crisp h = 6n − 54 at n 12, 13, 14, 15, 17 and 19 (18 … 60), h = S + 2I. Checked: "ladder (the default)", with standard at 14 as the negative control.
 - Crisp: at every n, I and g_c snap to whole px and S to even px (at 16px: S 24, I 8, h 40), and depths and gaps snap to whole px. Only radii may land on half px at odd q. Set `crisp: false` for exact q. Checked: "crisp: at 16px every padding, gap and height is a whole px".
 - Elevation: blur_k = β·y_k. Σα_k = B_α at every level and every L. α falls with k, so the contact layer is the darkest. Layer k_a sits at e.y·s. Checked: the five "elevation" tests.
 - Gaps: inside a padded container no gap exceeds its largest padding. Checked: "no gap exceeds its container's padding".

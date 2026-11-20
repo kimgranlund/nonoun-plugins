@@ -136,7 +136,7 @@ Each state id is also the name of a Panda condition, in camel case. Four conditi
 
 Two words mean different things in ui-materials, and the table carries the mapping:
 
-- **pressed.** In ARIA and here, a toggle button that is on. In ui-materials, the moment of being pressed down, which is **active** here.
+- **pressed.** In ARIA and here, a toggle button that is on. In ui-materials, the moment of being pressed down, which is **active** here. So a solid part in the active state, the primary button, takes ui-materials' pressed solid, `--solid-pressed-face`, unless the consumer has recoloured it with its base face token, which then holds while active too (D122).
 - **active.** Here, being activated right now. In ui-materials, "live / active" is an indicator that is lit.
 
 <!-- generated:mapping:start -->

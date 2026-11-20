@@ -29,6 +29,11 @@
       "kind": "author",
       "material": null,
       "note": "A native table the author writes and marks with data-part=\"table\". It gets the grid role, or treegrid, and is one stop in the Tab order."
+    },
+    "header": {
+      "kind": "author",
+      "material": null,
+      "note": "The column headers: the author's th cells in the thead, not marked. A label printed on the ground, with no face: ui-geometry's label type in a medium weight and the muted ink, the cell's height, inset and alignment, and the strong line under the last header row. A th in the body is a row header: data in the ink, with the same weight."
     }
   },
   "tokens": [
@@ -36,7 +41,9 @@
     "--grid-line",
     "--grid-height",
     "--grid-inset",
-    "--grid-face-hover"
+    "--grid-face-hover",
+    "--grid-header-ink",
+    "--grid-header-line"
   ],
   "behaviours": [
     "grid-focus"
@@ -82,8 +89,8 @@
   ],
   "targets": {
     "web-components": "built",
-    "react": "planned",
-    "svelte": "planned",
+    "react": "built",
+    "svelte": "built",
     "solid": "planned"
   }
 }

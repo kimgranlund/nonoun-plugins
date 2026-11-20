@@ -1,0 +1,63 @@
+{
+  "$schema": "../../../references/manifest.schema.json",
+  "schema": 1,
+  "id": "toaster",
+  "kind": "component",
+  "family": "toast",
+  "tier": "layout",
+  "pattern": "https://www.w3.org/WAI/ARIA/apg/patterns/landmarks/",
+  "summary": "The place toasts show: a stack in a corner of the window, above everything else.",
+  "role": "region",
+  "focus": "none",
+  "tabindex": null,
+  "formAssociated": false,
+  "attributes": {
+    "placement": {
+      "type": "enum",
+      "values": [
+        "block-end inline-end",
+        "block-end inline-start",
+        "block-start inline-end",
+        "block-start inline-start"
+      ],
+      "default": "block-end inline-end",
+      "kind": "variant",
+      "description": "The corner of the window the stack sits in."
+    }
+  },
+  "resets": [],
+  "states": [],
+  "parts": {
+    "root": {
+      "kind": "root",
+      "material": null,
+      "note": "A stack fixed to a corner of the window, in the top layer while it holds an open toast. It paints nothing itself."
+    }
+  },
+  "tokens": [
+    "--toaster-gap",
+    "--toaster-inset"
+  ],
+  "behaviours": [],
+  "keys": {},
+  "events": {},
+  "guidance": [
+    {
+      "topic": "naming",
+      "text": "It is named Notifications unless the author wrote aria-label or aria-labelledby."
+    },
+    {
+      "topic": "coordination",
+      "text": "Add a toast with `open` to the toaster to show it; the newest is nearest the corner."
+    }
+  ],
+  "notYet": [
+    "A limit on how many toasts show at once."
+  ],
+  "targets": {
+    "web-components": "built",
+    "react": "built",
+    "svelte": "built",
+    "solid": "planned"
+  }
+}

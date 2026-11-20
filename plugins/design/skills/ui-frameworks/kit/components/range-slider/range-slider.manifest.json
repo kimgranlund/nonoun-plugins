@@ -96,7 +96,7 @@
         "relief": "recessed",
         "face": "neutral"
       },
-      "note": "The share between the two thumbs is solid."
+      "note": "A recessed tray as tall as a thumb and fully rounded. The share between the two thumbs is solid."
     },
     "fill": {
       "kind": "pseudo",
@@ -112,6 +112,7 @@
   "tokens": [
     "--range-slider-track-face",
     "--range-slider-fill-face",
+    "--range-slider-fill-face-disabled",
     "--range-slider-low-face",
     "--range-slider-high-face",
     "--range-slider-height"
@@ -140,8 +141,8 @@
   ],
   "targets": {
     "web-components": "built",
-    "react": "planned",
-    "svelte": "planned",
+    "react": "built",
+    "svelte": "built",
     "solid": "planned"
   }
 }

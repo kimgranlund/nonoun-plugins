@@ -15,8 +15,8 @@ import { rewrite, variantsOf } from './rewrite-recipe.mjs';
 import { readManifests } from './manifests.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-/** The framework targets, the folder of each under kit/. Svelte and Solid join when they are built. */
-export const TARGETS = ['react'];
+/** The framework targets, the folder of each under kit/. Solid joins when it is built. */
+export const TARGETS = ['react', 'svelte'];
 const PREFIX = 'ui';
 /** native.css resets what a native root brings (X11). */
 const SHARED = ['reset.css', 'native.css', 'tokens.css', 'icons.css'];

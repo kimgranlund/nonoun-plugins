@@ -53,10 +53,17 @@
         "face": "neutral"
       },
       "note": "A frame padded like a menu, with its options stacked inside."
+    },
+    "thumb": {
+      "kind": "pseudo",
+      "pseudo": "::before",
+      "material": null,
+      "note": "The tint of the highlighted option, the row the keys point at, while the listbox has focus: the tint of a row under the pointer. It takes the box of the highlighted option, its anchor, and moves to the next one highlighted (C32); it scrolls with the options and is clipped to the frame. A selected option's own face covers it. Drawn as a pseudo-element, so it is in place before the elements are defined."
     }
   },
   "tokens": [
     "--listbox-face",
+    "--listbox-thumb-face",
     "--listbox-ink",
     "--listbox-ink-disabled",
     "--listbox-inset",
@@ -109,8 +116,8 @@
   ],
   "targets": {
     "web-components": "built",
-    "react": "planned",
-    "svelte": "planned",
+    "react": "built",
+    "svelte": "built",
     "solid": "planned"
   }
 }

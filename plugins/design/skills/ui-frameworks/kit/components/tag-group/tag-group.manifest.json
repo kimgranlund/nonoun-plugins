@@ -1,0 +1,66 @@
+{
+  "$schema": "../../../references/manifest.schema.json",
+  "schema": 1,
+  "id": "tag-group",
+  "kind": "component",
+  "family": "tag-group",
+  "tier": "collections",
+  "pattern": "https://www.w3.org/WAI/ARIA/apg/patterns/toolbar/",
+  "summary": "A set of tags the user can walk through and remove with the keyboard.",
+  "role": "group",
+  "focus": "none",
+  "tabindex": null,
+  "formAssociated": false,
+  "attributes": {
+    "disabled": {
+      "type": "boolean",
+      "state": "disabled",
+      "description": "No tag can be removed or focused."
+    }
+  },
+  "resets": [],
+  "states": [
+    "disabled"
+  ],
+  "parts": {
+    "root": {
+      "kind": "root",
+      "material": null,
+      "note": "A row of tags that wraps. One remove control at a time is its Tab stop."
+    }
+  },
+  "tokens": [
+    "--tag-group-gap"
+  ],
+  "behaviours": [
+    "roving-focus"
+  ],
+  "keys": {
+    "ArrowRight / ArrowLeft": "The remove control of the next or previous tag.",
+    "Home / End": "The first or last one.",
+    "Delete / Backspace": "Asks the page to remove the focused tag."
+  },
+  "events": {
+    "remove": "Dispatched when the user asks to remove a tag, by a press on its remove control or by Delete or Backspace. Its detail names the tag. The page removes it."
+  },
+  "guidance": [
+    {
+      "topic": "naming",
+      "text": "The author names the group with aria-label or aria-labelledby, and each remove control for what it removes."
+    },
+    {
+      "topic": "coordination",
+      "text": "The tags are the kit's tag recipe, each with a remove control. The page removes a tag when it hears `remove`; the group then moves focus to a neighbour."
+    }
+  ],
+  "notYet": [
+    "Choosing tags.",
+    "Adding a tag by typing."
+  ],
+  "targets": {
+    "web-components": "built",
+    "react": "built",
+    "svelte": "built",
+    "solid": "planned"
+  }
+}

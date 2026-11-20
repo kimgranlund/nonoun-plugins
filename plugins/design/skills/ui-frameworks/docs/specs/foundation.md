@@ -189,7 +189,7 @@ The spike needs four: `press`, `rovingFocus`, `dismiss` and `typeahead`. All fou
 |---|---|---|---|
 | B6 | `rovingFocus` shall keep one item that can take focus in the Tab order, with `tabindex="0"`, and every other such item out of it, with `tabindex="-1"`. | APG: roving tabindex; ui-interaction-dev `focus.one-stop` | Keyboard test in three engines |
 | B7 | While focus is inside the root, that one item shall be the item that has focus. While focus is outside, it shall be the item the component names as current, when it names one. | APG tabs: Tab lands on the selected tab | Keyboard test |
-| B8 | The arrow keys of the root's orientation shall move focus to the next or the previous item and wrap at the ends, and in a horizontal root they shall follow the writing direction. Home and End shall move focus to the first and the last item. The behaviour shall prevent the default action of a key that moved focus and shall leave every other key alone. | APG | Keyboard test, with a root that runs right to left |
+| B8 | The arrow keys of the root's orientation shall move focus to the next or the previous item and wrap at the ends, and in a horizontal root they shall follow the writing direction. Home and End shall move focus to the first and the last item. The behaviour shall prevent the default action of a key that moved focus and shall leave every other key alone, a key whose default action another handler has already prevented among them: the component that mounts it can then take a key for itself without hiding it from the page (D111). | APG | Keyboard test, with a root that runs right to left |
 | B9 | An item the component tells it to skip, such as a disabled tab, shall have no `tabindex` and shall take no focus from the keys. | Without a tabindex a click does not focus it either | Keyboard and pointer test |
 | B10 | When an item is added, is removed or changes a watched attribute, the behaviour shall bring the tabindex values up to date without being called, and shall write an attribute only when its value differs. | D70, D12: a behaviour returns only its cleanup, so the DOM is its source | Test that adds and removes items, and one that counts attribute writes |
 
@@ -263,13 +263,13 @@ Which rules have a check that runs today. A test names the rule it covers at the
 | Modules (M1 to M5) | M1, M2, M3, M4, M5 · 4 tests | none |
 | Signals kernel (K1 to K11) | K1, K2, K3, K4, K5, K6, K7, K8, K9, K10, K11 · 15 tests | none |
 | Props and attributes (E1 to E8) | E1, E2, E3, E4, E5, E6, E7, E8 · 10 tests | none |
-| Lifecycle (L1 to L7) | L1, L2, L3, L4, L5, L6, L7 · 51 tests | none |
-| Managed attributes (A1 to A4) | A1, A2, A3, A4 · 26 tests | none |
-| Parts (P1 to P6) | P1, P2, P3, P4, P5, P6 · 27 tests | none |
-| Before the script has run (U1 to U4) | U1, U2, U3 · 45 tests | U4 |
-| UIFormElement (F1 to F15) | F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12, F13, F14, F15 · 64 tests | none |
-| Behaviours (B1 to B20) | B1, B2, B3, B4, B5, B6, B7, B8, B9, B10, B11, B12, B13, B14, B15, B16, B17, B18, B19, B20 · 115 tests | none |
-| Coordinating components (G1 to G16) | G1, G2, G3, G4, G5, G6, G7, G8, G9, G10, G11, G12, G13, G14, G15, G16 · 116 tests | none |
+| Lifecycle (L1 to L7) | L1, L2, L3, L4, L5, L6, L7 · 89 tests | none |
+| Managed attributes (A1 to A4) | A1, A2, A3, A4 · 38 tests | none |
+| Parts (P1 to P6) | P1, P2, P3, P4, P5, P6 · 44 tests | none |
+| Before the script has run (U1 to U4) | U1, U2, U3 · 54 tests | U4 |
+| UIFormElement (F1 to F15) | F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12, F13, F14, F15 · 96 tests | none |
+| Behaviours (B1 to B20) | B1, B2, B3, B4, B5, B6, B7, B8, B9, B10, B11, B12, B13, B14, B15, B16, B17, B18, B19, B20 · 118 tests | none |
+| Coordinating components (G1 to G16) | G1, G2, G3, G4, G5, G6, G7, G8, G9, G10, G11, G12, G13, G14, G15, G16 · 221 tests | none |
 | Defining (R1 to R4) | R1, R2, R3, R4 · 5 tests | none |
 <!-- generated:coverage:end -->
 

@@ -1,0 +1,213 @@
+@layer reset, base, tokens, recipes, utilities;
+
+/* The recipe of <ui-calendar>. Its rules: J108 in docs/specs/patterns.md. Its shape: docs/specs/css-contract.md.
+   Its conditions: references/states.json.
+   ui-materials: the calendar has no face of its own and takes the face it sits on. A day has no face at rest; under
+   the pointer it has the tint of a row, pressed the pressed face, and chosen the accent solid with the ink on it, as
+   a selected option has. Today is underlined, so that it is marked without colour alone. The days of the
+   neighbouring months are in the muted ink, a day outside min and max in the faint ink with no hover.
+   ui-geometry: seven columns of square days, each of a control's height (controls.control.h), with the
+   radius of a control; the root is as wide as the seven, from its tag alone, so defining it moves nothing sideways.
+   The header is a row of a control's height: the two buttons are squares of it, the month's name between them.
+   The head row is in the label size. The glyphs are Phosphor "caret-left" and "caret-right", regular weight (MIT,
+   phosphoricons.com), the same as icons.css names chevron-left and chevron-right, drawn as a border in the ink seen
+   through a mask, as the icon is, so that forced colours keep them; right to left, they are mirrored.
+   The focused day draws its ring inside itself, so that rings of neighbours never overlap; a button draws it
+   outside, as a button does.
+   In forced colours the chosen day is Highlight with HighlightText, the buttons keep a boundary in ButtonText, a
+   disabled day or button is GrayText, and the ring is CanvasText, HighlightText on the chosen day. WebKit does not
+   recolour outlines there, so each is said. The chosen day opts out of forcing, or Chromium's Canvas backplate covers
+   its face behind the number (C19, D124); hover is a ring one border width heavier, never Highlight (D124). */
+@layer recipes {
+  @scope (ui-calendar) {
+    :where(:scope) {
+      --_gap: var(--calendar-gap, var(--controls-gap-grouped));
+      --_ink: var(--calendar-day-ink, var(--ink));
+      --_ink-outside: var(--ink-muted);
+      --_ink-head: var(--ink-muted);
+      --_height: var(--calendar-day-height, var(--controls-control-h));
+      --_radius: var(--calendar-day-radius, var(--controls-curvature-r));
+      --_face-hover: var(--calendar-day-face-hover, var(--colors-bg-muted-hover));
+      --_face-active: var(--calendar-day-face-active, var(--pressed-face));
+      --_face-selected: var(--calendar-day-face-selected, var(--selected-face));
+      --_ink-selected: var(--calendar-day-ink-selected, var(--on-selected));
+      --_ink-disabled: var(--calendar-day-ink-disabled, var(--ink-faint));
+      --_face-selected-disabled: var(--calendar-day-face-selected-disabled, var(--colors-bg-disabled));
+      --_button-line: none;
+      --_glyph: var(--controls-icon-a-md);
+      --_text: var(--unit-scale-f);
+      --_label: var(--unit-type-label);
+      --_ring: var(--colors-focus-ring);
+      --_ring-selected: var(--colors-focus-ring);
+      --_ring-width: var(--controls-focus-ring-width-w);
+      --_ring-offset: var(--controls-focus-ring-offset-o);
+      --_border: var(--unit-border-b);
+      --_previous: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256'%3E%3Cpath d='M165.66,202.34a8,8,0,0,1-11.32,11.32l-80-80a8,8,0,0,1,0-11.32l80-80a8,8,0,0,1,11.32,11.32L91.31,128Z'/%3E%3C/svg%3E");
+      --_next: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256'%3E%3Cpath d='M181.66,133.66l-80,80a8,8,0,0,1-11.32-11.32L164.69,128,90.34,53.66a8,8,0,0,1,11.32-11.32l80,80A8,8,0,0,1,181.66,133.66Z'/%3E%3C/svg%3E");
+    }
+
+    /* The recipe's own boxes are border boxes, with or without a reset (C31). */
+    :where(:scope, [data-part]) { box-sizing: border-box; }
+    :scope {
+      display: block;
+      inline-size: calc(var(--_height) * 7);
+      color: var(--_ink);
+      font-size: var(--_text);
+    }
+    :scope:where([hidden]:not([hidden="until-found"])) { display: none; }
+
+    :scope > [data-part="header"] {
+      display: flex;
+      align-items: center;
+      block-size: var(--_height);
+      margin-block-end: var(--_gap);
+    }
+    :scope > [data-part="header"] > [data-part="title"] {
+      flex: 1;
+      min-inline-size: 0;
+      overflow: hidden;
+      font-weight: 600;
+      text-align: center;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    :scope > [data-part="header"] > [data-part="previous"],
+    :scope > [data-part="header"] > [data-part="next"] {
+      display: grid;
+      flex: none;
+      place-items: center;
+      inline-size: var(--_height);
+      block-size: var(--_height);
+      margin: 0;
+      padding: 0;
+      border: 0;
+      border-radius: var(--_radius);
+      outline: var(--_button-line);
+      background: none;
+      color: inherit;
+      font: inherit;
+      cursor: default;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+    :scope > [data-part="header"] > [data-part="previous"]::before,
+    :scope > [data-part="header"] > [data-part="next"]::before {
+      content: "";
+      box-sizing: border-box;
+      inline-size: var(--_glyph);
+      block-size: var(--_glyph);
+      border: 0 solid currentColor;
+      border-inline-start-width: var(--_glyph);
+      mask: var(--_previous) center / contain no-repeat;
+    }
+    :scope > [data-part="header"] > [data-part="next"]::before { mask-image: var(--_next); }
+    :scope:dir(rtl) > [data-part="header"] > [data-part="previous"]::before,
+    :scope:dir(rtl) > [data-part="header"] > [data-part="next"]::before { transform: scale(-1, 1); }
+
+    :scope > [data-part="grid"] {
+      inline-size: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      table-layout: fixed;
+    }
+    :scope > [data-part="grid"] > thead > tr > th {
+      block-size: var(--_height);
+      padding: 0;
+      overflow: hidden;
+      color: var(--_ink-head);
+      font-size: var(--_label);
+      font-weight: inherit;
+      text-align: center;
+      white-space: nowrap;
+    }
+    :scope > [data-part="grid"] > tbody > tr > [data-part="day"] {
+      inline-size: var(--_height);
+      block-size: var(--_height);
+      padding: 0;
+      border-radius: var(--_radius);
+      font-variant-numeric: tabular-nums;
+      text-align: center;
+      vertical-align: middle;
+      cursor: default;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+    :scope > [data-part="grid"] > tbody > tr > [data-part="day"][data-outside] { color: var(--_ink-outside); }
+
+    @media (hover: hover) {
+      :scope > [data-part="header"] > [data-part="previous"]:where(:is(:hover, [data-hover]):where(:not(:is(:disabled, [disabled], [aria-disabled="true"]), :is(:checked, [aria-checked="true"], [checked]:not(input, option)), :is(input[type="checkbox"]:indeterminate, [aria-checked="mixed"], [indeterminate]), :is([aria-pressed="true"], [pressed]), :is([aria-selected="true"], [selected]:not(option)), :is([aria-current]:not([aria-current="false"], [aria-current=""]), [current]), :is([aria-expanded="true"], [expanded]), :is([open], :popover-open)))),
+      :scope > [data-part="header"] > [data-part="next"]:where(:is(:hover, [data-hover]):where(:not(:is(:disabled, [disabled], [aria-disabled="true"]), :is(:checked, [aria-checked="true"], [checked]:not(input, option)), :is(input[type="checkbox"]:indeterminate, [aria-checked="mixed"], [indeterminate]), :is([aria-pressed="true"], [pressed]), :is([aria-selected="true"], [selected]:not(option)), :is([aria-current]:not([aria-current="false"], [aria-current=""]), [current]), :is([aria-expanded="true"], [expanded]), :is([open], :popover-open)))),
+      :scope > [data-part="grid"] > tbody > tr > [data-part="day"]:where(:is(:hover, [data-hover]):where(:not(:is(:disabled, [disabled], [aria-disabled="true"]), :is(:checked, [aria-checked="true"], [checked]:not(input, option)), :is(input[type="checkbox"]:indeterminate, [aria-checked="mixed"], [indeterminate]), :is([aria-pressed="true"], [pressed]), :is([aria-selected="true"], [selected]:not(option)), :is([aria-current]:not([aria-current="false"], [aria-current=""]), [current]), :is([aria-expanded="true"], [expanded]), :is([open], :popover-open)))) { background-color: var(--_face-hover); }
+    }
+    :scope > [data-part="header"] > [data-part="previous"]:where(:is(:focus-visible, [data-focus-visible])),
+    :scope > [data-part="header"] > [data-part="next"]:where(:is(:focus-visible, [data-focus-visible])) {
+      outline: var(--_ring-width) solid var(--_ring);
+      outline-offset: var(--_ring-offset);
+    }
+    :scope > [data-part="grid"] > tbody > tr > [data-part="day"]:where(:is(:focus-visible, [data-focus-visible])) {
+      outline: var(--_ring-width) solid var(--_ring);
+      outline-offset: calc(var(--_ring-width) * -1);
+    }
+    :scope > [data-part="header"] > [data-part="previous"]:where(:is(:active, [data-active]):where(:not(:is(:disabled, [disabled], [aria-disabled="true"])))),
+    :scope > [data-part="header"] > [data-part="next"]:where(:is(:active, [data-active]):where(:not(:is(:disabled, [disabled], [aria-disabled="true"])))),
+    :scope > [data-part="grid"] > tbody > tr > [data-part="day"]:where(:is(:active, [data-active]):where(:not(:is(:disabled, [disabled], [aria-disabled="true"])))) { background-color: var(--_face-active); }
+    :scope > [data-part="grid"] > tbody > tr > [data-part="day"]:where(:is([aria-selected="true"], [selected]:not(option))) {
+      outline-color: var(--_ring-selected);
+      background-color: var(--_face-selected);
+      color: var(--_ink-selected);
+    }
+    :scope > [data-part="grid"] > tbody > tr > [data-part="day"]:where(:is([aria-current]:not([aria-current="false"], [aria-current=""]), [current])) {
+      font-weight: 600;
+      text-decoration-line: underline;
+      text-decoration-thickness: calc(var(--_border) * 2);
+      text-underline-offset: calc(var(--_border) * 3);
+    }
+    :scope > [data-part="header"] > [data-part="previous"]:where(:is(:disabled, [disabled], [aria-disabled="true"])),
+    :scope > [data-part="header"] > [data-part="next"]:where(:is(:disabled, [disabled], [aria-disabled="true"])),
+    :scope > [data-part="grid"] > tbody > tr > [data-part="day"]:where(:is(:disabled, [disabled], [aria-disabled="true"])) { color: var(--_ink-disabled); }
+    :scope:where(:is(:disabled, [disabled], [aria-disabled="true"])) { color: var(--_ink-disabled); }
+    :scope:where(:is(:disabled, [disabled], [aria-disabled="true"])) > [data-part="grid"] > tbody > tr > [data-part="day"],
+    :scope:where(:is(:disabled, [disabled], [aria-disabled="true"])) > [data-part="grid"] > tbody > tr > [data-part="day"][data-outside] { color: var(--_ink-disabled); }
+    /* A chosen day that cannot be changed drops the solid face for the disabled ground: its relief stays, its colour goes (D121). */
+    :scope > [data-part="grid"] > tbody > tr > [data-part="day"]:where(:is(:disabled, [disabled], [aria-disabled="true"])):where(:is([aria-selected="true"], [selected]:not(option))),
+    :scope:where(:is(:disabled, [disabled], [aria-disabled="true"])) > [data-part="grid"] > tbody > tr > [data-part="day"]:where(:is([aria-selected="true"], [selected]:not(option))) { background-color: var(--_face-selected-disabled); }
+
+    @media (forced-colors: active) {
+      :where(:scope) {
+        --_ink: CanvasText;
+        --_ink-outside: CanvasText;
+        --_ink-head: CanvasText;
+        --_face-hover: Canvas;
+        --_face-active: Canvas;
+        --_face-selected: Highlight;
+        --_ink-selected: HighlightText;
+        --_ink-disabled: GrayText;
+        --_face-selected-disabled: Canvas;
+        --_button-line: var(--unit-border-b) solid ButtonText;
+        --_ring: CanvasText;
+        --_ring-selected: HighlightText;
+      }
+      :scope > [data-part="header"] > [data-part="previous"],
+      :scope > [data-part="header"] > [data-part="next"] { outline-offset: calc(var(--_border) * -1); }
+      @media (hover: hover) {
+        :scope > [data-part="header"] > [data-part="previous"]:where(:is(:hover, [data-hover]):where(:not(:is(:disabled, [disabled], [aria-disabled="true"]), :is(:checked, [aria-checked="true"], [checked]:not(input, option)), :is(input[type="checkbox"]:indeterminate, [aria-checked="mixed"], [indeterminate]), :is([aria-pressed="true"], [pressed]), :is([aria-selected="true"], [selected]:not(option)), :is([aria-current]:not([aria-current="false"], [aria-current=""]), [current]), :is([aria-expanded="true"], [expanded]), :is([open], :popover-open)))),
+        :scope > [data-part="header"] > [data-part="next"]:where(:is(:hover, [data-hover]):where(:not(:is(:disabled, [disabled], [aria-disabled="true"]), :is(:checked, [aria-checked="true"], [checked]:not(input, option)), :is(input[type="checkbox"]:indeterminate, [aria-checked="mixed"], [indeterminate]), :is([aria-pressed="true"], [pressed]), :is([aria-selected="true"], [selected]:not(option)), :is([aria-current]:not([aria-current="false"], [aria-current=""]), [current]), :is([aria-expanded="true"], [expanded]), :is([open], :popover-open)))) {
+          outline: calc(var(--_border) * 2) solid ButtonText;
+          outline-offset: calc(var(--_border) * -2);
+        }
+        :scope > [data-part="grid"] > tbody > tr > [data-part="day"]:where(:is(:hover, [data-hover]):where(:not(:is(:disabled, [disabled], [aria-disabled="true"]), :is(:checked, [aria-checked="true"], [checked]:not(input, option)), :is(input[type="checkbox"]:indeterminate, [aria-checked="mixed"], [indeterminate]), :is([aria-pressed="true"], [pressed]), :is([aria-selected="true"], [selected]:not(option)), :is([aria-current]:not([aria-current="false"], [aria-current=""]), [current]), :is([aria-expanded="true"], [expanded]), :is([open], :popover-open)))) {
+          outline: var(--_border) solid CanvasText;
+          outline-offset: calc(var(--_border) * -1);
+        }
+      }
+      :scope > [data-part="header"] > [data-part="previous"]:where(:is(:focus-visible, [data-focus-visible])),
+      :scope > [data-part="header"] > [data-part="next"]:where(:is(:focus-visible, [data-focus-visible])) {
+        outline: var(--_ring-width) solid var(--_ring);
+        outline-offset: var(--_ring-offset);
+      }
+      :scope > [data-part="grid"] > tbody > tr > [data-part="day"]:where(:is([aria-selected="true"], [selected]:not(option))) { forced-color-adjust: none; }
+      :scope > [data-part="header"] > [data-part="previous"]:where(:is(:disabled, [disabled], [aria-disabled="true"])),
+      :scope > [data-part="header"] > [data-part="next"]:where(:is(:disabled, [disabled], [aria-disabled="true"])) { outline-color: GrayText; }
+    }
+  }
+}

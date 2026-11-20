@@ -2,7 +2,9 @@
 
 /* The recipe of the badge: a native <span data-ui="badge">. Its rules: J66 in docs/specs/patterns.md. Its shape: docs/specs/css-contract.md.
    A pill as tall as ui-geometry's badge, in the neutral solid; data-variant re-points the face and the ink to the solid and
-   the on-solid ink of the ui-colors role of its name. */
+   the on-solid ink of the ui-colors role of its name.
+   An icon inside pulls in by the icon edge, as in a button (the one token an icon inherits, D110): a badge holding one icon is as
+   wide as it is tall, and a label keeps its gap from an icon's box. */
 @layer recipes {
   @scope ([data-ui="badge"]) {
     :where(:scope) {
@@ -11,6 +13,9 @@
       --_height: var(--badge-height, var(--controls-mark-badge));
       --_inset: var(--badge-inset, var(--controls-control-i));
       --_radius: var(--badge-radius, calc(var(--_height) / 2));
+      --_gap: var(--badge-gap, var(--controls-control-g_c));
+      --_icon-pull: calc((var(--_height) - var(--controls-control-s)) / 2 - var(--_inset));
+      --_space: calc(var(--_gap) - var(--_icon-pull));
       --_text: var(--unit-type-label);
       --_border: var(--unit-border-b);
     }
@@ -36,6 +41,8 @@
     :scope {
       display: inline-flex;
       align-items: center;
+      justify-content: center;
+      gap: var(--_space);
       block-size: var(--_height);
       padding-inline: var(--_inset);
       border-radius: var(--_radius);

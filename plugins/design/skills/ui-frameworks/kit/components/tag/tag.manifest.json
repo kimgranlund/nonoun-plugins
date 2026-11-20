@@ -1,0 +1,82 @@
+{
+  "$schema": "../../../references/manifest.schema.json",
+  "schema": 1,
+  "id": "tag",
+  "kind": "recipe",
+  "family": "tag",
+  "tier": "controls",
+  "pattern": "https://www.w3.org/WAI/tutorials/images/informative/",
+  "summary": "A word that labels or filters something, which the user may be able to remove.",
+  "element": "span",
+  "role": null,
+  "focus": "none",
+  "tabindex": null,
+  "formAssociated": false,
+  "attributes": {
+    "variant": {
+      "type": "enum",
+      "values": [
+        "neutral",
+        "info",
+        "success",
+        "warning",
+        "critical"
+      ],
+      "default": "neutral",
+      "kind": "variant",
+      "description": "What the tag says about its subject, which sets its colours."
+    }
+  },
+  "resets": [],
+  "states": [
+    "hover",
+    "focus-visible",
+    "focus-within",
+    "active",
+    "disabled"
+  ],
+  "parts": {
+    "root": {
+      "kind": "root",
+      "material": {
+        "layer": "base",
+        "relief": "raised",
+        "face": "subtle"
+      },
+      "note": "A small rounded box with a label that does not wrap, in the subtle fill of its role."
+    },
+    "remove": {
+      "kind": "author",
+      "material": null,
+      "note": "An optional native button the author marks with data-part=\"remove\", holding a glyph of the small icon size, such as <ui-icon name=\"close\" size=\"sm\">. It takes no room: it lies over the end of the tag as a fade, a ghost glyph on the tag's own face that covers the end of the label, painted only while the pointer is over the tag or focus is inside it, and always where the pointer cannot hover. Hover and press change the glyph's ink only. A disabled one is never painted. The page removes the tag when it is pressed."
+    }
+  },
+  "tokens": [
+    "--tag-face",
+    "--tag-ink",
+    "--tag-line",
+    "--tag-face-disabled",
+    "--tag-ink-disabled",
+    "--tag-line-disabled",
+    "--tag-height",
+    "--tag-inset",
+    "--tag-gap",
+    "--tag-radius"
+  ],
+  "behaviours": [],
+  "keys": {},
+  "events": {},
+  "guidance": [
+    {
+      "topic": "naming",
+      "text": "A span with data-ui=\"tag\". Name a remove button for what it removes, such as Remove Design."
+    }
+  ],
+  "notYet": [],
+  "targets": {
+    "web-components": "built",
+    "react": "planned",
+    "svelte": "planned",
+    "solid": "planned"
+  }
+}

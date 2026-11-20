@@ -1,0 +1,65 @@
+{
+  "$schema": "../../../references/manifest.schema.json",
+  "schema": 1,
+  "id": "avatar",
+  "kind": "recipe",
+  "family": "avatar",
+  "tier": "controls",
+  "pattern": "https://www.w3.org/WAI/tutorials/images/",
+  "summary": "A small picture or initials that stand for a person or a thing.",
+  "element": "span",
+  "role": null,
+  "focus": "none",
+  "tabindex": null,
+  "formAssociated": false,
+  "attributes": {
+    "size": {
+      "type": "enum",
+      "values": [
+        "xs",
+        "sm",
+        "md",
+        "lg",
+        "xl"
+      ],
+      "default": "md",
+      "kind": "variant",
+      "description": "One of ui-geometry's avatar sizes."
+    }
+  },
+  "resets": [],
+  "states": [],
+  "parts": {
+    "root": {
+      "kind": "root",
+      "material": {
+        "layer": "base",
+        "relief": "raised",
+        "face": "neutral"
+      },
+      "note": "A circle of ui-geometry's avatar size, its radius half its height, that clips its content and centres initials. In an avatar group, each after the first overlaps the one before and is cut where it lies."
+    }
+  },
+  "tokens": [
+    "--avatar-face",
+    "--avatar-ink",
+    "--avatar-height",
+    "--avatar-radius"
+  ],
+  "behaviours": [],
+  "keys": {},
+  "events": {},
+  "guidance": [
+    {
+      "topic": "naming",
+      "text": "A span with data-ui=\"avatar\" around an img with alt text, or around initials with the name in aria-label and role=\"img\" on the span."
+    }
+  ],
+  "notYet": [],
+  "targets": {
+    "web-components": "built",
+    "react": "planned",
+    "svelte": "planned",
+    "solid": "planned"
+  }
+}

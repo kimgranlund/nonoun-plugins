@@ -1,14 +1,14 @@
 # Outside checks
 
-Results of the five checks listed in [plan.md](plan.md#outside-checks), run on 2026-11-12.
+Results of the five checks listed in plan.md, run on 2026-11-12.
 
 ## Method
 
-- **Checks 1, 2, 4 and 5** ran as a test page in three engines through Playwright 1.64.1: Chromium 156.0.8078.4, Firefox 157.0 and WebKit 27.2. The WebKit build is Playwright's, not Safari itself. The page is [checks/platform/page.html](../checks/platform/page.html), the runner is [run.mjs](../checks/platform/run.mjs) and the raw output is [results.json](../checks/platform/results.json).
-- **Check 3** ran as a minimal Panda 2.4.0 project in [checks/panda/](../checks/panda/): `panda cssgen`, then pages that inline the kit's CSS and Panda's output in different orders, read in the same three engines. The raw output is [results.json](../checks/panda/results.json). The Panda documentation and source were read at 2.5.0.
+- **Checks 1, 2, 4 and 5** ran as a test page in three engines through Playwright 1.64.1: Chromium 156.0.8078.4, Firefox 157.0 and WebKit 27.2. The WebKit build is Playwright's, not Safari itself. The page is checks/platform/page.html, the runner is run.mjs and the raw output is results.json.
+- **Check 3** ran as a minimal Panda 2.4.0 project in checks/panda/: `panda cssgen`, then pages that inline the kit's CSS and Panda's output in different orders, read in the same three engines. The raw output is results.json. The Panda documentation and source were read at 2.5.0.
 - **Shipping versions and specification status** come from web research on the same day: the HTML Standard, browser release notes, MDN's compatibility data, web-features and the WebKit and WHATWG trackers. Sources are listed [at the end](#sources). I did not re-verify them beyond the tests here.
-- **Check 6** was added with the foundation spec and ran the same way, from [checks/forms/run.mjs](../checks/forms/run.mjs).
-- **Check 7** was added with the CSS contract, from [checks/recipes/run.mjs](../checks/recipes/run.mjs).
+- **Check 6** was added with the foundation spec and ran the same way, from checks/forms/run.mjs.
+- **Check 7** was added with the CSS contract, from checks/recipes/run.mjs.
 - Every result below was the same in all three engines unless a row says otherwise.
 
 One caution on WebKit. Playwright's build reports version 27.2 but runs ahead of Safari's stable release: it accepts `popover="hint"`, which Safari's release notes list only for the 27.3 beta. A pass in that build shows the engine can do it, not that every Safari 26 or 27 release does.
@@ -186,7 +186,7 @@ No relief is close. `ElementInternals.type` was closed as not planned in March 2
 
 ## Check 6 · Forms and the accessibility tree
 
-Added on 2026-11-12 with the [foundation spec](specs/foundation.md), which depends on three more facts. The runner is [checks/forms/run.mjs](../checks/forms/run.mjs) and the raw output is [results.json](../checks/forms/results.json). Parts A and B gave the same result in all three engines.
+Added on 2026-11-12 with the [foundation spec](specs/foundation.md), which depends on three more facts. The runner is checks/forms/run.mjs and the raw output is results.json. Parts A and B gave the same result in all three engines.
 
 ### A · A hidden native submit button inside a custom button
 
@@ -231,7 +231,7 @@ Read through the DevTools protocol, so it is the browser's own tree. Firefox and
 
 ## Check 7 · The recipe pattern
 
-Added on 2026-11-12 with the [CSS contract](specs/css-contract.md), and extended on 2026-11-13 for D63 and D64. It builds the recipe shape the contract prescribes, and the patterns the contract rules out, and reads computed styles. The runner is [checks/recipes/run.mjs](../checks/recipes/run.mjs) and the raw output is [results.json](../checks/recipes/results.json). All engines agree: chromium 156.0.8078.4: 25 cases, 0 failed, firefox 157.0: 22 cases, 0 failed, webkit 27.2: 22 cases, 0 failed. Chromium has three more cases because only it can emulate a touch screen.
+Added on 2026-11-12 with the [CSS contract](specs/css-contract.md), and extended on 2026-11-13 for D63 and D64. It builds the recipe shape the contract prescribes, and the patterns the contract rules out, and reads computed styles. The runner is checks/recipes/run.mjs and the raw output is results.json. All engines agree: chromium 156.0.8078.4: 25 cases, 0 failed, firefox 157.0: 22 cases, 0 failed, webkit 27.2: 22 cases, 0 failed. Chromium has three more cases because only it can emulate a touch screen.
 
 ### The prescribed pattern
 
@@ -277,6 +277,41 @@ Each of these is a negative control: it shows the failure a rule of the contract
 - Rule order decides which state shows only when every condition is inside `:where()`.
 - A part must be selected with the child combinator.
 - A hover rule must sit inside `@media (hover: hover)` to stay off a touch screen.
+
+## Check 8 · The platform in November 2026
+
+Run on 2026-11-15 from checks/modern/run.mjs, in Chromium 156, Firefox 157 and WebKit 27.2; the full table is checks/modern/results.json. It says what these builds can do, not which stable version first shipped it, and the caution on Playwright's WebKit above holds.
+
+| Feature | Chromium | Firefox | WebKit |
+|---|---|---|---|
+| `closedby="any"` closes a modal dialog on a press outside | Yes | Yes | Yes |
+| `beforetoggle` and `toggle` on a dialog | Yes | Yes | Yes |
+| `commandfor` with `show-modal` and `close`, native button | Yes | Yes | Yes |
+| `requestClose()`, `CloseWatcher`, `showPopover({ source })` | Yes | Yes | Yes |
+| `@starting-style`, `transition-behavior: allow-discrete`: a popover fades in | Yes | Yes | Yes |
+| The same pair keeps a popover displayed while it fades out | Yes | No | No |
+| `overlay`, `interpolate-size`, `calc-size()`, `interestfor`, `focusgroup`, scroll-state queries, `reading-flow` | Yes | No | No |
+| `appearance: base-select` | Yes | No | Yes |
+| `moveBefore`, `ariaNotify` | Yes | Yes | No |
+| `field-sizing`, `sibling-index()`, `Temporal`, ARIA element reflection, `text-wrap: balance` | Yes | Yes | Yes |
+
+What this decides is D118: the dialog follows a panel the browser opened, and nothing else changes.
+
+## Check 9 · `popover="auto"` from a custom trigger
+
+Run on 2026-11-15 from checks/popover-auto/run.mjs, with the browser's own pointer and keyboard; results in checks/popover-auto/results.json. A custom element with `role="button"` toggles an auto popover from its click, passing itself as `showPopover({ source })`. Every row was the same in Chromium 156, Firefox 157 and WebKit 27.2.
+
+| Question | Result |
+|---|---|
+| A press on the trigger while its popover is open | Light dismiss closes it as the pointer comes up; the click then finds it closed and opens it again. The same with no source. |
+| A press outside | Closes, and the control outside still gets its click. |
+| Escape with focus inside | Closes, and focus returns to the trigger. |
+| Focus leaves the popover | It stays open. |
+| A second popover that is not a descendant, opened from inside the first with a source | Both stay open; Escape closes the inner one only; a press in the parent closes the inner one only. |
+| Opening an unrelated auto popover | Closes the first. |
+| Inside a modal dialog | Opens; Escape closes the popover and leaves the dialog. |
+
+What this decides: D77 stands. A source gives nesting, not an exemption from light dismiss, so a custom trigger would still need script to keep one press from closing and reopening, and the kit closes on focus leaving, which the platform does not.
 
 ## Shipping versions and the browser floor
 
@@ -341,14 +376,6 @@ For check 7:
 node checks/recipes/run.mjs <project-with-playwright>
 ```
 
-For the C20 stacking rule:
-
-```bash
-node checks/focus-on-top/run.mjs <project-with-playwright>
-```
-
-Then the same with `--negative`.
-
 For check 3, generate Panda's output twice, build the pages, then read them in one engine:
 
 ```bash
@@ -366,3 +393,11 @@ node checks/panda/build-pages.mjs
 ```bash
 node checks/panda/cascade.mjs <project-with-playwright> chromium
 ```
+
+For the C20 stacking rule:
+
+```bash
+node checks/focus-on-top/run.mjs <project-with-playwright>
+```
+
+Then the same with `--negative`, which must see the neighbour on top in every case, and with `--strip=<case>` for each case (`button`, `text-field`, `combobox`, `spinbutton`, `date-field`, `file-field`), where only that case may. Before any browser starts the runner lists every rule of the reset and the recipes that sets `z-index` on a focus condition, and fails when one has no case.

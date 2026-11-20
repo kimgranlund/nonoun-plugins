@@ -6,6 +6,11 @@ The design plugin, newest first. Releases before this file are recorded in the r
 
 ### Changed
 
+- `ui-geometry` (T-0856): synced from the MacBook copy at `ec93828`. The ladder preset is the default (30px controls at n = 14), `standard` keeps h = 32 (alias `standard-32`), and the dialog inset is a row, `containers.frame.dialog-inset`; the inspector panel's `geometry-runtime/derive.js` and `provenance.json` are rebuilt with `npm run build`.
+- `ui-frameworks` (T-0856): synced from the MacBook copy at `97eee29`, the installed build of its source. Adds components (avatar, calendar, date field, file field, pagination, popover, progress, select, separator, skeleton, stepper, tag, toast and others) with React recipes; the build carries no `checks/`, so `checks/focus-on-top` leaves this copy. The 17 `ui-frameworks` rows in `docs/reports/broken-links-allowlist.md` are gone: those `docs/` links no longer break.
+- `ui-explore-variants` (T-0856): synced from the MacBook copy at `406b2db` plus its uncommitted `assets/feedback.js` edit. The page uses plain language; internal names move under Technical details.
+- `ui-materials` (T-0856): synced from the MacBook copy at `59d4f4b`. SKILL.md is shorter, and `scripts/check.mjs` checks that delineation writes a face's mark tokens.
+- `ui-content` (T-0856): synced from the MacBook copy at `f0bf8a6`. Adds its own check, `scripts/check.mjs`, each rule with a planted fault it must catch.
 - `ui-geometry` (T-0855): synced from the MacBook copy at `2b1500a`. The floor for a text line on the line grid is 1.15 again (`references/equations.md`, `scripts/derive.mjs` and its tests); the inspector panel's `geometry-runtime/derive.js` and `provenance.json` are rebuilt with `npm run build`.
 - `ui-frameworks` (T-0855): synced from the MacBook copy at `2cf5ee1`. Adds `checks/focus-on-top`, a keyboard check of the focus ring over a joined neighbour, named in `docs/checks.md` and the CSS contract.
 - `ui-explore-variants` (T-0855): synced from the MacBook copy at `6e5d784`. Pages can name their own verdicts (`data-verdicts`) and pick one variant per moment (`data-pick="one"`); adds its own check, `scripts/check.mjs` with `scripts/check.page.html`, which tests the feedback module in Chromium and WebKit.

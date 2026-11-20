@@ -1,0 +1,60 @@
+@layer reset, base, tokens, recipes, utilities;
+
+/* The recipe of <ui-form-field>. Its rules: J51 and J52 in docs/specs/patterns.md. Its shape: docs/specs/css-contract.md.
+   Its conditions: references/states.json.
+   The root stacks the label, the control, the help and the error, in the author's order, with ui-geometry's gap
+   between a label and its control, which is also the gap between a control and its help. Each keeps its own
+   width, so a checkbox does not stretch across the field. The help is in the muted ink, the error in the
+   critical ink.
+   The error takes no room unless the root is invalid. The rule reads the tag and the invalid condition alone, so
+   an error written in the markup takes no room before the element is defined either (U2).
+   In forced colours both inks are the system's text colour. */
+@layer recipes {
+  @scope ([data-ui="form-field"]) {
+    :where(:scope) {
+      --_gap: var(--form-field-gap, var(--containers-gap-label-control-control-help));
+      --_ink: var(--form-field-ink, var(--ink));
+      --_ink-help: var(--ink-muted);
+      --_ink-invalid: var(--form-field-ink-invalid, var(--colors-critical-fg));
+      --_text: var(--unit-type-body-md);
+      --_leading: var(--unit-type-body-md-line);
+      --_text-small: var(--unit-type-body-sm);
+      --_leading-small: var(--unit-type-body-sm-line);
+    }
+
+    /* The recipe's own boxes are border boxes, with or without a reset (C31). */
+    :where(:scope, [data-part]) { box-sizing: border-box; }
+    :scope {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: var(--_gap);
+      color: var(--_ink);
+      font-size: var(--_text);
+      line-height: var(--_leading);
+    }
+    :scope:where([hidden]:not([hidden="until-found"])) { display: none; }
+
+    :scope > [data-part="help"],
+    :scope > [data-part="error"] {
+      margin: 0;
+      font-size: var(--_text-small);
+      line-height: var(--_leading-small);
+    }
+    :scope > [data-part="help"] { color: var(--_ink-help); }
+    :scope > [data-part="error"] { display: none; }
+
+    :scope:where(:is([aria-invalid]:not([aria-invalid="false"]), :is(input, select, textarea):user-invalid, [invalid])) > [data-part="error"] {
+      display: block;
+      color: var(--_ink-invalid);
+    }
+
+    @media (forced-colors: active) {
+      :where(:scope) {
+        --_ink: CanvasText;
+        --_ink-help: CanvasText;
+        --_ink-invalid: CanvasText;
+      }
+    }
+  }
+}
