@@ -40,7 +40,7 @@ In React the same manifest holds: `import { Tabs } from './kit/react/tabs/tabs.j
 
 ## Restyle
 
-Restyle the project's copy, never this skill's own kit: copy this skill's `scripts/` and `references/` beside the project's `kit/`, edit the project's `kit/styles/kit.config.json` (font size `n`, densities, the ui-colors request, the icon folder and names), then run `node scripts/tokens.mjs` and `node scripts/icons.mjs` from the kit's parent folder. The shape of the colour request is ui-colors' own. They read ui-colors, ui-geometry and ui-materials from `~/.claude/skills` (or `SKILLS_DIR`) and rewrite `tokens.css` and `icons.css`. Never edit those two files by hand. Dark mode, contrast modes and density are attributes or media queries the tokens already answer; a recipe never changes for them.
+Restyle the project's copy, never this skill's own kit: copy this skill's `scripts/` and `references/` beside the project's `kit/`, edit the project's `kit/styles/kit.config.json` (font size `n`, densities, the ui-colors request, the icon folder and names), then run `node scripts/tokens.mjs` and `node scripts/icons.mjs` from the kit's parent folder. The shape of the colour request is ui-colors' own. They read ui-colors, ui-geometry and ui-materials from `SKILLS_DIR` when set, else from the folder beside this skill, else from `~/.claude/skills`, and rewrite `tokens.css` and `icons.css`. Never edit those two files by hand. Dark mode, contrast modes and density are attributes or media queries the tokens already answer; a recipe never changes for them.
 
 ## Extend
 

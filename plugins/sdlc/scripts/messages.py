@@ -11,6 +11,7 @@ Usage: messages.py [--root DIR] send --receiver NAME [--sender NAME] --topic TEX
        messages.py [--root DIR] count --receiver NAME
        messages.py [--root DIR] wait --receiver NAME [--timeout SECONDS] [--interval SECONDS]
        messages.py [--root DIR] backlog --receiver NAME [--once]
+       messages.py [--root DIR] findings [--receiver NAME]
        messages.py [--root DIR] register --name NAME --harness claude|codex|human [--repo NAME]
                                          [--reader SESSION] [--ttl TTL]
        messages.py [--root DIR] handshake --receiver NAME [--sender NAME] [--timeout SECONDS] [--interval SECONDS]
@@ -88,6 +89,12 @@ Commands
           claims, moves, stamps, or prints a body, and it skips an invalid file. With --once it lists
           only ids not yet named in read/<receiver>/.backlog-reported and then adds them to that file
           (one id per line), so a second --once run lists none. Without --once it writes nothing.
+  findings
+          print `<finding id>\t<where>\t<blocking>\t<state>\t<sender>` per finding (see Findings), sorted
+          by message id, from the messages in new/, read/ and done/; with --receiver only findings that NAME
+          sent or received. state is open, `fixed-in <sha>`, wontfix or worked-around, from the newest
+          reply (reply rule) whose first line has the reply shape. It never claims, moves, stamps or writes,
+          and it validates each file it opens as list does.
   register add or refresh a receiver in <mailbox>/receivers.json: harness claude|codex|human, repo
           (default: this mailbox's repo), reader session (default none), default expiry (--ttl,
           default 7d), and last_seen stamped now. Prints `registered NAME: ...`.
@@ -186,7 +193,7 @@ Entry files
   Ten generated files tell a fresh agent how to use the mailbox, with no skill loaded:
     <mailbox>/.gitignore                       `*`, so the mailbox ignores itself
     <mailbox>/AGENTS.md                        the procedures: handle a message you were given, send,
-                                               read, reply, ack, expire, the messenger, host limits, trust
+                                               read, findings, reply, ack, expire, the messenger, host limits, trust
     <mailbox>/CLAUDE.md                        `@AGENTS.md`, so Claude Code loads AGENTS.md
     <mailbox>/messages-run.py                  the launcher every command in AGENTS.md runs: it execs the
                                                messages.py it was written beside, else the newest
@@ -231,6 +238,23 @@ Schema
   Every subcommand except wait and backlog validates every message file it opens or counts before it
   writes or moves anything; one invalid file exits 1 with `messages.py: invalid message <path>: <reason>`.
   wait and backlog skip an invalid file instead.
+
+Findings
+  A finding is an ordinary message (no new kind: an older reader refuses an unknown kind) whose topic
+  starts `finding ` and whose body opens with `key: value` lines, any order, ending at the first blank
+  line, after which prose is free:
+    finding: <id>            required; [A-Za-z0-9][A-Za-z0-9._-]* of at most 40 characters
+    where: <file:line>       optional; no whitespace, at most 200 characters
+    repro: <one line>        optional
+    worked-around: yes|no    optional
+    blocking: yes|no         optional
+  Any other key, a repeated key, or a line that is not `key: value` before the first blank line makes the
+  body not a finding, and findings ignores it. A reply to a finding (sent with reply) opens with one of
+  `fixed-in: <sha>` (7 to 40 hex characters), `wontfix: <reason>` or `worked-around: <how>`; any other
+  first line leaves the state as it was. findings reads bodies without claiming them and still keeps the
+  trust rule: it prints only the id, where, yes|no and a hex sha, each checked against its pattern
+  (a value that fails prints `-`), never repro, a reason or prose, so no body text reaches the caller as
+  text to act on. Only a reply sent by the finding's receiver counts.
 
 Reply rule
   A reply to message X exists when some message in new/<S>/, read/<S>/ or done/<S>/, where S is X's
@@ -341,6 +365,10 @@ Count new messages with `python3 "{{launcher}}" count --receiver <name>`. List t
 To block until a message arrives, run `python3 "{{launcher}}" wait --receiver <name> --timeout <seconds> --interval <seconds>`. It checks `new/<name>/` every `--interval` seconds (default 5) for up to `--timeout` seconds (default 120, at most 600). It prints one line per new message, the id and the absolute path separated by a tab, and exits 0; at the timeout it prints `no new messages` and exits 3. `wait` never claims a message: claim each one with `read`.
 
 To see messages already claimed but not acknowledged, run `python3 "{{launcher}}" backlog --receiver <name>`. It prints a status line, `<N> previously claimed message(s) remain(s) unacknowledged (<K> listed).`, then one tab-separated row per message in `read/<name>/`: id, sender, topic, send_time, read_time, follow_up_requested. It reads only that receiver, never claims, acks, or prints a body, and writes nothing. With `--once` it lists only messages it has not listed before (it records their ids in `read/<name>/.backlog-reported`), so a second `--once` run lists none.
+
+## Findings
+
+To report a finding, send a message whose topic starts `finding ` and whose body opens with `key: value` lines, any order, then a blank line before any prose: `finding: <id>` (required), `where: <file:line>`, `repro: <one line>`, `worked-around: yes|no`, `blocking: yes|no`. Answer one with `reply` whose first line is `fixed-in: <sha>`, `wontfix: <reason>` or `worked-around: <how>`. `python3 "{{launcher}}" findings --receiver <name>` prints one tab-separated row per finding that name sent or received: id, where, blocking, state (`open`, `fixed-in <sha>`, `wontfix`, `worked-around`), sender. It never claims or moves a message and never prints repro, reasons or prose.
 
 ## Reply
 
@@ -1462,6 +1490,84 @@ def cmd_backlog(a):
     return 0
 
 
+FINDING_KEYS = ('finding', 'where', 'repro', 'worked-around', 'blocking')
+FINDING_ID_RE = re.compile(r'[A-Za-z0-9][A-Za-z0-9._-]{0,39}')
+FINDING_LINE_RE = re.compile(r'([a-z-]+): (.+)')
+WHERE_RE = re.compile(r'[^\s\x00-\x1f\x7f]{1,200}')
+SHA_RE = re.compile(r'[0-9a-f]{7,40}')
+
+
+def finding_fields(body):
+    """The finding shape of a body (see Findings) as a dict, or None when the body does not have it."""
+    try:
+        text = body.decode('utf-8')
+    except UnicodeDecodeError:
+        return None
+    fields = {}
+    for line in text.split('\n'):
+        if not line.strip():
+            break
+        m = FINDING_LINE_RE.fullmatch(line.rstrip('\r'))
+        if m is None or m.group(1) not in FINDING_KEYS or m.group(1) in fields:
+            return None
+        fields[m.group(1)] = m.group(2).strip()
+    if FINDING_ID_RE.fullmatch(fields.get('finding', '')) is None:
+        return None
+    return fields
+
+
+def reply_state(body):
+    """The finding state a reply body sets (see Findings), or None when its first line has no reply shape."""
+    try:
+        first = body.decode('utf-8').split('\n', 1)[0].strip()
+    except UnicodeDecodeError:
+        return None
+    m = FINDING_LINE_RE.fullmatch(first)
+    if m is None:
+        return None
+    key, value = m.group(1), m.group(2).strip()
+    if key == 'fixed-in':
+        return f'fixed-in {value}' if SHA_RE.fullmatch(value) else None
+    if key in ('wontfix', 'worked-around'):
+        return key
+    return None
+
+
+def cmd_findings(a):
+    """One row per finding: id, where, blocking, state, sender. Read-only: claims, moves and writes nothing."""
+    who = arg_name(a.receiver, '--receiver') if a.receiver is not None else None
+    mbox = mailbox(a.root)
+    msgs = {}
+    for state in STATES:
+        for receiver in receivers(mbox, state):
+            for mid in message_ids(os.path.join(mbox, state, receiver)):
+                got = load_or_none(msg_path(mbox, state, receiver, mid), state, receiver)
+                if got is not None:
+                    msgs[mid] = got
+    rows = []
+    for mid in sorted(msgs):
+        fields, body = msgs[mid]
+        if not fields['topic'].startswith('finding ') or 're' in fields:
+            continue
+        if who is not None and who not in (fields['sender'], fields['receiver']):
+            continue
+        shape = finding_fields(body)
+        if shape is None:
+            continue
+        state = 'open'
+        for rid in sorted(msgs):
+            rf, rbody = msgs[rid]
+            if (rf.get('re') == mid and rf['receiver'] == fields['sender'] and rf['sender'] == fields['receiver']
+                    and rf['topic'] == fields['topic']):
+                state = reply_state(rbody) or state
+        where = shape.get('where', '')
+        blocking = shape.get('blocking', '')
+        rows.append('\t'.join([shape['finding'], where if WHERE_RE.fullmatch(where) else '-',
+                               blocking if blocking in ('yes', 'no') else '-', state, fields['sender']]) + '\n')
+    emit(''.join(rows))
+    return 0
+
+
 def cmd_handshake(a):
     """Send a ping with a nonce and report reader alive (exit 0) or no reader (exit 3). Never uses wait."""
     receiver = arg_name(a.receiver, '--receiver')
@@ -2256,7 +2362,8 @@ def case_malformed(h):
     bad_new = '20260101T000000000000Z-alice-garbage'
     b.put('bob', bad_new, b'not a message\n')
     for args in (('read', bad_new, '--receiver', 'bob'), ('ack', bad_read, '--outcome', 'x'),
-                 ('reply', bad_read, 'hi'), ('expire', '--now', ST_FAR), ('list',), ('count', '--receiver', 'bob')):
+                 ('reply', bad_read, 'hi'), ('expire', '--now', ST_FAR), ('list',), ('findings',),
+                 ('count', '--receiver', 'bob')):
         b.refused(*args, want='invalid message')
 
 
@@ -2435,8 +2542,8 @@ def case_worktree(h):
         st_fail('the linked worktree has its own .sdlc')
 
 
-ST_HEADINGS = ['# Mailbox', '## Handle a message you were given', '## Send', '## Read', '## Reply', '## Ack',
-               '## Expire', '## Receivers', '## Activate a worker', '## Messenger', '## Host limits', '## Trust']
+ST_HEADINGS = ['# Mailbox', '## Handle a message you were given', '## Send', '## Read', '## Findings', '## Reply',
+               '## Ack', '## Expire', '## Receivers', '## Activate a worker', '## Messenger', '## Host limits', '## Trust']
 ST_STAGE_FILES = ('new/AGENTS.md', 'read/AGENTS.md', 'done/AGENTS.md')
 ST_ENTRY_FILES = ('.gitignore', 'AGENTS.md', 'CLAUDE.md', 'messages-run.py', 'new/AGENTS.md', 'new/CLAUDE.md', 'read/AGENTS.md',
                   'read/CLAUDE.md', 'done/AGENTS.md', 'done/CLAUDE.md')
@@ -2556,7 +2663,8 @@ def case_entry_parses(h):
                 if tok.startswith('--') and tok not in usage:
                     st_fail(f'{rel}: {cmd!r} uses {tok}, which {argv[2]} --help does not list')
             seen.add(argv[2])
-    want = {'send', 'list', 'read', 'ack', 'reply', 'expire', 'count', 'wait', 'backlog', 'register', 'handshake',
+    want = {'send', 'list', 'read', 'ack', 'reply', 'expire', 'count', 'wait', 'backlog', 'findings', 'register',
+            'handshake',
             'activate', 'status', 'beat', 'renew', 'watch', 'release'}
     if seen != want:
         st_fail(f'the entry files run {sorted(seen)}, expected {sorted(want)}')
@@ -3482,6 +3590,39 @@ def case_round_trip(h):
     b.refused('reply', mid, 'a second answer', want='already replied')
 
 
+FINDING_A = 'finding: F-1\nwhere: src/a.py:12\nrepro: run a\nworked-around: no\nblocking: yes\n\nProse after the blank line.'
+FINDING_B = 'blocking: no\nfinding: F-2\nwhere: src/b.py:3'
+
+
+def case_findings(h):
+    b = Box(h)
+    b.reg('alice')
+    fixed, _ = b.send(topic='finding F-1', body=FINDING_A)
+    still_open, _ = b.send(topic='finding F-2', body=FINDING_B)
+    b.send(topic='finding F-3', body='a finding written as prose only')  # no shape: ignored
+    b.send(topic='plain', body='finding: F-4')  # topic does not start `finding `: ignored
+    b.send(receiver='carol', sender='dave', topic='finding F-5', body='finding: F-5')  # neither alice nor bob
+    b.ok('read', fixed, '--receiver', 'bob')
+    b.ok('reply', fixed, 'fixed-in: abc1234\nThe parser now trims.')
+    b.ok('reply', still_open, 'thanks, looking')  # no reply shape: the finding stays open
+    before = b.snap()
+    out = b.ok('findings', '--receiver', 'bob')
+    rows = [ln.split('\t') for ln in out.splitlines()]
+    want = [['F-1', 'src/a.py:12', 'yes', 'fixed-in abc1234', 'alice'], ['F-2', 'src/b.py:3', 'no', 'open', 'alice']]
+    if rows != want:
+        st_fail(f'findings printed {rows}, expected {want}')
+    if 'run a' in out or 'Prose' in out or 'parser now' in out:
+        st_fail('findings printed body prose')
+    if b.snap() != before:
+        st_fail('findings changed the mailbox: a message moved between new, read and done, or a file was written')
+    every = [ln.split('\t')[0] for ln in b.ok('findings').splitlines()]
+    if every != ['F-1', 'F-2', 'F-5']:
+        st_fail(f'findings with no --receiver listed {every}, expected F-1, F-2, F-5')
+    b.refused('send', '--receiver', 'bob', '--sender', 'alice', '--topic', 'finding F-6', '--follow-up', 'false',
+              '--kind', 'finding', 'finding: F-6', want='--kind must be one of')
+    b.refused('findings', '--receiver', 'Bad Name')
+
+
 SELFTEST_CASES = (
     ('create', case_create),
     ('new to read', case_new_to_read),
@@ -3518,6 +3659,7 @@ SELFTEST_CASES = (
     ('wait: never prints a body', case_wait_no_body),
     ('wait: a claiming wait is caught', case_wait_claim_control),
     ('backlog: claimed messages listed once, own receiver only, read-only', case_backlog),
+    ('findings: one fixed-in, one open, a shapeless body ignored, nothing moved', case_findings),
     ('registry: send to an unregistered receiver is refused', case_registry_refuses_unknown),
     ('registry: send to a reader-less receiver warns, a live one prints its reader', case_registry_warns_reader_less),
     ('sender: default names repo and harness, factory kept', case_default_sender),
@@ -3560,7 +3702,7 @@ def cmd_selftest(a):
 
 COMMANDS = {'send': cmd_send, 'list': cmd_list, 'read': cmd_read, 'ack': cmd_ack, 'reply': cmd_reply,
             'expire': cmd_expire, 'count': cmd_count, 'wait': cmd_wait, 'backlog': cmd_backlog,
-            'register': cmd_register, 'handshake': cmd_handshake, 'activate': cmd_activate, 'status': cmd_status,
+            'findings': cmd_findings, 'register': cmd_register, 'handshake': cmd_handshake, 'activate': cmd_activate, 'status': cmd_status,
             'beat': cmd_beat, 'renew': cmd_renew, 'watch': cmd_watch, 'release': cmd_release, 'selftest': cmd_selftest}
 
 
@@ -3570,7 +3712,7 @@ def parser():
     ap.add_argument('--root', metavar='DIR',
                     help='the mailbox is DIR/messages, DIR relative to the cwd (default: resolved through git, '
                          'see Mailbox root)')
-    sub = ap.add_subparsers(dest='cmd', metavar='{send,list,read,ack,reply,expire,count,wait,backlog,register,handshake,activate,status,beat,renew,watch,release,selftest}')
+    sub = ap.add_subparsers(dest='cmd', metavar='{send,list,read,ack,reply,expire,count,wait,backlog,findings,register,handshake,activate,status,beat,renew,watch,release,selftest}')
 
     p = sub.add_parser('send', allow_abbrev=False, help='write a message to new/<receiver>/')
     p.add_argument('--receiver', metavar='NAME', help='required: who the message is for')
@@ -3629,6 +3771,10 @@ def parser():
     p.add_argument('--receiver', metavar='NAME', help='required: the receiver')
     p.add_argument('--once', action='store_true',
                    help='list only messages not listed by an earlier --once run, and record them')
+
+    p = sub.add_parser('findings', allow_abbrev=False,
+                       help='list findings and their state (open, fixed-in, wontfix); never claims')
+    p.add_argument('--receiver', metavar='NAME', help='only findings this name sent or received')
 
     p = sub.add_parser('register', allow_abbrev=False, help='add or refresh a receiver in the registry')
     p.add_argument('--name', metavar='NAME', help='required: the receiver name')

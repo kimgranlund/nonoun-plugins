@@ -14,7 +14,11 @@ Usage: gate_lock.py run [--need RES=N[,RES=N...]] [--slots N] [--priority P] [--
           (a command killed by signal n gives 128+n, a command that cannot start gives 127 or 126). Every
           admission failure exits 3 with one first stderr line `gate_lock: <code>: <detail>` (codes: timeout,
           too_large, bad_context, state_unavailable, ledger_corrupt); the wait timeout keeps `gate_lock: timeout
-          after ...`. State root: $SDLC_GATE_DIR (tests), else <home>/.local/state/sdlc/gate-lock from the
+          after ...` and ends `; command not run`. A queued run prints a waiting line every SDLC_GATE_REPORT_SECS
+          (default 15) seconds; the first one that finds the queue waiting on capacity (the head's compute need does
+          not fit and the load is at or under max_load, the cap is off, or no load is reported) ends, once per run,
+          with `hint: capacity compute_units=<C> is full while load <x> is under <max_load>; an operator can raise it:
+          gate_lock.py policy set compute_units=<C + default need>`. State root: $SDLC_GATE_DIR (tests), else <home>/.local/state/sdlc/gate-lock from the
           password database, never TMPDIR. ledger.json holds boot id, grants and queue under a short flock; the
           optional policy.json holds capacity and default_need. Built-in policy (the approved numbers):
           capacity compute_units 6 and browser_jobs 3, default_need compute_units 3 (so two undeclared gates run
@@ -50,12 +54,20 @@ Usage: gate_lock.py run [--need RES=N[,RES=N...]] [--slots N] [--priority P] [--
           (SDLC_GATE_SLOTS=0) runs the command with no admission and no env change. --receipt writes a JSON
           receipt last (outcome, rc, wait_ms, run_ms, cleanup_ms, total_ms).
   context   exit 0 and print the grant when the caller runs inside a valid grant, else exit 1.
-  status    queued and admitted rows (name, pid, need, repo, priority, age); `no holders` when empty; legacy
+  status    queued and admitted rows (name, pid, need, repo, priority, age, then `head <sha>  cwd <path>  session <id>`,
+            each only when the entry records it); `no holders` when empty. A new entry records the short HEAD of the
+            directory `run` started in, that directory and the owning session (CLAUDE_CODE_SESSION_ID, else
+            CODEX_THREAD_ID); an entry from an older plugin version has none and still renders. A row whose head is more
+            than BEHIND_MAX (20) commits behind its branch (the cwd's upstream, else local main, else master, else
+            origin/HEAD) ends `(behind <branch> by N)`; a git failure shows nothing and never fails status. --json carries
+            `cwd`, `head`, `session` ('' when not recorded) and `behind` ({branch, commits} or null) per row. status
+            stops nothing: the owner stops its own job, and the session column names who that is. Legacy
             slot holders from older plugin versions are listed and called a partial protection. With max_load
             set, a queue that waits on the load ends with `waiting: load <n.n> over cap <N>` and a row with how long
             the queue has waited and the top 3 non-gate processes by CPU. --json for tools (it gains `load`: value,
             max_load, over, only when max_load is set, and `stall`: waited_s, top_cpu, only while waiting on the load).
-            The waiting line `run` prints adds the load and the same processes. SDLC_GATE_PS_FILE (tests only)
+            The waiting line `run` prints adds the load and the same processes. A queue that waits on capacity
+            ends with the same `hint:` row the waiting line carries (`hint` in --json, only then). SDLC_GATE_PS_FILE (tests only)
             names a file of `pid ppid pgid pcpu command` lines used in place of ps.
   capabilities  read only: protocol, state root, boot id, the policy in force, legacy holders seen.
   policy / reset  operator only: show, set or reset policy.json; `reset --confirm` replaces an unparseable ledger.
@@ -70,8 +82,14 @@ Usage: gate_lock.py run [--need RES=N[,RES=N...]] [--slots N] [--priority P] [--
           Admission never calls it.
   selftest  real child processes in a temp SDLC_GATE_DIR: weighted caps, FIFO, priority, liveness (a dead holder
           reclaimed, a live group not), nesting, cancel, timeout, reboot, corrupt ledger, receipts, status, the
-          legacy bridge, the load cap and the old exit codes, each control observed failing in a mutant copy of this script;
+          legacy bridge, the load cap, the capacity hint, the job owner and behind warning (an older entry
+          without them still renders) and the old exit codes, each control observed failing in a mutant copy of this script;
           then the reap cases with a fake orphan and a live-parent fake.
+
+Batching: to run many named gates from a shell loop, call a function with explicit arguments, never a command held
+in one variable (`set -- $c` does not split it in zsh, so the whole string becomes one word):
+  gated() { local name=$1; shift; python3 <plugin-root>/scripts/gate_lock.py run --name "$name" -- "$@"; }
+  gated keys-app-shell node scripts/keys.mjs app-shell
 """
 import argparse, contextlib, fcntl, json, os, pathlib, pwd, re, secrets, shlex, shutil, signal, struct, subprocess, sys, tempfile, time
 
@@ -79,6 +97,7 @@ PROTOCOL = 'sdlc-gate/2'
 DEFAULT_TIMEOUT = 1800.0
 POLL = 0.2
 KILL_GRACE = 5.0
+BEHIND_MAX = 20  # status flags a job whose recorded head is more than this many commits behind its branch
 PID_SLACK = 5.0  # legacy slot files only: a live pid that started this much after the slot was taken is a reused pid
 SLOT_RE = re.compile(r'slot-(\d+)$')
 BUILTIN_POLICY = {'capacity': {'compute_units': 6, 'browser_jobs': 3}, 'default_need': {'compute_units': 3}}
@@ -509,6 +528,43 @@ def top_cpu_text(top):
     return '; '.join(f"pid {r['pid']} {r['cpu']:.1f}% {r['command']}" for r in top) or 'none found'
 
 
+def next_head(ledger):
+    """The queue entry whose turn it is: the highest priority, and among the repos at that priority the first one
+    after the repo granted last (round robin), each repo's own entries in arrival order."""
+    heads, first = {}, {}
+    for e in sorted(ledger['queue'], key=order_key):
+        heads.setdefault(e['repo'], e)
+    for e in ledger['queue']:
+        first[e['repo']] = min(first.get(e['repo'], e['seq']), e['seq'])
+    top = min(order_key(h)[0] for h in heads.values())
+    cl = sorted((r for r, h in heads.items() if order_key(h)[0] == top), key=lambda r: first[r])
+    if ledger.get('rr') in cl:
+        i = cl.index(ledger['rr']) + 1
+        cl = cl[i:] + cl[:i]
+    return heads[cl[0]]
+
+
+def capacity_hint(ledger, pol, legacy_n, load):
+    """The operator hint for a queue that waits on capacity, or None. It applies when the head's compute need does not
+    fit beside the compute units held and the load cap does not hold the queue (the load is at or under max_load, the
+    cap is off, or the host reports no load). It names the capacity, the load and the `policy set` that raises the
+    capacity by one default need."""
+    c = pol['capacity'].get(COMPUTE)
+    if not ledger['queue'] or not c:
+        return None
+    max_load = pol.get('max_load')
+    held = bool(ledger['grants'] or legacy_n)
+    if max_load and held and load is not None and load > max_load: return None  # HINT-LOAD
+    step = default_need(pol).get(COMPUTE, 0)
+    used = sum(g['need'].get(COMPUTE, 0) for g in ledger['grants']) + legacy_n * step
+    if used + next_head(ledger)['need'].get(COMPUTE, 0) <= c:
+        return None  # the head waits on another resource, not compute
+    why = ('the host reports no load' if load is None else f'load {load:.1f} is under {max_load}' if max_load
+           else f'load {load:.1f} has no load cap')
+    return (f'capacity {COMPUTE}={c} is full while {why}; an operator can raise it: '
+            f'gate_lock.py policy set {COMPUTE}={c + max(1, step)}')
+
+
 def schedule(ledger, pol, legacy_n=0, load=None):
     """Grant queue heads while they fit: highest priority first, then arrival; among the repos at the top priority
     round robin after the repo granted last; the selected head keeps its turn until it fits (no backfill). With a
@@ -524,17 +580,7 @@ def schedule(ledger, pol, legacy_n=0, load=None):
         add_usage(usage, default_need(pol))
     granted = []
     while ledger['queue']:
-        heads, first = {}, {}
-        for e in sorted(ledger['queue'], key=order_key):
-            heads.setdefault(e['repo'], e)
-        for e in ledger['queue']:
-            first[e['repo']] = min(first.get(e['repo'], e['seq']), e['seq'])
-        top = min(order_key(h)[0] for h in heads.values())
-        cl = sorted((r for r, h in heads.items() if order_key(h)[0] == top), key=lambda r: first[r])
-        if ledger.get('rr') in cl:
-            i = cl.index(ledger['rr']) + 1
-            cl = cl[i:] + cl[:i]
-        entry = heads[cl[0]]
+        entry = next_head(ledger)
         if max_load and load is not None and load > max_load and (ledger['grants'] or legacy_n): break  # LOAD-CAP
         if not fits(usage, entry['need'], cap):
             break
@@ -587,6 +633,47 @@ def repo_identity(cwd, override=None):
     except (OSError, subprocess.SubprocessError):
         pass
     return os.path.realpath(cwd)
+
+
+def git_out(cwd, *args, timeout=3):
+    """The stdout of one git command run in cwd, or '' on any failure (a missing cwd, no git, a timeout): never raises."""
+    try:
+        p = subprocess.run(['git', *args], cwd=cwd, capture_output=True, text=True, timeout=timeout)
+    except (OSError, subprocess.SubprocessError, ValueError):
+        return ''
+    return p.stdout.strip() if p.returncode == 0 else ''
+
+
+def job_session():
+    """The session that owns a new job: Claude Code's session id, else the Codex thread id, else ''."""
+    return os.environ.get('CLAUDE_CODE_SESSION_ID') or os.environ.get('CODEX_THREAD_ID') or ''
+
+
+def behind_branch(cwd, head, cache):
+    """{'branch', 'commits'} when the job's recorded head is more than BEHIND_MAX commits behind its branch, else None.
+    The branch is the cwd's upstream, else local main, else local master, else origin/HEAD. Any git failure is None,
+    so the check never fails status. cache keys on (cwd, head) so one status asks git once per tree and commit."""
+    if not cwd or not head:
+        return None
+    key = (cwd, head)
+    if key not in cache:
+        cache[key] = None
+        ref = git_out(cwd, 'rev-parse', '--abbrev-ref', '--symbolic-full-name', '@{upstream}')
+        if not ref:
+            ref = next((b for b in ('main', 'master') if git_out(cwd, 'rev-parse', '--verify', '--quiet', f'refs/heads/{b}')), '')
+        if not ref:
+            ref = git_out(cwd, 'symbolic-ref', '--short', 'refs/remotes/origin/HEAD')
+        n = git_out(cwd, 'rev-list', '--count', f'{head}..{ref}') if ref else ''
+        if n.isdigit() and int(n) > BEHIND_MAX:  # BEHIND
+            cache[key] = {'branch': ref, 'commits': int(n)}
+    return cache[key]
+
+
+def owner_text(row):
+    """The head, cwd and session of a status row (each only when recorded) and the behind-branch warning."""
+    out = ''.join(f'  {k} {row[k]}' for k in ('head', 'cwd', 'session') if row.get(k))
+    b = row.get('behind')
+    return out + (f"  (behind {b['branch']} by {b['commits']})" if b else '')
 
 
 def need_text(need):
@@ -804,7 +891,8 @@ def run_bare(name, nice, cmd, receipt, t0):
 def run_top(root, pol, need, name, nice, timeout, cmd, priority, repo_arg, receipt, t0):
     legacy_n = len(legacy_holders())
     me = {'id': secrets.token_hex(16), 'repo': repo_identity(os.getcwd(), repo_arg), 'name': name, 'cmd': ' '.join(cmd)[:200], 'need': need,
-          'priority': priority, 'pid': os.getpid(), 'pid_start': pid_start(os.getpid()) or '', 'pgid': None, 'enqueued_at': time.time()}
+          'priority': priority, 'pid': os.getpid(), 'pid_start': pid_start(os.getpid()) or '', 'pgid': None, 'enqueued_at': time.time(),
+          'cwd': os.getcwd(), 'head': git_out(os.getcwd(), 'rev-parse', '--short', 'HEAD', timeout=10), 'session': job_session()}
     gid, child, rc, outcome, pgid = me['id'], None, 1, 'ok', None
     t_grant = t_run = t_exit = None
     env = dict(os.environ)
@@ -817,16 +905,19 @@ def run_top(root, pol, need, name, nice, timeout, cmd, priority, repo_arg, recei
             L['queue'].append(me)
             schedule(L, pol, legacy_n)
         next_report, last_legacy = t0 + report, time.monotonic()
+        hinted = False
         while True:
             try:
                 pol, _ = load_policy(root)  # a capacity set by `policy set` after this run queued reaches it
             except GateError:
                 pass  # keep the last good policy for this poll
+            due = not hinted and time.monotonic() >= next_report
             with txn(root) as L:
                 prune(L)
                 schedule(L, pol, legacy_n)
                 mine = next((g for g in L['grants'] if g['id'] == gid), None)
                 if mine is None:
+                    hint = capacity_hint(L, pol, legacy_n, host_load()) if due else None
                     qs = queue_view(L)
                     pos = next((i + 1 for i, e in enumerate(qs) if e['id'] == gid), None)
                     holders = holders_text(L)
@@ -840,13 +931,15 @@ def run_top(root, pol, need, name, nice, timeout, cmd, priority, repo_arg, recei
                 raise GateError('state_unavailable', 'this run\'s queue entry was removed from the ledger')
             if now >= t0 + timeout:
                 outcome = 'timeout'
-                raise GateError('timeout', f'after {timeout:g}s waiting for a grant of {need_text(need)} ({holders})')
+                raise GateError('timeout', f'after {timeout:g}s waiting for a grant of {need_text(need)} ({holders}); command not run')
             if now >= next_report:
                 line = (f'gate_lock: {name} waiting for a slot, position {pos} of {nqueue} (need {need_text(need)}, {int(now - t0)}s so far); '
                         f'admitted: {holders}')
                 load, cap = host_load(), pol.get('max_load')
                 if cap and held and load is not None and load > cap:  # STALL-LINE
                     line += f'; waiting on load {load:.1f} over cap {cap}, top non-gate CPU: {top_cpu_text(outside_cpu(gate))}'
+                if hint:
+                    line, hinted = line + f'; hint: {hint}', True  # HINT-LINE
                 print(line, file=sys.stderr, flush=True)
                 next_report = now + report
             if now - last_legacy > 5:
@@ -910,13 +1003,17 @@ def run_top(root, pol, need, name, nice, timeout, cmd, priority, repo_arg, recei
 def status_data(root):
     L = read_ledger(root)
     now = time.time()
-    grants = []
+    grants, cache = [], {}
+
+    def owner(e):  # optional fields: an entry from an older plugin version has none of them
+        return {'cwd': e.get('cwd') or '', 'head': e.get('head') or '', 'session': e.get('session') or '',
+                'behind': behind_branch(e.get('cwd'), e.get('head'), cache)}
     for g in sorted(L['grants'], key=lambda g: g['seq']):
         wrapper = alive(g['pid'], g.get('pid_start'))
         group = group_alive(g.get('pgid'))
         state = 'admitted' if wrapper else 'orphaned_group' if group else 'dead'
         grants.append({'state': state, 'id': g['id'], 'name': g.get('name', '?'), 'pid': g['pid'], 'pgid': g.get('pgid'), 'need': g['need'],
-                       'repo': g['repo'], 'priority': g.get('priority', 0), 'age_s': int(now - g.get('granted_at', now))})
+                       'repo': g['repo'], 'priority': g.get('priority', 0), 'age_s': int(now - g.get('granted_at', now)), **owner(g)})
     queue = []
     held = sum(g['need'].get(COMPUTE, 0) for g in L['grants'])
     holders = [g.get('name', '?') for g in sorted(L['grants'], key=lambda g: g['seq'])]
@@ -924,13 +1021,18 @@ def status_data(root):
     for i, e in enumerate(queue_view(L)):
         queue.append({'state': 'queued' if alive(e['pid'], e.get('pid_start')) else 'dead', 'position': i + 1, 'id': e['id'],
                       'name': e.get('name', '?'), 'pid': e['pid'], 'need': e['need'], 'repo': e['repo'], 'priority': e['priority'],
-                      'waited_s': int(now - e.get('enqueued_at', now)), 'ahead': ahead, 'blocking': holders})
+                      'waited_s': int(now - e.get('enqueued_at', now)), 'ahead': ahead, 'blocking': holders, **owner(e)})
         ahead += e['need'].get(COMPUTE, 0)
     d = {'protocol': PROTOCOL, 'state_root': str(root), 'boot': L.get('boot', ''), 'grants': grants, 'queue': queue, 'legacy': legacy_holders()}
     try:
-        max_load = load_policy(root)[0].get('max_load')
+        pol = load_policy(root)[0]
     except GateError:
-        max_load = None  # a policy that does not load gives no load fact and never fails status
+        pol = None  # a policy that does not load gives no load fact and no hint, and never fails status
+    max_load = pol.get('max_load') if pol else None
+    if pol and queue:
+        hint = capacity_hint(L, pol, len(d['legacy']), host_load())
+        if hint:  # HINT-STATUS
+            d['hint'] = hint
     if max_load:
         load = host_load()
         d['load'] = {'value': load, 'max_load': max_load,
@@ -955,11 +1057,11 @@ def cmd_status(argv):
     for g in d['grants']:
         note = {'admitted': '', 'orphaned_group': '  (orphaned group: wrapper dead, still charged)', 'dead': '  (dead: will be reclaimed)'}[g['state']]
         rows.append(f"{'admitted' if g['state'] != 'dead' else 'dead':<9} name {g['name']}  pid {g['pid']}  need {need_text(g['need'])}  "
-                    f"repo {os.path.basename(g['repo'])}  priority {g['priority']}  age {g['age_s']}s{note}")
+                    f"repo {os.path.basename(g['repo'])}  priority {g['priority']}  age {g['age_s']}s{owner_text(g)}{note}")
     for q in d['queue']:
         rows.append(f"{'queued' if q['state'] == 'queued' else 'dead':<9} name {q['name']}  pid {q['pid']}  #{q['position']}  need {need_text(q['need'])}  "
                     f"repo {os.path.basename(q['repo'])}  priority {q['priority']}  age {q['waited_s']}s  "
-                    f"ahead {q['ahead']}  blocking {','.join(q['blocking']) or 'none'}")
+                    f"ahead {q['ahead']}  blocking {','.join(q['blocking']) or 'none'}{owner_text(q)}")
     if d['queue'] and d.get('load', {}).get('over'):
         rows.append(f"waiting: load {d['load']['value']:.1f} over cap {d['load']['max_load']}")
         if d.get('stall'):
@@ -968,6 +1070,8 @@ def cmd_status(argv):
         rows.append(f"legacy    name {h['name']}  pid {h['pid']}  {h['slot']} in {h['dir']} (charged the default need; never touched)")
     if d['legacy']:
         rows.append('protection is partial: legacy holders from an older plugin version are running')
+    if d.get('hint'):
+        rows.append(f"hint: {d['hint']}")
     print('\n'.join(rows) or 'no holders')
     return 0
 
@@ -1204,6 +1308,10 @@ M_RSS = "used, pids = tree_rss(child.pid) if cap_mb else (0, [])" + '  # RSS-CAP
 M_STALL = "if d['load']['over'] and queue:" + '  # STALL-NOTE'
 M_DECODE = "text = pathlib.Path(path).read_text(errors='replace')" + '  # STALL-DECODE'
 M_STALLRUN = 'if cap and held and load is not None and load > cap:' + '  # STALL-LINE'
+M_HINT = "line, hinted = line + f'; hint: {hint}', True" + '  # HINT-LINE'
+M_HINTLOAD = 'if max_load and held and load is not None and load > max_load: return None' + '  # HINT-LOAD'
+M_NOTRUN = "({holders}); command not" + " run')"
+M_BEHIND = "if n.isdigit() and int(n) > BEHIND_MAX:" + '  # BEHIND'
 M_LOAD = "if max_load and load is not None and load > max_load and (ledger['grants'] or legacy_n): break" + '  # LOAD-CAP'
 # the reap fakes: a python that records its pid and sleeps, its last argument the name that makes it match;
 # the orphaner double forks it so its parent is pid 1 and its own command line carries no matching name
@@ -1281,11 +1389,11 @@ def gl(py, env, *args, timeout=60, **kw):
     return subprocess.run([sys.executable, str(py), *args], env=env, capture_output=True, text=True, timeout=timeout, **kw)
 
 
-def holder(py, env, m, n, *args):
+def holder(py, env, m, n, *args, cwd=None):
     """A gate_lock run whose command holds its grant until <m>/go-<n> exists; stderr goes to <m>/err-<n>, the command's pid
-    (also its process group) to <m>/pid-<n>."""
+    (also its process group) to <m>/pid-<n>. cwd is the directory the run starts in (default: the selftest's own)."""
     return subprocess.Popen([sys.executable, str(py), 'run', '--name', f'H{n}', '--timeout', '60', *args, '--', 'sh', '-c',
-                             'echo $$ >"$GL_M/pid-$GL_N"; ' + HOLD],
+                             'echo $$ >"$GL_M/pid-$GL_N"; ' + HOLD], cwd=cwd,
                             env=dict(env, GL_M=str(m), GL_N=str(n)), stdout=subprocess.DEVNULL, stderr=open(m / f'err-{n}', 'w'))
 
 
@@ -1585,6 +1693,182 @@ def case_stall(py, base, label, raw=False):
         release_all(m, procs)
 
 
+def case_owner(py, base, label):
+    """Who owns a job and what it tests: in a throwaway repo whose main is 22 commits long, H1 runs in a branch at main~21
+    with CLAUDE_CODE_SESSION_ID set and H2 in a detached worktree at main~20. status and status --json show each job's
+    head, cwd and session; H1 is `behind main by 21` and H2, at exactly the threshold of 20, is not flagged. Then the new
+    fields are stripped from H2's ledger entry (an entry written by an older plugin version): status still exits 0 and
+    shows the row with no head, cwd or session."""
+    m, bad, procs = base / f'm-{label}', [], []
+    m.mkdir()
+    repo, wt2 = base / f'repo-{label}', base / f'repo2-{label}'
+    genv = {k: v for k, v in os.environ.items() if not k.startswith('GIT_')}
+    genv.update(GIT_CONFIG_GLOBAL=os.devnull, GIT_CONFIG_NOSYSTEM='1', GIT_AUTHOR_NAME='gl', GIT_AUTHOR_EMAIL='gl@example.invalid',
+                GIT_COMMITTER_NAME='gl', GIT_COMMITTER_EMAIL='gl@example.invalid')
+
+    def git(*args, cwd=repo):
+        return subprocess.run(['git', '-c', 'commit.gpgsign=false', *args], cwd=cwd, env=genv, capture_output=True, text=True,
+                              timeout=30, check=True).stdout.strip()
+    repo.mkdir()
+    git('init', '-q', '-b', 'main')
+    for i in range(22):
+        git('commit', '-q', '--allow-empty', '-m', f'c{i}')
+    git('checkout', '-q', '-b', 'job', 'main~21')
+    git('worktree', 'add', '-q', '--detach', str(wt2), 'main~20')
+    h1, h2 = git('rev-parse', '--short', 'HEAD'), git('rev-parse', '--short', 'HEAD', cwd=wt2)
+    env = env_for(base, label, CLAUDE_CODE_SESSION_ID='sess-gl-owner', **{k: genv[k] for k in genv if k.startswith('GIT_')})
+    for k in [k for k in env if k.startswith('GIT_') and k not in genv]:
+        env.pop(k)
+    try:
+        procs = [holder(py, env, m, 1, cwd=repo), holder(py, env, m, 2, cwd=wt2)]
+        if not waitfor(lambda: (m / 'started-1').exists() and (m / 'started-2').exists()):
+            return ['the two owner holders did not start']
+        try:
+            js = {g['name']: g for g in json.loads(gl(py, env, 'status', '--json').stdout)['grants']}
+        except (ValueError, KeyError):
+            js = {}
+        g1, g2 = js.get('H1', {}), js.get('H2', {})
+        if (g1.get('head'), g1.get('cwd'), g1.get('session')) != (h1, str(repo), 'sess-gl-owner') or g2.get('head') != h2 or g2.get('cwd') != str(wt2):
+            bad.append(f'status --json does not show head, cwd and session, got H1 {g1} H2 {g2}')
+        if g1.get('behind') != {'branch': 'main', 'commits': 21}:
+            bad.append(f'status --json carries no behind warning for H1 21 commits behind main, got {g1.get("behind")}')
+        if g2.get('behind') is not None:
+            bad.append(f'status --json flags H2 at exactly {BEHIND_MAX} commits behind, got {g2.get("behind")}')
+        rows = gl(py, env, 'status').stdout.splitlines()
+        r1 = next((x for x in rows if 'name H1 ' in x), '')
+        r2 = next((x for x in rows if 'name H2 ' in x), '')
+        if not all(f in r1 for f in (f'head {h1}', f'cwd {repo}', 'session sess-gl-owner')):
+            bad.append(f'the status row does not show head, cwd and session, got {r1!r}')
+        if not r1.endswith('(behind main by 21)'):
+            bad.append(f'the status row carries no behind warning for H1, got {r1!r}')
+        if 'behind' in r2 or f'head {h2}' not in r2:
+            bad.append(f'the status row for H2 at the threshold is wrong, got {r2!r}')
+        with txn(pathlib.Path(env['SDLC_GATE_DIR'])) as L:
+            for g in L['grants']:
+                if g.get('name') == 'H2':
+                    for k in ('cwd', 'head', 'session'):
+                        g.pop(k, None)
+        st, sj = gl(py, env, 'status'), gl(py, env, 'status', '--json')
+        r2 = next((x for x in st.stdout.splitlines() if 'name H2 ' in x), '')
+        try:
+            g2 = next(g for g in json.loads(sj.stdout)['grants'] if g['name'] == 'H2')
+        except (ValueError, KeyError, StopIteration):
+            g2 = {}
+        if st.returncode or sj.returncode or not r2 or ' head ' in r2 or ' cwd ' in r2 or g2.get('cwd') != '' or g2.get('behind') is not None:
+            bad.append(f'an older entry without the new fields does not render, got rc {st.returncode}/{sj.returncode} {r2!r} {g2} {st.stderr!r}')
+        return bad
+    finally:
+        release_all(m, procs)
+
+
+def waiting_lines(path):
+    try:
+        return [x for x in path.read_text().splitlines() if 'waiting for a slot' in x]
+    except OSError:
+        return []
+
+
+def case_hint(py, base, label):
+    """A queue held by capacity at a quiet load: one holder takes all 6 compute units, a load of 0 is under the cap of 8
+    (SDLC_GATE_CPUS 10), and the waiter's first waiting line names the capacity, the load and `policy set
+    compute_units=9`; later waiting lines do not repeat it. status ends with the same `hint:` row and `status --json`
+    carries it under `hint`; with the queue empty there is no hint."""
+    m, bad, procs = base / f'm-{label}', [], []
+    m.mkdir()
+    env = env_for(base, label, SDLC_GATE_REPORT_SECS='0.3', SDLC_GATE_CPUS='10')
+    want = 'capacity compute_units=6 is full while load 0.0 is under 8; an operator can raise it: gate_lock.py policy set compute_units=9'
+    try:
+        procs = [holder(py, env, m, 1, '--need', 'compute_units=6')]
+        if not waitfor(lambda: (m / 'started-1').exists()):
+            return ['the holder did not start']
+        procs.append(holder(py, env, m, 2))
+        if not waitfor(lambda: len(waiting_lines(m / 'err-2')) >= 3, 10):
+            return [f'the waiter printed fewer than 3 waiting lines, got {(m / "err-2").read_text()!r}']
+        lines = waiting_lines(m / 'err-2')
+        if not lines[0].endswith(f'; hint: {want}'):
+            bad.append(f'the first waiting line carries no capacity hint, got {lines[0]!r}')
+        if any('policy set' in x for x in lines[1:]):
+            bad.append(f'the capacity hint is repeated after the first waiting line, got {lines!r}')
+        rows = gl(py, env, 'status').stdout.splitlines()
+        if not rows or rows[-1] != f'hint: {want}':
+            bad.append(f'status does not end with the hint row, got {rows!r}')
+        try:
+            js = json.loads(gl(py, env, 'status', '--json').stdout)
+        except ValueError:
+            js = {}
+        if js.get('hint') != want:
+            bad.append(f'status --json does not carry the hint, got {js.get("hint")!r}')
+        release_all(m, procs)
+        try:
+            js = json.loads(gl(py, env, 'status', '--json').stdout)
+        except ValueError:
+            js = {'hint': 'status --json did not parse'}
+        if 'hint' in js or js.get('queue'):
+            bad.append(f'status --json has a hint with the queue empty, got {js}')
+        return bad
+    finally:
+        release_all(m, procs)
+
+
+def case_hint_load(py, base, label):
+    """A queue held by the load cap gets no capacity hint: with max_load 24 and a load of 36.5, a holder of all 6 compute
+    units and a waiter, the waiting lines carry the load note and no `policy set`, and status has no hint row or key."""
+    m, bad, procs = base / f'm-{label}', [], []
+    m.mkdir()
+    lf, pf = base / f'load-{label}', base / f'ps-{label}'
+    lf.write_text('36.5\n')
+    pf.write_text('900001 1 900001 50.0 busy\n')
+    env = env_for(base, label, SDLC_GATE_LOAD_FILE=str(lf), SDLC_GATE_PS_FILE=str(pf), SDLC_GATE_REPORT_SECS='0.3')
+    try:
+        r = gl(py, env, 'policy', 'set', 'max_load=24')
+        if r.returncode != 0:
+            return [f'policy set max_load=24 did not take, rc={r.returncode} {r.stderr!r}']
+        procs = [holder(py, env, m, 1, '--need', 'compute_units=6')]
+        if not waitfor(lambda: (m / 'started-1').exists()):
+            return ['the holder did not start (no grant is held, so the load must not hold it)']
+        procs.append(holder(py, env, m, 2))
+        if not waitfor(lambda: len(waiting_lines(m / 'err-2')) >= 2, 10):
+            return [f'the waiter printed fewer than 2 waiting lines, got {(m / "err-2").read_text()!r}']
+        lines = waiting_lines(m / 'err-2')
+        if not all('waiting on load 36.5 over cap 24' in x for x in lines):
+            bad.append(f'the waiting lines do not carry the load note, got {lines!r}')
+        if any('policy set' in x for x in lines):
+            bad.append(f'the waiting line carries a capacity hint under load, got {lines!r}')
+        st = gl(py, env, 'status').stdout
+        try:
+            js = json.loads(gl(py, env, 'status', '--json').stdout)
+        except ValueError:
+            js = {'hint': 'status --json did not parse'}
+        if 'hint:' in st or 'hint' in js:
+            bad.append(f'status shows a capacity hint under load, got {st!r} {js.get("hint")!r}')
+        return bad
+    finally:
+        release_all(m, procs)
+
+
+def case_notrun(py, base, label):
+    """A wait that times out exits 3 with one stderr line that starts `gate_lock: timeout after` and ends `; command not
+    run`, and the command never ran."""
+    m = base / f'm-{label}'
+    m.mkdir()
+    env = env_for(base, label)
+    procs = []
+    try:
+        procs = [holder(py, env, m, 1, '--need', 'compute_units=6')]
+        if not waitfor(lambda: (m / 'started-1').exists()):
+            return ['the holder did not start']
+        r = gl(py, env, 'run', '--timeout', '1', '--', 'touch', str(m / 'ran'))
+        lines = [x for x in r.stderr.splitlines() if x.strip()]
+        if not (r.returncode == 3 and len(lines) == 1 and lines[0].startswith('gate_lock: timeout after')
+                and lines[0].endswith('; command not run')):
+            return [f'the timeout line does not say command not run, got rc={r.returncode} {r.stderr!r}']
+        if (m / 'ran').exists():
+            return ['the command ran after a timeout']
+        return []
+    finally:
+        release_all(m, procs)
+
+
 def case_load_idle(py, base, label):
     """The starvation guard: with max_load 24, a load of 36.5 from outside and no grant held, the first gate is
     admitted at once; a second one then waits on the load while the first holds."""
@@ -1836,7 +2120,11 @@ def selftest():
             ('load cap starvation guard', case_load_idle, M_LOAD,
              "if max_load and load is not None and load > max_load: break  # LOAD-CAP", 'starved head'),
             ('default load cap', case_load_default, M_LOADDEF, 'pass  # LOAD-DEFAULT', 'ran over the default load cap'),
-            ('memory cap', case_rss, M_RSS, 'used, pids = 0, []  # RSS-CAP', 'rss cap missing'))
+            ('memory cap', case_rss, M_RSS, 'used, pids = 0, []  # RSS-CAP', 'rss cap missing'),
+            ('capacity hint', case_hint, M_HINT, 'pass  # HINT-LINE', 'carries no capacity hint'),
+            ('no capacity hint under load', case_hint_load, M_HINTLOAD, 'pass  # HINT-LOAD', 'capacity hint under load'),
+            ('timeout says command not run', case_notrun, M_NOTRUN, "({holders})')", 'does not say command not run'),
+            ('job owner and behind branch', case_owner, M_BEHIND, 'if False:  # BEHIND', 'carries no behind warning'))
         for i, (label, case, marker, repl, tell) in enumerate(controls):
             got = case(script, base, f'real{i}')
             expect(f'{label}: {got}', not got)

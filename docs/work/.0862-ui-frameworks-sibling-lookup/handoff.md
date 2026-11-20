@@ -2,14 +2,12 @@
 id: T-0862
 title: "ui-frameworks finds sibling skills inside the plugin"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
 created: 2026-11-19
 claimed_by: nonoun-author 2026-11-19
-branch: lane/T-0862-t0862
-worktree: ../sdlc-lite.worktrees/T-0862-t0862
 router: .sdlc/AGENTS.md  # how to claim and close this ticket
 ---
 
@@ -40,3 +38,14 @@ router: .sdlc/AGENTS.md  # how to claim and close this ticket
 ## Constraints
 - Generated output is byte-identical to before for the same inputs.
 - Never write under `/Volumes/kimba`.
+
+## Outcome
+
+2026-11-19 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: 0a82cf148510
+- Changed: see commits
+- Commits: 20f170a T-0862: ui-frameworks finds sibling skills inside the plugin
+- Check: 1 Scripts that read siblings succeed with empty HOME and SKILLS_DIR unset, and failed before: pass
+- Check: 2 With SKILLS_DIR at a folder lacking the sibling, the error names every place tried: pass
+- Check: 3 manifests, lint-recipes, check-packaging, diff --check: pass
+- Follow-up: note: with SKILLS_DIR set but lacking a file, the resolver falls through... -> notes.md
+- Follow-up: note: the user should take the same change upstream to the MacBook source... -> notes.md

@@ -79,7 +79,8 @@ Proposed by the user as `issues/` and `messages/`; the user chose `tickets/` for
 The user chose on 2026-10-29 that new repos keep their ticket folders in `.sdlc/tickets/`, and that existing repos are left exactly as they are, with no migrate command.
 
 - A repo is new when its `.sdlc/config` (a missing file is no line) has no `ticket_root:`, `layout:` or `work_root:` line, `.sdlc/tickets/` does not exist, no ticket folder (open or closed `.NNNN-slug`) sits in `.sdlc/`, and no `refs/sdlc/ids/` ref exists.
-- In a new repo the first write that sets it up appends `ticket_root: tickets` to `.sdlc/config`, creating the file if needed: `tickets.py new` (it prints `config: ticket_root: tickets (new repo)` on stderr and files the ticket under `.sdlc/tickets/`) and `onboard.py setup --init` (`--dry-run` shows it in the diff). `tickets.new_repo` is the one predicate both use.
+- In a new repo the first write that sets it up appends `ticket_root: tickets` to `.sdlc/config`, creating the file if needed: `tickets.py new` (it prints `config: ticket_root: tickets (new repo)` on stderr and files the ticket under `.sdlc/tickets/`) and, until T-0857, `onboard.py setup --init`. `tickets.new_repo` is the one predicate both use.
+- Onboarding defaults to `docs/tickets/` (T-0857). The user chose on 2026-11-19 that a newly onboarded repo keeps its tickets in `docs/tickets/`: `onboard.py setup --init` in a new repo with no `.sdlc/config` creates it as `work_root: docs/tickets` (`--dry-run` shows it in the diff), and its `docs/layout.md` and `docs/AGENTS.md` name the work home `tickets/`. An existing `.sdlc/config` is never changed, and a bare `tickets.py new` in a repo never onboarded still records `ticket_root: tickets`.
 - Any other repo is never changed: its config lines and ticket folders stay where they are.
 
 ## Work root: `docs/work/` (T-0618, T-0621)
