@@ -73,7 +73,7 @@ Ticket lifecycle:
 
 - Evals: `../docs/work/evals/` holds the dated model and effort experiments and `table-lock.json`; read `../docs/work/evals/AGENTS.md` before changing a model or effort row in `plugins/sdlc-lite/scripts/run.sh` or `plugins/sdlc-lite/adapters/codex/models.json`.
 - Proposals: `../docs/work/proposals/` holds candidate changes that `proposals.py scan` mined from past runs; read `../docs/work/proposals/AGENTS.md` before scanning, accepting, rejecting, or promoting one.
-<!-- sdlc:managed:start v1 sha256:8352e68f12c2 -->
+<!-- sdlc:managed:start v1 sha256:35cc5f0eb321 -->
 # Work records
 
 This folder holds SDLC `config`, this router, and the git-ignored `runtime/` and `messages/`. Tickets, task records, `docs/work/ROADMAP.md`, and `docs/work/NOTES.md` are in the work root `docs/work/`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `docs/work/ROADMAP.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -85,7 +85,10 @@ This folder holds SDLC `config`, this router, and the git-ignored `runtime/` and
 
 ## Stages
 
-- proposed: 0
+- proposed: 3
+  - T-0856 Resync five ui-* skills from the MacBook copies (docs/work/0856-ui-skill-resync-2)
+  - T-0857 Keep tickets in docs/tickets instead of .sdlc folders (docs/work/0857-tickets-in-docs-tickets)
+  - T-0858 Make testing during incremental work isolated and parallel, not a slow sequential suite (docs/work/0858-isolated-incremental-testing)
 - ready: 0
 - claimed: 0
 - paused: 0

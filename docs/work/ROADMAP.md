@@ -6,6 +6,9 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | ID | Ticket | Title | Type | Size | Pri | Depends on | Status |
 |---|---|---|---|---|---|---|---|
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔴 blocked |
+| T-0856 | [0856-ui-skill-resync-2](0856-ui-skill-resync-2/handoff.md) | Resync five ui-* skills from the MacBook copies | chore | L2 | P2 | none | ⏳ proposed |
+| T-0857 | [0857-tickets-in-docs-tickets](0857-tickets-in-docs-tickets/handoff.md) | Keep tickets in docs/tickets instead of .sdlc folders | feature | L2 | P2 | none | ⏳ proposed |
+| T-0858 | [0858-isolated-incremental-testing](0858-isolated-incremental-testing/handoff.md) | Make testing during incremental work isolated and parallel, not a slow sequential suite | feature | L2 | P2 | none | ⏳ proposed |
 
 Closed: 817 done, 30 dropped (git log or .NNNN-* folders)
 
