@@ -3,6 +3,7 @@
 ## Lane
 - lane: full; point: before planning; reasons: size L3 decides before planning (no planner result yet)
 - lane: solo; reason: the triaged handoff names the lanes.py seams, the design and the selftest cases, so no planner is needed
+- lane: full; point: before planning; reasons: skips.md already records full, and a lane never returns from full
 
 ## Skipped
 - planner: the handoff is the plan
