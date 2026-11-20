@@ -7,6 +7,17 @@ Usage:
   check_select.py prune <list dir> [<base>]
                                           check.sh --changed: delete the queued job files the changed paths
                                           do not select; exit 3 with `nothing to check` when none is left
+  check_select.py snapshot                print `<head sha> <tree>`: the tree hashes the tracked, dirty and untracked
+                                          files (a temporary index; the real one is not touched)
+  check_select.py record <results> <tier> <sha> <tree> [--merge]
+                                          write the run record (.sdlc/runtime/check-last.json at the repository top,
+                                          or $SDLC_CHECK_RECORD) from check_pool.py --results; --merge keeps the
+                                          jobs a rerun did not run and replaces the ones it did
+  check_select.py rerun <list dir>        check.sh --rerun: keep the queued jobs of the record's tier that failed,
+                                          never ran, or are selected for the paths changed since the recorded tree;
+                                          print `rerun: <k> of <N> jobs; <m> passed earlier at <sha>`, exit 3 with
+                                          `nothing to rerun`, exit 2 when there is no record or its commit is not an
+                                          ancestor of HEAD
   check_select.py selftest
 
 Paths are relative to the repository top. The job map comes from check.sh itself (each `job <tier> <name>
@@ -24,6 +35,7 @@ Paths are relative to the repository top. The job map comes from check.sh itself
 """
 import fnmatch
 import io
+import json
 import os
 import re
 import shutil
@@ -37,9 +49,25 @@ PREFIX = 'plugins/sdlc/'
 ALL = '*'
 NOTHING_EXIT = 3
 
+REFUSE_EXIT = 2
+RECORD = os.path.join('.sdlc', 'runtime', 'check-last.json')
+
 JOB_RE = re.compile(r'\bjob\s+(fast|full)\s+(\S+)\s+(.*)$')
 IMPORT_RE = re.compile(r'^\s*(?:from\s+(\w+)\s+import\b|import\s+([\w\s,.]+))')
 ROOT_TOKEN = re.compile(r'\$root/(\S+)')
+
+
+def parse_tiers(check_sh):
+    """{job name: 'fast' or 'full'} from check.sh's job lines."""
+    tiers = {}
+    with open(check_sh, encoding='utf-8') as fh:
+        for line in fh:
+            if line.lstrip().startswith(('#', 'job()')):
+                continue
+            m = JOB_RE.search(line)
+            if m:
+                tiers[m.group(2)] = m.group(1)
+    return tiers
 
 
 def parse_jobs(check_sh):
@@ -92,6 +120,7 @@ class Selector:
         self.plugin = plugin
         self.jobs = parse_jobs(os.path.join(plugin, 'scripts', 'check.sh'))
         self.names = [n for n, _ in self.jobs]
+        self.tiers = parse_tiers(os.path.join(plugin, 'scripts', 'check.sh'))
         self.importers = {}  # module name -> [relative script path that imports it]
         for rel in script_files(plugin):
             for mod in imported_names(os.path.join(plugin, rel)):
@@ -196,6 +225,120 @@ def prune(list_dir, base, plugin=PLUGIN, out=sys.stdout):
     return 0
 
 
+def snapshot(plugin=PLUGIN):
+    """(head sha, tree hash) of the working tree: tracked, dirty and untracked files, through a temporary index."""
+    top = git(plugin, 'rev-parse', '--show-toplevel').strip()
+    sha = git(top, 'rev-parse', 'HEAD').strip()
+    index = git(top, 'rev-parse', '--path-format=absolute', '--git-path', 'index').strip()
+    fd, tmp = tempfile.mkstemp(prefix='check-index-')
+    os.close(fd)
+    try:
+        if os.path.exists(index):
+            shutil.copyfile(index, tmp)
+        else:
+            os.remove(tmp)
+        env = dict(os.environ, GIT_INDEX_FILE=tmp)
+        subprocess.run(['git', '-C', top, 'add', '-A'], env=env, check=True, stdout=subprocess.PIPE,
+                       stderr=subprocess.PIPE)
+        tree = subprocess.run(['git', '-C', top, 'write-tree'], env=env, check=True, stdout=subprocess.PIPE,
+                              stderr=subprocess.PIPE, text=True).stdout.strip()
+    finally:
+        if os.path.exists(tmp):
+            os.remove(tmp)
+    return sha, tree
+
+
+def record_path(plugin=PLUGIN):
+    if os.environ.get('SDLC_CHECK_RECORD'):
+        return os.environ['SDLC_CHECK_RECORD']
+    return os.path.join(git(plugin, 'rev-parse', '--show-toplevel').strip(), RECORD)
+
+
+def load_record(path):
+    try:
+        with open(path, encoding='utf-8') as fh:
+            rec = json.load(fh)
+        return rec if isinstance(rec, dict) and isinstance(rec.get('jobs'), dict) else None
+    except (OSError, ValueError):
+        return None
+
+
+def write_record(results, tier, sha, tree, merge=False, plugin=PLUGIN):
+    """Write the run record from a check_pool.py --results file; return its path."""
+    path = record_path(plugin)
+    with open(results, encoding='utf-8') as fh:
+        ran = json.load(fh)['jobs']
+    old = load_record(path) if merge else None
+    jobs = dict(old['jobs']) if old else {}
+    if old:
+        tier = old.get('tier', tier)
+    for j in ran:
+        jobs[j['name']] = {'rc': j['rc'], 'seconds': j['seconds'], 'sha': sha, 'tree': tree}
+    names = Selector(plugin).names
+    jobs = {n: jobs[n] for n in names if n in jobs}
+    os.makedirs(os.path.dirname(path) or '.', exist_ok=True)
+    with open(path + '.tmp', 'w', encoding='utf-8') as fh:
+        json.dump({'sha': sha, 'tree': tree, 'tier': tier, 'jobs': jobs}, fh, indent=1, sort_keys=True)
+        fh.write('\n')
+    os.replace(path + '.tmp', path)
+    return path
+
+
+def rerun(list_dir, plugin=PLUGIN, out=sys.stdout):
+    """Prune the queued jobs to the ones a rerun needs; exit 0, NOTHING_EXIT or REFUSE_EXIT."""
+    path = record_path(plugin)
+    rec = load_record(path)
+    if rec is None:
+        print('rerun: refused: no run record at %s; run check.sh or check.sh --fast first' % path, file=out)
+        return REFUSE_EXIT
+    top = git(plugin, 'rev-parse', '--show-toplevel').strip()
+    sha = rec.get('sha', '')
+    ok = subprocess.run(['git', '-C', top, 'merge-base', '--is-ancestor', sha, 'HEAD'], stdout=subprocess.DEVNULL,
+                        stderr=subprocess.DEVNULL).returncode == 0 if sha else False
+    if not ok:
+        print('rerun: refused: the record is from %s, not an ancestor of HEAD; run check.sh or check.sh --fast'
+              % (sha[:12] or 'no commit'), file=out)
+        return REFUSE_EXIT
+    _, tree = snapshot(plugin)
+    try:
+        paths = git(top, 'diff', '--name-only', rec.get('tree', ''), tree, '--').splitlines()
+    except subprocess.CalledProcessError:
+        print('rerun: refused: the recorded tree %s is gone; run check.sh or check.sh --fast' % rec.get('tree'),
+              file=out)
+        return REFUSE_EXIT
+    pre = prefix_of(top, plugin)
+    if pre != PREFIX:
+        paths = [PREFIX + p[len(pre):] if p.startswith(pre) else p for p in paths]
+    sel = Selector(plugin)
+    picked = sel.select(paths)
+    tier = rec.get('tier', 'full')
+    files = sorted(os.listdir(list_dir))
+    queued = []
+    for f in files:
+        with open(os.path.join(list_dir, f), 'rb') as fh:
+            name = fh.read().split(b'\0')[0].decode()
+        if tier == 'fast' and sel.tiers.get(name) == 'full':
+            os.remove(os.path.join(list_dir, f))
+            continue
+        queued.append((f, name))
+    jobs = rec['jobs']
+    keep = [(f, n) for f, n in queued if n in picked or jobs.get(n, {}).get('rc') != 0]
+    for f, n in queued:
+        if (f, n) not in keep:
+            os.remove(os.path.join(list_dir, f))
+    if not keep:
+        print('nothing to rerun: every %s job passed at %s and no change since selects one' % (tier, sha[:12]),
+              file=out)
+        return NOTHING_EXIT
+    if len(keep) == len(queued):
+        print('rerun: every job selected (%d %s jobs); running the full suite' % (len(queued), tier), file=out)
+        return 0
+    print('rerun: %d of %d jobs; %d passed earlier at %s' % (len(keep), len(queued), len(queued) - len(keep),
+                                                           sha[:12]), file=out)
+    print('rerun jobs: %s' % ' '.join(n for _, n in keep), file=out)
+    return 0
+
+
 def selftest():
     misses = []
 
@@ -204,7 +347,7 @@ def selftest():
             print('ok: %s' % name)
         else:
             misses.append(name)
-            print('FAIL: %s%s' % (name, '' if got is None else ' (got %s)' % got))
+            print('FAIL: %s%s' % (name, '' if got is None else ' (got %s)' % (got,)))
 
     s = Selector()
     n_all = len(s.names)
@@ -272,7 +415,70 @@ def selftest():
         rc = prune(lst, 'HEAD', plug, buf)
         check('prune: nothing to check exits %d' % NOTHING_EXIT, rc == NOTHING_EXIT
               and 'nothing to check' in buf.getvalue() and os.listdir(lst) == [], buf.getvalue())
+
+        # --rerun: a run record in the throwaway repository, then the four cases the ticket names.
+        os.environ['SDLC_CHECK_RECORD'] = os.path.join(tmp, 'record.json')
+        names = ['cite_check', 'roots', 'steps', 'tickets', 'check.py']  # tickets is a full job
+
+        def queue():
+            shutil.rmtree(lst)
+            os.makedirs(lst)
+            for i, name in enumerate(names):
+                with open(os.path.join(lst, '%03d' % i), 'wb') as fh:
+                    fh.write(b'\0'.join(x.encode() for x in (name, 'true')) + b'\0')
+
+        def queued():
+            out = []
+            for f in sorted(os.listdir(lst)):
+                with open(os.path.join(lst, f), 'rb') as fh:
+                    out.append(fh.read().split(b'\0')[0].decode())
+            return out
+
+        def results(rcs):
+            res = os.path.join(tmp, 'results.json')
+            with open(res, 'w') as fh:
+                json.dump({'jobs': [{'name': n, 'rc': rc, 'seconds': 1.0} for n, rc in rcs]}, fh)
+            return res
+
+        def try_rerun():
+            queue()
+            buf = io.StringIO()
+            return rerun(lst, plug, buf), queued(), buf.getvalue()
+
+        rc, left, text = try_rerun()
+        check('rerun: no record refuses', rc == REFUSE_EXIT and 'refused: no run record' in text, text)
+        sha, tree = snapshot(plug)
+        write_record(results([(n, 1 if n == 'roots' else 0) for n in names]), 'fast', sha, tree, plugin=plug)
+        rc, left, text = try_rerun()
+        fast = [n for n in names if n != 'tickets']
+        check('rerun: a record with one failed job reruns only it', rc == 0 and left == ['roots']
+              and 'rerun: 1 of 4 jobs; 3 passed earlier at %s' % sha[:12] in text, (left, text))
+        with open(os.path.join(plug, 'scripts', 'cite_check.py'), 'a') as fh:
+            fh.write('\n')
+        rc, left, text = try_rerun()
+        check('rerun: a changed leaf script adds its job', rc == 0 and left == ['cite_check', 'roots', 'check.py']
+              and 'rerun: 3 of 4 jobs' in text, (left, text))
+        check('rerun: a --fast record leaves out the full jobs', 'tickets' not in left, left)
+        sha2, tree2 = snapshot(plug)
+        write_record(results([(n, 0) for n in left]), 'fast', sha2, tree2, merge=True, plugin=plug)
+        rc, left, text = try_rerun()
+        check('rerun: a clean rerun then says nothing to rerun', rc == NOTHING_EXIT and left == []
+              and 'nothing to rerun' in text, (left, text))
+        with open(os.path.join(plug, 'scripts', 'check.sh'), 'a') as fh:
+            fh.write('\n')
+        rc, left, text = try_rerun()
+        check('rerun: a selection of every job runs the full suite', rc == 0 and left == fast
+              and 'every job selected (4 fast jobs)' in text, (left, text))
+        for args in (['checkout', '-qb', 'other'], ['commit', '-qam', 'other', '--no-gpg-sign']):
+            subprocess.run(['git', '-C', tmp] + args, check=True, env=env, stdout=subprocess.DEVNULL)
+        sha3, tree3 = snapshot(plug)
+        write_record(results([(n, 0) for n in names]), 'fast', sha3, tree3, plugin=plug)
+        subprocess.run(['git', '-C', tmp, 'checkout', '-q', '-'], check=True, env=env, stdout=subprocess.DEVNULL)
+        rc, left, text = try_rerun()
+        check('rerun: a record from a tip that is not an ancestor refuses', rc == REFUSE_EXIT
+              and 'not an ancestor of HEAD' in text, text)
     finally:
+        os.environ.pop('SDLC_CHECK_RECORD', None)
         shutil.rmtree(tmp, ignore_errors=True)
 
     print('check_select selftest: %s' % ('FAIL: ' + ', '.join(misses) if misses else 'PASS'))
@@ -296,6 +502,14 @@ def main(argv):
             return 0
         if cmd == 'prune' and 1 <= len(rest) <= 2:
             return prune(rest[0], rest[1] if len(rest) > 1 else 'HEAD')
+        if cmd == 'snapshot' and not rest:
+            print('%s %s' % snapshot())
+            return 0
+        if cmd == 'record' and len(rest) in (4, 5) and rest[1] in ('fast', 'full') and rest[4:] in ([], ['--merge']):
+            print('check: run record %s' % write_record(*rest[:4], merge=rest[4:] == ['--merge']))
+            return 0
+        if cmd == 'rerun' and len(rest) == 1:
+            return rerun(rest[0])
     except subprocess.CalledProcessError as e:
         print('check_select.py: git failed: %s' % (e.stderr or e).strip(), file=sys.stderr)
         return 2
