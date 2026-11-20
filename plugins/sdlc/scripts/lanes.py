@@ -17,11 +17,25 @@
   lanes.py list [--all] [--stale [--fail]] [--json]
   lanes.py list --ready [--json]           one line per ready ref: ticket, lane, sha, path, and stale when the lane moved
   lanes.py list --overlap <path>...        `overlap <lane> <path>` per open plugin lane (not the current tree) whose diff
-                                           from its base (committed, uncommitted, untracked) holds the path or a path under it
+                                           from its base (committed, uncommitted, untracked) holds the path or a path under it,
+                                           then `claimed <lane> <glob>` (` (append)` for an append claim) per claim of such a
+                                           lane that meets a path (T-0874)
   lanes.py status [--json]                 read-only (T-0873): one row per plugin lane: ahead/behind its into, merges
                                            clean (git merge-tree --write-tree; ? on git before 2.38), uncommitted count,
                                            last commit age, newest uncommitted-file mtime, its gate_lock grant or queue
-                                           row (cwd under the lane), and `overlaps <lane>` per lane sharing a changed path
+                                           row (cwd under the lane), its path claims (T-0874), and `overlaps <lane>` per lane
+                                           sharing a changed path
+  lanes.py claim <lane> <glob>... [--append]   T-0874 (#102): record that the lane will create or change the paths a git
+                                           :(top,glob) glob names, in <lanes root>/claims.json (every worktree shares it) under
+                                           the lanes.lock flock as {glob: [{lane, path, mode own|append, at}]}; exit 1 with
+                                           `claim refused: <glob> meets <glob>, claimed <mode> by <lane>`, nothing written,
+                                           when a glob meets another open lane's claim, unless both are --append (shared
+                                           append-only paths such as a CHANGELOG), which print `warn: ... expect conflicts`.
+                                           Two globs meet when equal or either matches the other as a path, by git's own
+                                           pathspec rules on a throwaway index, so a planned file not yet created counts.
+                                           Advisory only: nothing refuses a commit. close drops the lane's claims
+  lanes.py claim --release <lane> [<glob>...]  drop the lane's claims, all or the globs given
+  lanes.py owners [--json]                 `<glob>  <lane>  <mode>  <at>` per claim, or none; drops claims of a gone lane
   lanes.py who [--json]                    `factory <session> <evidence>` per sign of an active factory session (T-0821):
                                            a live claude receiver naming a factory, a *.running marker a live process names,
                                            an open fanout or solo lane other than the current tree; else `none`; exit 0
@@ -33,7 +47,7 @@
   lanes.py selftest [--shard i/n] [--list]
 
 Design: docs/specs/sdlc/lane-lifecycle.md (section 17 wins over sections 1 to 16). Python API for callers:
-open_lane, close_lane, finish, sweep, list_lanes, lane_status, still_open(root, ticket), landed, patch_landed, landed_and_gone, config, host_record. open_lane and close_lane
+open_lane, close_lane, finish, sweep, list_lanes, lane_status, claim_paths, release_claims, owners, still_open(root, ticket), landed, patch_landed, landed_and_gone, config, host_record. open_lane and close_lane
 return a dict with rc, message, lane, path and branch; sweep returns (list of those dicts, rc); finish returns the exit code
 and prints through its say= callable. open_lane takes
 keyword-only path= (the tree; the leaf is its basename), branch= (used verbatim) and check_claim=False (skip the claim
@@ -338,6 +352,8 @@ MARKER_RE = re.compile(r'^\+\+?(<<<<<<<|>>>>>>>)( |$)')  # T-0872: agents/planne
 READY_REFS = 'refs/sdlc/ready/'  # T-0590: dispatch.py READY_REFS
 SNAPSHOT_SUBJECT = 'sdlc ready snapshot:'
 SNAPSHOT_SKIP = (':(exclude,glob)**/*.log', ':(exclude,glob)**/.run.lock', ':(exclude,glob)**/*.running')
+CLAIMS = 'claims.json'  # T-0874: <lanes root>/claims.json, the path claims every worktree shares
+EMPTY_BLOB = 'e69de29bb2d1d6434b8b29ae775ad8c2e48c5391'  # meets(): an index entry needs a sha, never its object
 
 
 class LaneError(Exception):
@@ -1102,6 +1118,7 @@ def do_close(ctx, d, outcome, info, dry):
     if d['owner'] == 'host' and d['record_path']:
         with contextlib.suppress(OSError):
             os.unlink(d['record_path'])
+    released = drop_claims(ctx, d['path'])  # T-0874: a closed lane's path claims go with it
     cleared, done = clear_integration_record(ctx, d, into, owner)
     # T-0713: a ticket the integration tree cleared stays byte-identical in main (merging into brings the clear); any
     # other clear in main is committed there when into is another branch, so a land never leaves main dirty
@@ -1117,7 +1134,7 @@ def do_close(ctx, d, outcome, info, dry):
         git(top, 'update-ref', '-d', READY_REFS + d['lane'])  # T-0870: a live lane's pin is named for its leaf
     if mains and short_branch(into) not in ('', 'HEAD', ctx.main):
         cleared += commit_clear(ctx, top, mpre, mains, d['lane'])
-    lines = pre + [outcome] + carried + cleared
+    lines = pre + [outcome] + carried + cleared + released
     for p in info.get('hosts', []):
         lock = info.get('host_locks', {}).get(p)
         if lock is None:
@@ -2514,6 +2531,205 @@ def overlap(paths, cwd='.'):
     return rows
 
 
+# ---- path claims (T-0874, #102) ---------------------------------------------------------------------------
+
+def meets(top, pairs):
+    """[bool] per (a, b) in pairs: True when the two meet, that is they are equal or either one, as a git :(top,glob)
+    pathspec, matches the other as a path (a path not created yet, or another glob's own text). The names go into a
+    throwaway index (GIT_INDEX_FILE in a temp dir), so git's own pathspec rules decide, as hash_bound: does, and
+    nothing is written to the repository. Raises LaneError when git refuses a name."""
+    pairs = list(pairs)
+    names = sorted({x for p in pairs for x in p})
+    if not names:
+        return [False] * len(pairs)
+    with tempfile.TemporaryDirectory() as tmp:
+        env = dict(os.environ, GIT_INDEX_FILE=os.path.join(tmp, 'index'))
+        r = subprocess.run(['git', 'update-index', '-z', '--index-info'], cwd=str(top), capture_output=True, text=True,
+                           env=env, input=''.join(f'100644 {EMPTY_BLOB}\t{n}\0' for n in names))
+        if r.returncode:
+            raise LaneError(f'cannot match claims: {err(r)}')
+        hits = {}
+        for n in names:
+            r = subprocess.run(['git', 'ls-files', '-z', '--', ':(top,glob)' + n], cwd=str(top), capture_output=True,
+                               text=True, env=env)
+            if r.returncode:
+                raise LaneError(f'cannot match claim {n}: {err(r)}')
+            hits[n] = set(r.stdout.split('\0'))
+    return [a == b or b in hits[a] or a in hits[b] for a, b in pairs]
+
+
+def claim_path(g):
+    """g as a repository-relative path git keeps in an index (normalized: no ./, // or trailing /), or None for an
+    empty, absolute or .. path, which git's update-index would silently drop."""
+    g = g.strip()
+    if not g or g.startswith('/') or '..' in g.split('/') or any(c in g for c in '\0\n'):
+        return None
+    g = os.path.normpath(g)
+    return None if g in ('.', '.git') or g.startswith('.git/') else g
+
+
+def claim_globs(globs):
+    """The globs as claim_path normalizes them; LaneError for one it refuses."""
+    got = []
+    for g0 in globs:
+        g = claim_path(g0)
+        if g is None:
+            raise LaneError(f'bad claim glob {g0!r}: a path or git glob relative to the repository root')
+        if g not in got:
+            got.append(g)
+    return got
+
+
+def read_claims(ctx):
+    """<lanes root>/claims.json as {glob: [{lane, path, mode, at}]}; {} when absent or unreadable."""
+    d = read_json(ctx.root / CLAIMS) or {}
+    return {g: [h for h in v if isinstance(h, dict) and h.get('lane') and h.get('path')]
+            for g, v in d.items() if isinstance(v, list)}
+
+
+def write_claims(ctx, claims):
+    p = ctx.root / CLAIMS
+    tmp = p.with_name(f'{p.name}.{os.getpid()}.tmp')
+    tmp.write_text(json.dumps({g: v for g, v in sorted(claims.items()) if v}, indent=2) + '\n', encoding='utf-8')
+    os.replace(str(tmp), str(p))
+
+
+def live_claims(claims, lanes):
+    """claims less every holder whose lane is gone (no plugin lane at its path)."""
+    alive = {os.path.realpath(d['path']) for d in lanes if d['owner']}
+    return {g: [h for h in v if os.path.realpath(h['path']) in alive] for g, v in claims.items()}
+
+
+def claim_paths(target, globs, append=False, cwd='.'):
+    """T-0874 (#102): record in <lanes root>/claims.json, under the lanes.lock flock, that lane target owns each glob
+    (mode own, or append with append=True). Refuses (rc 1, nothing written) when a glob meets one another open lane
+    holds, naming that lane, unless both claims are append; two append claims warn. Holders whose lane is gone are
+    dropped on the way. Returns a result dict."""
+    ctx = Ctx(cwd)
+    lanes = discover(ctx)
+    d, refusal = find(ctx, lanes, str(target))
+    if refusal:
+        return refusal
+    if not d['owner']:
+        return result(2, f'not a plugin lane: {d["path"]}', lane=d['lane'], path=d['path'], branch=d['branch'])
+    globs, mode, me = claim_globs(globs), 'append' if append else 'own', os.path.realpath(d['path'])
+    ctx.root.mkdir(parents=True, exist_ok=True)
+    with flock(ctx.root / 'lanes.lock'):
+        claims = live_claims(read_claims(ctx), lanes)
+        others = [(o, h) for o, hs in sorted(claims.items()) for h in hs if os.path.realpath(h['path']) != me]
+        pairs = [(g, o, h) for g in globs for o, h in others]
+        lines, refused = [], []
+        for (g, o, h), met in zip(pairs, meets(ctx.top, [(g, o) for g, o, _ in pairs])):
+            if not met:
+                continue
+            if mode == 'own' or h['mode'] != 'append':  # CLAIM-OWNER
+                refused.append(f'claim refused: {g} meets {o}, claimed {h["mode"]} by {h["lane"]}')
+            else:
+                lines.append(f'warn: {g} meets {o}, also claimed append by {h["lane"]}; expect conflicts')
+        if refused:
+            return result(1, '\n'.join(refused), lane=d['lane'], path=d['path'], branch=d['branch'])
+        at = utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
+        for g in globs:
+            claims[g] = [h for h in claims.get(g, []) if os.path.realpath(h['path']) != me] + \
+                [dict(lane=d['lane'], path=d['path'], mode=mode, at=at)]
+        write_claims(ctx, claims)
+    lines += [f'claimed {d["lane"]} {g} ({mode})' for g in globs]
+    return result(0, '\n'.join(lines), lane=d['lane'], path=d['path'], branch=d['branch'])
+
+
+def release_claims(target, globs=(), cwd='.'):
+    """Drop lane target's claims (every one, or only globs). A target that is no lane any more matches the lane name
+    or path its claims recorded. Returns a result dict with a `released <lane> <glob>` line per claim dropped."""
+    ctx = Ctx(cwd)
+    d, _ = find(ctx, discover(ctx), str(target))
+    lines = drop_claims(ctx, d['path'] if d else None, None if d else str(target), claim_globs(globs) if globs else None)
+    return result(0, '\n'.join(lines) or f'released nothing for {target}', lane=d['lane'] if d else str(target))
+
+
+def drop_claims(ctx, path=None, name=None, globs=None):
+    """Remove the claims held by the lane at path (or recorded under lane name or path name), limited to globs when
+    given; the `released <lane> <glob>` lines. close calls it with the closed lane's path."""
+    if not (ctx.root / CLAIMS).exists():
+        return []
+    me = os.path.realpath(path) if path else None
+    lines = []
+    with flock(ctx.root / 'lanes.lock'):
+        claims = read_claims(ctx)
+        for g, hs in claims.items():
+            if globs is not None and g not in globs:
+                continue
+            gone = [h for h in hs if (me and os.path.realpath(h['path']) == me) or (name and name in (h['lane'], h['path']))]
+            lines += [f'released {h["lane"]} {g}' for h in gone]
+            claims[g] = [h for h in hs if h not in gone]
+        if lines:
+            write_claims(ctx, claims)
+    return lines
+
+
+def owners(cwd='.'):
+    """[{glob, lane, path, mode, at}] for every claim of an open lane, sorted by glob; claims of a gone lane are
+    dropped from claims.json under the lock."""
+    ctx = Ctx(cwd)
+    if not (ctx.root / CLAIMS).exists():
+        return []
+    lanes = discover(ctx)
+    with flock(ctx.root / 'lanes.lock'):
+        claims = read_claims(ctx)
+        live = live_claims(claims, lanes)
+        if live != claims:
+            write_claims(ctx, live)
+    return [dict(glob=g, **h) for g, hs in sorted(live.items()) for h in hs]
+
+
+def claimed(paths, cwd='.'):
+    """(lane, glob, mode) for each claim of an open lane other than the current tree that meets a path; read-only."""
+    ctx = Ctx(cwd)
+    want = [p for p in (claim_path(x) for x in paths) if p]  # a path claim_path refuses meets no claim
+    if not want or not (ctx.root / CLAIMS).exists():
+        return []
+    live = live_claims(read_claims(ctx), discover(ctx))
+    held = [(g, h) for g, hs in sorted(live.items()) for h in hs
+            if not (ctx.current and samepath(h['path'], ctx.current))]
+    pairs = [(p, g, h) for g, h in held for p in want]
+    rows = []
+    for (p, g, h), met in zip(pairs, meets(ctx.top, [(p, g) for p, g, _ in pairs])):
+        if met and (h['lane'], g, h['mode']) not in rows:
+            rows.append((h['lane'], g, h['mode']))
+    return rows
+
+
+def add_claim_parsers(sub):
+    p = sub.add_parser('claim', help='record the paths a lane will create or change (T-0874)')
+    p.add_argument('lane')
+    p.add_argument('globs', nargs='*', metavar='GLOB')
+    p.add_argument('--append', action='store_true', help='a shared append-only path: other append claims warn, not refuse')
+    p.add_argument('--release', action='store_true', help="drop the lane's claims (all, or the globs given)")
+    p = sub.add_parser('owners')
+    p.add_argument('--json', action='store_true')
+
+
+def claims_cli(a):
+    """The claim and owners commands; their exit code."""
+    if a.cmd == 'claim':
+        if a.release and a.append:
+            print('lanes.py: claim --release takes no --append', file=sys.stderr)
+            return 2
+        if not a.release and not a.globs:
+            print('lanes.py: claim needs at least one glob', file=sys.stderr)
+            return 2
+        r = release_claims(a.lane, a.globs) if a.release else claim_paths(a.lane, a.globs, append=a.append)
+        print(r['message'])
+        return r['rc']
+    rows = owners()
+    if a.json:
+        print(json.dumps(rows, indent=2))
+    for r in rows if not a.json else ():
+        print(f'{r["glob"]}  {r["lane"]}  {r["mode"]}  {r["at"]}')
+    if not rows and not a.json:
+        print('none')
+    return 0
+
+
 def gate_rows():
     """The grant and queue rows of `gate_lock.py status --json` (read-only), or None when it cannot say."""
     r = run([sys.executable, str(HERE / 'gate_lock.py'), 'status', '--json'], HERE, timeout=20)
@@ -2549,6 +2765,7 @@ def lane_status(cwd='.'):
         now = time.time()
         gates = gate_rows()
         rows, changed = [], {}
+        held = read_claims(ctx)  # T-0874: read without the lock; status writes nothing
         for d in discover(ctx):
             if not d['owner']:
                 continue
@@ -2583,7 +2800,8 @@ def lane_status(cwd='.'):
             rows.append(dict(lane=d['lane'], path=d['path'], branch=d['branch'], kind=d['kind'], into=d['into'],
                              ahead=ahead, behind=behind, merge=merge, uncommitted=dirty, last_commit=commit,
                              last_commit_age_s=None if commit is None else int(now - commit), last_change=change,
-                             last_change_age_s=None if change is None else int(now - change), gate=gate))
+                             last_change_age_s=None if change is None else int(now - change), gate=gate,
+                             claims=sorted(g for g, hs in held.items() for h in hs if samepath(h['path'], d['path']))))
         for r in rows:
             hits = {}
             for o in rows:  # a union per name: two lanes can share a leaf name
@@ -2605,12 +2823,12 @@ def status_lines(rows):
             return '?'
         g = r['gate'][0] if r['gate'] else None
         return '-' if g is None else f"{g['state']}{' #' + str(g['position']) if g['state'] == 'queued' and g['position'] else ''} {g['name']}"
-    table = [('lane', 'branch', 'ahead/behind', 'merge', 'uncommitted', 'commit', 'changed', 'gate', 'overlaps')]
+    table = [('lane', 'branch', 'ahead/behind', 'merge', 'uncommitted', 'commit', 'changed', 'gate', 'claims', 'overlaps')]
     for r in rows:
         ab = '?' if r['ahead'] is None else f'+{r["ahead"]}/-{r["behind"]}'
         table.append((r['lane'], r['branch'] or '(detached)', ab, r['merge'],
                       '-' if r['uncommitted'] is None else str(r['uncommitted']), age_text(r['last_commit_age_s']),
-                      age_text(r['last_change_age_s']), gate(r),
+                      age_text(r['last_change_age_s']), gate(r), ','.join(r.get('claims') or ()) or '-',
                       ' '.join(f'overlaps {k}' for k in sorted(r['overlaps'])) or '-'))
     w = [max(len(t[i]) for t in table) for i in range(len(table[0]) - 1)]
     return ['  '.join(c.ljust(w[i]) for i, c in enumerate(t[:-1])) + '  ' + t[-1] for t in table]
@@ -2777,7 +2995,7 @@ def orphans(cwd='.'):
 
 def main(argv=None):
     ap = argparse.ArgumentParser(prog='lanes.py', description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    sub = ap.add_subparsers(dest='cmd', metavar='{open,close,finish,ready,sweep,list,status,who,check,port,archive,orphans,selftest}')
+    sub = ap.add_subparsers(dest='cmd', metavar='{open,close,finish,ready,sweep,list,status,who,check,port,archive,orphans,claim,owners,selftest}')
     sub.required = True
     p = sub.add_parser('open')
     p.add_argument('name')
@@ -2837,6 +3055,7 @@ def main(argv=None):
     q = asub.add_parser('restore')
     q.add_argument('spec', metavar='<date>/<branch>')
     sub.add_parser('orphans')
+    add_claim_parsers(sub)  # T-0874: claim and owners
     st = sub.add_parser('selftest')
     st.add_argument('--shard', metavar='I/N', help='run shard I of N of the cases (check.sh pool jobs, T-0860)')
     st.add_argument('--list', action='store_true', help='print the case names (of the shard) and run nothing')
@@ -2903,6 +3122,8 @@ def main(argv=None):
         if a.cmd == 'list' and a.overlap:
             for lane, path in overlap(a.overlap):
                 print(f'overlap {lane} {path}')
+            for lane, glob, mode in claimed(a.overlap):  # T-0874
+                print(f'claimed {lane} {glob}' + (' (append)' if mode == 'append' else ''))
             return 0
         if a.cmd == 'list' and a.ready:
             rows = ready_rows()
@@ -2945,6 +3166,8 @@ def main(argv=None):
             rc, msg = archive_restore(a.spec)
             print(msg)
             return rc
+        if a.cmd in ('claim', 'owners'):
+            return claims_cli(a)
         if a.cmd == 'orphans':
             for sha, ref, subject, n in orphans():
                 print(f'{sha} {ref} {subject} ({n} files)')
@@ -4647,6 +4870,66 @@ def case_finish_live_into(script, base):
     return fails
 
 
+def case_claims(script, base):
+    """T-0874 (#102): lane a owns src/lib/*.ts; b's own claim on the uncreated src/lib/app-scopes.ts is refused naming
+    a, as is an append claim against a's own; two append claims on CHANGELOG.md both hold with a warning; list
+    --overlap from main prints the claims, status shows them on a's row, owners lists them; closing a releases its
+    claims so b's claim then succeeds; claim --release drops one glob."""
+    t = Fixture(base, script, 'claims')
+    la, ta, _ = t.open('a', 'T-1')
+    lb, tb, _ = t.open('b', 'T-2')
+    fails = []
+    rc, o = t.lanes('claim', la, 'src/lib/*.ts')
+    if rc or o != f'claimed {la} src/lib/*.ts (own)':
+        fails.append(f'claim: want a to own src/lib/*.ts, got {rc}: {o}')
+    rc, o = t.lanes('claim', lb, 'src/lib/app-scopes.ts')
+    if rc != 1 or f'claim refused: src/lib/app-scopes.ts meets src/lib/*.ts, claimed own by {la}' not in o:
+        fails.append(f'claim owner: want the second own claim refused naming {la}, got {rc}: {o}')
+    rc, o = t.lanes('claim', lb, 'src/lib/*.ts', '--append')
+    if rc != 1 or f'claimed own by {la}' not in o:
+        fails.append(f'claim owner: want an append claim on an owned glob refused naming {la}, got {rc}: {o}')
+    rc, o = t.lanes('claim', la, 'CHANGELOG.md', '--append')
+    rc2, o2 = t.lanes('claim', lb, 'CHANGELOG.md', '--append')
+    if rc or rc2 or f'warn: CHANGELOG.md meets CHANGELOG.md, also claimed append by {la}; expect conflicts' not in o2:
+        fails.append(f'claim append: want both append claims held and a warning, got {rc}: {o} and {rc2}: {o2}')
+    rc, o = t.lanes('list', '--overlap', 'src/lib/app-scopes.ts', 'CHANGELOG.md')
+    want = {f'claimed {la} src/lib/*.ts', f'claimed {la} CHANGELOG.md (append)', f'claimed {lb} CHANGELOG.md (append)'}
+    if rc or set(o.splitlines()) != want:
+        fails.append(f'claim overlap: want {sorted(want)}, got {rc}: {o}')
+    rc, o = t.lanes('claim', lb, 'docs/', '--append')
+    rc2, o2 = t.lanes('list', '--overlap', './docs//new.md')
+    if rc or o != f'claimed {lb} docs (append)' or rc2 or o2 != f'claimed {lb} docs (append)':
+        fails.append(f'claim normalize: want docs/ stored as docs and met by ./docs//new.md, got {rc}: {o} then {rc2}: {o2}')
+    rc, o = t.lanes('claim', '--release', lb, 'docs')
+    rc2, o2 = t.lanes('claim', la, '../x')
+    if rc or rc2 != 1 or 'bad claim glob' not in o2:
+        fails.append(f'claim normalize: want docs released and ../x refused, got {rc}: {o} then {rc2}: {o2}')
+    rc, o = t.lanes('list', '--overlap', 'src/lib/app-scopes.ts', cwd=ta)
+    if rc or o:
+        fails.append(f'claim overlap: the current lane\'s own claim is not listed, got {rc}: {o}')
+    rc, o = t.lanes('status', '--json', env={'SDLC_GATE_DIR': str(t.dir / 'no-gate')})
+    try:
+        rows = {r['lane']: r for r in json.loads(o)} if not rc else {}
+    except ValueError:
+        rows = {}
+    if rows.get(la, {}).get('claims') != ['CHANGELOG.md', 'src/lib/*.ts'] or rows.get(lb, {}).get('claims') != ['CHANGELOG.md']:
+        fails.append(f'claim status: want each row to carry its claims, got {rc}: {o}')
+    rc, o = t.lanes('owners')
+    if rc or len(o.splitlines()) != 3 or not all(f'  {x}  ' in o for x in (la, lb)):
+        fails.append(f'owners: want three claims of {la} and {lb}, got {rc}: {o}')
+    rc, o = t.lanes('close', la)
+    if rc or f'released {la} src/lib/*.ts' not in o or f'released {la} CHANGELOG.md' not in o:
+        fails.append(f'claim close: want close to release both claims of {la}, got {rc}: {o}')
+    rc, o = t.lanes('claim', lb, 'src/lib/app-scopes.ts')
+    if rc:
+        fails.append(f'claim close: want b to claim the path once a closed, got {rc}: {o}')
+    rc, o = t.lanes('claim', '--release', lb, 'CHANGELOG.md')
+    rc2, o2 = t.lanes('owners')
+    if rc or o != f'released {lb} CHANGELOG.md' or rc2 or [l.split()[:3] for l in o2.splitlines()] != [['src/lib/app-scopes.ts', lb, 'own']]:
+        fails.append(f'claim release: want one glob dropped, got {rc}: {o} then {rc2}: {o2}')
+    return fails
+
+
 def case_status(script, base):
     """T-0873: lanes.py status, two lanes touching keep.txt: a commits it twice-ahead, b commits b.txt and edits
     keep.txt uncommitted, main then changes keep.txt. a is +2/-1 and conflicts, b is +1/-1, clean, 1 uncommitted file
@@ -4744,6 +5027,8 @@ MUTANTS = (
     ('STATUS-OVERLAP', "r['overlaps'] = {k: v for k, v in hits.items() if v}" + '  # STATUS-OVERLAP',
      "r['overlaps'] = {}" + '  # STATUS-OVERLAP', case_status, 'status overlap',
      'without the overlap column status names no lane sharing a changed path'),
+    ('CLAIM-OWNER', "if mode == 'own' or h['mode'] != 'append':" + '  # CLAIM-OWNER', 'if False:  # CLAIM-OWNER',
+     case_claims, 'claim owner', 'without the owner check a lane claims a path another open lane owns'),
     ('MARKER-RANGE', 'hit = diff_markers(log)' + '  # MARKER-RANGE', 'hit = None  # MARKER-RANGE', case_finish_markers,
      'range marker landed', 'without the range marker guard a lane commit holding a conflict marker lands'),
 )
@@ -5385,6 +5670,12 @@ def run_selftest(script, src, base, cases):
     def status_view():
         need('status', case_status(script, base),
              'status shows ahead/behind, merges clean or conflict, uncommitted count, the gate row by cwd and overlaps on both rows (T-0873)')
+
+    @cases(8)
+    def claims():
+        need('claims', case_claims(script, base),
+             'a second own claim is refused naming the owner, two append claims hold, --overlap and status show claims, '
+             'close releases them (T-0874)')
 
     @cases(49)
     def mutants():
