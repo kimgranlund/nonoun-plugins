@@ -1005,3 +1005,7 @@
 
 - note: `redck.py deviations` printed no process deviation lines (the ticket has no `(red)` tagged criterion).
 - note: the new inside-one-step check at specgate.py keeps `(guard)` and `Merge` exemptions unchanged; the selftest's guard cases still pass.
+
+## T-0865: `gate_lock.py status` shows, for each admitted and queued job, the commit it tests, its working directory and (2026-11-19)
+
+- note: `plugins/sdlc/scripts/gate_lock.py` `run_top` runs `git rev-parse` with `timeout=10`, while `behind_branch` uses the 3 s default. This is harmless, and the design said only that the stale check uses a short timeout.
