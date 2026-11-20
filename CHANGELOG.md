@@ -4,6 +4,10 @@ SDLC releases (named SDLC Lite before 1.0.0), newest first, in [Keep a Changelog
 
 ## [Unreleased]
 
+## [1.0.9] - 2026-11-20
+
+Report: [docs/reports/2026-11-20-release-1-0-9.md](docs/reports/2026-11-20-release-1-0-9.md). Marketplace release: `sdlc` 1.1.0 and `design` 0.5.1; `context` 0.8.0 and `dev-tools` 0.1.1 are unchanged. 25 tickets (T-0857 to T-0881), 17 of them from GitHub issues #85 to #102. Design details are in [the design changelog](plugins/design/CHANGELOG.md).
+
 ### Added
 
 - `sdlc`: lanes can claim the paths they will create or change, so two lanes never plan the same file unseen. `lanes.py claim <lane> <glob>... [--append]` records the claims in `<lanes root>/claims.json` (shared by every worktree, written under the `lanes.lock` flock) and exits 1 naming the owner when a glob meets another open lane's claim by git `:(top,glob)` pathspec rules, a file not yet created included; two `--append` claims (a shared append-only path such as a CHANGELOG) warn instead. `claim --release <lane> [<glob>...]` drops claims, `owners [--json]` lists them and drops those of a gone lane, `list --overlap` adds `claimed <lane> <glob>` lines, `status` shows each lane's claims, and closing a lane releases its claims. `ready` and `finish` refuse a path another lane owns (T-0874, #102).
@@ -35,6 +39,8 @@ SDLC releases (named SDLC Lite before 1.0.0), newest first, in [Keep a Changelog
 - `dispatch.py prepare verifier` in a lane that merged its integration branch keeps that branch's other tickets out of the Base sha diff: the lane fork floor is taken against the lane record's `into` branch when it resolves, before the main checkout HEAD (T-0869, issue #86).
 - `sdlc`: the `/sdlc:ask` ticket step treats a `not a ticket root` refusal from `tickets.py blockers` as `no tickets` and goes on with the rest of the sweep, instead of starting with an error in a repo that uses live mode without tickets; the root guard in `tickets.py` is unchanged (T-0866, issue #95).
 - `sdlc`: `fanout.py land`'s close commit keeps a `skips.md` the lane committed tracked in the closed ticket folder, as `tickets.py close` does since T-0797; an untracked one still moves to the runtime records dir (T-0878, #85).
+- `sdlc`: `steps.py split --supersede` folds the plan-review notes into each step before it rewrites links to the superseded step, so a folded `### Notes` line that cites the old step's report points at the `step-N.superseded-M` folder (T-0867, #88).
+- `design` 0.5.1: `ui-frameworks` `scripts/tokens.mjs` and `scripts/panda.mjs` find `ui-colors`, `ui-geometry` and `ui-materials` inside the plugin's own `skills/` folder (T-0862); `AGENTS.md` names the Playwright scratch project for the two browser checks (T-0863).
 
 ## [1.0.8] - 2026-11-19
 

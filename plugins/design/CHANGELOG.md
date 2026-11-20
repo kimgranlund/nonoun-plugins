@@ -4,6 +4,8 @@ The design plugin, newest first. Releases before this file are recorded in the r
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-11-20
+
 ### Changed
 
 - `AGENTS.md` (T-0863): the Checks section names the Playwright scratch project and the commands for the two browser checks, `ui-explore-variants` `scripts/check.mjs` and the inspector panel's `examples/test.mjs`. Both ran green here (33/33 and 134/134).
