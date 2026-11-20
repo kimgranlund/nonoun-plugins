@@ -6,6 +6,7 @@ SDLC releases (named SDLC Lite before 1.0.0), newest first, in [Keep a Changelog
 
 ### Added
 
+- `sdlc`: opt-in `.sdlc/config` line `risky_paths: <glob> [<glob>...]` turns on the Claude-only PreToolUse(Bash) hook `hooks/warn-risky-change.sh`: a `git commit` or `git merge <ref>` in a session with no role whose paths match a glob gets one `additionalContext` reminder per change to offer `/sdlc:verify`; it never blocks, and a role or `SDLC_HEADLESS=1` session is silent (T-0876, #98).
 - `check.sh --changed [<base>]` runs only the check jobs that cover the changed and untracked files, picked by the new `scripts/check_select.py` from `check.sh`'s own job list and the scripts' import lines (T-0858).
 - `sdlc`: `messages.py findings [--receiver NAME]` lists cross-session findings as `<id>\t<where>\t<blocking>\t<state>\t<sender>`, state `open`, `fixed-in <sha>`, `wontfix` or `worked-around` from the receiver's reply. A finding is an ordinary message with topic `finding <id>` and a body that opens with `finding:`, `where:`, `repro:`, `worked-around:` and `blocking:` lines; a reply opens with `fixed-in: <sha>`, `wontfix: <reason>` or `worked-around: <how>`. No new kind, and the command never claims, moves or prints prose (T-0868, issue #96).
 
