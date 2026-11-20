@@ -26,6 +26,10 @@ To block until a message arrives, run `python3 ".sdlc/messages/messages-run.py" 
 
 To see messages already claimed but not acknowledged, run `python3 ".sdlc/messages/messages-run.py" backlog --receiver <name>`. It prints a status line, `<N> previously claimed message(s) remain(s) unacknowledged (<K> listed).`, then one tab-separated row per message in `read/<name>/`: id, sender, topic, send_time, read_time, follow_up_requested. It reads only that receiver, never claims, acks, or prints a body, and writes nothing. With `--once` it lists only messages it has not listed before (it records their ids in `read/<name>/.backlog-reported`), so a second `--once` run lists none.
 
+## Findings
+
+To report a finding, send a message whose topic starts `finding ` and whose body opens with `key: value` lines, any order, then a blank line before any prose: `finding: <id>` (required), `where: <file:line>`, `repro: <one line>`, `worked-around: yes|no`, `blocking: yes|no`. Answer one with `reply` whose first line is `fixed-in: <sha>`, `wontfix: <reason>` or `worked-around: <how>`. `python3 ".sdlc/messages/messages-run.py" findings --receiver <name>` prints one tab-separated row per finding that name sent or received: id, where, blocking, state (`open`, `fixed-in <sha>`, `wontfix`, `worked-around`), sender. It never claims or moves a message and never prints repro, reasons or prose.
+
 ## Reply
 
 `python3 ".sdlc/messages/messages-run.py" reply <id> "<reply text>"` sends to the original's sender with the same topic and `re: <id>`. Add `--follow-up true` to ask for an answer back.

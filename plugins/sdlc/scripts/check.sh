@@ -13,6 +13,8 @@
 # --fast runs only the jobs tagged fast (structure, generated-file parity, the quick selftests): the builder and CI tier.
 # --changed [<base>] runs only the jobs check_select.py picks for `git diff --name-only <base>` (default HEAD) plus
 # untracked files: the incremental tier during a ticket. The full run, every job, stays the land gate. Jobs are listed slowest first so the long ones start at once.
+# The fanout.py, dispatch.py and lanes.py selftests run as shard jobs (`selftest --shard i/n`, shards.py); the shards-closure
+# job fails when a case is in no shard job or in two.
 set -uo pipefail
 root="$(cd "$(dirname "$0")/.." && pwd)"
 tier=full
@@ -37,11 +39,17 @@ job() { # job <fast|full> <name> <command...>: queue one job; --fast leaves out 
   n=$((n + 1))
   printf '%s\0' "$@" >"$list/$(printf '%03d' "$n")"
 }
-job full fanout python3 "$root/scripts/fanout.py" selftest
+job full fanout-1 python3 "$root/scripts/fanout.py" selftest --shard 1/4
+job full fanout-2 python3 "$root/scripts/fanout.py" selftest --shard 2/4
+job full fanout-3 python3 "$root/scripts/fanout.py" selftest --shard 3/4
+job full fanout-4 python3 "$root/scripts/fanout.py" selftest --shard 4/4
 job full traces python3 "$root/scripts/traces.py" selftest
-job full dispatch python3 "$root/scripts/dispatch.py" selftest
+job full dispatch-1 python3 "$root/scripts/dispatch.py" selftest --shard 1/3
+job full dispatch-2 python3 "$root/scripts/dispatch.py" selftest --shard 2/3
+job full dispatch-3 python3 "$root/scripts/dispatch.py" selftest --shard 3/3
 job full run-selftest bash "$root/scripts/run-selftest.sh"
-job full lanes python3 "$root/scripts/lanes.py" selftest
+job full lanes-1 python3 "$root/scripts/lanes.py" selftest --shard 1/2
+job full lanes-2 python3 "$root/scripts/lanes.py" selftest --shard 2/2
 job full messages python3 "$root/scripts/messages.py" selftest
 job full supervisor python3 "$root/scripts/supervisor.py" selftest
 job full tickets python3 "$root/scripts/tickets.py" selftest
@@ -91,6 +99,8 @@ job fast cite_check python3 "$root/scripts/cite_check.py" selftest
 job fast budget python3 "$root/scripts/budget.py" selftest
 job fast check_select python3 "$root/scripts/check_select.py" selftest
 job fast check_pool python3 "$root/scripts/check_pool.py" selftest
+job fast shards python3 "$root/scripts/shards.py" selftest
+job fast shards-closure python3 "$root/scripts/shards.py" check "$root/scripts/check.sh"
 job fast wtroot python3 "$root/scripts/wtroot.py" selftest
 job fast migrate-worktrees bash "$root/scripts/migrate-worktrees.sh" --selftest
 # The repository gate: docs/ conforms to docs/layout.md (this repository only; a consumer install has no docs/layout.md beside it).

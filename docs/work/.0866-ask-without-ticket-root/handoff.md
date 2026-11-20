@@ -2,11 +2,12 @@
 id: T-0866
 title: "`/sdlc:ask` in a repo with no ticket root notes 'no tickets' and goes on with the rest of the sweep"
 type: bug             # feature | bug | chore | spike | idea
-status: ready     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
 created: 2026-11-19
+claimed_by: nonoun-author 2026-11-19
 router: .sdlc/AGENTS.md  # how to claim and close this ticket
 ---
 
@@ -35,3 +36,12 @@ router: .sdlc/AGENTS.md  # how to claim and close this ticket
 
 ## Constraints
 - `tickets.py` is not edited.
+
+## Outcome
+
+2026-11-19 · lane: solo L1 · verdict: closed by reason (delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed; gate: full) · verifier: verifier-L1 (opus) · base: 838b6ed4eeba
+- Changed: see commits
+- Commits: 280b92a T-0866: /sdlc:ask goes on when the repo has no ticket root (#95)
+- Check: 1 grep prints the new rule, exits 1 at HEAD: pass
+- Check: 2 guard unchanged in a throwaway repo with empty `.sdlc/`: pass
+- Check: 3 check.py, prompt_lint.py, check-packaging.py exit 0 and git diff --check clean: pass

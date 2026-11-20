@@ -7,6 +7,7 @@ SDLC releases (named SDLC Lite before 1.0.0), newest first, in [Keep a Changelog
 ### Added
 
 - `check.sh --changed [<base>]` runs only the check jobs that cover the changed and untracked files, picked by the new `scripts/check_select.py` from `check.sh`'s own job list and the scripts' import lines (T-0858).
+- `sdlc`: `messages.py findings [--receiver NAME]` lists cross-session findings as `<id>\t<where>\t<blocking>\t<state>\t<sender>`, state `open`, `fixed-in <sha>`, `wontfix` or `worked-around` from the receiver's reply. A finding is an ordinary message with topic `finding <id>` and a body that opens with `finding:`, `where:`, `repro:`, `worked-around:` and `blocking:` lines; a reply opens with `fixed-in: <sha>`, `wontfix: <reason>` or `worked-around: <how>`. No new kind, and the command never claims, moves or prints prose (T-0868, issue #96).
 
 ### Changed
 
@@ -16,6 +17,11 @@ SDLC releases (named SDLC Lite before 1.0.0), newest first, in [Keep a Changelog
 - `sdlc`: `onboard.py setup --init` in a new repo with no `.sdlc/config` now writes `work_root: docs/tickets`, so tickets live in `docs/tickets/` and the docs layout names the work home `tickets/` (T-0857). An existing `.sdlc/config` is never changed; a bare `tickets.py new` in a repo never onboarded still records `ticket_root: tickets`.
 - `sdlc`: `specgate.py check` flags a `duplicate span` only when a criterion repeats inside one step; a later step may re-run an earlier step's check, in either order (T-0879) (#87).
 - Builders, solos and verifiers run the check a criterion names, or `check.sh --changed $SDLC_BASE_SHA` in the sdlc repository, once after the change and again only after a fix; the full `check.sh` belongs to the land gate and a release, never to a role mid-ticket (T-0859).
+- `sdlc`: the full `check.sh` runs the `fanout.py`, `dispatch.py` and `lanes.py` selftests as 4, 3 and 2 shard jobs (`selftest --shard i/n`), so its wall time is no longer set by one 600 s selftest. Each script names its cases; `shards.py` packs them by weight, every case in exactly one shard, and a plain `selftest` still runs every case. A new fast `shards-closure` job (`shards.py check`) fails when a shard job line is missing or a case is in no shard or in two (T-0860).
+
+### Fixed
+
+- `sdlc`: the `/sdlc:ask` ticket step treats a `not a ticket root` refusal from `tickets.py blockers` as `no tickets` and goes on with the rest of the sweep, instead of starting with an error in a repo that uses live mode without tickets; the root guard in `tickets.py` is unchanged (T-0866, issue #95).
 
 ## [1.0.8] - 2026-11-19
 

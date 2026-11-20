@@ -39,7 +39,7 @@
                                           steps.py open, fanout.py land and tickets.py close read the refs as pass (T-0684); exit 2 and
                                           nothing written for any other result, another owner, a missing or absolute evidence path, or a
                                           review record whose Verdict is not pass or pass-with-notes
-  dispatch.py selftest
+  dispatch.py selftest [--shard i/n] [--list]
 
 prepare runs every gate and decision run.sh makes before it launches a role and prints a dispatch JSON the
 factory passes to the Agent tool (design: docs/planning/sdlc/subagent-mode.md sections 1 to 3). It launches
@@ -247,6 +247,7 @@ import plugin_min  # noqa: E402
 import results  # noqa: E402
 import tickets  # noqa: E402
 import run_lifecycle  # noqa: E402
+import shards  # noqa: E402
 import wtroot  # noqa: E402
 
 SHELLS = ('sh', 'bash', 'zsh', 'dash', 'fish', 'ksh', 'env', 'sudo', 'timeout', 'tmux', 'login')
@@ -2735,10 +2736,17 @@ def main(argv):
     sh_.add_argument('--by', required=True, metavar='OWNER', help='the owner the criteria are deferred to, e.g. factory')
     sh_.add_argument('--evidence', required=True, metavar='PATH', help='repo-relative evidence file; a review record needs Verdict pass or pass-with-notes')
     sh_.add_argument('--ref', action='append', default=[], metavar='REF', help='settle only this held ref (ticket#3, step-1#2, #3); repeatable; default every ref deferred to --by')
-    sub.add_parser('selftest', help='run the regression cases in temp repos')
+    st = sub.add_parser('selftest', help='run the regression cases in temp repos')
+    st.add_argument('--shard', metavar='I/N', help='run shard I of N of the cases (check.sh pool jobs, T-0860)')
+    st.add_argument('--list', action='store_true', help='print the case names (of the shard) and run nothing')
     args = ap.parse_args(argv)
     if args.cmd == 'selftest':
-        return selftest()
+        try:
+            shards.parse_spec(args.shard) if args.shard else None
+        except ValueError as e:
+            print('dispatch.py: %s' % e, file=sys.stderr)
+            return 2
+        return selftest(args.shard, args.list)
     if plugin_min.check_stale():  # T-0679 warning; T-0808: exit 2 from an older install folder beside a newer one
         return 2
     if args.cmd == 'settle-held':
@@ -2934,7 +2942,8 @@ def private_tmpdir(base):
             os.environ['TMPDIR'] = saved[1]
 
 
-def selftest():
+def selftest(spec=None, listing=False):
+    cases = shards.Cases('dispatch', spec)  # T-0860: check.sh runs them as `selftest --shard i/n` pool jobs
     # where prepare, record and run.sh write a task's records; made when missing, which never changes the answer
     R = lambda p: order.records_dir(p, create=True)
     failures = []
@@ -2988,15 +2997,9 @@ def selftest():
         case('parity %s: %s %s -> %s' % (label, role, level, ('exit %d' % rc) if rc else '%s %s %s' % (got['model'], got['effort'], os.path.basename(got['result']))), ok)
         return rc, got
 
-    with tempfile.TemporaryDirectory(prefix='dispatch-selftest.') as tmp, private_tmpdir(os.path.realpath(tmp)):
-        tmp = Path(os.path.realpath(tmp))
-        repo = tmp / 'repo'
-        init_repo(repo)
-        sdlc = repo / '.sdlc'
-        rows = [(r, l) for r, ls in claude_roles.table(PLUGIN).items() if r != 'solo' for l in ls]
-
+    @cases(85)
+    def cases_1_to_3():
         # 1. Every level-table row, plain task handoff, no build or plan around.
-        put(sdlc / 't' / 'handoff.md')
         for role, level in rows:
             same('row', repo, role, level, '.sdlc/t/handoff.md')
 
@@ -3083,6 +3086,8 @@ def selftest():
                 same('task dir, ' + label, repo, 'verifier', vlevel, '.sdlc/td/handoff.md')
         shutil.rmtree(td)
 
+    @cases(37)
+    def cases_4_to_6():
         # 4. Plan-reviewer family rule after planners of each family.
         pr = sdlc / 'pr'
         put(pr / 'handoff.md')
@@ -3130,20 +3135,6 @@ def selftest():
         # 6. Refusals: the same exit code as run.sh, nothing written (the audit log refusals.jsonl, T-0415, is the one
         # allowed write), and a negative control that
         # disables the one gate and lets the bad input through.
-        def refused(label, rc_want, role, level, rel, gate, **env):
-            before = sorted(str(p) for p in repo.rglob('*') if '.git' not in p.parts and p.name != 'refusals.jsonl')
-            rc, got, err = prep(repo, role, level, rel, **env)
-            rrc = runsh(repo, role, level, rel, **env)[0]
-            case('%s: prepare exits %d like run.sh (got %d, run.sh %d)' % (label, rc_want, rc, rrc), rc == rc_want == rrc)
-            case('%s: a refusal wrote nothing' % label, before == sorted(str(p) for p in repo.rglob('*') if '.git' not in p.parts and p.name != 'refusals.jsonl'))
-            if gate:
-                with clean_env(**env), cwd(repo), contextlib.redirect_stderr(io.StringIO()):
-                    try:
-                        passed = prepare(role, level, rel, dry_run=True, skip=(gate,))
-                    except Refuse as r:
-                        passed = None
-                case('%s: negative control, without the %s gate the bad input goes through' % (label, gate), bool(passed))
-            return err
 
         for role in ('planner', 'plan-reviewer'):  # goal precheck
             put(sdlc / 'gp' / 'handoff.md', '## Task goal\nx\n')
@@ -3233,6 +3224,8 @@ def selftest():
             case('repo skills: a builder scoped to %s %s the Repo skills line' % (path, 'gets' if want else 'does not get'),
                  rc == 0 and ((line in got['prompt']) if want else 'Repo skills for this step' not in got['prompt']))
 
+    @cases(56)
+    def guidance_budgets_preflight():
         # lane guidance (T-0655): in a linked worktree, an AGENTS.md that differs from the main checkout's adds a Guidance
         # line, and a handoff naming a guidance path absent from the lane refuses, exit 5, before any record is written
         gm = tmp / 'gm'
@@ -3508,13 +3501,12 @@ def selftest():
         (lite / 'agents' / 'scout-L1.md').unlink()
         case('a row with no generated definition exits 2', with_plugin('scout', 'L1') == 2)
 
+    @cases(99)
+    def cases_7_to_8():
         # 7. Records and the lock.
         rr = tmp / 'rr'
         init_repo(rr)
         put(rr / '.sdlc' / 'w' / 'handoff.md')
-        live, sub = os.getpid(), subprocess.Popen([sys.executable, '-c', 'pass'])
-        sub.wait()
-        dead = sub.pid
         rc, got, err = prep(rr, 'builder', 'L1', '.sdlc/w/handoff.md', SDLC_DISPATCH_PARENT_PID=str(live), SDLC_ROUTING_REASON='selftest reason')
         w = rr / '.sdlc' / 'w'
         case('prepare exits 0 and writes both records', rc == 0 and (R(w) / 'builder-L1.attempt.json').is_file() and (R(w) / 'builder-L1.dispatch.json').is_file())
@@ -3685,8 +3677,6 @@ def selftest():
         case('negative control: a lane record with no port, and a tree with no .lane.json, get no Ports line (T-0693)',
              rcp == 0 and rcq == 0 and 'Ports:' not in dp['prompt'] and 'Ports:' not in dq['prompt'])
         # T-0376: a lane forked from a commit newer than a stale stored base records its fork point, so a scope guard lists only the lane.
-        def gt(where, *a):
-            return subprocess.run(['git', '-C', str(where), '-c', 'user.name=t', '-c', 'user.email=t@t', *a], capture_output=True, text=True).stdout.strip()
         stale = gt(rr, 'rev-parse', 'HEAD')
         (rr / 'main-new.txt').write_text('m')
         gt(rr, 'add', '-A')
@@ -3831,11 +3821,11 @@ def selftest():
         mhand.write_text(mhand_was + '\nbase: %s\n' % orphan)
         try:
             shared()
-            refused = ''
+            refused_err = ''
         except Refuse as e:
-            refused = str(e)
+            refused_err = str(e)
         case('a main-checkout handoff run from the lane stops on a named base that is not an ancestor of HEAD',
-             'SDLC_BASE_SHA refused' in refused and orphan in refused)
+             'SDLC_BASE_SHA refused' in refused_err and orphan in refused_err)
         mhand.write_text(mhand_was)
         with clean_env(), cwd(rr), contextlib.redirect_stderr(io.StringIO()):
             case('negative control: the same main-checkout handoff run from the main checkout does not use the lane',
@@ -4042,10 +4032,10 @@ def selftest():
         (R(w) / 'builder-L1.attempt.json').write_text(json.dumps(a))
         try:
             resume('builder-L1', str(rr))
-            refused = False
+            was_refused = False
         except Refuse:
-            refused = True
-        case('resume refuses a running attempt', refused)
+            was_refused = True
+        case('resume refuses a running attempt', was_refused)
         # T-0514: a running attempt with a silent transcript gets the ladder under profile: inner-loop only
         proj = Path(tempfile.mkdtemp(prefix='b5-proj-'))
         tdir = proj / 'p' / 's' / 'subagents'
@@ -4203,70 +4193,21 @@ def selftest():
         p = subprocess.run([sys.executable, str(HERE / 'dispatch.py'), 'prepare', '--dry-run', 'scout', 'L1', '.sdlc/t/handoff.md'],
                            cwd=str(repo), capture_output=True, text=True, env=dict(env, SDLC_ROUTING_REASON='env reason'))
         case('the env var stays a fallback', p.returncode == 0 and json.loads(p.stdout).get('routing_reason') == 'env reason')
+        if not (sdlc / 'ls').is_dir():
+            ticket(sdlc / 'ls', 'L1')  # the lane gate ticket guidance_budgets_preflight makes, when this case runs alone
         p = subprocess.run([sys.executable, str(HERE / 'dispatch.py'), 'prepare', 'planner', 'L1', '.sdlc/ls/handoff.md'],
                            cwd=str(repo), capture_output=True, text=True, env=env)
         case('CLI exits 5 for the lane gate with the JSON absent from stdout', p.returncode == 5 and p.stdout == '')
 
+    @cases(167)
+    def case_9_record():
         # 9. record: the post-launch half. Parity with a real run.sh run (stub claude), then every refusal.
-        stub = tmp / 'bin'
-        stub.mkdir()
-        (stub / 'claude').write_text('#!/usr/bin/env bash\ncat "$STUB_RESULT"\n')
-        (stub / 'claude').chmod(0o755)
-        BODY = {'builder': '## Status\ndone\n\n## Changes\nx\n\n## Checks\nx\n',
-                'verifier': '## Verdict\npass\n\n## Criteria\n- x\n\n## Out of scope changes\nNone\n\n## For the next attempt\nNone\n',
-                'planner': '## Goal\nx\n\n## Assumptions\nNone\n\n## Risks\nNone\n',
-                'plan-reviewer': '## Verdict\npass\n\n## Findings\nNone\n'}
-        live_pid = str(os.getpid())
 
-        def mk(path):
-            init_repo(path)
-            put(path / '.sdlc' / 't' / 'handoff.md')
-            put(path / '.sdlc' / 't' / 'step-1' / 'handoff.md', '## Task goal\ng\n\n## Step 1: x\nlevel: L2\n')
-            put(path / '.sdlc' / 'p' / 'handoff.md')
-            return path
 
-        def via_runsh(repo, role, level, rel, **env):
-            event = tmp / 'stub-result.json'
-            event.write_text(json.dumps({'type': 'result', 'is_error': False, 'result': BODY[role], 'total_cost_usd': 0.5,
-                                         'duration_ms': 5, 'num_turns': 2, 'usage': {'input_tokens': 1}}) + '\n')
-            with clean_env(PATH=str(stub) + os.pathsep + os.environ['PATH'], STUB_RESULT=str(event), SDLC_CLAUDE_EXEC='1', **env):
-                p = subprocess.run(['bash', str(HERE / 'run.sh'), role, level, rel], cwd=str(repo), capture_output=True, text=True)
-            return p.returncode, p.stdout.strip(), p.stderr
 
-        def go(repo, role, level, rel, body=None, said=None, mutate=None, validate=validate_result, agent_id=None, no_result=False, attempt_mutate=None, **env):
-            """prepare, let the role write body (or not), then record in process: (rc, dispatch, stderr, stdout)."""
-            rc, got, err = prep(repo, role, level, rel, SDLC_DISPATCH_PARENT_PID=live_pid, **env)
-            if rc != 0:
-                raise AssertionError('prepare failed in the record selftest: ' + err)
-            if body is not None:
-                Path(got['result']).write_text(body, encoding='utf-8')
-            if mutate:
-                f = Path(got['dispatch_file'])
-                data = json.loads(f.read_text())
-                data.update(mutate)
-                f.write_text(json.dumps(data))
-            if attempt_mutate:
-                f = Path(got['attempt_file'])
-                f.write_text(json.dumps(dict(json.loads(f.read_text()), **attempt_mutate)))
-            e, o = io.StringIO(), io.StringIO()
-            with contextlib.redirect_stderr(e), contextlib.redirect_stdout(o):
-                try:
-                    out = record(got['dispatch_file'], stdin=(lambda: said) if said is not None else None, agent_id=agent_id, validate=validate, no_result=no_result)
-                except Refuse as r:
-                    print('\n'.join(r.lines), file=sys.stderr)
-                    out = r.rc
-            return out, got, e.getvalue(), o.getvalue()
 
-        def lines_of(directory):
-            f = R(directory) / 'runs.jsonl'
-            return [json.loads(l) for l in f.read_text().splitlines()] if f.is_file() else []
 
-        def attempt_of(got):
-            return json.loads(Path(got['attempt_file']).read_text())
 
-        def next_out(repo, rel):
-            p = script('steps.py', 'next', repo / rel)
-            return p.returncode, p.stdout.replace(str(repo), '<repo>')
 
         # records dir (T-0540): prepare plus record write the result, attempt, dispatch record and runs.jsonl under
         # .sdlc/runtime/tasks/<name>/, so git sees only handoff.md in the task folder; a legacy task dir (runs.jsonl beside
@@ -4291,7 +4232,6 @@ def selftest():
              and len((old / 'runs.jsonl').read_text().splitlines()) == 2 and not (rdr / '.sdlc' / 'runtime' / 'tasks' / 'old').exists())
 
         ra, rb = mk(tmp / 'A'), mk(tmp / 'B')
-        step = '.sdlc/t/step-1'
         for role, level, rel, env in (('builder', 'L2', step, {}), ('verifier', 'L1', step, {}), ('planner', 'L1', '.sdlc/p', {}),
                                       ('plan-reviewer', 'L1', '.sdlc/p', {'SDLC_SPECGATE': 'off'})):
             src, a_result, _ = via_runsh(ra, role, level, rel + '/handoff.md', **env)
@@ -4925,6 +4865,10 @@ def selftest():
         case('T-0426 a failed attempt also cleans its prefix and says cleaned: 1 tmp worktrees',
              rc == 1 and not Path(got['tmp_prefix']).exists() and 'cleaned: 1 tmp worktrees' in e.getvalue())
 
+    @cases(93)
+    def case_9_prune():
+        rb = tmp / 'B' if (tmp / 'B').is_dir() else mk(tmp / 'B')  # case 9's records repo, made here when this case runs alone
+
         # T-0368 prune: prepare sets the flag per role; record queues exactly the pruneable agents; prune lists and clears the queue.
         for i, role in enumerate(PRUNE_ROLES + ('builder',)):
             put(rb / '.sdlc' / ('pf%d' % i) / 'handoff.md')
@@ -5351,10 +5295,10 @@ def selftest():
                 rows = [json.loads(l) for l in (order.records_dir(sdir) / 'runs.jsonl').read_text().splitlines()]
                 return rc, o.getvalue(), rows[-1]
             return sdisp, go
-        sdisp, go = solo_rec('file', '--tokens', '5000')
-        rc0, _, row0 = go()
+        sdisp, run_rec = solo_rec('file', '--tokens', '5000')
+        rc0, _, row0 = run_rec()
         Path(sdisp['result']).write_text('## Report\ndone\n', encoding='utf-8')
-        rc1, out1, row1 = go()
+        rc1, out1, row1 = run_rec()
         case('T-0682 record on a solo dispatch: no report file exits 2 with the row unpriced; with the file it prints its path, '
              'prices the row, and the runs row file names it', rc0 == 2 and row0['cost_usd'] is None and row1['cost_usd']
              and rc1 == 0 and ('solo report: %s\n' % sdisp['result']) in out1 and 'live marker cleared' in out1
@@ -5362,15 +5306,15 @@ def selftest():
         stx = tmp / 'solo-report.jsonl'
         stx.write_text(json.dumps({'message': {'role': 'assistant', 'stop_reason': 'end_turn',
                                                'content': [{'type': 'text', 'text': '## Report\nfrom the transcript'}]}}) + '\n', encoding='utf-8')
-        sdisp, go = solo_rec('transcript', '--transcript', str(stx))
-        rc2, out2, _ = go()
+        sdisp, run_rec = solo_rec('transcript', '--transcript', str(stx))
+        rc2, out2, _ = run_rec()
         case('T-0682 record on a solo dispatch with no report file takes the transcript final message and writes it there',
              rc2 == 0 and Path(sdisp['result']).is_file() and Path(sdisp['result']).read_text() == '## Report\nfrom the transcript\n' and 'solo report: ' in out2)
         # T-0719: --no-result on a solo dispatch with no report and no transcript closes it failed (exit 1) and clears its live marker.
-        sdisp, go = solo_rec('nores', '--no-result', git=True)
+        sdisp, run_rec = solo_rec('nores', '--no-result', git=True)
         live_of = lambda: [f.name for f in (solo_run._live_dir(str(tmp / 'solo-report-nores')) or Path('/nonexistent')).glob(sdisp['attempt_id'] + '*')]
         was_live = live_of()
-        rc3, out3, row3 = go()
+        rc3, out3, row3 = run_rec()
         case('T-0719 record --no-result on a solo dispatch with no report exits 1, says failed, and clears the live marker',
              was_live and rc3 == 1 and 'solo failed; live marker cleared' in out3 and not live_of())
         # T-0744: the dispatch file `fanout.py prep` writes for a solo lane (issue #72) is one advance and record accept:
@@ -5428,6 +5372,9 @@ def selftest():
         with contextlib.redirect_stdout(empty):
             main(['prune', '--root', str(rp)])
         case('prune on an empty queue says so', empty.getvalue().strip() == 'prune: nothing queued')
+
+    @cases(24)
+    def cases_9_queue_to_11():
         # T-0601: a landed solo is queued under its dispatch name, entries carry their session, and the listing shows
         # only the current session's.
         import fanout, types
@@ -5800,6 +5747,103 @@ def selftest():
             rc, after, err = settle(text, *flags)
             case('settle-held: %s exits 2 and leaves the file unchanged, got rc=%s err=%r' % (label, rc, err),
                  rc == 2 and after == text and 'nothing written' in err)
+
+
+    if listing:
+        return cases.list()
+
+    with tempfile.TemporaryDirectory(prefix='dispatch-selftest.') as tmp, private_tmpdir(os.path.realpath(tmp)):
+        tmp = Path(os.path.realpath(tmp))
+        repo = tmp / 'repo'
+        init_repo(repo)
+        sdlc = repo / '.sdlc'
+        rows = [(r, l) for r, ls in claude_roles.table(PLUGIN).items() if r != 'solo' for l in ls]
+        # helpers and fixtures the cases share
+        put(sdlc / 't' / 'handoff.md')  # case 1 writes it first; 7b and 8 prepare on it
+
+        def gt(where, *a):
+            return subprocess.run(['git', '-C', str(where), '-c', 'user.name=t', '-c', 'user.email=t@t', *a], capture_output=True, text=True).stdout.strip()
+
+        def refused(label, rc_want, role, level, rel, gate, **env):
+            before = sorted(str(p) for p in repo.rglob('*') if '.git' not in p.parts and p.name != 'refusals.jsonl')
+            rc, got, err = prep(repo, role, level, rel, **env)
+            rrc = runsh(repo, role, level, rel, **env)[0]
+            case('%s: prepare exits %d like run.sh (got %d, run.sh %d)' % (label, rc_want, rc, rrc), rc == rc_want == rrc)
+            case('%s: a refusal wrote nothing' % label, before == sorted(str(p) for p in repo.rglob('*') if '.git' not in p.parts and p.name != 'refusals.jsonl'))
+            if gate:
+                with clean_env(**env), cwd(repo), contextlib.redirect_stderr(io.StringIO()):
+                    try:
+                        passed = prepare(role, level, rel, dry_run=True, skip=(gate,))
+                    except Refuse as r:
+                        passed = None
+                case('%s: negative control, without the %s gate the bad input goes through' % (label, gate), bool(passed))
+            return err
+
+        live, sub = os.getpid(), subprocess.Popen([sys.executable, '-c', 'pass'])
+        sub.wait()
+        dead = sub.pid
+        stub = tmp / 'bin'
+        stub.mkdir()
+        (stub / 'claude').write_text('#!/usr/bin/env bash\ncat "$STUB_RESULT"\n')
+        (stub / 'claude').chmod(0o755)
+        BODY = {'builder': '## Status\ndone\n\n## Changes\nx\n\n## Checks\nx\n',
+                'verifier': '## Verdict\npass\n\n## Criteria\n- x\n\n## Out of scope changes\nNone\n\n## For the next attempt\nNone\n',
+                'planner': '## Goal\nx\n\n## Assumptions\nNone\n\n## Risks\nNone\n',
+                'plan-reviewer': '## Verdict\npass\n\n## Findings\nNone\n'}
+        live_pid = str(os.getpid())
+
+        def mk(path):
+            init_repo(path)
+            put(path / '.sdlc' / 't' / 'handoff.md')
+            put(path / '.sdlc' / 't' / 'step-1' / 'handoff.md', '## Task goal\ng\n\n## Step 1: x\nlevel: L2\n')
+            put(path / '.sdlc' / 'p' / 'handoff.md')
+            return path
+
+        def via_runsh(repo, role, level, rel, **env):
+            event = tmp / 'stub-result.json'
+            event.write_text(json.dumps({'type': 'result', 'is_error': False, 'result': BODY[role], 'total_cost_usd': 0.5,
+                                         'duration_ms': 5, 'num_turns': 2, 'usage': {'input_tokens': 1}}) + '\n')
+            with clean_env(PATH=str(stub) + os.pathsep + os.environ['PATH'], STUB_RESULT=str(event), SDLC_CLAUDE_EXEC='1', **env):
+                p = subprocess.run(['bash', str(HERE / 'run.sh'), role, level, rel], cwd=str(repo), capture_output=True, text=True)
+            return p.returncode, p.stdout.strip(), p.stderr
+
+        def go(repo, role, level, rel, body=None, said=None, mutate=None, validate=validate_result, agent_id=None, no_result=False, attempt_mutate=None, **env):
+            """prepare, let the role write body (or not), then record in process: (rc, dispatch, stderr, stdout)."""
+            rc, got, err = prep(repo, role, level, rel, SDLC_DISPATCH_PARENT_PID=live_pid, **env)
+            if rc != 0:
+                raise AssertionError('prepare failed in the record selftest: ' + err)
+            if body is not None:
+                Path(got['result']).write_text(body, encoding='utf-8')
+            if mutate:
+                f = Path(got['dispatch_file'])
+                data = json.loads(f.read_text())
+                data.update(mutate)
+                f.write_text(json.dumps(data))
+            if attempt_mutate:
+                f = Path(got['attempt_file'])
+                f.write_text(json.dumps(dict(json.loads(f.read_text()), **attempt_mutate)))
+            e, o = io.StringIO(), io.StringIO()
+            with contextlib.redirect_stderr(e), contextlib.redirect_stdout(o):
+                try:
+                    out = record(got['dispatch_file'], stdin=(lambda: said) if said is not None else None, agent_id=agent_id, validate=validate, no_result=no_result)
+                except Refuse as r:
+                    print('\n'.join(r.lines), file=sys.stderr)
+                    out = r.rc
+            return out, got, e.getvalue(), o.getvalue()
+
+        def lines_of(directory):
+            f = R(directory) / 'runs.jsonl'
+            return [json.loads(l) for l in f.read_text().splitlines()] if f.is_file() else []
+
+        def attempt_of(got):
+            return json.loads(Path(got['attempt_file']).read_text())
+
+        def next_out(repo, rel):
+            p = script('steps.py', 'next', repo / rel)
+            return p.returncode, p.stdout.replace(str(repo), '<repo>')
+
+        step = '.sdlc/t/step-1'
+        cases.run()
     print('dispatch selftest: %s' % ('FAIL' if failures else 'PASS'))
     return 1 if failures else 0
 

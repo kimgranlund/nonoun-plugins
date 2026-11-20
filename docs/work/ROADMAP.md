@@ -6,13 +6,9 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | ID | Ticket | Title | Type | Size | Pri | Depends on | Status |
 |---|---|---|---|---|---|---|---|
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔴 blocked |
-| T-0860 | [0860-faster-full-suite](0860-faster-full-suite/handoff.md) | Cut check.sh wall time by sharding its slowest selftests | chore | L3 | P2 | none | 🟡 claimed (branch lane/T-0860-t0860) |
-| T-0861 | [0861-rerun-failed-jobs](0861-rerun-failed-jobs/handoff.md) | check.sh reruns only failed or affected jobs after a fix | feature | L2 | P2 | T-0858, T-0860 | 🔵 ready |
-| T-0866 | [0866-ask-without-ticket-root](0866-ask-without-ticket-root/handoff.md) | `/sdlc:ask` in a repo with no ticket root notes 'no tickets' and goes on with the rest of the sweep | bug | L1 | P2 | none | 🔵 ready |
-| T-0867 | [0867-split-notes-prior-links](0867-split-notes-prior-links/handoff.md) | After `steps.py split --supersede`, every prior-report link in a step handoff, the folded `### Notes` included | bug | L1 | P2 | none | 🟡 claimed (branch lane/T-0867-t0867) |
-| T-0868 | [0868-message-finding-shape](0868-message-finding-shape/handoff.md) | Two sessions can exchange findings through the mailbox in a light, parseable shape, and either side can list w | feature | L2 | P2 | none | 🟡 claimed (branch lane/T-0868-t0868) |
-| T-0869 | [0869-verifier-base-from-lane-into](0869-verifier-base-from-lane-into/handoff.md) | A verifier prepared in a lane that merged its integration branch gets a Base sha that keeps the integration br | bug | L2 | P2 | T-0860 | 🔵 ready |
-| T-0870 | [0870-live-lane-kind](0870-live-lane-kind/handoff.md) | Live mode's documented lane flow works without a ticket: open a registered lane, see it in overlap and list, m | bug | L3 | P2 | T-0860 | 🔵 ready |
+| T-0861 | [0861-rerun-failed-jobs](0861-rerun-failed-jobs/handoff.md) | check.sh reruns only failed or affected jobs after a fix | feature | L2 | P2 | T-0858, T-0860 | 🟡 claimed (branch lane/T-0861-t0861) |
+| T-0869 | [0869-verifier-base-from-lane-into](0869-verifier-base-from-lane-into/handoff.md) | A verifier prepared in a lane that merged its integration branch gets a Base sha that keeps the integration br | bug | L2 | P2 | T-0860 | 🟡 claimed (branch lane/T-0869-t0869) |
+| T-0870 | [0870-live-lane-kind](0870-live-lane-kind/handoff.md) | Live mode's documented lane flow works without a ticket: open a registered lane, see it in overlap and list, m | bug | L3 | P2 | T-0860 | 🟡 claimed (branch lane/T-0870-t0870) |
 | T-0871 | [0871-host-lock-close-hint](0871-host-lock-close-hint/handoff.md) | When a landed host agent worktree is still locked by the harness, the close output says so and gives a removal | bug | L1 | P2 | T-0870 | 🔵 ready |
 | T-0872 | [0872-finish-ticketless-land-guards](0872-finish-ticketless-land-guards/handoff.md) | Landing a ticketless lane with `lanes.py finish --no-ticket` can never commit conflict markers, resolves confl | feature | L3 | P2 | T-0871, T-0870 | 🔵 ready |
 | T-0873 | [0873-lanes-status-view](0873-lanes-status-view/handoff.md) | `lanes.py status` answers 'is anything stuck or about to collide' for every open lane in one table | feature | L2 | P2 | T-0872, T-0865 | 🔵 ready |
@@ -24,7 +20,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0880 | [0880-gate-lock-host-capacity](0880-gate-lock-host-capacity/handoff.md) | gate_lock default capacity scales with the host | feature | L2 | P2 | T-0865 | 🟡 claimed (branch lane/T-0880-t0880) |
 | T-0881 | [0881-gate-lock-short-job-slot](0881-gate-lock-short-job-slot/handoff.md) | gate_lock keeps one slot for jobs that declare a short duration | feature | L2 | P2 | T-0880 | 🔵 ready |
 
-Closed: 826 done, 30 dropped (git log or .NNNN-* folders)
+Closed: 830 done, 30 dropped (git log or .NNNN-* folders)
 
 ## Open follow-ups
 

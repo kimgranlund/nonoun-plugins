@@ -73,7 +73,7 @@ Ticket lifecycle:
 
 - Evals: `../docs/work/evals/` holds the dated model and effort experiments and `table-lock.json`; read `../docs/work/evals/AGENTS.md` before changing a model or effort row in `plugins/sdlc-lite/scripts/run.sh` or `plugins/sdlc-lite/adapters/codex/models.json`.
 - Proposals: `../docs/work/proposals/` holds candidate changes that `proposals.py scan` mined from past runs; read `../docs/work/proposals/AGENTS.md` before scanning, accepting, rejecting, or promoting one.
-<!-- sdlc:managed:start v1 sha256:f7c21e06bb56 -->
+<!-- sdlc:managed:start v1 sha256:cf000acac77e -->
 # Work records
 
 This folder holds SDLC `config`, this router, and the git-ignored `runtime/` and `messages/`. Tickets, task records, `docs/work/ROADMAP.md`, and `docs/work/NOTES.md` are in the work root `docs/work/`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `docs/work/ROADMAP.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -86,11 +86,7 @@ This folder holds SDLC `config`, this router, and the git-ignored `runtime/` and
 ## Stages
 
 - proposed: 0
-- ready: 13
-  - T-0861 check.sh reruns only failed or affected jobs after a fix (docs/work/0861-rerun-failed-jobs)
-  - T-0866 `/sdlc:ask` in a repo with no ticket root notes 'no tickets' and goes on with the rest of the sweep (docs/work/0866-ask-without-ticket-root)
-  - T-0869 A verifier prepared in a lane that merged its integration branch gets a Base sha that keeps the integration br (docs/work/0869-verifier-base-from-lane-into)
-  - T-0870 Live mode's documented lane flow works without a ticket: open a registered lane, see it in overlap and list, m (docs/work/0870-live-lane-kind)
+- ready: 9
   - T-0871 When a landed host agent worktree is still locked by the harness, the close output says so and gives a removal (docs/work/0871-host-lock-close-hint)
   - T-0872 Landing a ticketless lane with `lanes.py finish --no-ticket` can never commit conflict markers, resolves confl (docs/work/0872-finish-ticketless-land-guards)
   - T-0873 `lanes.py status` answers 'is anything stuck or about to collide' for every open lane in one table (docs/work/0873-lanes-status-view)
@@ -101,14 +97,14 @@ This folder holds SDLC `config`, this router, and the git-ignored `runtime/` and
   - T-0878 fanout land keeps a committed skips.md tracked in the closed ticket folder (docs/work/0878-fanout-keeps-skips-md)
   - T-0881 gate_lock keeps one slot for jobs that declare a short duration (docs/work/0881-gate-lock-short-job-slot)
 - claimed: 4
-  - T-0860 Cut check.sh wall time by sharding its slowest selftests (docs/work/0860-faster-full-suite), claimed by nonoun-author 2026-11-19, branch lane/T-0860-t0860
-  - T-0867 After `steps.py split --supersede`, every prior-report link in a step handoff, the folded `### Notes` included (docs/work/0867-split-notes-prior-links), claimed by nonoun-author 2026-11-19, branch lane/T-0867-t0867
-  - T-0868 Two sessions can exchange findings through the mailbox in a light, parseable shape, and either side can list w (docs/work/0868-message-finding-shape), claimed by nonoun-author 2026-11-19, branch lane/T-0868-t0868
+  - T-0861 check.sh reruns only failed or affected jobs after a fix (docs/work/0861-rerun-failed-jobs), claimed by nonoun-author 2026-11-19, branch lane/T-0861-t0861
+  - T-0869 A verifier prepared in a lane that merged its integration branch gets a Base sha that keeps the integration br (docs/work/0869-verifier-base-from-lane-into), claimed by nonoun-author 2026-11-20, branch lane/T-0869-t0869
+  - T-0870 Live mode's documented lane flow works without a ticket: open a registered lane, see it in overlap and list, m (docs/work/0870-live-lane-kind), claimed by nonoun-author 2026-11-19, branch lane/T-0870-t0870
   - T-0880 gate_lock default capacity scales with the host (docs/work/0880-gate-lock-host-capacity), claimed by nonoun-author 2026-11-19, branch lane/T-0880-t0880
 - paused: 0
 - blocked: 1
   - T-0611 Rehearse a Pi host working tickets beside Claude and Codex (docs/work/0611-pi-host-rehearsal)
-- done: 826
+- done: 830
 - dropped: 30
 
 ## Procedures

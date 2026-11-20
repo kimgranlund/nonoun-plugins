@@ -1009,3 +1009,17 @@
 ## T-0865: `gate_lock.py status` shows, for each admitted and queued job, the commit it tests, its working directory and (2026-11-19)
 
 - note: `plugins/sdlc/scripts/gate_lock.py` `run_top` runs `git rev-parse` with `timeout=10`, while `behind_branch` uses the 3 s default. This is harmless, and the design said only that the stale check uses a short timeout.
+
+## T-0868: Two sessions can exchange findings through the mailbox in a light, parseable shape, and either side can list w (2026-11-19)
+
+- note: plugins/sdlc/scripts/messages.py:3705 the `COMMANDS` dict line now runs longer than its neighbors (`'findings': cmd_findings, 'register': ...`); cosmetic only.
+- note: the finding-state reply gate (`reply_state` on the receiver's reply) is not exercised for a reply from a third party; the code at messages.py:1559 checks sender and receiver. The selftest has no case for it.
+
+## T-0860: Cut check.sh wall time by sharding its slowest selftests (2026-11-19)
+
+- note: the `shards.py check` scratch-copy control needs the scripts beside the copy (the path is `<check.sh dir>/../scripts` resolved via the copy's location only when it sits in a `scripts/` dir), so a bare copy in an arbitrary dir fails for the wrong reason; fine for the real check.
+- note: T-0858 `check_select.py` must map each sharded script to all its shard jobs (solo report open item).
+
+## T-0867: After `steps.py split --supersede`, every prior-report link in a step handoff, the folded `### Notes` included (2026-11-20)
+
+- note: in attempt 3, the exit code of the check.sh run was read from its `22 jobs ok` summary line. zsh `time` hid `PIPESTATUS`.
