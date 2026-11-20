@@ -73,7 +73,7 @@ Ticket lifecycle:
 
 - Evals: `../docs/work/evals/` holds the dated model and effort experiments and `table-lock.json`; read `../docs/work/evals/AGENTS.md` before changing a model or effort row in `plugins/sdlc-lite/scripts/run.sh` or `plugins/sdlc-lite/adapters/codex/models.json`.
 - Proposals: `../docs/work/proposals/` holds candidate changes that `proposals.py scan` mined from past runs; read `../docs/work/proposals/AGENTS.md` before scanning, accepting, rejecting, or promoting one.
-<!-- sdlc:managed:start v1 sha256:bdb6fb7583a0 -->
+<!-- sdlc:managed:start v1 sha256:bdefd74d7834 -->
 # Work records
 
 This folder holds SDLC `config`, this router, and the git-ignored `runtime/` and `messages/`. Tickets, task records, `docs/work/ROADMAP.md`, and `docs/work/NOTES.md` are in the work root `docs/work/`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `docs/work/ROADMAP.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -101,7 +101,7 @@ This folder holds SDLC `config`, this router, and the git-ignored `runtime/` and
   - T-0881 gate_lock keeps one slot for jobs that declare a short duration (docs/work/0881-gate-lock-short-job-slot)
 - claimed: 4
   - T-0860 Cut check.sh wall time by sharding its slowest selftests (docs/work/0860-faster-full-suite), claimed by nonoun-author 2026-11-19, branch lane/T-0860-t0860
-  - T-0866 `/sdlc:ask` in a repo with no ticket root notes 'no tickets' and goes on with the rest of the sweep (docs/work/0866-ask-without-ticket-root), claimed by nonoun-author 2026-11-19
+  - T-0866 `/sdlc:ask` in a repo with no ticket root notes 'no tickets' and goes on with the rest of the sweep (docs/work/0866-ask-without-ticket-root), claimed by nonoun-author 2026-11-19, branch lane/T-0866-t0866
   - T-0867 After `steps.py split --supersede`, every prior-report link in a step handoff, the folded `### Notes` included (docs/work/0867-split-notes-prior-links), claimed by nonoun-author 2026-11-19, branch lane/T-0867-t0867
   - T-0880 gate_lock default capacity scales with the host (docs/work/0880-gate-lock-host-capacity), claimed by nonoun-author 2026-11-19, branch lane/T-0880-t0880
 - paused: 0
