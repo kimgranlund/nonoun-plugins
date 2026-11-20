@@ -984,3 +984,13 @@
 
 - note: plugins/sdlc/scripts/check.sh option parsing for `--changed` prints `nothing to check (base HEAD)` with a base suffix; it still contains the string the criterion names.
 - note: the throwaway worktree tmp:0858-verifier-L2/base was left for dispatch.py record to remove.
+
+## T-0864: When gated checks queue for capacity on an idle machine, the operator sees how to raise the capacity, and a ca (2026-11-19)
+
+- decide: plugins/sdlc/scripts/gate_lock.py:980: the `HINT-STATUS` marker has no mutant control of its own, but the capacity case asserts the status text row and the `--json` key, so removing it would fail that case.
+- decide: plugins/sdlc/scripts/gate_lock.py (`next_head`): `schedule` now uses a function extracted from its inline head selection; the FIFO, priority and round-robin selftests pass unchanged.
+
+## T-0857: New repos keep tickets in docs/tickets (2026-11-19)
+
+- decide: plugins/sdlc/scripts/onboard.py (`ticket_root_change`): a repo that already has docs/layout.md with the default `work/` home but no `.sdlc/config` gets `work_root: docs/tickets`; observed in scratch repo r2, `docs_check.py` then reports `D-1 docs/tickets/` and `D-12 docs/tickets/ROADMAP.md` errors after the first ticket. The builder flagged this as an untested edge; no criterion covers it.
+- note: the selftest compares against `ONBOARD_CONFIG_LINE` rather than the literal `work_root: docs/tickets`, so changing the constant's value alone is caught only through the docs/tickets/ path and block-text checks (it was caught, see #1).

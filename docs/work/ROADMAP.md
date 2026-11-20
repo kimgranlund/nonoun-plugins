@@ -6,15 +6,13 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | ID | Ticket | Title | Type | Size | Pri | Depends on | Status |
 |---|---|---|---|---|---|---|---|
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔴 blocked |
-| T-0857 | [0857-tickets-in-docs-tickets](0857-tickets-in-docs-tickets/handoff.md) | New repos keep tickets in docs/tickets | feature | L2 | P2 | none | 🟡 claimed (branch lane/T-0857-t0857) |
 | T-0859 | [0859-role-test-guidance](0859-role-test-guidance/handoff.md) | Roles run the checks for their change, once, never the full suite mid-ticket | chore | L2 | P2 | T-0858 | 🟡 claimed (branch lane/T-0859-t0859) |
 | T-0860 | [0860-faster-full-suite](0860-faster-full-suite/handoff.md) | Cut check.sh wall time by sharding its slowest selftests | chore | L3 | P2 | none | 🟡 claimed (branch lane/T-0860-t0860) |
 | T-0861 | [0861-rerun-failed-jobs](0861-rerun-failed-jobs/handoff.md) | check.sh reruns only failed or affected jobs after a fix | feature | L2 | P2 | T-0858, T-0860 | 🔵 ready |
-| T-0864 | [0864-gate-lock-wait-hints](0864-gate-lock-wait-hints/handoff.md) | When gated checks queue for capacity on an idle machine, the operator sees how to raise the capacity, and a ca | feature | L2 | P2 | none | 🟡 claimed (branch lane/T-0864-t0864) |
-| T-0865 | [0865-gate-lock-status-owner](0865-gate-lock-status-owner/handoff.md) | `gate_lock.py status` shows, for each admitted and queued job, the commit it tests, its working directory and | feature | L2 | P2 | T-0864 | 🔵 ready |
+| T-0865 | [0865-gate-lock-status-owner](0865-gate-lock-status-owner/handoff.md) | `gate_lock.py status` shows, for each admitted and queued job, the commit it tests, its working directory and | feature | L2 | P2 | T-0864 | 🟡 claimed (branch lane/T-0865-t0865) |
 | T-0866 | [0866-ask-without-ticket-root](0866-ask-without-ticket-root/handoff.md) | `/sdlc:ask` in a repo with no ticket root notes 'no tickets' and goes on with the rest of the sweep | bug | L1 | P2 | none | 🔵 ready |
 | T-0867 | [0867-split-notes-prior-links](0867-split-notes-prior-links/handoff.md) | After `steps.py split --supersede`, every prior-report link in a step handoff, the folded `### Notes` included | bug | L1 | P2 | none | 🔵 ready |
-| T-0868 | [0868-message-finding-shape](0868-message-finding-shape/handoff.md) | Two sessions can exchange findings through the mailbox in a light, parseable shape, and either side can list w | feature | L2 | P2 | none | 🔵 ready |
+| T-0868 | [0868-message-finding-shape](0868-message-finding-shape/handoff.md) | Two sessions can exchange findings through the mailbox in a light, parseable shape, and either side can list w | feature | L2 | P2 | none | 🟡 claimed (branch lane/T-0868-t0868) |
 | T-0869 | [0869-verifier-base-from-lane-into](0869-verifier-base-from-lane-into/handoff.md) | A verifier prepared in a lane that merged its integration branch gets a Base sha that keeps the integration br | bug | L2 | P2 | T-0860 | 🔵 ready |
 | T-0870 | [0870-live-lane-kind](0870-live-lane-kind/handoff.md) | Live mode's documented lane flow works without a ticket: open a registered lane, see it in overlap and list, m | bug | L3 | P2 | T-0860 | 🔵 ready |
 | T-0871 | [0871-host-lock-close-hint](0871-host-lock-close-hint/handoff.md) | When a landed host agent worktree is still locked by the harness, the close output says so and gives a removal | bug | L1 | P2 | T-0870 | 🔵 ready |
@@ -29,7 +27,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0880 | [0880-gate-lock-host-capacity](0880-gate-lock-host-capacity/handoff.md) | gate_lock default capacity scales with the host | feature | L2 | P2 | T-0865 | 🔵 ready |
 | T-0881 | [0881-gate-lock-short-job-slot](0881-gate-lock-short-job-slot/handoff.md) | gate_lock keeps one slot for jobs that declare a short duration | feature | L2 | P2 | T-0880 | 🔵 ready |
 
-Closed: 821 done, 30 dropped (git log or .NNNN-* folders)
+Closed: 823 done, 30 dropped (git log or .NNNN-* folders)
 
 ## Open follow-ups
 
@@ -156,3 +154,6 @@ Closed: 821 done, 30 dropped (git log or .NNNN-* folders)
 - decide: plugins/design/skills/ui-frameworks/kit/icons/phosphor/LICENSE:1: imported CRLF line endings make `git diff --check <base>` exit 2 (see #5); note: a future range-based whitespace gate would need a `.gitattributes` exemption for this path. (from T-0853: Import six ui-* skills into design (2026-11-15))
 - decide: plugins/design/skills/ui-interaction-dev/SKILL.md and ui-showcase-bento/SKILL.md: note: say `node --test scripts/`, which exits 1 on Node 24; plain `node --test` is green; imported text left as authored, the builder named the working form in AGENTS.md. (from T-0853: Import six ui-* skills into design (2026-11-15))
 - decide: plugins/design/skills/ui-frameworks/scripts/tokens.mjs and icons.mjs: note: read sibling skills from `~/.claude/skills` or `SKILLS_DIR`, not the plugin tree; imported behaviour, unchanged. (from T-0853: Import six ui-* skills into design (2026-11-15))
+- decide: plugins/sdlc/scripts/gate_lock.py:980: the `HINT-STATUS` marker has no mutant control of its own, but the capacity case asserts the status text row and the `--json` key, so removing it would fail that case. (from T-0864: When gated checks queue for capacity on an idle machine, the operator sees how to raise the capacity, and a ca (2026-11-19))
+- decide: plugins/sdlc/scripts/gate_lock.py (`next_head`): `schedule` now uses a function extracted from its inline head selection; the FIFO, priority and round-robin selftests pass unchanged. (from T-0864: When gated checks queue for capacity on an idle machine, the operator sees how to raise the capacity, and a ca (2026-11-19))
+- decide: plugins/sdlc/scripts/onboard.py (`ticket_root_change`): a repo that already has docs/layout.md with the default `work/` home but no `.sdlc/config` gets `work_root: docs/tickets`; observed in scratch repo r2, `docs_check.py` then reports `D-1 docs/tickets/` and `D-12 docs/tickets/ROADMAP.md` errors after the first ticket. The builder flagged this as an untested edge; no criterion covers it. (from T-0857: New repos keep tickets in docs/tickets (2026-11-19))

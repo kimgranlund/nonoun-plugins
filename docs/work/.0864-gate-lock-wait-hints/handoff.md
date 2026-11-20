@@ -2,14 +2,12 @@
 id: T-0864
 title: "When gated checks queue for capacity on an idle machine, the operator sees how to raise the capacity, and a ca"
 type: feature        # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
 created: 2026-11-19
 claimed_by: nonoun-author 2026-11-19
-branch: lane/T-0864-t0864
-worktree: ../sdlc-lite.worktrees/T-0864-t0864
 router: .sdlc/AGENTS.md  # how to claim and close this ticket
 ---
 
@@ -45,3 +43,15 @@ When gated checks queue for capacity on an idle machine, the operator sees how t
 - Built-in policy numbers and queue order stay as they are.
 - Exit codes stay: 3 for every admission failure.
 - The ledger format does not change.
+
+## Outcome
+
+2026-11-19 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: f5c84d5cc8c9
+- Changed: see commits
+- Commits: 2123a05 T-0864: gate_lock capacity hint and safe batching docs (#90, #99)
+- Check: 1 selftest exits 0, lists three new cases, hint removal fails the capacity case: pass
+- Check: 2 holder at compute_units=6, second `run --timeout 4 -- true` with SDLC_GATE_REPORT_SECS=1 prints t...: pass
+- Check: 3 `status --json` parses and has no `hint` key with an empty queue: pass
+- Check: 4 `check.sh --fast`, `check-packaging.py`, `git diff --check`: pass
+- Follow-up: decide: plugins/sdlc/scripts/gate_lock.py:980: the HINT-STATUS marker has... -> notes.md
+- Follow-up: decide: plugins/sdlc/scripts/gate_lock.py next_head: schedule now uses a... -> notes.md
