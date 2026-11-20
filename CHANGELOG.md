@@ -16,6 +16,7 @@ SDLC releases (named SDLC Lite before 1.0.0), newest first, in [Keep a Changelog
 - `sdlc`: `onboard.py setup --init` in a new repo with no `.sdlc/config` now writes `work_root: docs/tickets`, so tickets live in `docs/tickets/` and the docs layout names the work home `tickets/` (T-0857). An existing `.sdlc/config` is never changed; a bare `tickets.py new` in a repo never onboarded still records `ticket_root: tickets`.
 - `sdlc`: `specgate.py check` flags a `duplicate span` only when a criterion repeats inside one step; a later step may re-run an earlier step's check, in either order (T-0879) (#87).
 - Builders, solos and verifiers run the check a criterion names, or `check.sh --changed $SDLC_BASE_SHA` in the sdlc repository, once after the change and again only after a fix; the full `check.sh` belongs to the land gate and a release, never to a role mid-ticket (T-0859).
+- `sdlc`: the full `check.sh` runs the `fanout.py`, `dispatch.py` and `lanes.py` selftests as 4, 3 and 2 shard jobs (`selftest --shard i/n`), so its wall time is no longer set by one 600 s selftest. Each script names its cases; `shards.py` packs them by weight, every case in exactly one shard, and a plain `selftest` still runs every case. A new fast `shards-closure` job (`shards.py check`) fails when a shard job line is missing or a case is in no shard or in two (T-0860).
 
 ### Fixed
 

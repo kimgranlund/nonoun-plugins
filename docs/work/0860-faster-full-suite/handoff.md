@@ -33,10 +33,12 @@ The full `check.sh` finishes in well under its current 600 s on this machine, wi
 3. Add the case-count closure check, update the `check.sh` usage comment, `plugins/sdlc/AGENTS.md` if it names job counts, and the CHANGELOG `[Unreleased]`.
 
 ## Acceptance criteria
-- `bash plugins/sdlc/scripts/check.sh` exits 0 with every job ok, and its `check: N jobs ok in <T>s` line shows T at most 360; put the line in the report. If 360 is out of reach, report blocked with the measured floor and what bounds it.
-- For each sharded selftest, the shard case counts sum to the unsharded `selftest` count (shown in the report), and the closure check fails when one shard's cases are dropped (observed red, stated in the report).
-- `python3 plugins/sdlc/scripts/fanout.py selftest` and `python3 plugins/sdlc/scripts/dispatch.py selftest` with no option still exit 0.
-- `git diff --check` is clean.
+(Replan: a verifier cannot run the full `check.sh` or a 600 s unsharded selftest inside its foreground cap, so the factory ran the full suite on the lane head and the verifier checks the shards.)
+- `.sdlc/runtime/tasks/0860-faster-full-suite/check-full.log` (the factory's full `bash plugins/sdlc/scripts/check.sh` run in this lane) starts with a `head: <sha>` line whose commit holds the same `plugins/sdlc/scripts` tree as HEAD (`git diff --quiet <sha> HEAD -- plugins/sdlc/scripts`), has no `FAIL` job line, and ends with `check: N jobs ok in <T>s` with T at most 360 and `exit=0`.
+- `python3 plugins/sdlc/scripts/shards.py selftest` exits 0, and `python3 plugins/sdlc/scripts/shards.py check plugins/sdlc/scripts/check.sh` exits 0 and prints, per sharded script, shard counts that sum to the unsharded count. With one `--shard` job line removed from a scratch copy of `check.sh`, the same `check` exits 1 (observed red).
+- All nine shard jobs pass when run together in one foreground command, each in the background with its exit code collected by `wait`: `fanout.py selftest --shard 1/4` to `4/4`, `dispatch.py selftest --shard 1/3` to `3/3`, `lanes.py selftest --shard 1/2` and `2/2`. Each shard prints its case count.
+- No case was removed or loosened: for `fanout.py`, `dispatch.py` and `lanes.py`, the sorted, indent-stripped selftest lines at Base sha and at HEAD differ only by the shard wiring and the renames the solo report names (spot-check at least fanout).
+- `git diff --check $SDLC_BASE_SHA -- plugins/sdlc CHANGELOG.md docs/references` is clean.
 
 ## Constraints
 - No case removed, skipped or loosened.
