@@ -2,11 +2,12 @@
 id: T-0869
 title: "A verifier prepared in a lane that merged its integration branch gets a Base sha that keeps the integration br"
 type: bug             # feature | bug | chore | spike | idea
-status: ready     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: [T-0860]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
 created: 2026-11-19
+claimed_by: nonoun-author 2026-11-20
 router: .sdlc/AGENTS.md  # how to claim and close this ticket
 ---
 
@@ -37,3 +38,12 @@ A verifier prepared in a lane that merged its integration branch gets a Base sha
 
 ## Constraints
 - Run the `run.sh` parity cases if the base logic is shared with `run.sh` (`AGENTS.md`: a gate change in one needs the same change in the other).
+
+## Outcome
+
+2026-11-20 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: 2ea353189eb3
+- Changed: see commits
+- Commits: 77682e8 T-0869: prepare verifier takes Base sha from the lane's into branch (#86)
+- Check: 1 The shard holding the new case exits 0, and with `fork_floor` reverted the case fails: pass
+- Check: 3 `bash plugins/sdlc/scripts/check.sh --fast` exits 0 and `git diff --check` is clean: pass
+- Follow-up: decide: plugins/sdlc/scripts/run.sh:527-533: run.sh still takes the floor... -> notes.md

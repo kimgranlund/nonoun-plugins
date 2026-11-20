@@ -30,6 +30,8 @@ Landing a ticketless lane with `lanes.py finish --no-ticket` can never commit co
 - Put new cases in the lanes selftest shard holding `case_finish_no_ticket` (line 4506).
 - Run scripts with `export SDLC_ALLOW_STALE_PLUGIN=1`. Read `plugins/sdlc/AGENTS.md` first.
 
+- Found while building T-0870 (the `live` lane kind): `finish --no-ticket` stops on a lane whose `into` is not main, so a live lane opened with `--into <branch>` can be opened, readied and closed but not finished. Make `finish --no-ticket` land such a lane into its `into` branch, with a selftest case.
+
 ## Do
 1. Add the marker guard to the commit step and over `<into>..<branch>` before the scratch merge.
 2. Add `lane_generated:` and `lane_regenerate:` handling to the scratch merge.

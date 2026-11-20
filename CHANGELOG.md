@@ -12,6 +12,7 @@ SDLC releases (named SDLC Lite before 1.0.0), newest first, in [Keep a Changelog
 
 ### Changed
 
+- `sdlc`: `gate_lock.py` derives its default compute capacity from the host, `max(6, min(CPUs // 2, RAM GB // 4))`, so a host with at most 13 CPUs or under 28 GB keeps 6 and 18 CPUs with 64 GB gets 9; a configured `compute_units` wins, then `SDLC_GATE_CAPACITY`, and `status` starts with `capacity: N (derived from <cpus> CPUs, <ram> GB)` or `(configured)`, and the capacity hint names how the value was set (T-0880) (#90).
 - `sdlc`: `gate_lock.py status` shows each admitted and queued job's `head` (the short commit it tests), `cwd` and owning `session` (also in `--json`), and ends a row `(behind <branch> by N)` when the job's commit is more than 20 commits behind its branch; entries from older plugin versions still render, and `status` stops nothing: the owner stops its own job (T-0865, issue #93).
 - `sdlc`: `gate_lock.py run` ends its first waiting line, once per run, with `hint: capacity compute_units=<C> is full while load <x> is under <max_load>; an operator can raise it: gate_lock.py policy set compute_units=<N>` when the queue waits on capacity at a quiet load, and `status` ends with the same `hint:` row (`hint` in `--json`, only then); the wait timeout line ends `; command not run`; the docstring and `run-operations.md` show a function for batching named gated runs that zsh does not word-split (T-0864, issues #90, #99).
 - `sdlc`: `onboard.py setup --init` in a new repo with no `.sdlc/config` now writes `work_root: docs/tickets`, so tickets live in `docs/tickets/` and the docs layout names the work home `tickets/` (T-0857). An existing `.sdlc/config` is never changed; a bare `tickets.py new` in a repo never onboarded still records `ticket_root: tickets`.
@@ -21,6 +22,8 @@ SDLC releases (named SDLC Lite before 1.0.0), newest first, in [Keep a Changelog
 
 ### Fixed
 
+- `sdlc`: live mode's lane flow works without a ticket: `lanes.py open live-<slug> --kind live [--into <branch>]` opens a ticket-free lane (`lane/<slug>`, locked by the session, no ticket line, claim ref or main commit) that `list --overlap` and `list --json` show and `who` does not count; `ready` on it pins `refs/sdlc/ready/<slug>` with no criteria test, `list --ready` shows it, and `finish <lane> --no-ticket` lands it when its into is main. Kind live refuses `--ticket` and `--claim`; fanout and solo still need `--ticket`. `agents/live.md` names the new command (T-0870, issue #100).
+- `dispatch.py prepare verifier` in a lane that merged its integration branch keeps that branch's other tickets out of the Base sha diff: the lane fork floor is taken against the lane record's `into` branch when it resolves, before the main checkout HEAD (T-0869, issue #86).
 - `sdlc`: the `/sdlc:ask` ticket step treats a `not a ticket root` refusal from `tickets.py blockers` as `no tickets` and goes on with the rest of the sweep, instead of starting with an error in a repo that uses live mode without tickets; the root guard in `tickets.py` is unchanged (T-0866, issue #95).
 
 ## [1.0.8] - 2026-11-19

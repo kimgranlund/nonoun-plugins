@@ -2,14 +2,12 @@
 id: T-0880
 title: "gate_lock default capacity scales with the host"
 type: feature        # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: [T-0865]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
 created: 2026-11-19
 claimed_by: nonoun-author 2026-11-19
-branch: lane/T-0880-t0880
-worktree: ../sdlc-lite.worktrees/T-0880-t0880
 router: .sdlc/AGENTS.md  # how to claim and close this ticket
 ---
 
@@ -40,3 +38,14 @@ router: .sdlc/AGENTS.md  # how to claim and close this ticket
 
 ## Constraints
 - A host at or below today's sizing behaves as before.
+
+## Outcome
+
+2026-11-20 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: d2bf316d30fa
+- Changed: see commits
+- Commits: d993a98 T-0880: gate_lock default capacity scales with the host (#90)
+- Check: 1 `gate_lock.py selftest` exits 0 with the three cases: pass
+- Check: 2 `status` on this machine prints the derived capacity line: pass
+- Check: 3 `git grep capacity` shows no text still saying the default is a fixed 6: pass
+- Check: 4 `bash plugins/sdlc/scripts/check.sh --fast` exits 0 and `git diff --check` is clean: pass
+- Follow-up: note: docs/specs/sdlc/gate-lock-admission.md:231 documents that there is... -> notes.md

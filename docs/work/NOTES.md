@@ -1019,3 +1019,21 @@
 
 - note: the `shards.py check` scratch-copy control needs the scripts beside the copy (the path is `<check.sh dir>/../scripts` resolved via the copy's location only when it sits in a `scripts/` dir), so a bare copy in an arbitrary dir fails for the wrong reason; fine for the real check.
 - note: T-0858 `check_select.py` must map each sharded script to all its shard jobs (solo report open item).
+
+## T-0867: After `steps.py split --supersede`, every prior-report link in a step handoff, the folded `### Notes` included (2026-11-20)
+
+- note: in attempt 3, the exit code of the check.sh run was read from its `22 jobs ok` summary line. zsh `time` hid `PIPESTATUS`.
+
+## T-0880: gate_lock default capacity scales with the host (2026-11-20)
+
+- note: docs/specs/sdlc/gate-lock-admission.md:231 documents that there is no per-run capacity flag, while the handoff Context lists "explicit flag" first in the override order; the implemented order is policy.json, SDLC_GATE_CAPACITY, derived, consistent with the handoff's Do and criteria.
+
+## T-0870: Live mode's documented lane flow works without a ticket: open a registered lane, see it in overlap and list, m (2026-11-20)
+
+- decide: plugins/sdlc/scripts/lanes.py open (`--kind live` with `--into <branch>`): the builder reports `finish --no-ticket` stops on a lane whose into is not main, so the #100 command (`--into ui-kit-migration`) opens and readies but does not finish. The handoff criteria do not test it; a follow-up ticket is the builder's proposal.
+- note: plugins/sdlc/agents/live.md:42 still says "Claim a ticket (`tickets.py claim`) when the work matches one", which fits a solo lane, not a live lane that refuses `--ticket`.
+- note: docs/references/sdlc-internals.md:145 still lists lanes.py as serving "fanout, integration and solo worktree lanes".
+
+## T-0869: A verifier prepared in a lane that merged its integration branch gets a Base sha that keeps the integration br (2026-11-20)
+
+- decide: plugins/sdlc/scripts/run.sh:527-533: `run.sh` still takes the floor against the main checkout HEAD only (the new `into` rule is `dispatch.py` only, stated in the `sdlc-internals.md` entry); the handoff Constraints ask for a parity case if the base logic is shared. decide: a follow-up ticket for the `run.sh` floor if `run.sh` lanes merge integration branches.

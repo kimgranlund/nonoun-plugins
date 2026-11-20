@@ -17,12 +17,15 @@ Usage: gate_lock.py run [--need RES=N[,RES=N...]] [--slots N] [--priority P] [--
           after ...` and ends `; command not run`. A queued run prints a waiting line every SDLC_GATE_REPORT_SECS
           (default 15) seconds; the first one that finds the queue waiting on capacity (the head's compute need does
           not fit and the load is at or under max_load, the cap is off, or no load is reported) ends, once per run,
-          with `hint: capacity compute_units=<C> is full while load <x> is under <max_load>; an operator can raise it:
+          with `hint: capacity compute_units=<C> (<how>) is full while load <x> is under <max_load>; an operator can raise it:
           gate_lock.py policy set compute_units=<C + default need>`. State root: $SDLC_GATE_DIR (tests), else <home>/.local/state/sdlc/gate-lock from the
           password database, never TMPDIR. ledger.json holds boot id, grants and queue under a short flock; the
-          optional policy.json holds capacity and default_need. Built-in policy (the approved numbers):
-          capacity compute_units 6 and browser_jobs 3, default_need compute_units 3 (so two undeclared gates run
-          at once). A run with no --need asks for default_need; --slots N (or SDLC_GATE_SLOTS=N, 1 or more) asks
+          optional policy.json holds capacity and default_need. Built-in policy: capacity browser_jobs 3,
+          default_need compute_units 3, and a compute_units capacity derived from the host (T-0880, issue #90):
+          max(6, min(CPUs // 2, RAM GB // 4)), so a host with at most 13 CPUs or under 28 GB keeps the approved 6 (two
+          undeclared gates at once) and 18 CPUs with 64 GB gets 9. Override order: policy.json compute_units
+          (`policy set compute_units=N`), then SDLC_GATE_CAPACITY=N, then the derived figure; SDLC_GATE_RAM_MB
+          (tests only) replaces the RAM and SDLC_GATE_CPUS the CPU count. A run with no --need asks for default_need; --slots N (or SDLC_GATE_SLOTS=N, 1 or more) asks
           for max(1, compute capacity // N) compute units, a demand share and never a cap; --need names resources
           (a resource the policy does not cap is recorded and not charged). A need above a capped resource is
           too_large at once. Order: highest --priority (default 0, or SDLC_GATE_PRIORITY) first, then FIFO by
@@ -54,8 +57,9 @@ Usage: gate_lock.py run [--need RES=N[,RES=N...]] [--slots N] [--priority P] [--
           (SDLC_GATE_SLOTS=0) runs the command with no admission and no env change. --receipt writes a JSON
           receipt last (outcome, rc, wait_ms, run_ms, cleanup_ms, total_ms).
   context   exit 0 and print the grant when the caller runs inside a valid grant, else exit 1.
-  status    queued and admitted rows (name, pid, need, repo, priority, age, then `head <sha>  cwd <path>  session <id>`,
-            each only when the entry records it); `no holders` when empty. A new entry records the short HEAD of the
+  status    first `capacity: N (derived from <cpus> CPUs, <ram> GB)`, `(from SDLC_GATE_CAPACITY)` or `(configured)`, then
+            queued and admitted rows (name, pid, need, repo, priority, age, then `head <sha>  cwd <path>  session <id>`,
+            each only when the entry records it); `no holders` after the capacity row when empty. A new entry records the short HEAD of the
             directory `run` started in, that directory and the owning session (CLAUDE_CODE_SESSION_ID, else
             CODEX_THREAD_ID); an entry from an older plugin version has none and still renders. A row whose head is more
             than BEHIND_MAX (20) commits behind its branch (the cwd's upstream, else local main, else master, else
@@ -82,7 +86,7 @@ Usage: gate_lock.py run [--need RES=N[,RES=N...]] [--slots N] [--priority P] [--
           Admission never calls it.
   selftest  real child processes in a temp SDLC_GATE_DIR: weighted caps, FIFO, priority, liveness (a dead holder
           reclaimed, a live group not), nesting, cancel, timeout, reboot, corrupt ledger, receipts, status, the
-          legacy bridge, the load cap, the capacity hint, the job owner and behind warning (an older entry
+          legacy bridge, the load cap, the capacity hint, the derived capacity (small host, large host, configured), the job owner and behind warning (an older entry
           without them still renders) and the old exit codes, each control observed failing in a mutant copy of this script;
           then the reap cases with a fake orphan and a live-parent fake.
 
@@ -100,7 +104,8 @@ KILL_GRACE = 5.0
 BEHIND_MAX = 20  # status flags a job whose recorded head is more than this many commits behind its branch
 PID_SLACK = 5.0  # legacy slot files only: a live pid that started this much after the slot was taken is a reused pid
 SLOT_RE = re.compile(r'slot-(\d+)$')
-BUILTIN_POLICY = {'capacity': {'compute_units': 6, 'browser_jobs': 3}, 'default_need': {'compute_units': 3}}
+BUILTIN_POLICY = {'capacity': {'browser_jobs': 3}, 'default_need': {'compute_units': 3}}  # compute_units: compute_capacity
+CAPACITY_FLOOR = 6  # the approved fixed compute capacity; the derived default never goes below it (T-0880)
 COMPUTE = 'compute_units'
 RSS_SECS = 2.0
 
@@ -354,7 +359,12 @@ def set_default_max_load(pol):
 
 
 def ram_mb():
-    """Physical RAM in MB (sysctl hw.memsize on macOS, os.sysconf elsewhere), or 0 when the host does not say."""
+    """Physical RAM in MB (sysctl hw.memsize on macOS, os.sysconf elsewhere), or 0 when the host does not say;
+    SDLC_GATE_RAM_MB (tests only) replaces it."""
+    try:
+        return max(0, int(os.environ['SDLC_GATE_RAM_MB']))
+    except (KeyError, ValueError):
+        pass
     try:
         if sys.platform == 'darwin':
             return int(subprocess.run(['sysctl', '-n', 'hw.memsize'], capture_output=True, text=True, timeout=5).stdout.strip()) >> 20
@@ -371,11 +381,35 @@ def set_default_max_rss(pol):
         pol['max_rss_mb_default'] = f'default 25% of {n} MB RAM'
 
 
+def compute_capacity(configured=None):
+    """(compute units, how): the configured value (policy.json) wins, then SDLC_GATE_CAPACITY (1 or more), then
+    max(CAPACITY_FLOOR, min(CPUs // 2, RAM GB // 4)): one unit per two CPUs and per 4 GB, never below the floor, so an
+    unknown RAM keeps the floor. `how` is 'configured', 'from SDLC_GATE_CAPACITY' or 'derived from N CPUs, M GB'."""
+    if configured is not None:
+        return configured, 'configured'
+    try:
+        env = int(os.environ['SDLC_GATE_CAPACITY'])
+        if env >= 1:
+            return env, 'from SDLC_GATE_CAPACITY'
+    except (KeyError, ValueError):
+        pass
+    cpus, ram_gb = cpu_count(), ram_mb() >> 10
+    return max(CAPACITY_FLOOR, min(cpus // 2, ram_gb // 4)), f'derived from {cpus} CPUs, {ram_gb} GB'  # CAP-DERIVE
+
+
+def set_default_capacity(pol):
+    """A policy with no compute_units capacity gets compute_capacity's; compute_units_default says how, and marks it as
+    derived at load time so `policy set` never writes it into the file."""
+    if COMPUTE not in pol['capacity']:
+        pol['capacity'][COMPUTE], pol['compute_units_default'] = compute_capacity()
+
+
 def load_policy(root):
     """(policy, source): built-in numbers, each key replaced by policy.json's when present."""
     pol = {k: dict(v) for k, v in BUILTIN_POLICY.items()}
     path = root / 'policy.json'
     if not path.exists():
+        set_default_capacity(pol)
         set_default_max_load(pol)
         set_default_max_rss(pol)
         return pol, 'builtin'
@@ -398,6 +432,7 @@ def load_policy(root):
             pol['max_rss_mb'] = d['max_rss_mb']  # 0 is off
     except (OSError, ValueError) as e:
         raise GateError('state_unavailable', f'{path} is not a usable policy: {e}')
+    set_default_capacity(pol)
     set_default_max_load(pol)
     set_default_max_rss(pol)
     return pol, 'file'
@@ -561,7 +596,8 @@ def capacity_hint(ledger, pol, legacy_n, load):
         return None  # the head waits on another resource, not compute
     why = ('the host reports no load' if load is None else f'load {load:.1f} is under {max_load}' if max_load
            else f'load {load:.1f} has no load cap')
-    return (f'capacity {COMPUTE}={c} is full while {why}; an operator can raise it: '
+    how = pol.get('compute_units_default', 'configured')
+    return (f'capacity {COMPUTE}={c} ({how}) is full while {why}; an operator can raise it: '
             f'gate_lock.py policy set {COMPUTE}={c + max(1, step)}')
 
 
@@ -1029,6 +1065,8 @@ def status_data(root):
     except GateError:
         pol = None  # a policy that does not load gives no load fact and no hint, and never fails status
     max_load = pol.get('max_load') if pol else None
+    if pol:
+        d['capacity'] = {'value': pol['capacity'].get(COMPUTE), 'how': pol.get('compute_units_default', 'configured')}
     if pol and queue:
         hint = capacity_hint(L, pol, len(d['legacy']), host_load())
         if hint:  # HINT-STATUS
@@ -1053,7 +1091,7 @@ def cmd_status(argv):
     if as_json:
         print(json.dumps(d, indent=1, sort_keys=True))
         return 0
-    rows = []
+    rows = [f"capacity: {d['capacity']['value']} ({d['capacity']['how']})"] if d.get('capacity') else []
     for g in d['grants']:
         note = {'admitted': '', 'orphaned_group': '  (orphaned group: wrapper dead, still charged)', 'dead': '  (dead: will be reclaimed)'}[g['state']]
         rows.append(f"{'admitted' if g['state'] != 'dead' else 'dead':<9} name {g['name']}  pid {g['pid']}  need {need_text(g['need'])}  "
@@ -1072,7 +1110,9 @@ def cmd_status(argv):
         rows.append('protection is partial: legacy holders from an older plugin version are running')
     if d.get('hint'):
         rows.append(f"hint: {d['hint']}")
-    print('\n'.join(rows) or 'no holders')
+    if not d['grants'] and not d['queue'] and not d['legacy']:
+        rows.append('no holders')
+    print('\n'.join(rows))
     return 0
 
 
@@ -1146,6 +1186,8 @@ def cmd_policy(argv):
                     pol.pop('max_load'), pol.pop('max_load_default')
                 if 'max_rss_mb_default' in pol:  # likewise derived at load time
                     pol.pop('max_rss_mb'), pol.pop('max_rss_mb_default')
+                if 'compute_units_default' in pol:  # likewise derived at load time, unless this set names it
+                    pol['capacity'].pop(COMPUTE), pol.pop('compute_units_default')
                 pol['capacity'].update(caps)
                 pol['default_need'].update(defs)
                 if max_load is not None:
@@ -1308,6 +1350,7 @@ M_RSS = "used, pids = tree_rss(child.pid) if cap_mb else (0, [])" + '  # RSS-CAP
 M_STALL = "if d['load']['over'] and queue:" + '  # STALL-NOTE'
 M_DECODE = "text = pathlib.Path(path).read_text(errors='replace')" + '  # STALL-DECODE'
 M_STALLRUN = 'if cap and held and load is not None and load > cap:' + '  # STALL-LINE'
+M_CAPDERIVE = "return max(CAPACITY_FLOOR, min(cpus // 2, ram_gb // 4)), f'derived from {cpus} CPUs, {ram_gb} GB'" + '  # CAP-DERIVE'
 M_HINT = "line, hinted = line + f'; hint: {hint}', True" + '  # HINT-LINE'
 M_HINTLOAD = 'if max_load and held and load is not None and load > max_load: return None' + '  # HINT-LOAD'
 M_NOTRUN = "({holders}); command not" + " run')"
@@ -1379,6 +1422,7 @@ def env_for(base, label, **extra):
     quiet = base / f'load0-{label}'  # the default load cap must not hold a case back on a busy host
     quiet.write_text('0\n')
     env['SDLC_GATE_LOAD_FILE'] = str(quiet)
+    env['SDLC_GATE_RAM_MB'] = '16384'  # a 16 GB host derives the floor capacity of 6 whatever the real host has
     env.update(extra)
     _ISO['issued'].append(env.get('SDLC_GATE_DIR'))
     return env
@@ -1776,7 +1820,7 @@ def case_hint(py, base, label):
     m, bad, procs = base / f'm-{label}', [], []
     m.mkdir()
     env = env_for(base, label, SDLC_GATE_REPORT_SECS='0.3', SDLC_GATE_CPUS='10')
-    want = 'capacity compute_units=6 is full while load 0.0 is under 8; an operator can raise it: gate_lock.py policy set compute_units=9'
+    want = 'capacity compute_units=6 (derived from 10 CPUs, 16 GB) is full while load 0.0 is under 8; an operator can raise it: gate_lock.py policy set compute_units=9'
     try:
         procs = [holder(py, env, m, 1, '--need', 'compute_units=6')]
         if not waitfor(lambda: (m / 'started-1').exists()):
@@ -1808,6 +1852,38 @@ def case_hint(py, base, label):
         return bad
     finally:
         release_all(m, procs)
+
+
+def case_capacity(py, base, label):
+    """The derived compute capacity (T-0880): an 8-CPU 16 GB host gives the floor 6, an 18-CPU 64 GB host gives 9, and a
+    configured value wins over SDLC_GATE_CAPACITY and the derivation; `policy set` of another key never writes the
+    derived figure into policy.json."""
+    bad = []
+    def status(**extra):
+        r = gl(py, env_for(base, label, **extra), 'status')
+        return r.stdout.splitlines()[0] if r.returncode == 0 and r.stdout else f'rc={r.returncode} {r.stderr!r}'
+    for cpus, ram, want in (('8', '16384', 'capacity: 6 (derived from 8 CPUs, 16 GB)'),
+                            ('18', '65536', 'capacity: 9 (derived from 18 CPUs, 64 GB)')):
+        got = status(SDLC_GATE_CPUS=cpus, SDLC_GATE_RAM_MB=ram)
+        if got != want:
+            bad.append(f'capacity not derived from the host: want {want!r}, got {got!r}')
+    got = status(SDLC_GATE_CPUS='18', SDLC_GATE_RAM_MB='65536', SDLC_GATE_CAPACITY='12')
+    if got != 'capacity: 12 (from SDLC_GATE_CAPACITY)':
+        bad.append(f'SDLC_GATE_CAPACITY does not override the derivation, got {got!r}')
+    env = env_for(base, label, SDLC_GATE_CPUS='18', SDLC_GATE_RAM_MB='65536')
+    r = gl(py, env, 'policy', 'set', 'browser_jobs=4')
+    pf = pathlib.Path(env['SDLC_GATE_DIR']) / 'policy.json'
+    try:
+        stored = json.loads(pf.read_text())
+    except (OSError, ValueError):
+        stored = {}
+    if r.returncode != 0 or COMPUTE in stored.get('capacity', {}) or 'compute_units_default' in stored:
+        bad.append(f'policy set browser_jobs=4 wrote the derived capacity into policy.json: rc={r.returncode} {stored!r}')
+    r = gl(py, env, 'policy', 'set', 'compute_units=4')
+    got = status(SDLC_GATE_CPUS='18', SDLC_GATE_RAM_MB='65536', SDLC_GATE_CAPACITY='12')
+    if r.returncode != 0 or got != 'capacity: 4 (configured)':
+        bad.append(f'a configured capacity does not win, got rc={r.returncode} {got!r}')
+    return bad
 
 
 def case_hint_load(py, base, label):
@@ -2121,6 +2197,7 @@ def selftest():
              "if max_load and load is not None and load > max_load: break  # LOAD-CAP", 'starved head'),
             ('default load cap', case_load_default, M_LOADDEF, 'pass  # LOAD-DEFAULT', 'ran over the default load cap'),
             ('memory cap', case_rss, M_RSS, 'used, pids = 0, []  # RSS-CAP', 'rss cap missing'),
+            ('derived capacity', case_capacity, M_CAPDERIVE, "return CAPACITY_FLOOR, 'derived'  # CAP-DERIVE", 'capacity not derived'),
             ('capacity hint', case_hint, M_HINT, 'pass  # HINT-LINE', 'carries no capacity hint'),
             ('no capacity hint under load', case_hint_load, M_HINTLOAD, 'pass  # HINT-LOAD', 'capacity hint under load'),
             ('timeout says command not run', case_notrun, M_NOTRUN, "({holders})')", 'does not say command not run'),
@@ -2178,7 +2255,7 @@ def selftest():
         rec = json.loads((base / 'r-ok2.json').read_text()) if (base / 'r-ok2.json').exists() else {}
         expect(f'receipt: outcome ok, got {rec}', rec.get('outcome') == 'ok' and rec.get('rc') == 0)
         r = gl(script, env, 'status')
-        expect(f'status: nothing left after the runs, got {r.stdout!r}', r.stdout.strip() == 'no holders')
+        expect(f'status: nothing left after the runs, got {r.stdout!r}', r.stdout.splitlines()[-1:] == ['no holders'])
 
         # 3. nesting, forged context, context, the held marker alone
         env = env_for(base, 'nest')
@@ -2271,7 +2348,7 @@ def selftest():
             expect(f'sigterm: exits 143, got {rc}', rc == 143)
             expect('sigterm: the command was killed', cpid > 0 and waitfor(lambda: pid_start(cpid) is None, 10))
             st = gl(script, env, 'status')
-            expect(f'sigterm: the grant is released, got {st.stdout!r}', st.stdout.strip() == 'no holders')
+            expect(f'sigterm: the grant is released, got {st.stdout!r}', st.stdout.splitlines()[-1:] == ['no holders'])
         finally:
             if a.poll() is None:
                 a.kill()
