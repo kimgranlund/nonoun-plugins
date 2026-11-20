@@ -2,7 +2,7 @@
 id: T-0874
 title: "The lead can claim paths for one lane, and every lane sees who owns a path before it creates or changes it"
 type: feature        # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: [T-0873]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -39,3 +39,13 @@ The lead can claim paths for one lane, and every lane sees who owns a path befor
 
 ## Constraints
 - No claim is ever enforced at commit in this ticket.
+
+## Outcome
+
+2026-11-20 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: a99becd3c8a4
+- Changed: see commits
+- Commits: 6e5843e T-0874: a lane can claim paths so two lanes never create the same file (#102)
+- Check: 1 The lanes selftest shard holding the new cases exits 0; with the owner check removed, the refusal...: pass
+- Check: 2 `bash plugins/sdlc/scripts/check.sh --fast` exits 0 and `git diff --check` is clean: pass
+- Follow-up: note: plugins/sdlc/scripts/lanes.py store shape is {glob: {lane, path... -> notes.md
+- Follow-up: note: the diff adds no commit-time enforcement CHANGELOG states claims... -> notes.md

@@ -6,10 +6,9 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | ID | Ticket | Title | Type | Size | Pri | Depends on | Status |
 |---|---|---|---|---|---|---|---|
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔴 blocked |
-| T-0874 | [0874-lane-path-claims](0874-lane-path-claims/handoff.md) | The lead can claim paths for one lane, and every lane sees who owns a path before it creates or changes it | feature | L2 | P2 | T-0873 | 🟡 claimed (branch lane/T-0874-t0874) |
 | T-0875 | [0875-lane-claims-commit-guard](0875-lane-claims-commit-guard/handoff.md) | A lane cannot land or mark ready a change to a path another lane owns, and a user can wire the same check as a | feature | L2 | P2 | T-0874 | 🔵 ready |
 
-Closed: 841 done, 30 dropped (git log or .NNNN-* folders)
+Closed: 842 done, 30 dropped (git log or .NNNN-* folders)
 
 ## Open follow-ups
 

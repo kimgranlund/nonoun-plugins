@@ -1073,3 +1073,8 @@
 ## T-0877: A session agent that calls sdlc scripts from an older cached version is told so, and refused for state-changin (2026-11-20)
 
 - note: messages.py count/read/ack/wait are not in READ_ONLY, so a stale `messages.py count` refuses with exit 2; this matches the ticket's fixed read-only set, and the builder reported a related follow-up on the messages-run.py launcher (plugins/sdlc/scripts/messages.py:3845).
+
+## T-0874: The lead can claim paths for one lane, and every lane sees who owns a path before it creates or changes it (2026-11-20)
+
+- note: plugins/sdlc/scripts/lanes.py store shape is `{glob: [{lane, path, mode, at}]}`, not the handoff's `{glob: {lane, mode, at}}`; the builder reported why (two append claims on one glob must both survive), and no criterion pins the shape.
+- note: the diff adds no commit-time enforcement (CHANGELOG states claims are advisory), matching the Constraint.
