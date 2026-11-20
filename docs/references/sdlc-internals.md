@@ -162,6 +162,8 @@ Owner trees (T-0752): lanes.py picks the tree for records, `branch:` and `worktr
 - `land_gate: <cmd>`, default none; the gate `lanes.py finish` passes to `fanout.py land` and `settle` (T-0594).
 - `factory: <name>`, default `factory`; the mailbox receiver `lanes.py ready` sends its `ready <id>` message to (T-0590).
 - `lane_landing: local`, default none: a main tracking an upstream is a PR repo (T-0609). With the line, `finish` lands into main locally, so `open` commits the `--claim` claim and the record in main (T-0804).
+- `lane_generated: <glob>...` and `lane_regenerate: <cmd>`, default none: `finish --no-ticket` resolves a scratch-merge conflict confined to those paths by taking into's side and running the command (T-0872).
+- `lane_after_land: <cmd>`, default none, repeatable: `finish --no-ticket` runs each in order in the worktree holding into after the fast-forward; a failure makes it exit 1 with the landing kept (T-0872).
 
 Design: [lane lifecycle](../specs/sdlc/lane-lifecycle.md).
 
