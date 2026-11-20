@@ -2,11 +2,14 @@
 id: T-0869
 title: "A verifier prepared in a lane that merged its integration branch gets a Base sha that keeps the integration br"
 type: bug             # feature | bug | chore | spike | idea
-status: ready     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: [T-0860]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
 created: 2026-11-19
+claimed_by: nonoun-author 2026-11-20
+branch: lane/T-0869-t0869
+worktree: ../sdlc-lite.worktrees/T-0869-t0869
 router: .sdlc/AGENTS.md  # how to claim and close this ticket
 ---
 
