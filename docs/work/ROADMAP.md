@@ -7,7 +7,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 |---|---|---|---|---|---|---|---|
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔴 blocked |
 | T-0861 | [0861-rerun-failed-jobs](0861-rerun-failed-jobs/handoff.md) | check.sh reruns only failed or affected jobs after a fix | feature | L2 | P2 | T-0858, T-0860 | 🟡 claimed (branch lane/T-0861-t0861) |
-| T-0869 | [0869-verifier-base-from-lane-into](0869-verifier-base-from-lane-into/handoff.md) | A verifier prepared in a lane that merged its integration branch gets a Base sha that keeps the integration br | bug | L2 | P2 | T-0860 | 🔵 ready |
+| T-0869 | [0869-verifier-base-from-lane-into](0869-verifier-base-from-lane-into/handoff.md) | A verifier prepared in a lane that merged its integration branch gets a Base sha that keeps the integration br | bug | L2 | P2 | T-0860 | 🟡 claimed |
 | T-0870 | [0870-live-lane-kind](0870-live-lane-kind/handoff.md) | Live mode's documented lane flow works without a ticket: open a registered lane, see it in overlap and list, m | bug | L3 | P2 | T-0860 | 🟡 claimed (branch lane/T-0870-t0870) |
 | T-0871 | [0871-host-lock-close-hint](0871-host-lock-close-hint/handoff.md) | When a landed host agent worktree is still locked by the harness, the close output says so and gives a removal | bug | L1 | P2 | T-0870 | 🔵 ready |
 | T-0872 | [0872-finish-ticketless-land-guards](0872-finish-ticketless-land-guards/handoff.md) | Landing a ticketless lane with `lanes.py finish --no-ticket` can never commit conflict markers, resolves confl | feature | L3 | P2 | T-0871, T-0870 | 🔵 ready |
