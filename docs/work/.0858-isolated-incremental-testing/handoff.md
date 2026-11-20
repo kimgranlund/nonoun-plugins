@@ -2,7 +2,7 @@
 id: T-0858
 title: "check.sh --changed runs only the jobs a diff touches"
 type: feature        # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -42,3 +42,15 @@ During a ticket, one command runs only the check jobs that cover the files chang
 
 ## Constraints
 - `check.sh` with no flag and with `--fast` keep their current job sets.
+
+## Outcome
+
+2026-11-19 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: 0a82cf148510
+- Changed: see commits
+- Commits: d2e1346 T-0858: check.sh --changed runs only the jobs a diff touches
+- Check: 1 selftest with cases for leaf script, shared module, docs-only, outside plugin, check.sh, unmapped...: pass
+- Check: 2 only cite_check.py changed (the handoff's replanned leaf script; wtroot.py is a shared module tha...: pass
+- Check: 3 with no changes `check.sh --changed` prints `nothing to check` and exits 0: pass
+- Check: 4 `check.sh --fast` exits 0 and `git diff --check` is clean: pass
+- Follow-up: note: plugins/sdlc/scripts/check.sh option parsing for --changed prints... -> notes.md
+- Follow-up: note: the throwaway worktree tmp:0858-verifier-L2/base was left for... -> notes.md

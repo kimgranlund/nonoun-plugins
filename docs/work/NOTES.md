@@ -979,3 +979,8 @@
 ## T-0863: Run the ui-explore-variants browser check with Playwright (2026-11-19)
 
 - note: redck.py deviations printed no `process deviation:` lines; the ticket has no `(red)` criteria.
+
+## T-0858: check.sh --changed runs only the jobs a diff touches (2026-11-19)
+
+- note: plugins/sdlc/scripts/check.sh option parsing for `--changed` prints `nothing to check (base HEAD)` with a base suffix; it still contains the string the criterion names.
+- note: the throwaway worktree tmp:0858-verifier-L2/base was left for dispatch.py record to remove.
