@@ -2,11 +2,12 @@
 id: T-0859
 title: "Roles run the checks for their change, once, never the full suite mid-ticket"
 type: chore           # feature | bug | chore | spike | idea
-status: ready     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: [T-0858]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
 created: 2026-11-19
+claimed_by: nonoun-author 2026-11-19
 router: .sdlc/AGENTS.md  # how to claim and close this ticket
 ---
 
