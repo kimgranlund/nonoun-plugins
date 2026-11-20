@@ -2,14 +2,12 @@
 id: T-0881
 title: "gate_lock keeps one slot for jobs that declare a short duration"
 type: feature        # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: [T-0880]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
 created: 2026-11-19
 claimed_by: nonoun-author 2026-11-20
-branch: lane/T-0881-t0881
-worktree: ../sdlc-lite.worktrees/T-0881-t0881
 router: .sdlc/AGENTS.md  # how to claim and close this ticket
 ---
 
@@ -40,3 +38,14 @@ A short gated job no longer waits behind hour-long ones.
 ## Constraints
 - A caller that passes no `--expect` gets the same result as before, apart from the reserved room.
 - No job is ever killed by the gate.
+
+## Outcome
+
+2026-11-20 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: 9305ebd39702
+- Changed: see commits
+- Commits: 8f87ed5 T-0881: gate_lock keeps one slot for jobs that declare a short duration (#94)
+- Check: 1 `gate_lock.py selftest` exits 0 with the three cases, the first red against old code: pass
+- Check: 2 `run --help` names `--expect`: pass
+- Check: 3 `check.sh --fast` exits 0 and `git diff --check` is clean: pass
+- Follow-up: note: the installed plugin copy 1.0.2 has no --expect, so the verifier... -> notes.md
+- Follow-up: note: undeclared gates lose one default need of room one at a time on... -> notes.md

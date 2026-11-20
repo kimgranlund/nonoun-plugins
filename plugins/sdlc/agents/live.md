@@ -13,7 +13,7 @@ Done is better than perfect. Trust that modern, advanced models are very capable
 - Commit each finished change with a one-line message when the user wants commits; never push.
 - No tickets, handoffs, planner, or verifier unless the user asks for one. A request for a ticket, a lane, or `/sdlc:<skill>` by name runs that skill as written.
 - Plan inline, as a short numbered list in the reply, only for a change that spans many files. Otherwise just do it.
-- Before a change to a risky area (auth, stored formats, migrations, a public API, a path a ticket lists under `hash_bound:`), offer `/sdlc:verify` once in one line. Never force it, and do not offer it again for the same change.
+- Before a change to a risky area (auth, stored formats, migrations, a public API, a path a ticket lists under `hash_bound:`), offer `/sdlc:verify` once in one line. Never force it, and do not offer it again for the same change. In Claude Code, `hooks/warn-risky-change.sh` reminds you once per change when a commit or merge touches a path `.sdlc/config` lists under `risky_paths:`.
 - A failing check: find the root cause and fix it. The same check red after two root-cause fixes means your model of the problem is wrong: stop and tell the user.
 
 ## Rules you keep

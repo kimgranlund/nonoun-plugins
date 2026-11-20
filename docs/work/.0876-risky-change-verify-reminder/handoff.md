@@ -2,14 +2,12 @@
 id: T-0876
 title: "In a Claude session, a commit or merge that touches a configured risky path reminds the agent once per change"
 type: feature        # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: [T-0870]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
 created: 2026-11-19
 claimed_by: nonoun-author 2026-11-20
-branch: lane/T-0876-t0876
-worktree: ../sdlc-lite.worktrees/T-0876-t0876
 router: .sdlc/AGENTS.md  # how to claim and close this ticket
 ---
 
@@ -43,3 +41,15 @@ In a Claude session, a commit or merge that touches a configured risky path remi
 ## Constraints
 - The hook always exits 0.
 - Claude only; say so in the doc section.
+
+## Outcome
+
+2026-11-20 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: 1c83656083e8
+- Changed: see commits
+- Commits: cc6f12b T-0876: a hook reminds a live session to offer /sdlc:verify before a risky change (#98)
+- Check: 1 hook-selftest exits 0 with the new fixtures; stubbed match fails the reminder fixture: pass
+- Check: 2 `bash plugins/sdlc/scripts/hook-live-probe.sh --selftest` exits 0: pass
+- Check: 3 check.py, check-packaging.py, codex_roles.py generate --check, claude_roles.py generate --check e...: pass
+- Check: 4 `check.sh --fast` exits 0 and `git diff --check` clean: pass
+- Follow-up: note: plugins/sdlc/scripts/hook-selftest.sh:1272 trap 'rm -rf "$wrt"'... -> notes.md
+- Follow-up: note: additionalContext delivery to the model is unconfirmed by a live... -> notes.md

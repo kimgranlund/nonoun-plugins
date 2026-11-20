@@ -2,14 +2,12 @@
 id: T-0878
 title: "fanout land keeps a committed skips.md tracked in the closed ticket folder"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: [T-0860]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
 created: 2026-11-19
 claimed_by: nonoun-author 2026-11-20
-branch: lane/T-0878-t0878
-worktree: ../sdlc-lite.worktrees/T-0878-t0878
 router: .sdlc/AGENTS.md  # how to claim and close this ticket
 ---
 
@@ -39,3 +37,13 @@ After `fanout.py land`, a `skips.md` that the lane committed stays tracked in th
 
 ## Constraints
 - A lane with no `skips.md` lands exactly as before.
+
+## Outcome
+
+2026-11-20 · lane: solo L1 · verdict: closed by reason (delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed; gate: full) · verifier: verifier-L2 (sonnet) · base: 9e9dc30f07f2
+- Changed: see commits
+- Commits: 983d6df T-0878: fanout land keeps a committed skips.md tracked (#85)
+- Check: 1 fanout selftest exits 0 and the flipped case fails on the old code: pass
+- Check: 2 tickets.py selftest exits 0: pass
+- Check: 3 `check.sh --fast` exits 0 and `git diff --check` is clean: pass
+- Follow-up: note: the leftover untracked docs/work/<NNNN>-<slug>/skips.md after... -> notes.md
