@@ -33,8 +33,17 @@
                                            append-only paths such as a CHANGELOG), which print `warn: ... expect conflicts`.
                                            Two globs meet when equal or either matches the other as a path, by git's own
                                            pathspec rules on a throwaway index, so a planned file not yet created counts.
-                                           Advisory only: nothing refuses a commit. close drops the lane's claims
+                                           ready and finish refuse an owned path (claims check). close drops the lane's claims
   lanes.py claim --release <lane> [<glob>...]  drop the lane's claims, all or the globs given
+  lanes.py claims check [--staged]         T-0875 (#102): in the current lane tree, each changed path (lane_paths: committed
+                                           since base, uncommitted, untracked; --staged: the index, GIT_INDEX_FILE under a
+                                           hook) that meets another open lane's own claim prints `owned by <lane>: <path>
+                                           (<glob>)` and exits 1; an append claim prints `append: <path> also claimed by
+                                           <lane>` and exits 0; outside a lane `not in a lane`, exit 0. ready and both
+                                           finish forms run it first and stop with nothing pinned, committed or merged.
+                                           Nothing installs a git hook (.git/hooks is shared by every worktree); to refuse
+                                           commits too, the user adds to .git/hooks/pre-commit (executable) the line
+                                           exec python3 <plugin>/scripts/lanes.py claims check --staged
   lanes.py owners [--json]                 `<glob>  <lane>  <mode>  <at>` per claim, or none; drops claims of a gone lane
   lanes.py who [--json]                    `factory <session> <evidence>` per sign of an active factory session (T-0821):
                                            a live claude receiver naming a factory, a *.running marker a live process names,
@@ -194,6 +203,9 @@ Finish (T-0594): `finish <lane>` runs, from the main checkout, the whole end of 
 ticket and whose into is the main checkout's branch, composing the existing commands. It prints one `<step>: ...` line
 per step and stops at the first failure with `<step>: stopped: <why>; fix it, then rerun lanes.py finish <lane>: done
 steps are skipped` (exit 1). Each step skips itself when its effect is already there, so a rerun goes on from the stop.
+  0. claims   (T-0875) a path the lane changed that meets another open lane's own claim stops with its `owned by`
+              lines before anything is recorded, committed or merged; append matches print and go on. Skipped when
+              the tree is clean and the branch is in into. finish --no-ticket runs it first too.
   1. record   dispatch.py record each *.dispatch.json in the ticket's records dir in the lane tree: a verifier whose
               attempt is still running (--verifier-transcript prices it), and the solo (--transcript prices its row
               once; it is idempotent); `nothing pending` when neither is due. --verifier-agent-id ID (--solo-agent-id
@@ -256,7 +268,8 @@ Ready (T-0590): `ready [<lane>] [--ticket ID]`, run by the worker when its ticke
 --ticket, else the record's first local ticket; a live lane with neither (T-0870) uses its leaf as the <id>, skips the
 criteria test, and names ticket none in the message. It refuses (exit 1, nothing written) when the ticket's handoff (the lane
 tree's copy, else the main checkout's) lists no item under ## Acceptance criteria, or when the lane's state has the tree
-of base_sha (else the merge base with into): `no changes in <lane> since <sha>`. The state is HEAD plus every tracked and
+of base_sha (else the merge base with into): `no changes in <lane> since <sha>`, or (T-0875) when a path the lane
+changed meets another open lane's own claim: its `owned by` lines, then `ready: stopped: ... nothing pinned`. The state is HEAD plus every tracked and
 untracked file git does not ignore (minus *.log, .run.lock, *.running), written through a copy of the index with
 add -A and write-tree, never git stash. A state equal to HEAD pins HEAD; otherwise git commit-tree writes a snapshot
 commit on HEAD (subject `sdlc ready snapshot: <id> in <lane>`, a `Lane-Base: <base sha>` trailer, printed as
@@ -1437,7 +1450,8 @@ def finish(target, backup=None, transcript=None, verifier_transcript=None, cwd='
 def finish_steps(target, backup, transcript, verifier_transcript, cwd, say, solo_agent_id, verifier_agent_id, no_ticket=False):
     ctx = Ctx(cwd)
     top = ctx.top
-    d, refusal = find(ctx, discover(ctx), str(target))
+    lanes = discover(ctx)
+    d, refusal = find(ctx, lanes, str(target))
     if refusal:
         ref = finished(top, str(target))
         if not ref:
@@ -1467,7 +1481,7 @@ def finish_steps(target, backup, transcript, verifier_transcript, cwd, say, solo
             return stop('lane', f'--no-ticket takes a lane with no local ticket; the record lists {", ".join(ids)}')
         if not has_ref(top, f'refs/heads/{into}'):
             return stop('lane', f'the lane lands into {into}, which is no local branch')
-        return finish_ticketless(ctx, d, stop, say, backup, verifier_agent_id, verifier_transcript)
+        return finish_ticketless(ctx, lanes, d, stop, say, backup, verifier_agent_id, verifier_transcript)
     if into != ctx.main:
         return stop('lane', f'the lane lands into {into}, not {ctx.main} (the branch of the main checkout {top})')
     if len(ids) != 1:
@@ -1480,6 +1494,9 @@ def finish_steps(target, backup, transcript, verifier_transcript, cwd, say, solo
         return stop('lane', f'no ticket {tid} under {tree / ".sdlc"}')
     folder, title = ltdir / slug, str(meta.get('title') or '')
     trel = ltdir.relative_to(tree)
+    why = claims_stop(ctx, lanes, d, say)
+    if why:
+        return stop('claims', why)
 
     # 1. record: each pending verifier dispatch, then the solo (dispatch.py record prices its row once, T-0350)
     done = []
@@ -1625,7 +1642,26 @@ def transcript_verdict(agent_id, transcript):
     return verdict, None if verdict else f'no verifier verdict in the final message of agent {agent_id}'
 
 
-def finish_ticketless(ctx, d, stop, say, backup, verifier_agent_id, verifier_transcript):
+def claims_stop(ctx, lanes, d, say):
+    """T-0875: finish's claims step, before anything is recorded, committed or merged: the refusal text when the lane
+    changes a path another open lane owns (each `owned by` line said first), else None after saying the append warnings.
+    A lane with nothing left to land (clean, its branch in into: a rerun after the land) is not checked."""
+    tree, b, into = d['path'], d['branch'], d['into'] or ctx.main
+    if not porcelain(tree) and b and git(ctx.top, 'merge-base', '--is-ancestor', f'refs/heads/{b}', f'refs/heads/{into}').returncode == 0:
+        return None
+    try:
+        owned, append = claim_lines(ctx, lanes, d)
+    except LaneError as e:
+        return f'{e}; nothing committed or merged'
+    for line in owned + append:
+        say(line)
+    if owned:
+        return f'{d["lane"]} changes a path another lane owns; nothing committed or merged'
+    say('claims: ' + ('append warnings only' if append else 'no path another lane claims'))
+    return None
+
+
+def finish_ticketless(ctx, lanes, d, stop, say, backup, verifier_agent_id, verifier_transcript):
     """finish --no-ticket (T-0821): a lane with no local ticket (a live session's lane) lands behind the land gate with
     no record, verdict or ticket close. A lane touching a hash_bound: path stops unless --verifier-agent-id names a
     verifier whose verdict is pass. Steps: commit (refused when the staged change adds a conflict marker), land (refused
@@ -1637,6 +1673,9 @@ def finish_ticketless(ctx, d, stop, say, backup, verifier_agent_id, verifier_tra
     base = out(top, 'merge-base', f'refs/heads/{into}', f'refs/heads/{b}')
     if not base:
         return stop('lane', f'no merge base of {b} and {into}')
+    why = claims_stop(ctx, lanes, d, say)
+    if why:
+        return stop('claims', why)
     try:
         hits = steps.declared_hits(str(tree), tickets.hash_bound_globs(Path(top) / '.sdlc'), base, untracked=True)
     except ValueError as e:
@@ -2324,10 +2363,17 @@ def ready(target=None, ticket=None, cwd='.', notify_cmd=None):
     if base and out(path, 'rev-parse', '--verify', '-q', f'{base}^{{tree}}') == tree:
         return result(1, f'no changes in {name} since {base[:12]}: nothing to review', lane=name, path=path, branch=d['branch'])
     try:
+        owned, append = claim_lines(ctx, lanes, d)  # CLAIMS-READY
+    except LaneError as e:
+        return result(1, f'{e}; nothing pinned', lane=name, path=path, branch=d['branch'])
+    if owned:
+        return result(1, '\n'.join(owned + append + [f'ready: stopped: {name} changes a path another lane owns; nothing pinned']),
+                      lane=name, path=path, branch=d['branch'])
+    try:
         sha, line = pin(path, tid, name, base, (head, tree))
     except LaneError as e:
         return result(1, str(e), lane=name, path=path, branch=d['branch'])
-    lines = [line] if line else []
+    lines = list(append) + ([line] if line else [])
     ref = READY_REFS + tid
     r = git(path, 'update-ref', ref, sha)
     if r.returncode:
@@ -2681,21 +2727,74 @@ def owners(cwd='.'):
     return [dict(glob=g, **h) for g, hs in sorted(live.items()) for h in hs]
 
 
+def claim_hits(ctx, lanes, me, paths):
+    """(lane, path, glob, mode) for each claim of an open lane other than the tree at me that meets one of paths;
+    read-only. Raises LaneError when git cannot match them."""
+    want = sorted({p for p in (claim_path(x) for x in paths) if p})  # a path claim_path refuses meets no claim
+    if not want or not (ctx.root / CLAIMS).exists():
+        return []
+    live = live_claims(read_claims(ctx), lanes)
+    held = [(g, h) for g, hs in sorted(live.items()) for h in hs if not (me and samepath(h['path'], me))]
+    pairs = [(p, g, h) for g, h in held for p in want]
+    return [(h['lane'], p, g, h['mode']) for (p, g, h), met in zip(pairs, meets(ctx.top, [(p, g) for p, g, _ in pairs]))
+            if met]
+
+
 def claimed(paths, cwd='.'):
     """(lane, glob, mode) for each claim of an open lane other than the current tree that meets a path; read-only."""
     ctx = Ctx(cwd)
-    want = [p for p in (claim_path(x) for x in paths) if p]  # a path claim_path refuses meets no claim
-    if not want or not (ctx.root / CLAIMS).exists():
-        return []
-    live = live_claims(read_claims(ctx), discover(ctx))
-    held = [(g, h) for g, hs in sorted(live.items()) for h in hs
-            if not (ctx.current and samepath(h['path'], ctx.current))]
-    pairs = [(p, g, h) for g, h in held for p in want]
     rows = []
-    for (p, g, h), met in zip(pairs, meets(ctx.top, [(p, g) for p, g, _ in pairs])):
-        if met and (h['lane'], g, h['mode']) not in rows:
-            rows.append((h['lane'], g, h['mode']))
+    for lane, _, g, mode in claim_hits(ctx, discover(ctx), ctx.current, paths):
+        if (lane, g, mode) not in rows:
+            rows.append((lane, g, mode))
     return rows
+
+
+def claim_lines(ctx, lanes, d, staged=False):
+    """T-0875 (#102): (owned, append) lines for the paths lane d changed (lane_paths), or with staged the paths staged
+    in its tree's index (GIT_INDEX_FILE when a git hook runs it), that meet another open lane's claim:
+    `owned by <lane>: <path> (<glob>)` for an own claim, `append: <path> also claimed by <lane>` for an append claim.
+    Raises LaneError when git cannot say."""
+    if staged:
+        r = git(d['path'], 'diff', '--cached', '--no-renames', '--name-only')
+        if r.returncode:
+            raise LaneError(f'cannot read the staged paths of {d["lane"]}: {err(r)}')
+        paths = set(r.stdout.splitlines())
+    else:
+        paths = lane_paths(ctx, d)
+        if paths is None:
+            raise LaneError(f'cannot read the paths {d["lane"]} changed')
+    owned, append = [], []
+    for lane, p, g, mode in claim_hits(ctx, lanes, d['path'], paths):
+        if mode == 'append':
+            line = f'append: {p} also claimed by {lane}'
+            if line not in append:
+                append.append(line)
+        else:
+            owned.append(f'owned by {lane}: {p} ({g})')
+    return owned, append
+
+
+def claims_check(target=None, staged=False, cwd='.'):
+    """T-0875 (#102): lanes.py claims check [--staged]. In lane target (default: the lane holding cwd) rc 1 when a
+    changed path meets another open lane's own claim, one `owned by` line each; append matches warn with rc 0. rc 0 and
+    `not in a lane` outside a plugin lane, so one pre-commit hook serves the main checkout and every lane."""
+    ctx = Ctx(cwd)
+    lanes = discover(ctx)
+    if target is None:
+        d = next((x for x in lanes if x['owner'] and ctx.current and samepath(x['path'], ctx.current)), None)
+        if d is None:
+            return result(0, 'not in a lane')
+    else:
+        d, refusal = find(ctx, lanes, str(target))
+        if refusal:
+            return refusal
+        if not d['owner'] or not d['exists']:
+            return result(1, f'not a plugin lane with a tree: {d["path"]}', lane=d['lane'], path=d['path'])
+    owned, append = claim_lines(ctx, lanes, d, staged)
+    lines = owned + append + ([] if owned or append else [f'claims: {d["lane"]} meets no claim of another lane'])
+    return result(1 if owned else 0, '\n'.join(lines), lane=d['lane'], path=d['path'], branch=d['branch'],
+                  owned=owned, append=append)
 
 
 def add_claim_parsers(sub):
@@ -2706,10 +2805,17 @@ def add_claim_parsers(sub):
     p.add_argument('--release', action='store_true', help="drop the lane's claims (all, or the globs given)")
     p = sub.add_parser('owners')
     p.add_argument('--json', action='store_true')
+    p = sub.add_parser('claims', help='check the lane against the other lanes\' path claims (T-0875)')
+    p.add_argument('ccmd', choices=['check'])
+    p.add_argument('--staged', action='store_true', help='the staged paths (a pre-commit hook), not the whole lane diff')
 
 
 def claims_cli(a):
-    """The claim and owners commands; their exit code."""
+    """The claim, claims check and owners commands; their exit code."""
+    if a.cmd == 'claims':
+        r = claims_check(staged=a.staged)
+        print(r['message'])
+        return r['rc']
     if a.cmd == 'claim':
         if a.release and a.append:
             print('lanes.py: claim --release takes no --append', file=sys.stderr)
@@ -2995,7 +3101,7 @@ def orphans(cwd='.'):
 
 def main(argv=None):
     ap = argparse.ArgumentParser(prog='lanes.py', description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    sub = ap.add_subparsers(dest='cmd', metavar='{open,close,finish,ready,sweep,list,status,who,check,port,archive,orphans,claim,owners,selftest}')
+    sub = ap.add_subparsers(dest='cmd', metavar='{open,close,finish,ready,sweep,list,status,who,check,port,archive,orphans,claim,claims,owners,selftest}')
     sub.required = True
     p = sub.add_parser('open')
     p.add_argument('name')
@@ -3055,7 +3161,7 @@ def main(argv=None):
     q = asub.add_parser('restore')
     q.add_argument('spec', metavar='<date>/<branch>')
     sub.add_parser('orphans')
-    add_claim_parsers(sub)  # T-0874: claim and owners
+    add_claim_parsers(sub)  # T-0874: claim and owners; T-0875: claims check
     st = sub.add_parser('selftest')
     st.add_argument('--shard', metavar='I/N', help='run shard I of N of the cases (check.sh pool jobs, T-0860)')
     st.add_argument('--list', action='store_true', help='print the case names (of the shard) and run nothing')
@@ -3166,7 +3272,7 @@ def main(argv=None):
             rc, msg = archive_restore(a.spec)
             print(msg)
             return rc
-        if a.cmd in ('claim', 'owners'):
+        if a.cmd in ('claim', 'claims', 'owners'):
             return claims_cli(a)
         if a.cmd == 'orphans':
             for sha, ref, subject, n in orphans():
@@ -4930,6 +5036,57 @@ def case_claims(script, base):
     return fails
 
 
+def case_claims_check(script, base):
+    """T-0875 (#102): lane own owns fin2.txt and nt.txt and holds fin.txt as append; the finish lane fin claims its
+    own mine.txt. claims check in fin refuses fin2.txt naming own, warns on fin.txt, passes mine.txt; --staged sees
+    only the index; outside a lane it passes. ready and finish stop with nothing pinned, committed or merged, as does
+    finish --no-ticket on a lane changing nt.txt; once own releases fin2.txt, ready pins and finish lands."""
+    t, leaf, tree, b = finish_fixture(script, base, 'claims-check', gate='true')
+    lo, _, _ = t.open('own', None, '--kind', 'integration')
+    for args in ((lo, 'fin2.txt', 'nt.txt'), (lo, 'fin.txt', '--append'), (leaf, 'mine.txt')):
+        rc, o = t.lanes('claim', *args)
+        if rc:
+            return [f'claims check: cannot claim {args}: {rc}: {o}']
+    t.write({'mine.txt': 'mine\n'}, cwd=tree)
+    fails = []
+    owned, warn = f'owned by {lo}: fin2.txt (fin2.txt)', f'append: fin.txt also claimed by {lo}'
+    rc, o = t.lanes('claims', 'check', cwd=tree)
+    if rc != 1 or set(o.splitlines()) != {owned, warn}:
+        fails.append(f'claims check: want exit 1 with {owned!r} and {warn!r} only, got {rc}: {o}')
+    rc, o = t.lanes('claims', 'check', '--staged', cwd=tree)
+    t.g('add', 'fin2.txt', cwd=tree)
+    rc2, o2 = t.lanes('claims', 'check', '--staged', cwd=tree)
+    t.g('reset', '-q', cwd=tree)
+    if rc or 'meets no claim' not in o or rc2 != 1 or o2 != owned:
+        fails.append(f'claims check --staged: want 0 with nothing staged, then 1 on a staged fin2.txt, got {rc}: {o} then {rc2}: {o2}')
+    rc, o = t.lanes('claims', 'check')
+    if rc or o != 'not in a lane':
+        fails.append(f'claims check: outside a lane want exit 0 and not in a lane, got {rc}: {o}')
+    rc, o = t.lanes('ready', cwd=tree)
+    if rc != 1 or owned not in o or 'nothing pinned' not in o or t.ok('rev-parse', '--verify', '-q', 'refs/sdlc/ready/T-0001'):
+        fails.append(f'claims ready: want ready refused naming {lo} with no ready ref, got {rc}: {o}')
+    head, lhead, dirty = t.g('rev-parse', 'main'), t.g('rev-parse', 'HEAD', cwd=tree), t.g('status', '--porcelain', cwd=tree)
+    rc, o = t.lanes('finish', leaf, env=FIN_ENV)
+    if rc != 1 or owned not in o or 'claims: stopped:' not in o or 'record:' in o:
+        fails.append(f'claims finish: want finish stopped at claims naming {lo}, got {rc}: {o}')
+    if (t.g('rev-parse', 'main'), t.g('rev-parse', 'HEAD', cwd=tree), t.g('status', '--porcelain', cwd=tree)) != (head, lhead, dirty):
+        fails.append('claims finish: a refused finish moved main, committed in the lane or changed its tree')
+    ln, tn, _ = t.open('nt', None, '--kind', 'integration')
+    t.work(tn, {'nt.txt': 'nt\n'})
+    rc, o = t.lanes('finish', ln, '--no-ticket', env=FIN_ENV)
+    if rc != 1 or f'owned by {lo}: nt.txt (nt.txt)' not in o or 'claims: stopped:' not in o or t.g('rev-parse', 'main') != head \
+            or not tn.is_dir():
+        fails.append(f'claims finish --no-ticket: want a stop naming {lo} with main unmoved, got {rc}: {o}')
+    rc, o = t.lanes('claim', '--release', lo, 'fin2.txt')
+    rc2, o2 = t.lanes('ready', cwd=tree)
+    if rc or rc2 or warn not in o2 or not t.ok('rev-parse', '--verify', '-q', 'refs/sdlc/ready/T-0001'):
+        fails.append(f'claims ready: once {lo} released fin2.txt want ready to pin with the append warning, got {rc2}: {o2}')
+    rc, o = t.lanes('finish', leaf, env=FIN_ENV)
+    if rc or warn not in o or f'finish: {leaf} done' not in o or not t.ok('cat-file', '-e', 'main:mine.txt'):
+        fails.append(f'claims finish: once released want finish to land with the append warning, got {rc}: {o}')
+    return fails
+
+
 def case_status(script, base):
     """T-0873: lanes.py status, two lanes touching keep.txt: a commits it twice-ahead, b commits b.txt and edits
     keep.txt uncommitted, main then changes keep.txt. a is +2/-1 and conflicts, b is +1/-1, clean, 1 uncommitted file
@@ -5029,6 +5186,8 @@ MUTANTS = (
      'without the overlap column status names no lane sharing a changed path'),
     ('CLAIM-OWNER', "if mode == 'own' or h['mode'] != 'append':" + '  # CLAIM-OWNER', 'if False:  # CLAIM-OWNER',
      case_claims, 'claim owner', 'without the owner check a lane claims a path another open lane owns'),
+    ('CLAIMS-READY', 'owned, append = claim_lines(ctx, lanes, d)' + '  # CLAIMS-READY', 'owned, append = [], []  # CLAIMS-READY',
+     case_claims_check, 'claims ready', 'without the claims check ready pins a lane changing a path another lane owns'),
     ('MARKER-RANGE', 'hit = diff_markers(log)' + '  # MARKER-RANGE', 'hit = None  # MARKER-RANGE', case_finish_markers,
      'range marker landed', 'without the range marker guard a lane commit holding a conflict marker lands'),
 )
@@ -5671,11 +5830,14 @@ def run_selftest(script, src, base, cases):
         need('status', case_status(script, base),
              'status shows ahead/behind, merges clean or conflict, uncommitted count, the gate row by cwd and overlaps on both rows (T-0873)')
 
-    @cases(8)
+    @cases(20)
     def claims():
         need('claims', case_claims(script, base),
              'a second own claim is refused naming the owner, two append claims hold, --overlap and status show claims, '
              'close releases them (T-0874)')
+        need('claims check', case_claims_check(script, base),
+             'claims check refuses an owned path, warns on an append one and passes its own; ready, finish and finish '
+             '--no-ticket stop with nothing pinned, committed or merged; released, ready pins and finish lands (T-0875)')
 
     @cases(49)
     def mutants():
