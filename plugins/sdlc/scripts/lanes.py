@@ -116,6 +116,9 @@ Truth table for close and sweep; the first matching row wins.
   4          an integration tree with an open lane whose into is its branch lanes still open into <b>: <names>                         1
              (T-0743: a clean host-owned tree whose branch is an ancestor of <b> is not open; the close then prints
              `host-owned <path> landed in <b>; remove it yourself: git worktree remove <path>` and leaves the tree;
+             T-0871: when the harness has locked that tree (it holds the lock until its agent ends), the line reads
+             `host-owned <path> landed in <b>; locked by the harness (<reason>), which releases it when its agent ends;
+             once that agent has ended: git worktree unlock <path> && git worktree remove <path>`, and no command removes it;
              T-0762: nor is a host record whose tree is gone and whose branch is an ancestor of <b>)
   5          into does not resolve, or a git read fails                     cannot decide: <reason>                                    1
   6          tracked changes, or untracked files outside .sdlc/, the        uncommitted changes in <lane>: <first path>                1
@@ -756,7 +759,7 @@ def evaluate(ctx, d, lanes, mode, discard=False, into=None, fetch=True, pr=True)
         for w in ctx.wts:
             if w['branch'] == b and not samepath(w['path'], d['path']):
                 return '3', f'branch {b} checked out at {w["path"]}', 1, {}
-    hosts = []  # T-0743: landed host-owned trees that do not hold the integration tree open, named in the close
+    hosts, host_locks = [], {}  # T-0743: landed host-owned trees that do not hold the integration tree open, named in the close
     if d['kind'] == 'integration' and b:
         names = []
         for o in lanes:
@@ -769,6 +772,7 @@ def evaluate(ctx, d, lanes, mode, discard=False, into=None, fetch=True, pr=True)
                         and not git(top, 'merge-base', '--is-ancestor', f'refs/heads/{o["branch"]}', f'refs/heads/{b}').returncode \
                         and first_dirty(o['path']) == (None, None):  # dirty work has not landed
                     hosts.append(o['path'])
+                    host_locks[o['path']] = o['locked']  # T-0871: the harness's lock on a live agent tree
                     continue
                 if not o['exists'] and o['owner'] == 'host' and o['branch'] \
                         and landed_and_gone(top, o['path'], o['branch'], b):  # HOST-GONE
@@ -811,7 +815,7 @@ def evaluate(ctx, d, lanes, mode, discard=False, into=None, fetch=True, pr=True)
             pid = in_use(d['path'])
             if pid:
                 return 'in use', f'in use by pid {pid}', 0, {}
-    info = dict(sha=tip, into=target, note=note, hosts=hosts)
+    info = dict(sha=tip, into=target, note=note, hosts=hosts, host_locks=host_locks)
     if force:
         return '12', f'closed {name} (discarded {tip})', 0, dict(info, how='discarded')
     how, detail = landed(top, f'refs/heads/{b}', ref, branch=b, pr=pr)
@@ -1068,7 +1072,13 @@ def do_close(ctx, d, outcome, info, dry):
     if mains and short_branch(into) not in ('', 'HEAD', ctx.main):
         cleared += commit_clear(ctx, top, mpre, mains, d['lane'])
     lines = pre + [outcome] + carried + cleared
-    lines += [f'host-owned {p} landed in {b}; remove it yourself: git worktree remove {p}' for p in info.get('hosts', [])]
+    for p in info.get('hosts', []):
+        lock = info.get('host_locks', {}).get(p)
+        if lock is None:
+            lines.append(f'host-owned {p} landed in {b}; remove it yourself: git worktree remove {p}')
+        else:  # T-0871 (#97): the harness locks an agent tree while its agent runs; a plain remove refuses it
+            lines.append(f'host-owned {p} landed in {b}; locked by the harness ({lock or "no reason"}), which releases it '
+                         f'when its agent ends; once that agent has ended: git worktree unlock {p} && git worktree remove {p}')
     pl = port_line(d['port'])
     if pl:
         lines.append(pl)
@@ -3880,6 +3890,30 @@ def case_host_landed_integration(script, base):
     return fails
 
 
+def case_host_landed_locked(script, base):
+    """T-0871 (GitHub #97): the same landed agent-x tree locked by the harness (`git worktree lock --reason "claude agent x"`)
+    gets the lock-aware hint (reason, who releases it, unlock then remove) and is neither unlocked nor removed."""
+    t = Fixture(base, script, 'hostlock')
+    _, integ, ib = t.open('wave/1', None, '--kind', 'integration')
+    tree = t.top / '.claude' / 'worktrees' / 'agent-x'
+    t.g('worktree', 'add', '-q', '-b', 'worktree-agent-x', str(tree), ib)
+    t.work(tree)
+    t.write({str(t.tree('host') / 'agent-x.lane.json'): json.dumps(dict(lane='agent-x', kind='host', branch='worktree-agent-x',
+                                                                      into=ib))})
+    t.g('worktree', 'lock', '--reason', 'claude agent x', str(tree))
+    t.g('merge', '--no-ff', '-q', '-m', 'merge agent-x', 'refs/heads/worktree-agent-x', cwd=integ)
+    t.g('merge', '-q', '--ff-only', f'refs/heads/{ib}')
+    rc, o = t.lanes('close', ib, '--into', 'main')
+    line = (f'host-owned {tree} landed in {ib}; locked by the harness (claude agent x), which releases it when its agent ends; '
+            f'once that agent has ended: git worktree unlock {tree} && git worktree remove {tree}')
+    fails = []
+    if rc or line not in o.splitlines() or integ.exists():
+        fails.append(f'host landed locked: want the integration tree closed and {line!r}, got {rc}: {o}')
+    if 'remove it yourself' in o or not tree.is_dir() or 'locked' not in t.g('worktree', 'list', '--porcelain'):
+        fails.append(f'host landed locked: the locked agent-x tree must stay, locked, with no plain remove line: {o}')
+    return fails
+
+
 def case_host_removed_integration(script, base):
     """T-0762: a host record whose .claude/worktrees/agent-z tree was removed after its branch landed does not hold the
     integration tree open: close removes the integration tree and prints the remove line for the landed agent-x tree
@@ -4812,6 +4846,8 @@ def run_selftest(script, src, base, cases):
              'a landed Codex tree and a landed agent-x tree with a host record are kept as host-owned (T-0564)')
         need('host landed', case_host_landed_integration(script, base),
              'a landed host-owned agent-x tree does not hold the integration tree open; close prints its cleanup line (T-0743)')
+        need('host landed locked', case_host_landed_locked(script, base),
+             'a landed agent-x tree the harness has locked gets the lock-aware hint (reason, harness releases it, unlock then remove) and stays (T-0871)')
         need('host removed', case_host_removed_integration(script, base),
              'a landed host record whose tree was removed does not hold the integration tree open; the present tree gets its line (T-0762)')
         need('host removed unmerged', case_host_removed_unmerged(script, base),

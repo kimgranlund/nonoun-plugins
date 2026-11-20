@@ -325,10 +325,11 @@ run
        `merge conflict`); each --gate in order via bash -c, run through
        `gate_lock.py run --name <lane>/<id> --` (T-0303, T-0409: the machine-wide weighted
        FIFO admission, built-in capacity 3 browser jobs and max(6, min(CPUs // 2, RAM GB // 4)) compute units
-       (T-0880), at least two undeclared gates at once;
+       (T-0880), with one default need kept for gates that declare a short `--expect` (T-0881);
        `SDLC_GATE_SLOTS=0` or --no-gate-lock runs the gate
        bare; T-0456: a cheap gate (a command with `check.py` or `check-packaging.py` as a word, or
-       `claude_roles.py`/`codex_roles.py generate --check`) asks for `--need compute_units=1`, so it is admitted
+       `claude_roles.py`/`codex_roles.py generate --check`) asks for `--need compute_units=1` and `--expect 2m`
+       (T-0881: a short job may take the lock's room kept for short jobs), so it is admitted
        next to heavy browser jobs, and `--gate-need [PREFIX::]RES=N[,RES=N...]` (repeatable; the first spec
        whose PREFIX starts the gate wins, no PREFIX matches every gate) sets any gate's need; `SDLC_GATE_TIMEOUT=SECS`
        passes `--timeout SECS` to the lock. A wait past the lock's timeout is gate rc 3 with the `gate_lock: timeout`
@@ -672,6 +673,7 @@ def gate_slots_off():
 # default three, so it is admitted next to heavy browser jobs. An explicit --gate-need always wins.
 CHEAP_GATE = re.compile(r'(?:^|[\s/;&|(])(?:check|check-packaging)\.py(?:\s|$)|(?:claude|codex)_roles\.py\s+generate\s+--check')
 CHEAP_NEED = 'compute_units=1'
+CHEAP_EXPECT = '2m'  # a cheap gate declares a short run, so the lock lets it into the room kept for short jobs (T-0881)
 LOCK_TIMEOUT = re.compile(r'gate_lock: timeout after (\S+?)s\b')
 
 
@@ -703,6 +705,8 @@ def gate_argv(ctx, lane, t, gate):
         need = gate_need(ctx, gate)
         if need:
             pre += ['--need', need]
+        if CHEAP_GATE.search(gate):
+            pre += ['--expect', CHEAP_EXPECT]
         try:
             wait = float(ENV.get('SDLC_GATE_TIMEOUT') or 0)
         except ValueError:

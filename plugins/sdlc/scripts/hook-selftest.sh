@@ -51,6 +51,9 @@
 # and deny mode exits 2; after dispatch.py record (completed, and failed on error text) and after
 # dispatch.py recover of a dead-owner attempt the hook is silent; recover leaves an attempt whose owner
 # is alive running, and its handoff stays frozen.
+# warn-risky-change.sh (T-0876), opt-in by a risky_paths: line in .sdlc/config, reminds once (additionalContext) for a
+# commit staging or a merge bringing a risky path and is silent for a repeat, a non-risky commit, a role, SDLC_HEADLESS=1,
+# merge --abort, and a repo with only hash_bound:.
 # Publish phrases, kill-pattern words, and root-search phrases are built with printf so this
 # file never holds one as a command.
 # Never inherits the caller's SDLC_ROLE/SDLC_HEADLESS/SDLC_TMP_WORKTREES.
@@ -490,6 +493,8 @@ hooks_json="$hooks/../adapters/claude/hooks.json"
   fail "hooks.json does not register block-role-write.sh under the Edit|Write|NotebookEdit matcher"
 [[ "$(jq -r '[.hooks.PreToolUse[] | select(.matcher == "Bash") | .hooks[].command | select(contains("close-role-stdin.sh"))] | length' "$hooks_json")" == 1 ]] ||
   fail "hooks.json does not register close-role-stdin.sh under the Bash matcher"
+[[ "$(jq -r '[.hooks.PreToolUse[] | select(.matcher == "Bash") | .hooks[].command | select(contains("warn-risky-change.sh"))] | length' "$hooks_json")" == 1 ]] ||
+  fail "hooks.json does not register warn-risky-change.sh under the Bash matcher"
 [[ "$(jq -r '[.hooks.PreToolUse[].hooks[].command | select(contains("_role.sh"))] | length' "$hooks_json")" == 0 ]] ||
   fail "hooks.json registers _role.sh, which is sourced by the hooks and never run"
 
@@ -1206,6 +1211,7 @@ cases = [  # hook, role, tail, wanted exit
     ("block-stray-worktree.sh", "solo", "git status", 0), ("block-stray-worktree.sh", "solo", "git worktree add -b x /tmp/y", 2),
     ("block-publish.sh", "solo", "git status", 0), ("block-publish.sh", "solo", "git push origin x", 2),
     ("block-repo-format.sh", "builder", "ls", 0), ("block-repo-format.sh", "builder", "npm run format", 2),
+    ("warn-risky-change.sh", "", "git status", 0), ("warn-risky-change.sh", "", "git commit -m x", 0),
 ]
 bad = []
 for hook, role, tail, want in cases:
@@ -1252,5 +1258,50 @@ except subprocess.TimeoutExpired:
 [[ "$got" == crs-ok ]] || fail "close-role-stdin: rewritten cat did not finish on an open stdin: '$got'"
 o=$(crs_out "$cj"); [[ -z "$o" ]] || fail "close-role-stdin no role: printed '$o', want nothing"
 o=$(crs_out '{"tool_name":"Bash","tool_input":{"command":"  "}}' SDLC_ROLE=builder); [[ -z "$o" ]] || fail "close-role-stdin empty command: printed '$o'"
+
+# warn-risky-change.sh (T-0876): opt-in by a risky_paths: line in .sdlc/config. A commit staging a risky path
+# prints additionalContext once (a second identical call is silent); a merge whose HEAD...<ref> paths hit one
+# reminds once; a non-risky commit, a role, SDLC_HEADLESS=1, merge --abort, and a repo with only hash_bound: are
+# silent; every case exits 0 with no permission decision.
+wrc="$hooks/warn-risky-change.sh"
+wrc_out() { local json="$1"; shift; env -u SDLC_ROLE -u SDLC_HEADLESS -u SDLC_TMP_WORKTREES "$@" "$wrc" 2>/dev/null < <(printf '%s' "$json"); }
+wrcj() { jq -n --arg c "$1" --arg cwd "$2" --arg at "${3-}" '{tool_name:"Bash",tool_input:{command:$c},cwd:$cwd} + (if $at == "" then {} else {agent_type:$at} end)'; }
+wrc_remind() { jq -e --arg p "$2" '.hookSpecificOutput.hookEventName == "PreToolUse" and (.hookSpecificOutput.additionalContext | contains("/sdlc:verify") and contains($p))
+  and (.hookSpecificOutput | has("permissionDecision") | not)' <<<"$1" >/dev/null 2>&1; }
+wrt="$(mktemp -d)"
+trap 'rm -rf "$wrt"' EXIT
+wrepo() {  # wrepo <dir> <config line>: a repo with src/auth/a.ts and b.txt committed
+  mkdir -p "$1/.sdlc" "$1/src/auth"
+  git -C "$1" init -q && git -C "$1" config user.email t@t && git -C "$1" config user.name t
+  printf '%s\n' "$2" >"$1/.sdlc/config"; echo a >"$1/src/auth/a.ts"; echo b >"$1/b.txt"
+  git -C "$1" add -A && git -C "$1" commit -qm init
+}
+wr="$wrt/risky"; wrepo "$wr" 'risky_paths: src/auth/** # auth screens'
+echo a2 >"$wr/src/auth/a.ts"; git -C "$wr" add src/auth/a.ts
+o=$(wrc_out "$(wrcj 'git commit -m "auth change"' "$wr")"); rc=$?
+[[ $rc -eq 0 ]] || fail "warn-risky-change risky commit: exit $rc, want 0"
+wrc_remind "$o" src/auth/a.ts || fail "warn-risky-change: a commit staging a risky path got no reminder: '$o'"
+o=$(wrc_out "$(wrcj 'git commit -m "auth change"' "$wr")")
+[[ -z "$o" ]] || fail "warn-risky-change: a second identical commit reminded again: '$o'"
+o=$(wrc_out "$(wrcj 'git commit -m x' "$wr")" SDLC_ROLE=builder); [[ -z "$o" ]] || fail "warn-risky-change: SDLC_ROLE=builder got '$o'"
+git -C "$wr" commit -qm auth
+echo a3 >"$wr/src/auth/a.ts"; git -C "$wr" add src/auth/a.ts
+o=$(wrc_out "$(wrcj 'git commit -m x' "$wr" sdlc:solo-L2)"); [[ -z "$o" ]] || fail "warn-risky-change: a solo sub-agent got '$o'"
+o=$(wrc_out "$(wrcj 'git commit -m x' "$wr")" SDLC_HEADLESS=1); [[ -z "$o" ]] || fail "warn-risky-change: SDLC_HEADLESS=1 got '$o'"
+git -C "$wr" reset -q --hard
+echo b2 >"$wr/b.txt"; git -C "$wr" add b.txt
+o=$(wrc_out "$(wrcj 'git commit -m x' "$wr")"); rc=$?
+[[ $rc -eq 0 && -z "$o" ]] || fail "warn-risky-change: a non-risky commit printed '$o' (exit $rc)"
+git -C "$wr" commit -qm b
+base=$(git -C "$wr" rev-parse --abbrev-ref HEAD)
+git -C "$wr" checkout -q -b feat && echo a4 >"$wr/src/auth/a.ts" && git -C "$wr" commit -qam feat && git -C "$wr" checkout -q "$base"
+o=$(wrc_out "$(wrcj 'git merge --abort' "$wr")"); [[ -z "$o" ]] || fail "warn-risky-change: merge --abort printed '$o'"
+o=$(wrc_out "$(wrcj 'cd . && git merge --no-ff -m "merge feat" feat' "$wr")")
+wrc_remind "$o" src/auth/a.ts || fail "warn-risky-change: a merge bringing a risky path got no reminder: '$o'"
+o=$(wrc_out "$(wrcj 'git merge --no-ff -m "merge feat" feat' "$wr")"); [[ -z "$o" ]] || fail "warn-risky-change: a second identical merge reminded again: '$o'"
+wh2="$wrt/hashbound"; wrepo "$wh2" 'hash_bound: src/auth/**'
+echo a2 >"$wh2/src/auth/a.ts"; git -C "$wh2" add src/auth/a.ts
+o=$(wrc_out "$(wrcj 'git commit -m x' "$wh2")"); rc=$?
+[[ $rc -eq 0 && -z "$o" ]] || fail "warn-risky-change: a repo with only hash_bound: printed '$o' (exit $rc)"
 
 echo "hook selftest: PASS"
