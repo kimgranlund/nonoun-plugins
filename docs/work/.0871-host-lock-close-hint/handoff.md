@@ -2,7 +2,7 @@
 id: T-0871
 title: "When a landed host agent worktree is still locked by the harness, the close output says so and gives a removal"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: [T-0870]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -39,3 +39,12 @@ When a landed host agent worktree is still locked by the harness, the close outp
 
 ## Constraints
 - No lanes.py command removes a tree with a foreign lock.
+
+## Outcome
+
+2026-11-20 · lane: solo L1 · verdict: closed by reason (delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed; gate: full) · verifier: verifier-L1 (opus) · base: 6b40af3f0f0d
+- Changed: see commits
+- Commits: e353ba8 T-0871: close names the lock owner for a host-locked worktree (#97)
+- Check: 1 The lanes selftest shard holding the host-owned cases exits 0; with the lock check removed, the l...: pass
+- Check: 2 `bash plugins/sdlc/scripts/check.sh --fast` exits 0 and `git diff --check` is clean: pass
+- Follow-up: note: no redck.py deviations lines were printed; the handoff has no red... -> notes.md
