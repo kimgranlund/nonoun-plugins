@@ -994,3 +994,18 @@
 
 - decide: plugins/sdlc/scripts/onboard.py (`ticket_root_change`): a repo that already has docs/layout.md with the default `work/` home but no `.sdlc/config` gets `work_root: docs/tickets`; observed in scratch repo r2, `docs_check.py` then reports `D-1 docs/tickets/` and `D-12 docs/tickets/ROADMAP.md` errors after the first ticket. The builder flagged this as an untested edge; no criterion covers it.
 - note: the selftest compares against `ONBOARD_CONFIG_LINE` rather than the literal `work_root: docs/tickets`, so changing the constant's value alone is caught only through the docs/tickets/ path and block-text checks (it was caught, see #1).
+
+## T-0859: Roles run the checks for their change, once, never the full suite mid-ticket (2026-11-19)
+
+- decide: plugins/sdlc/agents/solo.md:18: Run-verbatim reads "exactly as written (this run is the check run above, not a second one) (the same text, not a paraphrase)", two adjacent parentheticals. note: merge them into one.
+- decide: plugins/sdlc/skills/fanout/SKILL.md:39: "a role inside a lane runs ... the full check.sh through the same machine-wide queue" now sits beside the new rule that roles do not run the full check.sh mid-ticket. note: reword as "a role that a criterion tells to run the full check.sh runs it through the queue" if the ambiguity matters.
+- decide: plugins/sdlc/agents/builder.md:16 and plugins/sdlc/agents/verifier.md:24: the queue sentence moved from "A full test suite" to "A criterion's full suite", which narrows the gate_lock requirement for a role that runs a full suite another way. note: only if that was not intended.
+
+## T-0879: specgate allows a later step to repeat an earlier step's check (2026-11-19)
+
+- note: `redck.py deviations` printed no process deviation lines (the ticket has no `(red)` tagged criterion).
+- note: the new inside-one-step check at specgate.py keeps `(guard)` and `Merge` exemptions unchanged; the selftest's guard cases still pass.
+
+## T-0865: `gate_lock.py status` shows, for each admitted and queued job, the commit it tests, its working directory and (2026-11-19)
+
+- note: `plugins/sdlc/scripts/gate_lock.py` `run_top` runs `git rev-parse` with `timeout=10`, while `behind_branch` uses the 3 s default. This is harmless, and the design said only that the stale check uses a short timeout.

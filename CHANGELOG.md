@@ -11,8 +11,11 @@ SDLC releases (named SDLC Lite before 1.0.0), newest first, in [Keep a Changelog
 
 ### Changed
 
+- `sdlc`: `gate_lock.py status` shows each admitted and queued job's `head` (the short commit it tests), `cwd` and owning `session` (also in `--json`), and ends a row `(behind <branch> by N)` when the job's commit is more than 20 commits behind its branch; entries from older plugin versions still render, and `status` stops nothing: the owner stops its own job (T-0865, issue #93).
 - `sdlc`: `gate_lock.py run` ends its first waiting line, once per run, with `hint: capacity compute_units=<C> is full while load <x> is under <max_load>; an operator can raise it: gate_lock.py policy set compute_units=<N>` when the queue waits on capacity at a quiet load, and `status` ends with the same `hint:` row (`hint` in `--json`, only then); the wait timeout line ends `; command not run`; the docstring and `run-operations.md` show a function for batching named gated runs that zsh does not word-split (T-0864, issues #90, #99).
 - `sdlc`: `onboard.py setup --init` in a new repo with no `.sdlc/config` now writes `work_root: docs/tickets`, so tickets live in `docs/tickets/` and the docs layout names the work home `tickets/` (T-0857). An existing `.sdlc/config` is never changed; a bare `tickets.py new` in a repo never onboarded still records `ticket_root: tickets`.
+- `sdlc`: `specgate.py check` flags a `duplicate span` only when a criterion repeats inside one step; a later step may re-run an earlier step's check, in either order (T-0879) (#87).
+- Builders, solos and verifiers run the check a criterion names, or `check.sh --changed $SDLC_BASE_SHA` in the sdlc repository, once after the change and again only after a fix; the full `check.sh` belongs to the land gate and a release, never to a role mid-ticket (T-0859).
 
 ## [1.0.8] - 2026-11-19
 

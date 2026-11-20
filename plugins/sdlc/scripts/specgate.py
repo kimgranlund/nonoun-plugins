@@ -12,9 +12,9 @@ Usage: specgate.py {check <planner.md | task dir> | red <task dir | handoff.md> 
                               neither that step block nor the plan outside every ## Step block holds
                               a "guard timeout: <seconds>" line (steps.py split --only reads it)
               duplicate span  a command span on a criterion line not tagged (guard) repeats verbatim
-                              a criterion span of an earlier step; the detail names that step.
-                              (guard) lines and steps titled "Merge ..." are exempt, and a repeat
-                              inside one step is not flagged
+                              an earlier criterion span of the same step. (guard) lines and steps
+                              titled "Merge ..." are exempt, and a later step may repeat an earlier
+                              step's span (a regression re-check)
               red and guard   a criterion line whose leading tag run, after "- " or "* ", holds both
                               (guard) and (red)
             Each finding prints on stderr as "specgate: <plan>: step <n>: <kind>: <detail>", then a
@@ -81,26 +81,25 @@ def findings(target):
     except steps.Fail as e:
         raise Skip(str(e)) from None
     plan_timeout = steps.plan_guard_timeout(plan)
-    out, seen = [], {}
+    out = []
     for n, block in blocks.items():
         title = steps.STEP_RE.match(block.splitlines()[0]).group(2)
         merge = title.startswith('Merge ')
         timed = plan_timeout is not None or steps.step_guard_timeout(block) is not None
-        mine = []
+        seen = set()
         for line in steps.criteria_lines(block):
             tags = steps.leading_tags(line)
             if 'guard' in tags and 'red' in tags:
                 out.append((n, 'red and guard', f'one criterion line is tagged both (guard) and (red): {line.strip()}'))
             guard = steps.is_guard_line(line)
             for span in steps.line_spans(line):
-                mine.append(span)
                 if guard:
                     if not timed and runs_check_sh(span):
                         out.append((n, 'slow guard', f'`{span}` runs check.sh with no guard timeout line; {GUARD_HINT}'))
                 elif not merge and span in seen:
-                    out.append((n, 'duplicate span', f'`{span}` repeats a criterion of step {seen[span]} verbatim'))
-        for span in mine:
-            seen.setdefault(span, n)
+                    out.append((n, 'duplicate span', f'`{span}` repeats an earlier criterion of this step verbatim'))
+                else:
+                    seen.add(span)
     return plan, out
 
 
@@ -290,11 +289,20 @@ def selftest():
               rc == 0 and err == '' and got == [] and not any(runs_check_sh(s) for s in named))
 
         rep = '- `grep -qF needle plugins/x/y.md`'
-        rc, out, err, got, _ = kinds(plan_text([], ('A', [], [rep, rep]), ('B', [], ['- `test -f a/b`']),
-                                               ('C', [], ['- (red) `test -f c/d`', rep])))
-        check('check: a criterion repeated across steps is refused',
-              refused(rc, out, err, got) and got == [(3, 'duplicate span')]
-              and 'step 3: duplicate span: `grep -qF needle plugins/x/y.md` repeats a criterion of step 1 verbatim' in err)
+        rc, out, err, got, _ = kinds(plan_text([], ('A', [], ['- `test -f a/b`', rep, rep]), ('B', [], ['- `test -f a/c`'])))
+        check('check: a criterion repeated inside one step is refused',
+              refused(rc, out, err, got) and got == [(1, 'duplicate span')]
+              and 'step 1: duplicate span: `grep -qF needle plugins/x/y.md` repeats an earlier criterion of this step verbatim' in err)
+
+        grep = '`grep -qF needle plugins/x/y.md`'
+        cross = []
+        for first, second in ((f'- {grep}', f'- {grep}'), (f'- (guard) {grep}', f'- {grep}'),
+                              (f'- {grep}', f'- (guard) {grep}')):
+            for a, b in ((first, second), (second, first)):
+                cross.append(kinds(plan_text([], ('A', [], ['- `test -f a/b`', a]), ('B', [], ['- (red) `test -f c/d`', b]),
+                                             ('C', [], [a]))))
+        check('check: a criterion repeated across steps is not flagged, in either order',
+              len(cross) == 6 and all(rc == 0 and err == '' and got == [] for rc, out, err, got, _ in cross))
 
         scope = '- (guard) `test -z "$(git diff --name-only "$SDLC_BASE_SHA" -- . | grep -vxF -e a/b)"`'
         rc, out, err, got, _ = kinds(plan_text([], ('A', [], ['- `test -f a/b`', scope]),
@@ -334,9 +342,8 @@ def selftest():
                            *lines_step(3, 'supervisor.py limits', T0183_STEP3),
                            *lines_step(7, 'Gates green', T0183_STEP7), '## Risks', 'None', ''])
         rc, out, err, got, _ = kinds(t0183)
-        check('replay: T-0183 step 3 duplicate and step 7 timeout are flagged',
-              refused(rc, out, err, got) and got == [(3, 'duplicate span'), (3, 'duplicate span'), (7, 'slow guard')]
-              and err.count('repeats a criterion of step 2 verbatim') == 2)
+        check('replay: T-0183 step 7 timeout is flagged and the step 3 repeat of step 2 is not',
+              refused(rc, out, err, got) and got == [(7, 'slow guard')])
 
         t0195 = '\n'.join([HEADER.rstrip('\n'), '## Goal', 'g', '', *lines_step(4, 'Gates green', T0195_STEP4),
                            '## Risks', 'None', ''])
