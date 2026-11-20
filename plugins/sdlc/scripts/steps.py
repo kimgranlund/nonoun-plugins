@@ -557,6 +557,7 @@ import tempfile
 import time
 
 import order
+import plugin_min  # same scripts/ dir: the stale plugin check (T-0877)
 import results
 import roots as sdlc_roots  # the state root rule (state_of, record_prefixes); `roots` is a local name here
 
@@ -5276,6 +5277,7 @@ def selftest():
 
     with tempfile.TemporaryDirectory() as tmp:
         tmp = pathlib.Path(tmp)
+        os.environ['SDLC_PLUGIN_CACHE'] = str(tmp / 'no-plugin-cache')  # T-0877: no stale warning in the stderr cases
         count = [0]
 
         def task(plan=PLAN, handoff=HANDOFF, plan_name='planner-L2.md'):
@@ -8834,6 +8836,8 @@ def main(argv):
     a, extra = ap.parse_known_args(argv)
     if extra and a.cmd != 'widen':
         ap.error(f'unrecognized arguments: {" ".join(extra)}')
+    if a.cmd != 'selftest' and plugin_min.check_stale(warn_only=a.cmd in plugin_min.READ_ONLY):  # T-0808, T-0877
+        return 2
     if a.cmd == 'widen':
         # a path such as -x reaches here as an unknown option; widen refuses it as a bad path
         if not 0 < a.timeout < float('inf'):

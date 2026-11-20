@@ -9194,6 +9194,50 @@ def selftest():
                    rc == 0 and err == '' and (refs / '.sdlc' / 'alpha').is_dir()
                    and not (refs / '.sdlc' / 'config').exists())
 
+    # T-0877: tickets.py and lanes.py run from an older install folder in the plugin cache, beside a newer one, refuse a
+    # state-changing command with exit 2 naming the restart; a read-only one (check, list) warns and runs, and
+    # SDLC_ALLOW_STALE_PLUGIN=1 runs a state-changing one with the warning only. lanes.py keeps its case here (T-0873).
+    if shutil.which('git') is not None:
+        with tempfile.TemporaryDirectory(prefix='tickets-stale.') as t:
+            t = pathlib.Path(os.path.realpath(t))
+            have = json.loads((PLUGIN / '.claude-plugin' / 'plugin.json').read_text(encoding='utf-8'))['version']
+            vp = have.split('.')
+            nxt = '.'.join(vp[:-1] + [str(int(vp[-1]) + 1)])
+            cache = t / 'cache'
+            shutil.copytree(PLUGIN, cache / have, ignore=shutil.ignore_patterns('bench', '__pycache__', 'node_modules'))
+            (cache / nxt / '.claude-plugin').mkdir(parents=True)
+            (cache / nxt / '.claude-plugin' / 'plugin.json').write_text(json.dumps({'version': nxt}), encoding='utf-8')
+            senv = {k: v for k, v in os.environ.items()
+                    if not k.startswith(('SDLC_', 'GIT_')) and k not in ('PYTHONPATH', 'CLAUDE_PLUGIN_ROOT')}
+            senv.update(SDLC_PLUGIN_CACHE=str(cache), GIT_CONFIG_NOSYSTEM='1', GIT_CONFIG_GLOBAL=os.devnull)
+            repo = t / 'repo'
+            subprocess.run(['git', 'init', '-q', '-b', 'main', str(repo)], env=senv, check=True)
+            subprocess.run(['git', '-C', str(repo), '-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-q',
+                            '--allow-empty', '--no-verify', '-m', 'x'], env=senv, check=True)
+            (repo / '.sdlc').mkdir()
+            (repo / '.sdlc' / 'config').write_text('# stale selftest\n', encoding='utf-8')
+            line = 'sdlc %s in use; %s installed: re-resolve the scripts path (%s/scripts)' % (have, nxt, cache / nxt)
+            restart = 'restart the session to load sdlc %s' % nxt
+
+            def old(script, *args, **env):
+                return subprocess.run([sys.executable, str(cache / have / 'scripts' / script)] + list(args), cwd=str(repo),
+                                      env=dict(senv, **env), capture_output=True, text=True)
+            for script, write, read in (('tickets.py', ('roadmap',), ('check',)),
+                                        ('lanes.py', ('open', 'live-x', '--kind', 'live', '--dry-run'), ('list',))):
+                p = old(script, *write)
+                expect(f'stale: {script} {write[0]} from an older cache folder exits 2 naming the newer version and the restart: '
+                       f'rc={p.returncode} {p.stdout!r} {p.stderr!r}',
+                       p.returncode == 2 and line in p.stderr and restart in p.stderr
+                       and 'SDLC_ALLOW_STALE_PLUGIN=1' in p.stderr and not p.stdout.strip())
+                p = old(script, *read)
+                expect(f'stale: {script} {read[0]} (read-only) from an older cache folder warns and runs: '
+                       f'rc={p.returncode} {p.stderr!r}',
+                       p.returncode == 0 and p.stderr.count(line) == 1 and 'refusing' not in p.stderr)
+                p = old(script, *write, SDLC_ALLOW_STALE_PLUGIN='1')
+                expect(f'stale: SDLC_ALLOW_STALE_PLUGIN=1 runs {script} {write[0]} from an older cache folder with the '
+                       f'warning only: rc={p.returncode} {p.stderr!r}',
+                       p.returncode == 0 and p.stderr.count(line) == 1 and 'refusing' not in p.stderr)
+
     if misses:
         print('tickets selftest: FAIL, these did not bite:', file=sys.stderr)
         for m in misses:
@@ -9356,6 +9400,8 @@ def main(argv):
     cmd = a.cmd or 'check'
     if cmd == 'selftest':
         return selftest()
+    if plugin_min.check_stale(warn_only=cmd in plugin_min.READ_ONLY):  # T-0808, T-0877: an older cache folder refuses
+        return 2
     args = {'new': lambda: (a.type, a.slug, a.title), 'close': lambda: (a.slug, a.force),
             'claim': lambda: (a.id, claim_by(a.by, os.environ)), 'release': lambda: (a.id,), 'branch': lambda: (a.id, a.branch)}.get(cmd, tuple)()
     kw = ({'numbered': getattr(a, 'numbered', False)}
