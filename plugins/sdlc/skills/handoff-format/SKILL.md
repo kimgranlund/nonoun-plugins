@@ -75,7 +75,7 @@ If the project commits the `.sdlc/` trail, ignore these instead so `/board` and 
 - Board cache: lives in `${XDG_CACHE_HOME:-~/.cache}/sdlc/board-state/`, outside the repo, so `/board` writes nothing into the tree. Ignoring `.sdlc/.board-state.json` only matters for older versions that wrote it there.
 - `.sdlc/messages/`: the local mailbox written by `scripts/messages.py`; never committed, even when the trail is.
 
-The task folder (`handoff.md`, `skips.md`) is committed; records are local and ignored. A `fanout.py land` close commit keeps only `handoff.md` (and what the folder tracked before the merge) in git and moves the closed folder's other files, `skips.md` included, into its records dir. A role result that must outlive the ticket is promoted to `docs/` before the close, because the records dir never reaches git. How to write the handoff and its `## Outcome`: [writing rules](references/writing-rules.md).
+The task folder (`handoff.md`, `skips.md`) is committed; records are local and ignored. A `fanout.py land` close commit keeps only `handoff.md`, a committed `skips.md`, and what the folder tracked before the merge in git, and moves the closed folder's other files, an untracked `skips.md` included, into its records dir. A role result that must outlive the ticket is promoted to `docs/` before the close, because the records dir never reaches git. How to write the handoff and its `## Outcome`: [writing rules](references/writing-rules.md).
 
 ## Ticket front matter (optional)
 
