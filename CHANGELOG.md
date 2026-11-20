@@ -10,6 +10,7 @@ SDLC releases (named SDLC Lite before 1.0.0), newest first, in [Keep a Changelog
 
 ### Changed
 
+- `sdlc`: `gate_lock.py status` shows each admitted and queued job's `head` (the short commit it tests), `cwd` and owning `session` (also in `--json`), and ends a row `(behind <branch> by N)` when the job's commit is more than 20 commits behind its branch; entries from older plugin versions still render, and `status` stops nothing: the owner stops its own job (T-0865, issue #93).
 - `sdlc`: `gate_lock.py run` ends its first waiting line, once per run, with `hint: capacity compute_units=<C> is full while load <x> is under <max_load>; an operator can raise it: gate_lock.py policy set compute_units=<N>` when the queue waits on capacity at a quiet load, and `status` ends with the same `hint:` row (`hint` in `--json`, only then); the wait timeout line ends `; command not run`; the docstring and `run-operations.md` show a function for batching named gated runs that zsh does not word-split (T-0864, issues #90, #99).
 
 ## [1.0.8] - 2026-11-19
