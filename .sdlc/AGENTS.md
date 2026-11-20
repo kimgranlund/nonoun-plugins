@@ -73,7 +73,7 @@ Ticket lifecycle:
 
 - Evals: `../docs/work/evals/` holds the dated model and effort experiments and `table-lock.json`; read `../docs/work/evals/AGENTS.md` before changing a model or effort row in `plugins/sdlc-lite/scripts/run.sh` or `plugins/sdlc-lite/adapters/codex/models.json`.
 - Proposals: `../docs/work/proposals/` holds candidate changes that `proposals.py scan` mined from past runs; read `../docs/work/proposals/AGENTS.md` before scanning, accepting, rejecting, or promoting one.
-<!-- sdlc:managed:start v1 sha256:f3c9f9690808 -->
+<!-- sdlc:managed:start v1 sha256:04d0c5981658 -->
 # Work records
 
 This folder holds SDLC `config`, this router, and the git-ignored `runtime/` and `messages/`. Tickets, task records, `docs/work/ROADMAP.md`, and `docs/work/NOTES.md` are in the work root `docs/work/`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `docs/work/ROADMAP.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -85,7 +85,21 @@ This folder holds SDLC `config`, this router, and the git-ignored `runtime/` and
 
 ## Stages
 
-- proposed: 0
+- proposed: 14
+  - T-0864 When gated checks queue for capacity on an idle machine, the operator sees how to raise the capacity, and a ca (docs/work/0864-gate-lock-wait-hints)
+  - T-0865 `gate_lock.py status` shows, for each admitted and queued job, the commit it tests, its working directory and (docs/work/0865-gate-lock-status-owner)
+  - T-0866 `/sdlc:ask` in a repo with no ticket root notes 'no tickets' and goes on with the rest of the sweep (docs/work/0866-ask-without-ticket-root)
+  - T-0867 After `steps.py split --supersede`, every prior-report link in a step handoff, the folded `### Notes` included (docs/work/0867-split-notes-prior-links)
+  - T-0868 Two sessions can exchange findings through the mailbox in a light, parseable shape, and either side can list w (docs/work/0868-message-finding-shape)
+  - T-0869 A verifier prepared in a lane that merged its integration branch gets a Base sha that keeps the integration br (docs/work/0869-verifier-base-from-lane-into)
+  - T-0870 Live mode's documented lane flow works without a ticket: open a registered lane, see it in overlap and list, m (docs/work/0870-live-lane-kind)
+  - T-0871 When a landed host agent worktree is still locked by the harness, the close output says so and gives a removal (docs/work/0871-host-lock-close-hint)
+  - T-0872 Landing a ticketless lane with `lanes.py finish --no-ticket` can never commit conflict markers, resolves confl (docs/work/0872-finish-ticketless-land-guards)
+  - T-0873 `lanes.py status` answers 'is anything stuck or about to collide' for every open lane in one table (docs/work/0873-lanes-status-view)
+  - T-0874 The lead can claim paths for one lane, and every lane sees who owns a path before it creates or changes it (docs/work/0874-lane-path-claims)
+  - T-0875 A lane cannot land or mark ready a change to a path another lane owns, and a user can wire the same check as a (docs/work/0875-lane-claims-commit-guard)
+  - T-0876 In a Claude session, a commit or merge that touches a configured risky path reminds the agent once per change (docs/work/0876-risky-change-verify-reminder)
+  - T-0877 A session agent that calls sdlc scripts from an older cached version is told so, and refused for state-changin (docs/work/0877-stale-plugin-guard-everywhere)
 - ready: 2
   - T-0859 Roles run the checks for their change, once, never the full suite mid-ticket (docs/work/0859-role-test-guidance)
   - T-0861 check.sh reruns only failed or affected jobs after a fix (docs/work/0861-rerun-failed-jobs)
