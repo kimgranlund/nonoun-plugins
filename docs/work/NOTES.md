@@ -1045,3 +1045,8 @@
 ## T-0871: When a landed host agent worktree is still locked by the harness, the close output says so and gives a removal (2026-11-20)
 
 - note: no `redck.py deviations` lines were printed; the handoff has no `(red)` criterion.
+
+## T-0876: In a Claude session, a commit or merge that touches a configured risky path reminds the agent once per change (2026-11-20)
+
+- note: plugins/sdlc/scripts/hook-selftest.sh:1272 `trap 'rm -rf "$wrt"' EXIT` replaces the earlier EXIT trap at line 501 (`rm -rf "$wtmp"`), so that earlier temp dir is no longer removed on exit. Combine the two into one trap.
+- note: additionalContext delivery to the model is unconfirmed by a live probe; the doc states this (claude-hooks.md:70), as the handoff allowed.
