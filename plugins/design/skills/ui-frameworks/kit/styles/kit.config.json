@@ -1,20 +1,27 @@
 {
   "$description": "The inputs of this kit's tokens.css. scripts/tokens.mjs reads them and the three sibling skills.",
   "n": 14,
+  "archetype": "product",
+  "kappa": 0.5,
   "densities": [
     "compact",
     "default",
     "loose"
   ],
   "colors": {
-    "preset": "minimal"
+    "preset": "minimal",
+    "settings": { "toneMax": 95.5, "darkTone": 9 },
+    "neutrals": { "ground": { "tint": 12, "hue": 87 }, "surface": { "tint": 12, "hue": 87 }, "ink": { "tint": 12, "hue": 87 } },
+    "roles": { "primary": "oklch:50" },
+    "anchors": [ { "role": "primary", "value": "oklch(67% 0.175 50)", "dark": "oklch(67% 0.175 50)" } ]
   },
   "flatRings": {
-    "$description": "ui-materials, fills.md: an unlit material gives an operable boundary an even ring where its fill alone does not separate it from its ground. With one neutral, a raised face has the ground's own colour, so the kit sets both rings. In the dark scheme a recess that sits on the base ground has the ground's own fill as well, so a tray takes a quieter ring.",
+    "$description": "ui-materials, fills.md: an unlit material gives an operable boundary an even ring where its fill alone does not separate it from its ground. With one neutral, a raised face has the ground's own colour, so the kit sets both rings. Since D117 the neutral is split, a raised face is lighter than its ground, and its ring is the quiet line; a field keeps the strong one. The last entry is not a ring: the recipes use the faint ink only for a disabled mark, and ui-materials gives it ui-colors' subtle text, which reads as text; the kit gives it the disabled role (D121). In the dark scheme a recess that sits on the base ground has the ground's own fill as well, so a tray takes a quieter ring.",
     "--field-shadow": "inset 0 0 0 var(--unit-border-b) var(--line-strong)",
-    "--raised-shadow-1": "inset 0 0 0 var(--unit-border-b) var(--line-strong)",
+    "--raised-shadow-1": "inset 0 0 0 var(--unit-border-b) var(--line)",
     "--recessed-shadow": "inset 0 0 0 var(--unit-border-b) var(--line)",
-    "--overlay-shadow": "inset 0 0 0 var(--unit-border-b) var(--line-strong)"
+    "--overlay-shadow": "inset 0 0 0 var(--unit-border-b) var(--line-strong)",
+    "--ink-faint": "var(--colors-fg-disabled)"
   },
   "icons": {
     "$description": "The kit's icons. scripts/icons.mjs writes kit/styles/icons.css from them. `source` is a folder of SVG files, one per icon; `names` maps each name the kit uses to a file in it, without the extension. To use another library, point `source` at its folder and change the file names on the right.",
@@ -34,7 +41,8 @@
       "info": "info",
       "error": "warning-circle",
       "success": "check-circle",
-      "more": "dots-three"
+      "more": "dots-three",
+      "home": "house"
     }
   }
 }

@@ -1,0 +1,25 @@
+@layer reset, base, tokens, recipes, utilities;
+
+/* The recipe of the avatar group: a native element with data-ui="avatar-group", usually a div with role="group" and a name.
+   Its rules: J100 in docs/specs/patterns.md. Its shape: docs/specs/css-contract.md.
+   A row of avatars that do not wrap. It tells its avatars one thing, through one inherited token (D110): --_stack-gap, the width
+   of the crescent between two avatars, ui-geometry's seam gap unless the author sets --avatar-group-gap. The avatar draws the rest
+   from its own height: the overlap, and the notch cut where the avatar before it lies (avatar.css). The group paints nothing and
+   takes no focus, so it has no forced-colours block and no ring. */
+@layer recipes {
+  @scope ([data-ui="avatar-group"]) {
+    :where(:scope) {
+      --_stack-gap: var(--avatar-group-gap, var(--controls-gap-seam));
+    }
+
+    /* The recipe's own boxes are border boxes, with or without a reset (C31). */
+    :where(:scope, [data-part]) { box-sizing: border-box; }
+    :scope {
+      display: inline-flex;
+      flex-wrap: nowrap;
+      align-items: center;
+      vertical-align: middle;
+    }
+    :scope:where([hidden]:not([hidden="until-found"])) { display: none; }
+  }
+}

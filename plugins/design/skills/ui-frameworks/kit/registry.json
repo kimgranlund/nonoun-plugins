@@ -16,6 +16,10 @@
     "alert": [
       "alert"
     ],
+    "avatar": [
+      "avatar",
+      "avatar-group"
+    ],
     "badge": [
       "badge"
     ],
@@ -24,6 +28,9 @@
     ],
     "button": [
       "button"
+    ],
+    "calendar": [
+      "calendar"
     ],
     "card": [
       "card"
@@ -37,6 +44,9 @@
     "combobox": [
       "combobox"
     ],
+    "date-field": [
+      "date-field"
+    ],
     "dialog": [
       "dialog"
     ],
@@ -45,6 +55,9 @@
     ],
     "feed": [
       "feed"
+    ],
+    "file-field": [
+      "file-field"
     ],
     "form-field": [
       "form-field"
@@ -77,12 +90,30 @@
     "meter": [
       "meter"
     ],
+    "pagination": [
+      "pagination"
+    ],
+    "popover": [
+      "popover"
+    ],
+    "progress": [
+      "progress"
+    ],
     "radio-group": [
       "radio",
       "radio-group"
     ],
     "range-slider": [
       "range-slider"
+    ],
+    "select": [
+      "select"
+    ],
+    "separator": [
+      "separator"
+    ],
+    "skeleton": [
+      "skeleton"
     ],
     "slider": [
       "slider"
@@ -92,6 +123,9 @@
     ],
     "splitter": [
       "splitter"
+    ],
+    "stepper": [
+      "stepper"
     ],
     "switch": [
       "switch"
@@ -105,8 +139,18 @@
     "table": [
       "table"
     ],
+    "tag": [
+      "tag"
+    ],
+    "tag-group": [
+      "tag-group"
+    ],
     "text-field": [
       "text-field"
+    ],
+    "toast": [
+      "toast",
+      "toaster"
     ],
     "toolbar": [
       "toolbar"
@@ -132,8 +176,8 @@
       "path": "kit/components/accordion/accordion.manifest.json",
       "targets": {
         "web-components": "built",
-        "react": "planned",
-        "svelte": "planned",
+        "react": "built",
+        "svelte": "built",
         "solid": "planned"
       },
       "with": [
@@ -163,8 +207,8 @@
       "path": "kit/components/alert/alert.manifest.json",
       "targets": {
         "web-components": "built",
-        "react": "planned",
-        "svelte": "planned",
+        "react": "built",
+        "svelte": "built",
         "solid": "planned"
       },
       "with": [],
@@ -178,6 +222,56 @@
         "kit/foundation/element.js",
         "kit/foundation/signals.js"
       ]
+    },
+    {
+      "id": "avatar",
+      "kind": "recipe",
+      "family": "avatar",
+      "tier": "controls",
+      "role": null,
+      "focus": "none",
+      "summary": "A small picture or initials that stand for a person or a thing.",
+      "element": "span",
+      "selector": "[data-ui=\"avatar\"]",
+      "path": "kit/components/avatar/avatar.manifest.json",
+      "targets": {
+        "web-components": "built",
+        "react": "planned",
+        "svelte": "planned",
+        "solid": "planned"
+      },
+      "with": [
+        "avatar-group"
+      ],
+      "styles": [
+        "kit/components/avatar/avatar.css"
+      ],
+      "modules": []
+    },
+    {
+      "id": "avatar-group",
+      "kind": "recipe",
+      "family": "avatar",
+      "tier": "collections",
+      "role": null,
+      "focus": "none",
+      "summary": "A row of avatars that overlap, each cut where the one before it lies.",
+      "element": "div",
+      "selector": "[data-ui=\"avatar-group\"]",
+      "path": "kit/components/avatar-group/avatar-group.manifest.json",
+      "targets": {
+        "web-components": "built",
+        "react": "planned",
+        "svelte": "planned",
+        "solid": "planned"
+      },
+      "with": [
+        "avatar"
+      ],
+      "styles": [
+        "kit/components/avatar-group/avatar-group.css"
+      ],
+      "modules": []
     },
     {
       "id": "badge",
@@ -214,8 +308,8 @@
       "path": "kit/components/breadcrumb/breadcrumb.manifest.json",
       "targets": {
         "web-components": "built",
-        "react": "planned",
-        "svelte": "planned",
+        "react": "built",
+        "svelte": "built",
         "solid": "planned"
       },
       "with": [],
@@ -243,7 +337,7 @@
       "targets": {
         "web-components": "built",
         "react": "built",
-        "svelte": "planned",
+        "svelte": "built",
         "solid": "planned"
       },
       "with": [],
@@ -277,6 +371,44 @@
         "kit/components/button/button.class.js",
         "kit/components/button/button.js",
         "kit/components/button/button.props.js",
+        "kit/foundation/element.js",
+        "kit/foundation/form.js",
+        "kit/foundation/signals.js"
+      ]
+    },
+    {
+      "id": "calendar",
+      "kind": "component",
+      "family": "calendar",
+      "tier": "collections",
+      "role": "group",
+      "focus": "none",
+      "summary": "One month of days in a grid, for choosing a date.",
+      "tag": "ui-calendar",
+      "path": "kit/components/calendar/calendar.manifest.json",
+      "targets": {
+        "web-components": "built",
+        "react": "built",
+        "svelte": "built",
+        "solid": "planned"
+      },
+      "with": [],
+      "writtenBy": {
+        "date-field": [
+          "value",
+          "min",
+          "max"
+        ]
+      },
+      "styles": [
+        "kit/components/calendar/calendar.css"
+      ],
+      "modules": [
+        "kit/behaviours/roving-focus.js",
+        "kit/components/calendar/calendar.class.js",
+        "kit/components/calendar/calendar.dates.js",
+        "kit/components/calendar/calendar.js",
+        "kit/components/calendar/calendar.props.js",
         "kit/foundation/element.js",
         "kit/foundation/form.js",
         "kit/foundation/signals.js"
@@ -317,8 +449,8 @@
       "path": "kit/components/carousel/carousel.manifest.json",
       "targets": {
         "web-components": "built",
-        "react": "planned",
-        "svelte": "planned",
+        "react": "built",
+        "svelte": "built",
         "solid": "planned"
       },
       "with": [
@@ -348,7 +480,7 @@
       "targets": {
         "web-components": "built",
         "react": "built",
-        "svelte": "planned",
+        "svelte": "built",
         "solid": "planned"
       },
       "with": [],
@@ -377,8 +509,8 @@
       "path": "kit/components/combobox/combobox.manifest.json",
       "targets": {
         "web-components": "built",
-        "react": "planned",
-        "svelte": "planned",
+        "react": "built",
+        "svelte": "built",
         "solid": "planned"
       },
       "with": [
@@ -399,6 +531,43 @@
       ]
     },
     {
+      "id": "date-field",
+      "kind": "component",
+      "family": "date-field",
+      "tier": "controls",
+      "role": null,
+      "focus": "none",
+      "summary": "A text field for a date the user can type, with a calendar to choose it from.",
+      "tag": "ui-date-field",
+      "path": "kit/components/date-field/date-field.manifest.json",
+      "targets": {
+        "web-components": "built",
+        "react": "built",
+        "svelte": "built",
+        "solid": "planned"
+      },
+      "with": [
+        "calendar"
+      ],
+      "styles": [
+        "kit/components/date-field/date-field.css"
+      ],
+      "modules": [
+        "kit/behaviours/dismiss.js",
+        "kit/behaviours/roving-focus.js",
+        "kit/components/calendar/calendar.class.js",
+        "kit/components/calendar/calendar.dates.js",
+        "kit/components/calendar/calendar.props.js",
+        "kit/components/date-field/date-field.class.js",
+        "kit/components/date-field/date-field.js",
+        "kit/components/date-field/date-field.props.js",
+        "kit/components/date-field/date-field.text.js",
+        "kit/foundation/element.js",
+        "kit/foundation/form.js",
+        "kit/foundation/signals.js"
+      ]
+    },
+    {
       "id": "dialog",
       "kind": "component",
       "family": "dialog",
@@ -410,8 +579,8 @@
       "path": "kit/components/dialog/dialog.manifest.json",
       "targets": {
         "web-components": "built",
-        "react": "planned",
-        "svelte": "planned",
+        "react": "built",
+        "svelte": "built",
         "solid": "planned"
       },
       "with": [],
@@ -438,8 +607,8 @@
       "path": "kit/components/disclosure/disclosure.manifest.json",
       "targets": {
         "web-components": "built",
-        "react": "planned",
-        "svelte": "planned",
+        "react": "built",
+        "svelte": "built",
         "solid": "planned"
       },
       "with": [
@@ -473,8 +642,8 @@
       "path": "kit/components/feed/feed.manifest.json",
       "targets": {
         "web-components": "built",
-        "react": "planned",
-        "svelte": "planned",
+        "react": "built",
+        "svelte": "built",
         "solid": "planned"
       },
       "with": [],
@@ -485,6 +654,34 @@
         "kit/components/feed/feed.class.js",
         "kit/components/feed/feed.js",
         "kit/components/feed/feed.props.js",
+        "kit/foundation/element.js",
+        "kit/foundation/signals.js"
+      ]
+    },
+    {
+      "id": "file-field",
+      "kind": "component",
+      "family": "file-field",
+      "tier": "controls",
+      "role": null,
+      "focus": "none",
+      "summary": "A place to choose files or drop them, around a native file input.",
+      "tag": "ui-file-field",
+      "path": "kit/components/file-field/file-field.manifest.json",
+      "targets": {
+        "web-components": "built",
+        "react": "built",
+        "svelte": "built",
+        "solid": "planned"
+      },
+      "with": [],
+      "styles": [
+        "kit/components/file-field/file-field.css"
+      ],
+      "modules": [
+        "kit/components/file-field/file-field.class.js",
+        "kit/components/file-field/file-field.js",
+        "kit/components/file-field/file-field.props.js",
         "kit/foundation/element.js",
         "kit/foundation/signals.js"
       ]
@@ -501,8 +698,8 @@
       "path": "kit/components/form-field/form-field.manifest.json",
       "targets": {
         "web-components": "built",
-        "react": "planned",
-        "svelte": "planned",
+        "react": "built",
+        "svelte": "built",
         "solid": "planned"
       },
       "with": [],
@@ -529,8 +726,8 @@
       "path": "kit/components/grid/grid.manifest.json",
       "targets": {
         "web-components": "built",
-        "react": "planned",
-        "svelte": "planned",
+        "react": "built",
+        "svelte": "built",
         "solid": "planned"
       },
       "with": [],
@@ -558,8 +755,8 @@
       "path": "kit/components/icon/icon.manifest.json",
       "targets": {
         "web-components": "built",
-        "react": "planned",
-        "svelte": "planned",
+        "react": "built",
+        "svelte": "built",
         "solid": "planned"
       },
       "with": [],
@@ -609,8 +806,8 @@
       "path": "kit/components/listbox/listbox.manifest.json",
       "targets": {
         "web-components": "built",
-        "react": "planned",
-        "svelte": "planned",
+        "react": "built",
+        "svelte": "built",
         "solid": "planned"
       },
       "with": [
@@ -618,6 +815,10 @@
       ],
       "writtenBy": {
         "combobox": [
+          "id",
+          "tabindex"
+        ],
+        "select": [
           "id",
           "tabindex"
         ]
@@ -649,7 +850,7 @@
       "targets": {
         "web-components": "built",
         "react": "built",
-        "svelte": "planned",
+        "svelte": "built",
         "solid": "planned"
       },
       "with": [
@@ -702,7 +903,7 @@
       "targets": {
         "web-components": "built",
         "react": "built",
-        "svelte": "planned",
+        "svelte": "built",
         "solid": "planned"
       },
       "with": [
@@ -737,8 +938,8 @@
       "path": "kit/components/menu-group/menu-group.manifest.json",
       "targets": {
         "web-components": "built",
-        "react": "planned",
-        "svelte": "planned",
+        "react": "built",
+        "svelte": "built",
         "solid": "planned"
       },
       "with": [
@@ -773,7 +974,7 @@
       "targets": {
         "web-components": "built",
         "react": "built",
-        "svelte": "planned",
+        "svelte": "built",
         "solid": "planned"
       },
       "with": [
@@ -819,8 +1020,8 @@
       "path": "kit/components/menu-item-checkbox/menu-item-checkbox.manifest.json",
       "targets": {
         "web-components": "built",
-        "react": "planned",
-        "svelte": "planned",
+        "react": "built",
+        "svelte": "built",
         "solid": "planned"
       },
       "with": [
@@ -860,8 +1061,8 @@
       "path": "kit/components/menu-item-radio/menu-item-radio.manifest.json",
       "targets": {
         "web-components": "built",
-        "react": "planned",
-        "svelte": "planned",
+        "react": "built",
+        "svelte": "built",
         "solid": "planned"
       },
       "with": [
@@ -904,8 +1105,8 @@
       "path": "kit/components/menubar/menubar.manifest.json",
       "targets": {
         "web-components": "built",
-        "react": "planned",
-        "svelte": "planned",
+        "react": "built",
+        "svelte": "built",
         "solid": "planned"
       },
       "with": [
@@ -938,8 +1139,8 @@
       "path": "kit/components/meter/meter.manifest.json",
       "targets": {
         "web-components": "built",
-        "react": "planned",
-        "svelte": "planned",
+        "react": "built",
+        "svelte": "built",
         "solid": "planned"
       },
       "with": [],
@@ -966,8 +1167,8 @@
       "path": "kit/components/option/option.manifest.json",
       "targets": {
         "web-components": "built",
-        "react": "planned",
-        "svelte": "planned",
+        "react": "built",
+        "svelte": "built",
         "solid": "planned"
       },
       "with": [
@@ -986,6 +1187,12 @@
           "data-highlighted",
           "data-focus",
           "id"
+        ],
+        "select": [
+          "selected",
+          "data-highlighted",
+          "data-focus",
+          "id"
         ]
       },
       "styles": [
@@ -995,6 +1202,86 @@
         "kit/components/option/option.class.js",
         "kit/components/option/option.js",
         "kit/components/option/option.props.js",
+        "kit/foundation/element.js",
+        "kit/foundation/signals.js"
+      ]
+    },
+    {
+      "id": "pagination",
+      "kind": "recipe",
+      "family": "pagination",
+      "tier": "collections",
+      "role": null,
+      "focus": "none",
+      "summary": "Links to the pages of a long list: previous, next and page numbers.",
+      "element": "nav",
+      "selector": "[data-ui=\"pagination\"]",
+      "path": "kit/components/pagination/pagination.manifest.json",
+      "targets": {
+        "web-components": "built",
+        "react": "planned",
+        "svelte": "planned",
+        "solid": "planned"
+      },
+      "with": [],
+      "styles": [
+        "kit/components/pagination/pagination.css"
+      ],
+      "modules": []
+    },
+    {
+      "id": "popover",
+      "kind": "component",
+      "family": "popover",
+      "tier": "containers",
+      "role": null,
+      "focus": "none",
+      "summary": "A panel beside the control that opens it, for content the user can act on without leaving the page.",
+      "tag": "ui-popover",
+      "path": "kit/components/popover/popover.manifest.json",
+      "targets": {
+        "web-components": "built",
+        "react": "built",
+        "svelte": "built",
+        "solid": "planned"
+      },
+      "with": [],
+      "styles": [
+        "kit/components/popover/popover.css"
+      ],
+      "modules": [
+        "kit/behaviours/dismiss.js",
+        "kit/components/popover/popover.class.js",
+        "kit/components/popover/popover.js",
+        "kit/components/popover/popover.props.js",
+        "kit/foundation/element.js",
+        "kit/foundation/signals.js"
+      ]
+    },
+    {
+      "id": "progress",
+      "kind": "component",
+      "family": "progress",
+      "tier": "controls",
+      "role": "progressbar",
+      "focus": "none",
+      "summary": "How far a task has got, shown as a filled track, or that it is running when how far is not known.",
+      "tag": "ui-progress",
+      "path": "kit/components/progress/progress.manifest.json",
+      "targets": {
+        "web-components": "built",
+        "react": "built",
+        "svelte": "built",
+        "solid": "planned"
+      },
+      "with": [],
+      "styles": [
+        "kit/components/progress/progress.css"
+      ],
+      "modules": [
+        "kit/components/progress/progress.class.js",
+        "kit/components/progress/progress.js",
+        "kit/components/progress/progress.props.js",
         "kit/foundation/element.js",
         "kit/foundation/signals.js"
       ]
@@ -1011,8 +1298,8 @@
       "path": "kit/components/radio/radio.manifest.json",
       "targets": {
         "web-components": "built",
-        "react": "planned",
-        "svelte": "planned",
+        "react": "built",
+        "svelte": "built",
         "solid": "planned"
       },
       "with": [
@@ -1048,8 +1335,8 @@
       "path": "kit/components/radio-group/radio-group.manifest.json",
       "targets": {
         "web-components": "built",
-        "react": "planned",
-        "svelte": "planned",
+        "react": "built",
+        "svelte": "built",
         "solid": "planned"
       },
       "with": [
@@ -1080,8 +1367,8 @@
       "path": "kit/components/range-slider/range-slider.manifest.json",
       "targets": {
         "web-components": "built",
-        "react": "planned",
-        "svelte": "planned",
+        "react": "built",
+        "svelte": "built",
         "solid": "planned"
       },
       "with": [],
@@ -1098,6 +1385,87 @@
       ]
     },
     {
+      "id": "select",
+      "kind": "component",
+      "family": "select",
+      "tier": "controls",
+      "role": "combobox",
+      "focus": "own",
+      "summary": "A button that shows one chosen option and opens a list to choose another.",
+      "tag": "ui-select",
+      "path": "kit/components/select/select.manifest.json",
+      "targets": {
+        "web-components": "built",
+        "react": "built",
+        "svelte": "built",
+        "solid": "planned"
+      },
+      "with": [
+        "listbox",
+        "option"
+      ],
+      "styles": [
+        "kit/components/select/select.css"
+      ],
+      "modules": [
+        "kit/behaviours/active-descendant.js",
+        "kit/behaviours/dismiss.js",
+        "kit/behaviours/typeahead.js",
+        "kit/components/select/select.class.js",
+        "kit/components/select/select.js",
+        "kit/components/select/select.props.js",
+        "kit/foundation/element.js",
+        "kit/foundation/form.js",
+        "kit/foundation/signals.js"
+      ]
+    },
+    {
+      "id": "separator",
+      "kind": "recipe",
+      "family": "separator",
+      "tier": "layout",
+      "role": null,
+      "focus": "none",
+      "summary": "A line between two groups of content.",
+      "element": "hr",
+      "selector": "[data-ui=\"separator\"]",
+      "path": "kit/components/separator/separator.manifest.json",
+      "targets": {
+        "web-components": "built",
+        "react": "planned",
+        "svelte": "planned",
+        "solid": "planned"
+      },
+      "with": [],
+      "styles": [
+        "kit/components/separator/separator.css"
+      ],
+      "modules": []
+    },
+    {
+      "id": "skeleton",
+      "kind": "recipe",
+      "family": "skeleton",
+      "tier": "layout",
+      "role": null,
+      "focus": "none",
+      "summary": "A grey shape that holds the place of content that is loading.",
+      "element": "span",
+      "selector": "[data-ui=\"skeleton\"]",
+      "path": "kit/components/skeleton/skeleton.manifest.json",
+      "targets": {
+        "web-components": "built",
+        "react": "planned",
+        "svelte": "planned",
+        "solid": "planned"
+      },
+      "with": [],
+      "styles": [
+        "kit/components/skeleton/skeleton.css"
+      ],
+      "modules": []
+    },
+    {
       "id": "slider",
       "kind": "component",
       "family": "slider",
@@ -1109,8 +1477,8 @@
       "path": "kit/components/slider/slider.manifest.json",
       "targets": {
         "web-components": "built",
-        "react": "planned",
-        "svelte": "planned",
+        "react": "built",
+        "svelte": "built",
         "solid": "planned"
       },
       "with": [],
@@ -1138,8 +1506,8 @@
       "path": "kit/components/spinbutton/spinbutton.manifest.json",
       "targets": {
         "web-components": "built",
-        "react": "planned",
-        "svelte": "planned",
+        "react": "built",
+        "svelte": "built",
         "solid": "planned"
       },
       "with": [],
@@ -1166,8 +1534,8 @@
       "path": "kit/components/splitter/splitter.manifest.json",
       "targets": {
         "web-components": "built",
-        "react": "planned",
-        "svelte": "planned",
+        "react": "built",
+        "svelte": "built",
         "solid": "planned"
       },
       "with": [],
@@ -1183,6 +1551,29 @@
       ]
     },
     {
+      "id": "stepper",
+      "kind": "recipe",
+      "family": "stepper",
+      "tier": "collections",
+      "role": null,
+      "focus": "none",
+      "summary": "The steps of a task in order, showing which are done and which one the user is on.",
+      "element": "ol",
+      "selector": "[data-ui=\"stepper\"]",
+      "path": "kit/components/stepper/stepper.manifest.json",
+      "targets": {
+        "web-components": "built",
+        "react": "planned",
+        "svelte": "planned",
+        "solid": "planned"
+      },
+      "with": [],
+      "styles": [
+        "kit/components/stepper/stepper.css"
+      ],
+      "modules": []
+    },
+    {
       "id": "submenu",
       "kind": "component",
       "family": "menu-button",
@@ -1194,8 +1585,8 @@
       "path": "kit/components/submenu/submenu.manifest.json",
       "targets": {
         "web-components": "built",
-        "react": "planned",
-        "svelte": "planned",
+        "react": "built",
+        "svelte": "built",
         "solid": "planned"
       },
       "with": [
@@ -1229,8 +1620,8 @@
       "path": "kit/components/switch/switch.manifest.json",
       "targets": {
         "web-components": "built",
-        "react": "planned",
-        "svelte": "planned",
+        "react": "built",
+        "svelte": "built",
         "solid": "planned"
       },
       "with": [],
@@ -1260,7 +1651,7 @@
       "targets": {
         "web-components": "built",
         "react": "built",
-        "svelte": "planned",
+        "svelte": "built",
         "solid": "planned"
       },
       "with": [
@@ -1303,7 +1694,7 @@
       "targets": {
         "web-components": "built",
         "react": "built",
-        "svelte": "planned",
+        "svelte": "built",
         "solid": "planned"
       },
       "with": [
@@ -1336,7 +1727,7 @@
       "targets": {
         "web-components": "built",
         "react": "built",
-        "svelte": "planned",
+        "svelte": "built",
         "solid": "planned"
       },
       "with": [
@@ -1398,7 +1789,7 @@
       "targets": {
         "web-components": "built",
         "react": "built",
-        "svelte": "planned",
+        "svelte": "built",
         "solid": "planned"
       },
       "with": [
@@ -1418,6 +1809,58 @@
       ]
     },
     {
+      "id": "tag",
+      "kind": "recipe",
+      "family": "tag",
+      "tier": "controls",
+      "role": null,
+      "focus": "none",
+      "summary": "A word that labels or filters something, which the user may be able to remove.",
+      "element": "span",
+      "selector": "[data-ui=\"tag\"]",
+      "path": "kit/components/tag/tag.manifest.json",
+      "targets": {
+        "web-components": "built",
+        "react": "planned",
+        "svelte": "planned",
+        "solid": "planned"
+      },
+      "with": [],
+      "styles": [
+        "kit/components/tag/tag.css"
+      ],
+      "modules": []
+    },
+    {
+      "id": "tag-group",
+      "kind": "component",
+      "family": "tag-group",
+      "tier": "collections",
+      "role": "group",
+      "focus": "none",
+      "summary": "A set of tags the user can walk through and remove with the keyboard.",
+      "tag": "ui-tag-group",
+      "path": "kit/components/tag-group/tag-group.manifest.json",
+      "targets": {
+        "web-components": "built",
+        "react": "built",
+        "svelte": "built",
+        "solid": "planned"
+      },
+      "with": [],
+      "styles": [
+        "kit/components/tag-group/tag-group.css"
+      ],
+      "modules": [
+        "kit/behaviours/roving-focus.js",
+        "kit/components/tag-group/tag-group.class.js",
+        "kit/components/tag-group/tag-group.js",
+        "kit/components/tag-group/tag-group.props.js",
+        "kit/foundation/element.js",
+        "kit/foundation/signals.js"
+      ]
+    },
+    {
       "id": "text-field",
       "kind": "component",
       "family": "text-field",
@@ -1429,8 +1872,8 @@
       "path": "kit/components/text-field/text-field.manifest.json",
       "targets": {
         "web-components": "built",
-        "react": "planned",
-        "svelte": "planned",
+        "react": "built",
+        "svelte": "built",
         "solid": "planned"
       },
       "with": [],
@@ -1441,6 +1884,67 @@
         "kit/components/text-field/text-field.class.js",
         "kit/components/text-field/text-field.js",
         "kit/components/text-field/text-field.props.js",
+        "kit/foundation/element.js",
+        "kit/foundation/signals.js"
+      ]
+    },
+    {
+      "id": "toast",
+      "kind": "component",
+      "family": "toast",
+      "tier": "containers",
+      "role": null,
+      "focus": "none",
+      "summary": "A short message that appears over the page for a while, then leaves.",
+      "tag": "ui-toast",
+      "path": "kit/components/toast/toast.manifest.json",
+      "targets": {
+        "web-components": "built",
+        "react": "built",
+        "svelte": "built",
+        "solid": "planned"
+      },
+      "with": [
+        "toaster"
+      ],
+      "styles": [
+        "kit/components/toast/toast.css"
+      ],
+      "modules": [
+        "kit/behaviours/dismiss.js",
+        "kit/components/toast/toast.class.js",
+        "kit/components/toast/toast.js",
+        "kit/components/toast/toast.props.js",
+        "kit/foundation/element.js",
+        "kit/foundation/signals.js"
+      ]
+    },
+    {
+      "id": "toaster",
+      "kind": "component",
+      "family": "toast",
+      "tier": "layout",
+      "role": "region",
+      "focus": "none",
+      "summary": "The place toasts show: a stack in a corner of the window, above everything else.",
+      "tag": "ui-toaster",
+      "path": "kit/components/toaster/toaster.manifest.json",
+      "targets": {
+        "web-components": "built",
+        "react": "built",
+        "svelte": "built",
+        "solid": "planned"
+      },
+      "with": [
+        "toast"
+      ],
+      "styles": [
+        "kit/components/toaster/toaster.css"
+      ],
+      "modules": [
+        "kit/components/toaster/toaster.class.js",
+        "kit/components/toaster/toaster.js",
+        "kit/components/toaster/toaster.props.js",
         "kit/foundation/element.js",
         "kit/foundation/signals.js"
       ]
@@ -1457,8 +1961,8 @@
       "path": "kit/components/toolbar/toolbar.manifest.json",
       "targets": {
         "web-components": "built",
-        "react": "planned",
-        "svelte": "planned",
+        "react": "built",
+        "svelte": "built",
         "solid": "planned"
       },
       "with": [
@@ -1488,8 +1992,8 @@
       "path": "kit/components/tooltip/tooltip.manifest.json",
       "targets": {
         "web-components": "built",
-        "react": "planned",
-        "svelte": "planned",
+        "react": "built",
+        "svelte": "built",
         "solid": "planned"
       },
       "with": [],
@@ -1517,8 +2021,8 @@
       "path": "kit/components/tree/tree.manifest.json",
       "targets": {
         "web-components": "built",
-        "react": "planned",
-        "svelte": "planned",
+        "react": "built",
+        "svelte": "built",
         "solid": "planned"
       },
       "with": [
@@ -1549,8 +2053,8 @@
       "path": "kit/components/tree-item/tree-item.manifest.json",
       "targets": {
         "web-components": "built",
-        "react": "planned",
-        "svelte": "planned",
+        "react": "built",
+        "svelte": "built",
         "solid": "planned"
       },
       "with": [

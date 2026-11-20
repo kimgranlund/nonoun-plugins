@@ -59,7 +59,7 @@
     "root": {
       "kind": "root",
       "material": null,
-      "note": "The root holds the author's label text and draws no face of its own."
+      "note": "The root holds the author's label text and draws no face and no focus ring of its own."
     },
     "mark": {
       "kind": "pseudo",
@@ -69,7 +69,7 @@
         "relief": "recessed",
         "face": "neutral"
       },
-      "note": "checked: face solid. Drawn as a pseudo-element, so it exists before the component is defined (D57)."
+      "note": "checked: face solid. The full icon size of ui-geometry (a.full, one q more than a.md), its glyph a.md, centred in it with the (S − a)/2 margin of ui-geometry's icon box. Keyboard focus draws the ring round it, following its radius. Drawn as a pseudo-element, so it exists before the component is defined (D57)."
     }
   },
   "tokens": [
@@ -77,9 +77,11 @@
     "--checkbox-face-hover",
     "--checkbox-face-active",
     "--checkbox-face-checked",
+    "--checkbox-face-checked-disabled",
     "--checkbox-ink",
     "--checkbox-ink-disabled",
     "--checkbox-mark-ink",
+    "--checkbox-mark-ink-disabled",
     "--checkbox-line-invalid",
     "--checkbox-height",
     "--checkbox-inset",
@@ -108,7 +110,7 @@
   "targets": {
     "web-components": "built",
     "react": "built",
-    "svelte": "planned",
+    "svelte": "built",
     "solid": "planned"
   }
 }

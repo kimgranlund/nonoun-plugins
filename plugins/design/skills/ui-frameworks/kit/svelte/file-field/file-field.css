@@ -1,0 +1,125 @@
+@layer reset, base, tokens, recipes, utilities;
+
+/* The recipe of <ui-file-field>. Its rules: J118 to J121 in docs/specs/patterns.md. Its shape: docs/specs/css-contract.md.
+   Its conditions: references/states.json.
+   ui-materials: the root is a frame on the base layer, ground relief, neutral face, with a dashed boundary (a border,
+   so that it shows in every material). The author's native input stays visible inside it, and its own button is
+   painted as the kit's neutral button: raised face and shadow, a control's height, inset and radius. While files are
+   dragged over the field (data-drag) the boundary takes the accent. Invalid redraws the boundary in the critical colour.
+   ui-geometry: the frame's padding is the panel inset; the gap between the input and the hint is the control gap; the
+   button's height, inset and radius are a control's.
+   The conditions of the field read the input too (J120, J121): a field whose input is disabled by the author, or
+   invalid, or has keyboard focus, paints so before it is defined (U2).
+   In forced colours the boundary is FieldText, dashed, the drag boundary and the ring Highlight, invalid Mark, disabled
+   GrayText; WebKit keeps shadows, hence --_shadow: none. */
+@layer recipes {
+  @scope ([data-ui="file-field"]) {
+    :where(:scope) {
+      --_face: var(--file-field-face, var(--ground-face));
+      --_ink: var(--file-field-ink, var(--ink));
+      --_ink-disabled: var(--ink-faint);
+      --_line: var(--file-field-line, var(--colors-neutral-7));
+      --_line-drag: var(--accent);
+      --_line-invalid: var(--colors-critical-solid);
+      --_inset: var(--file-field-inset, var(--containers-frame-panel-inset));
+      --_gap: var(--file-field-gap, var(--controls-control-i));
+      --_radius: var(--file-field-radius, var(--controls-curvature-r));
+      --_button-face: var(--raised-face);
+      --_button-face-hover: var(--colors-bg-muted-hover);
+      --_button-shadow: var(--raised-shadow-1);
+      --_button-height: var(--controls-control-h);
+      --_button-inset: var(--controls-control-t);
+      --_button-radius: var(--controls-curvature-r);
+      --_text: var(--unit-type-body-md);
+      --_ring: var(--colors-focus-ring);
+      --_ring-width: var(--controls-focus-ring-width-w);
+      --_ring-offset: var(--controls-focus-ring-offset-o);
+      --_border: var(--unit-border-b);
+    }
+
+    /* The recipe's own boxes are border boxes, with or without a reset (C31). */
+    :where(:scope, [data-part]) { box-sizing: border-box; }
+    :scope {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: var(--_gap);
+      padding: var(--_inset);
+      border: var(--_border) dashed var(--_line);
+      border-radius: var(--_radius);
+      background-color: var(--_face);
+      color: var(--_ink);
+      font-size: var(--_text);
+    }
+    :scope:where([hidden]:not([hidden="until-found"])) { display: none; }
+
+    :scope > [data-part="input"] {
+      max-inline-size: 100%;
+      margin: 0;
+      font: inherit;
+      color: inherit;
+    }
+    :scope > [data-part="input"]::file-selector-button {
+      box-sizing: border-box;
+      block-size: var(--_button-height);
+      margin: 0;
+      margin-inline-end: var(--_gap);
+      padding-block: 0;
+      padding-inline: var(--_button-inset);
+      border: 0;
+      border-radius: var(--_button-radius);
+      background-color: var(--_button-face);
+      box-shadow: var(--_button-shadow);
+      color: inherit;
+      font: inherit;
+      cursor: pointer;
+    }
+
+    @media (hover: hover) {
+      :scope > [data-part="input"]:where(:is(:hover, [data-hover]):where(:not(:is(:disabled, [disabled], [aria-disabled="true"]), :is(:checked, [aria-checked="true"], [checked]:not(input, option)), :is(input[type="checkbox"]:indeterminate, [aria-checked="mixed"], [indeterminate]), :is([aria-pressed="true"], [pressed]), :is([aria-selected="true"], [selected]:not(option)), :is([aria-current]:not([aria-current="false"], [aria-current=""]), [current]), :is([aria-expanded="true"], [expanded]), :is([open], :popover-open))))::file-selector-button { background-color: var(--_button-face-hover); }
+    }
+    /* The focus is on a part, so the root rises itself (C20): no later sibling paints over its ring. */
+    :scope:where(:focus-within) { z-index: 1; }
+    :scope:where(:focus-within) {
+      outline: var(--_ring-width) solid var(--_ring);
+      outline-offset: var(--_ring-offset);
+    }
+    :scope[data-drag] { border-color: var(--_line-drag); }
+    :scope:where(:is([aria-invalid]:not([aria-invalid="false"]), :is(input, select, textarea):user-invalid, [invalid])) { border-color: var(--_line-invalid); }
+    :scope:where(:is(:disabled, [disabled], [aria-disabled="true"])) {
+      border-color: var(--_line);
+      color: var(--_ink-disabled);
+    }
+    :scope > [data-part="input"]:where(:is(:disabled, [disabled], [aria-disabled="true"])) { color: var(--_ink-disabled); }
+    :scope > [data-part="input"]:where(:is(:disabled, [disabled], [aria-disabled="true"]))::file-selector-button { cursor: default; }
+
+    @media (forced-colors: active) {
+      :where(:scope) {
+        --_face: Canvas;
+        --_ink: CanvasText;
+        --_ink-disabled: GrayText;
+        --_line: FieldText;
+        --_line-drag: Highlight;
+        --_line-invalid: Mark;
+        --_button-face: ButtonFace;
+        --_button-face-hover: ButtonFace;
+        --_button-shadow: none;
+        --_ring: Highlight;
+      }
+      /* Hover (D124): the ring one border width heavier than at rest, in the boundary colour, inside; no fill, never Highlight. */
+      @media (hover: hover) {
+        :scope > [data-part="input"]:where(:is(:hover, [data-hover]):where(:not(:is(:disabled, [disabled], [aria-disabled="true"]), :is(:checked, [aria-checked="true"], [checked]:not(input, option)), :is(input[type="checkbox"]:indeterminate, [aria-checked="mixed"], [indeterminate]), :is([aria-pressed="true"], [pressed]), :is([aria-selected="true"], [selected]:not(option)), :is([aria-current]:not([aria-current="false"], [aria-current=""]), [current]), :is([aria-expanded="true"], [expanded]), :is([open], :popover-open))))::file-selector-button {
+          outline: var(--_border) solid ButtonText;
+          outline-offset: calc(var(--_border) * -2);
+        }
+      }
+      :scope > [data-part="input"]::file-selector-button {
+        border: var(--_border) solid ButtonBorder;
+        color: ButtonText;
+      }
+      :scope:where(:is(:disabled, [disabled], [aria-disabled="true"])) { border-color: GrayText; }
+      :scope > [data-part="input"]:where(:is(:disabled, [disabled], [aria-disabled="true"])) { color: var(--_ink-disabled); }
+    :scope > [data-part="input"]:where(:is(:disabled, [disabled], [aria-disabled="true"]))::file-selector-button { color: GrayText; border-color: GrayText; }
+    }
+  }
+}

@@ -36,7 +36,12 @@
         "relief": "raised",
         "face": "neutral"
       },
-      "note": "A row of an optional icon and the message. A variant tints the face, the ink and the line."
+      "note": "A row of an optional icon and the message. One line of it is a control tall. A variant tints the face, the ink and the line."
+    },
+    "icon": {
+      "kind": "author",
+      "material": null,
+      "note": "An optional leading icon the author marks with data-part=\"icon\", at the icon offset from the start and centred on the message's first line."
     }
   },
   "tokens": [
@@ -44,6 +49,7 @@
     "--alert-ink",
     "--alert-line",
     "--alert-inset",
+    "--alert-height",
     "--alert-gap",
     "--alert-radius"
   ],
@@ -61,8 +67,8 @@
   ],
   "targets": {
     "web-components": "built",
-    "react": "planned",
-    "svelte": "planned",
+    "react": "built",
+    "svelte": "built",
     "solid": "planned"
   }
 }

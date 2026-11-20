@@ -1,0 +1,158 @@
+@layer reset, base, tokens, recipes, utilities;
+
+/* The recipe of <ui-select>. Its rules: J87 in docs/specs/patterns.md. Its shape: docs/specs/css-contract.md.
+   Its conditions: references/states.json.
+   ui-materials: the root is a control, base layer, raised relief, neutral face, painted as the neutral button is,
+   with its hover and active faces. The value part sits at the start and fills the room; the placeholder is in
+   the muted ink. The mark at the end is a chevron, Phosphor "chevron-down", regular weight (MIT,
+   phosphoricons.com), the same as icons.css, drawn as ::after: a border in the ink seen through a mask, as the
+   icon is, so that it follows the ink in every state and in forced colours. The kit's icon glyphs cannot be read
+   from another element's rule, hence the copy. It turns over while the list is open.
+   ui-geometry: a control's height, inset, gap and radius, the icon's medium size for the mark. The value part
+   only exists once the element is defined, so the root's width cannot come from it without moving the select
+   (U1): it is a tooltip's width, as the combobox's, unless the author sizes it, and a value too long for it ends
+   in an ellipsis.
+   An invalid select has a ring of the critical colour, as the listbox; a disabled one has fainter ink.
+   The popup: below the select, start edges aligned, no narrower than it, above it where there is no room below.
+   The root is the anchor (D77): anchor-scope keeps its name to it, so each popup finds its own select. The
+   popup has no frame of its own, since the listbox inside it has one; it only resets the browser's popover
+   face, ink, border and padding. The same rules place a popup written open before the element is defined, and
+   keep a closed one from taking room.
+   In forced colours the select keeps a ButtonBorder boundary, as the button; WebKit keeps shadows, hence
+   --_shadow: none. */
+@layer recipes {
+  @scope (ui-select) {
+    :where(:scope) {
+      --_face: var(--select-face, var(--raised-face));
+      --_face-hover: var(--select-face-hover, var(--select-face, var(--colors-bg-muted-hover)));
+      --_face-active: var(--select-face-active, var(--select-face, var(--pressed-face)));
+      --_shadow: var(--raised-shadow-1);
+      --_ink: var(--select-ink, var(--ink));
+      --_ink-placeholder: var(--ink-muted);
+      --_ink-disabled: var(--select-ink-disabled, var(--ink-faint));
+      --_line-invalid: var(--select-line-invalid, var(--colors-critical-solid));
+      --_height: var(--select-height, var(--controls-control-h));
+      --_inset: var(--select-inset, var(--controls-control-t));
+      --_gap: var(--select-gap, var(--controls-control-i));
+      --_radius: var(--select-radius, var(--controls-curvature-r));
+      --_width: var(--collections-width-tooltip);
+      --_mark: var(--controls-icon-a-md);
+      --_popup-gap: var(--select-popup-gap, var(--collections-gap-popup-offset-from-its-trigger));
+      --_text: var(--unit-scale-f);
+      --_ring: var(--colors-focus-ring);
+      --_ring-width: var(--controls-focus-ring-width-w);
+      --_ring-offset: var(--controls-focus-ring-offset-o);
+      --_border: var(--unit-border-b);
+      --_chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256'%3E%3Cpath d='M213.66,101.66l-80,80a8,8,0,0,1-11.32,0l-80-80A8,8,0,0,1,53.66,90.34L128,164.69l74.34-74.35a8,8,0,0,1,11.32,11.32Z'/%3E%3C/svg%3E");
+    }
+
+    /* The recipe's own boxes are border boxes, with or without a reset (C31). */
+    :where(:scope, [data-part]) { box-sizing: border-box; }
+    :scope {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--_gap);
+      inline-size: var(--_width);
+      block-size: var(--_height);
+      padding-inline: var(--_inset);
+      border-radius: var(--_radius);
+      background-color: var(--_face);
+      box-shadow: var(--_shadow);
+      color: var(--_ink);
+      font-size: var(--_text);
+      white-space: nowrap;
+      vertical-align: middle;
+      cursor: pointer;
+      -webkit-user-select: none;
+      user-select: none;
+      anchor-name: --select;
+      anchor-scope: --select;
+    }
+    :scope:where([hidden]:not([hidden="until-found"])) { display: none; }
+
+    :scope::after {
+      content: "";
+      flex: none;
+      box-sizing: border-box;
+      margin-inline-start: auto;
+      inline-size: var(--_mark);
+      block-size: var(--_mark);
+      border: 0 solid currentColor;
+      border-inline-start-width: var(--_mark);
+      mask: var(--_chevron) center / contain no-repeat;
+    }
+    :scope > [data-part="value"] {
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      text-align: start;
+    }
+    :scope > [data-part="value"][data-placeholder] { color: var(--_ink-placeholder); }
+    :scope > [data-part="popup"] {
+      display: none;
+      position: fixed;
+      margin-block: var(--_popup-gap);
+      position-anchor: --select;
+      position-area: block-end span-inline-end;
+      position-try-fallbacks: flip-block;
+      min-inline-size: anchor-size(inline);
+      padding: 0;
+      border: 0;
+      overflow: visible;
+      background: none;
+      color: inherit;
+      cursor: default;
+    }
+
+    @media (hover: hover) {
+      :scope:where(:is(:hover, [data-hover]):where(:not(:is(:disabled, [disabled], [aria-disabled="true"]), :is(:checked, [aria-checked="true"], [checked]:not(input, option)), :is(input[type="checkbox"]:indeterminate, [aria-checked="mixed"], [indeterminate]), :is([aria-pressed="true"], [pressed]), :is([aria-selected="true"], [selected]:not(option)), :is([aria-current]:not([aria-current="false"], [aria-current=""]), [current]), :is([aria-expanded="true"], [expanded]), :is([open], :popover-open)))) { background-color: var(--_face-hover); }
+    }
+    :scope:where(:is(:focus-visible, [data-focus-visible])) {
+      outline: var(--_ring-width) solid var(--_ring);
+      outline-offset: var(--_ring-offset);
+    }
+    :scope:where(:is(:active, [data-active]):where(:not(:is(:disabled, [disabled], [aria-disabled="true"])))) { background-color: var(--_face-active); }
+    :scope:where(:is([open], :popover-open))::after { rotate: 180deg; }
+    :scope:where(:is([open], :popover-open)) > [data-part="popup"] { display: block; }
+    :scope:where(:is([aria-invalid]:not([aria-invalid="false"]), :is(input, select, textarea):user-invalid, [invalid])) { box-shadow: inset 0 0 0 var(--_border) var(--_line-invalid); }
+    :scope:where(:is(:disabled, [disabled], [aria-disabled="true"])) {
+      color: var(--_ink-disabled);
+      cursor: default;
+    }
+    :scope:where(:is(:disabled, [disabled], [aria-disabled="true"])) > [data-part="value"][data-placeholder] { color: var(--_ink-disabled); }
+
+    @media (prefers-reduced-motion: no-preference) {
+      :scope:where([data-ready]) { transition: background-color 100ms; }
+    }
+    @media (forced-colors: active) {
+      :where(:scope) {
+        --_face: ButtonFace;
+        --_face-hover: ButtonFace;
+        --_face-active: ButtonFace;
+        --_shadow: none;
+        --_ink: ButtonText;
+        --_ink-placeholder: GrayText;
+        --_ink-disabled: GrayText;
+        --_line-invalid: Mark;
+        --_ring: Highlight;
+      }
+      :scope {
+        outline: var(--_border) solid ButtonBorder;
+        outline-offset: calc(var(--_border) * -1);
+      }
+      /* Hover (D124): the ring one border width heavier than at rest, in the boundary colour, inside; no fill, never Highlight. */
+      @media (hover: hover) {
+        :scope:where(:is(:hover, [data-hover]):where(:not(:is(:disabled, [disabled], [aria-disabled="true"]), :is(:checked, [aria-checked="true"], [checked]:not(input, option)), :is(input[type="checkbox"]:indeterminate, [aria-checked="mixed"], [indeterminate]), :is([aria-pressed="true"], [pressed]), :is([aria-selected="true"], [selected]:not(option)), :is([aria-current]:not([aria-current="false"], [aria-current=""]), [current]), :is([aria-expanded="true"], [expanded]), :is([open], :popover-open)))) {
+          outline: calc(var(--_border) * 2) solid ButtonText;
+          outline-offset: calc(var(--_border) * -2);
+        }
+      }
+      :scope:where(:is(:focus-visible, [data-focus-visible])) {
+        outline: var(--_ring-width) solid var(--_ring);
+        outline-offset: var(--_ring-offset);
+      }
+      :scope:where(:is([aria-invalid]:not([aria-invalid="false"]), :is(input, select, textarea):user-invalid, [invalid])) { outline-color: var(--_line-invalid); }
+      :scope:where(:is(:disabled, [disabled], [aria-disabled="true"])) { outline-color: GrayText; }
+    }
+  }
+}

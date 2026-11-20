@@ -1,0 +1,154 @@
+{
+  "$schema": "../../../references/manifest.schema.json",
+  "schema": 1,
+  "id": "select",
+  "kind": "component",
+  "family": "select",
+  "tier": "controls",
+  "pattern": "https://www.w3.org/WAI/ARIA/apg/patterns/combobox/examples/combobox-select-only/",
+  "summary": "A button that shows one chosen option and opens a list to choose another.",
+  "role": "combobox",
+  "focus": "own",
+  "tabindex": 0,
+  "formAssociated": true,
+  "attributes": {
+    "value": {
+      "type": "string",
+      "description": "The value of the chosen option."
+    },
+    "name": {
+      "type": "string",
+      "description": "The name the value is submitted under."
+    },
+    "placeholder": {
+      "type": "string",
+      "description": "The text shown while no option is chosen."
+    },
+    "open": {
+      "type": "boolean",
+      "state": "open",
+      "description": "The list is showing. A script adds and removes it."
+    },
+    "required": {
+      "type": "boolean",
+      "state": "required",
+      "description": "The form cannot be submitted while nothing is chosen."
+    },
+    "disabled": {
+      "type": "boolean",
+      "state": "disabled",
+      "description": "It cannot be opened or focused."
+    }
+  },
+  "resets": [
+    "value"
+  ],
+  "states": [
+    "hover",
+    "focus-visible",
+    "active",
+    "expanded",
+    "open",
+    "required",
+    "invalid",
+    "disabled"
+  ],
+  "parts": {
+    "root": {
+      "kind": "root",
+      "material": {
+        "layer": "base",
+        "relief": "raised",
+        "face": "neutral"
+      },
+      "note": "The control: it takes focus, shows the chosen option's text and a chevron at the end, and is the anchor the popup is placed against. It is a tooltip's width unless the author sizes it, so that defining it, which creates the value part, does not move it."
+    },
+    "value": {
+      "kind": "element",
+      "tag": "span",
+      "at": "start",
+      "material": null,
+      "note": "The text of the chosen option, or the placeholder, marked data-placeholder and painted in the muted ink. A value too long for the select ends in an ellipsis."
+    },
+    "popup": {
+      "kind": "author",
+      "material": null,
+      "note": "The element marked data-part=\"popup\" that holds the listbox. It shows in the top layer while open."
+    }
+  },
+  "tokens": [
+    "--select-face",
+    "--select-face-hover",
+    "--select-face-active",
+    "--select-ink",
+    "--select-ink-disabled",
+    "--select-line-invalid",
+    "--select-height",
+    "--select-inset",
+    "--select-gap",
+    "--select-radius",
+    "--select-popup-gap"
+  ],
+  "behaviours": [
+    "active-descendant",
+    "typeahead",
+    "dismiss"
+  ],
+  "keys": {
+    "ArrowDown": "Opens the list on the chosen option; in an open list, moves to the next option.",
+    "ArrowUp": "Opens the list; in an open list, moves to the previous option.",
+    "Home": "Opens the list on the first option, or moves to it.",
+    "End": "Opens the list on the last option, or moves to it.",
+    "Enter": "Opens the list; in an open list, chooses the option and closes.",
+    "Space": "Opens the list; in an open list, chooses the option and closes.",
+    "Escape": "Closes the list and keeps the value.",
+    "Tab": "In an open list, chooses the option, closes, and moves on.",
+    "a character": "Moves to the next option that starts with what was typed, opening the list."
+  },
+  "events": {
+    "input": "Dispatched when the user chooses another option.",
+    "change": "Dispatched after input."
+  },
+  "uses": [
+    "listbox",
+    "option"
+  ],
+  "writes": {
+    "listbox": [
+      "id",
+      "tabindex"
+    ],
+    "option": [
+      "selected",
+      "data-highlighted",
+      "data-focus",
+      "id"
+    ]
+  },
+  "guidance": [
+    {
+      "topic": "naming",
+      "text": "The author names the select with aria-label or aria-labelledby, or puts it in a form field."
+    },
+    {
+      "topic": "first paint",
+      "text": "Write `value` on the select and `selected` on the chosen option, so that both are painted before the select is defined. The select is a tooltip's width unless the author gives it an inline-size: its width cannot follow its text, which only exists once it is defined."
+    },
+    {
+      "topic": "coordination",
+      "text": "The list is a listbox with options inside the popup part. Focus stays on the select; the option the keys point at is named by aria-activedescendant."
+    }
+  ],
+  "notYet": [
+    "Choosing more than one option.",
+    "Option groups.",
+    "Alt+ArrowDown and Alt+ArrowUp.",
+    "A width that follows the widest option."
+  ],
+  "targets": {
+    "web-components": "built",
+    "react": "built",
+    "svelte": "built",
+    "solid": "planned"
+  }
+}

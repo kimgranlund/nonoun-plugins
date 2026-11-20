@@ -1,0 +1,183 @@
+{
+  "$schema": "../../../references/manifest.schema.json",
+  "schema": 1,
+  "id": "calendar",
+  "kind": "component",
+  "family": "calendar",
+  "tier": "collections",
+  "pattern": "https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/examples/datepicker-dialog/",
+  "summary": "One month of days in a grid, for choosing a date.",
+  "role": "group",
+  "focus": "none",
+  "tabindex": null,
+  "formAssociated": true,
+  "attributes": {
+    "value": {
+      "type": "string",
+      "description": "The chosen date, as yyyy-mm-dd."
+    },
+    "name": {
+      "type": "string",
+      "description": "The name the value is submitted under."
+    },
+    "min": {
+      "type": "string",
+      "description": "The first date that can be chosen, as yyyy-mm-dd."
+    },
+    "max": {
+      "type": "string",
+      "description": "The last date that can be chosen, as yyyy-mm-dd."
+    },
+    "month": {
+      "type": "string",
+      "description": "The month shown, as yyyy-mm. Without it the calendar shows the month of its value, or of today."
+    },
+    "required": {
+      "type": "boolean",
+      "state": "required",
+      "description": "The form cannot be submitted while no date is chosen."
+    },
+    "disabled": {
+      "type": "boolean",
+      "state": "disabled",
+      "description": "No date can be chosen and nothing takes focus."
+    }
+  },
+  "resets": [
+    "value"
+  ],
+  "states": [
+    "hover",
+    "focus-visible",
+    "active",
+    "selected",
+    "current",
+    "required",
+    "invalid",
+    "disabled"
+  ],
+  "parts": {
+    "root": {
+      "kind": "root",
+      "material": null,
+      "note": "A block as wide as seven day cells, from its tag alone, with the group role so that the author's name is announced. It creates everything inside itself and takes no focus."
+    },
+    "header": {
+      "kind": "element",
+      "tag": "div",
+      "at": "start",
+      "material": null,
+      "note": "A row of a control's height: the previous button, the title and the next button, which the calendar creates inside it."
+    },
+    "previous": {
+      "kind": "element",
+      "tag": "button",
+      "at": "start",
+      "lazy": true,
+      "attrs": {
+        "type": "button"
+      },
+      "material": null,
+      "note": "A native button the calendar creates first inside the header, named \"Previous month\". It shows the month before without moving focus or changing the value. At January 0001 it carries aria-disabled=\"true\"; while the calendar is disabled it is disabled. Never created at the root: it is lazy, and the calendar places it in the header."
+    },
+    "title": {
+      "kind": "element",
+      "tag": "span",
+      "at": "start",
+      "lazy": true,
+      "material": null,
+      "note": "The month and year shown, in the language of the page, between the two buttons. A polite live region, and the name of the grid."
+    },
+    "next": {
+      "kind": "element",
+      "tag": "button",
+      "at": "start",
+      "lazy": true,
+      "attrs": {
+        "type": "button"
+      },
+      "material": null,
+      "note": "A native button the calendar creates last inside the header, named \"Next month\". At December 9999 it carries aria-disabled=\"true\"."
+    },
+    "grid": {
+      "kind": "element",
+      "tag": "table",
+      "at": "end",
+      "material": null,
+      "note": "A table with the grid role, named by the title: a head row of weekday names, short with the long name as abbr, from the first day of the language's week, then the weeks of the month shown. It carries aria-required and aria-disabled for the calendar."
+    },
+    "day": {
+      "kind": "element",
+      "tag": "td",
+      "at": "end",
+      "lazy": true,
+      "attrs": {
+        "role": "gridcell"
+      },
+      "material": null,
+      "note": "One cell per day in the grid's body rows, holding the day number in the language's digits and named by the full date. A day of the month shown takes focus; the chosen day carries aria-selected=\"true\", today aria-current=\"date\", and a day outside min and max, or past 0001 to 9999, aria-disabled=\"true\". The days of the neighbouring months carry data-outside and take no focus."
+    }
+  },
+  "tokens": [
+    "--calendar-gap",
+    "--calendar-day-ink",
+    "--calendar-day-height",
+    "--calendar-day-radius",
+    "--calendar-day-face-selected-disabled",
+    "--calendar-day-face-hover",
+    "--calendar-day-face-active",
+    "--calendar-day-face-selected",
+    "--calendar-day-ink-selected",
+    "--calendar-day-ink-disabled"
+  ],
+  "behaviours": [
+    "roving-focus"
+  ],
+  "keys": {
+    "ArrowLeft / ArrowRight": "The day before or after, mirrored right to left, into the neighbouring month at an edge, which is then shown.",
+    "ArrowUp / ArrowDown": "The same weekday a week before or after.",
+    "Home / End": "The first or last day of the week, by the language's first weekday.",
+    "PageUp / PageDown": "The same day a month before or after, or the last day of that month; with Shift, a year.",
+    "Enter / Space": "Chooses the focused day.",
+    "Tab": "The grid is one stop: the day focus was on while it is inside, or else the chosen day, today, or the first day of the month shown."
+  },
+  "events": {
+    "input": "Dispatched when the user chooses a date.",
+    "change": "Dispatched after input."
+  },
+  "guidance": [
+    {
+      "topic": "naming",
+      "text": "The author names the calendar with aria-label or aria-labelledby on its root, which has the group role. Month and weekday names come from the language of the page, the lang attribute nearest the calendar, read when the calendar draws a month."
+    },
+    {
+      "topic": "first paint",
+      "text": "The calendar draws its days when it is defined. Its width is set before that; give it a block-size if the page must not move, since a month takes four to six weeks."
+    },
+    {
+      "topic": "coordination",
+      "text": "month sets the month shown. The user's moves do not write it; setting value or month from a script shows that month again."
+    },
+    {
+      "topic": "coordination",
+      "text": "Today is UICalendar.today(), the date of the user's own clock. A page or a test that needs another today defines a subclass whose static today() returns it as yyyy-mm-dd."
+    },
+    {
+      "topic": "coordination",
+      "text": "To move focus into the grid, as a date field does when it opens, focus the day that has tabindex=\"0\" inside the element with the grid role."
+    }
+  ],
+  "notYet": [
+    "A range of dates.",
+    "More than one month at once.",
+    "Calendars other than the Gregorian.",
+    "Translated names for the two buttons and the required message.",
+    "Following a lang that changes while a month is shown."
+  ],
+  "targets": {
+    "web-components": "built",
+    "react": "built",
+    "svelte": "built",
+    "solid": "planned"
+  }
+}

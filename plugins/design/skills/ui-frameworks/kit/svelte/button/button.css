@@ -1,0 +1,189 @@
+@layer reset, base, tokens, recipes, utilities;
+
+/* The recipe of <ui-button>. Its shape and rules: docs/specs/css-contract.md. Its conditions: references/states.json.
+   ghost is a hosted control (ui-materials construction.md): no face and no shadow, the host is its shape, and its box
+   is its content, so a ghost around one icon is the icon's square. Hover and press change its ink, never a fill.
+   Padding is by edge (ui-geometry, "controls pad by edge"): text sits T = 2I from an edge, an icon's S-square box I
+   from it, a label I after that box, so an icon alone makes an h by h square. CSS cannot see a text node, so the
+   recipe never learns which child is at an edge: the root pads T everywhere, and every icon directly in it pulls in
+   by I − T on each side of its S box. The button hands that pull to its icons in --_icon-pull, the one private token
+   the icon inherits (D110); the icon adds (S − a)/2 for its own size a, which only it knows. The flex gap is the
+   label gap less the pull, so the label still sits I from the icon's box. The icon edge is (h − S)/2, which is I
+   at every density and keeps an icon-only button square when --button-height changes. A ghost has no edges: its
+   height is auto, so (h − S)/2 and the pull are not lengths and its icons take none, and its gap is the label gap.
+   ::before is the hit area. A neutral or primary button is a control tall, so it needs one only on a coarse pointer;
+   a ghost may be smaller than the pointer's target, so its ::before reaches to that target at every pointer and to
+   the touch target on a coarse one, centred on the box and never smaller than it (C21).
+   Disabled fades nothing (C33): the label and icons take the disabled ink; a neutral button keeps its raised face and
+   ring; a primary drops its solid face and shadow for the disabled ground; a ghost has no face to drop. */
+@layer recipes {
+  @scope ([data-ui="button"]) {
+    :where(:scope) {
+      --_face: var(--button-face, var(--raised-face));
+      --_face-hover: var(--button-face-hover, var(--button-face, var(--colors-bg-muted-hover)));
+      --_face-active: var(--button-face-active, var(--button-face, var(--pressed-face)));
+      --_shadow: var(--raised-shadow-1);
+      --_ink: var(--button-ink, var(--ink));
+      --_ink-hover: var(--button-ink-hover, var(--button-ink, var(--ink)));
+      --_ink-active: var(--button-ink-active, var(--button-ink, var(--ink)));
+      --_ink-disabled: var(--button-ink-disabled, var(--ink-faint));
+      --_face-disabled: var(--button-face-disabled, var(--raised-face));
+      --_shadow-disabled: var(--raised-shadow-1);
+      --_height: var(--button-height, var(--controls-control-h));
+      --_inset: var(--button-inset, var(--controls-control-t));
+      --_gap: var(--button-gap, var(--controls-control-i));
+      --_slot: var(--controls-control-s);
+      --_edge: calc((var(--_height) - var(--_slot)) / 2);
+      --_icon-pull: calc(var(--_edge) - var(--_inset));
+      --_space: calc(var(--_gap) - var(--_icon-pull));
+      --_radius: var(--button-radius, var(--controls-curvature-r));
+      --_text: var(--unit-scale-f);
+      --_ring: var(--colors-focus-ring);
+      --_ring-width: var(--controls-focus-ring-width-w);
+      --_ring-offset: var(--controls-focus-ring-offset-o);
+      --_border: var(--unit-border-b);
+      --_reach: var(--controls-target-expansion-of-h-touch);
+      --_target: var(--controls-target-t_hit-pointer);
+      --_hit: none;
+      --_hit-block: 0;
+      --_hit-inline: 0;
+      --_outline: solid;
+      --_adjust: auto;
+    }
+    :where(:scope[data-variant="primary"]) {
+      --_face: var(--button-face, var(--solid-face));
+      --_face-hover: var(--button-face-hover, var(--button-face, var(--colors-primary-solid-hover)));
+      --_face-active: var(--button-face-active, var(--button-face, var(--solid-pressed-face)));
+      --_shadow: var(--solid-shadow);
+      --_ink: var(--button-ink, var(--on-solid));
+      --_ink-hover: var(--button-ink-hover, var(--button-ink, var(--on-solid)));
+      --_ink-active: var(--button-ink-active, var(--button-ink, var(--on-solid)));
+      --_face-disabled: var(--button-face-disabled, var(--colors-bg-disabled));
+      --_shadow-disabled: none;
+    }
+    :where(:scope[data-variant="ghost"]) {
+      --_face: initial;
+      --_face-hover: initial;
+      --_face-active: initial;
+      --_shadow: none;
+      --_ink: var(--button-ink, var(--ink-muted));
+      --_ink-hover: var(--button-ink-hover, var(--button-ink, var(--ink)));
+      --_ink-active: var(--button-ink-active, var(--button-ink, var(--colors-fg-subtle)));
+      --_face-disabled: initial;
+      --_shadow-disabled: none;
+      --_height: auto;
+      --_space: var(--_gap);
+      --_inset: 0;
+      --_hit: "";
+      --_hit-block: min(0%, (100% - var(--_target)) / 2);
+      --_hit-inline: min(0%, (100% - var(--_target)) / 2);
+    }
+
+    /* The recipe's own boxes are border boxes, with or without a reset (C31). */
+    :where(:scope, [data-part]) { box-sizing: border-box; }
+    :scope {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--_space);
+      position: relative;
+      block-size: var(--_height);
+      padding-inline: var(--_inset);
+      border-radius: var(--_radius);
+      background-color: var(--_face);
+      box-shadow: var(--_shadow);
+      color: var(--_ink);
+      font-size: var(--_text);
+      white-space: nowrap;
+      cursor: pointer;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+    :scope:where([hidden]:not([hidden="until-found"])) { display: none; }
+    :scope::before {
+      content: var(--_hit);
+      position: absolute;
+      inset-block: var(--_hit-block);
+      inset-inline: var(--_hit-inline);
+    }
+
+    @media (hover: hover) {
+      :scope:where(:is(:hover, [data-hover]):where(:not(:is(:disabled, [disabled], [aria-disabled="true"]), :is(:checked, [aria-checked="true"], [checked]:not(input, option)), :is(input[type="checkbox"]:indeterminate, [aria-checked="mixed"], [indeterminate]), :is([aria-pressed="true"], [pressed]), :is([aria-selected="true"], [selected]:not(option)), :is([aria-current]:not([aria-current="false"], [aria-current=""]), [current]), :is([aria-expanded="true"], [expanded]), :is([open], :popover-open)))) { background-color: var(--_face-hover); color: var(--_ink-hover); }
+    }
+    :scope:where(:is(:focus-visible, [data-focus-visible])) {
+      outline: var(--_ring-width) solid var(--_ring);
+      outline-offset: var(--_ring-offset);
+    }
+    :scope:where(:is(:active, [data-active]):where(:not(:is(:disabled, [disabled], [aria-disabled="true"])))) { background-color: var(--_face-active); color: var(--_ink-active); }
+    :scope:where(:is(:disabled, [disabled], [aria-disabled="true"])) {
+      background-color: var(--_face-disabled);
+      box-shadow: var(--_shadow-disabled);
+      color: var(--_ink-disabled);
+      cursor: default;
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+      :scope:where([data-ready]) { transition: background-color 100ms; }
+    }
+    @media (pointer: coarse) {
+      :where(:scope) {
+        --_hit: "";
+        --_hit-block: calc(var(--_reach) * -1);
+      }
+      :where(:scope[data-variant="ghost"]) {
+        --_target: var(--controls-target-t_hit-touch);
+        --_hit-block: min(0%, (100% - var(--_target)) / 2);
+      }
+    }
+    @media (forced-colors: active) {
+      :where(:scope) {
+        --_face: ButtonFace;
+        --_face-hover: ButtonFace;
+        --_face-active: ButtonFace;
+        --_shadow: none;
+        --_ink: ButtonText;
+        --_ink-hover: ButtonText;
+        --_ink-active: ButtonText;
+        --_ink-disabled: GrayText;
+        --_face-disabled: ButtonFace;
+        --_shadow-disabled: none;
+        --_ring: Highlight;
+      }
+      :where(:scope[data-variant="primary"]) {
+        --_face: Highlight;
+        --_face-hover: Highlight;
+        --_face-active: Highlight;
+        --_ink: HighlightText;
+        --_ink-hover: HighlightText;
+        --_ink-active: HighlightText;
+        --_adjust: none;
+      }
+      :where(:scope[data-variant="ghost"]) {
+        --_face: initial;
+        --_face-hover: initial;
+        --_face-active: initial;
+        --_face-disabled: initial;
+        --_outline: none;
+      }
+      /* C19, D124: a label on a Highlight face opts out of forcing, or Chromium's Canvas backplate hides the face behind the
+         glyphs. Only the primary sets --_adjust to none; every colour it paints is a system colour above. */
+      :scope {
+        forced-color-adjust: var(--_adjust);
+        outline: var(--_border) var(--_outline) ButtonBorder;
+        outline-offset: calc(var(--_border) * -1);
+      }
+      /* Hover: the ring one border width heavier, in the boundary colour, no fill, never Highlight (D124). */
+      @media (hover: hover) {
+        :scope:where(:is(:hover, [data-hover]):where(:not(:is(:disabled, [disabled], [aria-disabled="true"]), :is(:checked, [aria-checked="true"], [checked]:not(input, option)), :is(input[type="checkbox"]:indeterminate, [aria-checked="mixed"], [indeterminate]), :is([aria-pressed="true"], [pressed]), :is([aria-selected="true"], [selected]:not(option)), :is([aria-current]:not([aria-current="false"], [aria-current=""]), [current]), :is([aria-expanded="true"], [expanded]), :is([open], :popover-open)))) {
+          outline: calc(var(--_border) * 2) solid ButtonText;
+          outline-offset: calc(var(--_border) * -2);
+        }
+      }
+      :scope:where(:is(:focus-visible, [data-focus-visible])) {
+        outline: var(--_ring-width) solid var(--_ring);
+        outline-offset: var(--_ring-offset);
+      }
+      :scope:where(:is(:disabled, [disabled], [aria-disabled="true"])) { forced-color-adjust: auto; outline-color: GrayText; }
+    }
+  }
+}

@@ -56,7 +56,8 @@ export function rovingFocus(root, options) {
   };
 
   root.addEventListener('keydown', (event) => {
-    if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+    // B8: a key the component has already acted on, and said so by preventing its default, is not acted on twice.
+    if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
     const can = usable(options.items());
     const at = can.indexOf(/** @type {HTMLElement} */ (event.target));
     if (at < 0) return;

@@ -1,0 +1,51 @@
+{
+  "$schema": "../../../references/manifest.schema.json",
+  "schema": 1,
+  "id": "avatar-group",
+  "kind": "recipe",
+  "family": "avatar",
+  "tier": "collections",
+  "pattern": "https://www.w3.org/TR/wai-aria-1.2/#group",
+  "summary": "A row of avatars that overlap, each cut where the one before it lies.",
+  "element": "div",
+  "role": null,
+  "focus": "none",
+  "tabindex": null,
+  "formAssociated": false,
+  "attributes": {},
+  "resets": [],
+  "states": [],
+  "parts": {
+    "root": {
+      "kind": "root",
+      "material": null,
+      "note": "A row of avatars that does not wrap. It gives its avatars the gap of their crescents; each avatar after the first overlaps the one before by a quarter of its height and is cut by a circle concentric with it."
+    }
+  },
+  "tokens": [
+    "--avatar-group-gap"
+  ],
+  "behaviours": [],
+  "keys": {},
+  "events": {},
+  "guidance": [
+    {
+      "topic": "naming",
+      "text": "A div with data-ui=\"avatar-group\", role=\"group\" and an aria-label that says who they are, around avatars, each named as an avatar is."
+    },
+    {
+      "topic": "coordination",
+      "text": "The avatars are the group's own children, all of one size. The first lies on top and is whole. An avatar wrapped in another element, such as a link, is not stacked."
+    }
+  ],
+  "notYet": [
+    "A count of the avatars not shown.",
+    "Avatars of different sizes in one group."
+  ],
+  "targets": {
+    "web-components": "built",
+    "react": "planned",
+    "svelte": "planned",
+    "solid": "planned"
+  }
+}

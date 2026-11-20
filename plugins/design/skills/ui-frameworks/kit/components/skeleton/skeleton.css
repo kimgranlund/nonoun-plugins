@@ -1,0 +1,60 @@
+@layer reset, base, tokens, recipes, utilities;
+
+/* The recipe of the skeleton: a native <span data-ui="skeleton" aria-hidden="true">. Its rules: J102 in docs/specs/patterns.md.
+   Its shape: docs/specs/css-contract.md. A shape in the recessed fill (ui-materials): by default a line as tall as a line of body text
+   and as wide as its container; data-variant="block" a box whose size the author sets with block-size and inline-size; data-variant="circle"
+   a circle of the author's inline-size. It pulses in opacity only, and only when the user has not asked for reduced motion (C18, D108).
+   In forced colours the shape keeps a boundary. */
+@layer recipes {
+  @scope ([data-ui="skeleton"]) {
+    :where(:scope) {
+      --_face: var(--skeleton-face, var(--recessed-face));
+      --_height: var(--skeleton-height, var(--unit-type-body-md-line));
+      --_width: 100%;
+      --_radius: var(--skeleton-radius, var(--controls-curvature-r));
+      --_ratio: auto;
+      --_border: var(--unit-border-b);
+    }
+    :where(:scope[data-variant="text"]) {
+      --_height: var(--skeleton-height, var(--unit-type-body-md-line));
+    }
+    :where(:scope[data-variant="block"]) {
+      --_height: var(--skeleton-height, auto);
+    }
+    :where(:scope[data-variant="circle"]) {
+      --_height: var(--skeleton-height, auto);
+      --_width: var(--controls-media-avatar-lg);
+      --_radius: var(--skeleton-radius, 50%);
+      --_ratio: 1;
+    }
+
+    /* The recipe's own boxes are border boxes, with or without a reset (C31). */
+    :where(:scope, [data-part]) { box-sizing: border-box; }
+    :scope {
+      display: block;
+      flex: none;
+      inline-size: var(--_width);
+      block-size: var(--_height);
+      aspect-ratio: var(--_ratio);
+      border-radius: var(--_radius);
+      background-color: var(--_face);
+    }
+    :scope:where([hidden]:not([hidden="until-found"])) { display: none; }
+
+    @media (forced-colors: active) {
+      :where(:scope) { --_face: Canvas; }
+      :scope {
+        outline: var(--_border) solid CanvasText;
+        outline-offset: calc(var(--_border) * -1);
+      }
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+      :scope { animation: skeleton-pulse 1.5s ease-in-out infinite; }
+    }
+  }
+
+  @keyframes skeleton-pulse {
+    50% { opacity: 0.5; }
+  }
+}

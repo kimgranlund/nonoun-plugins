@@ -1,0 +1,101 @@
+@layer reset, base, tokens, recipes, utilities;
+
+/* The recipe of <ui-option>. Its shape and rules: docs/specs/css-contract.md. Its conditions: references/states.json.
+   ui-materials: no face at rest; its ink is its listbox's. The highlighted option's tint is its listbox's thumb
+   (C32), shown only while its listbox has focus: the listbox, a select or a combobox then writes data-focus on
+   the highlighted option and on no other. The option names itself the thumb's anchor on the focus condition
+   alone, because data-focus follows data-highlighted a microtask late: when the highlight moves, the old
+   option keeps data-focus until the new one has it, so a layout in between, such as the one scrollIntoView
+   forces, still finds an anchor, and the thumb travels instead of jumping. Highlighted with focus, the option
+   paints no face of its own, not even its hover face. The selected option has a solid face, and its rule comes after hover,
+   highlighted and active, so it wins over them and covers the thumb: selection does not travel.
+   In forced colours (C19, D124) the thumb is Canvas with a Highlight frame, so the highlighted option keeps its CanvasText
+   label; a selected option is the Highlight face with HighlightText, and opts out of forcing so that no backplate covers
+   the face behind its glyphs; a highlighted selected option is that face with a HighlightText ring inside it. Rest is
+   Canvas. Hover draws a ring of one border width in CanvasText, no fill.
+   ui-geometry: a row like a menu item, inside the listbox's frame, with its text at T from the frame's edge.
+   The option never takes focus, so it draws no focus ring.
+   Disabled fades nothing (C33): a disabled option takes the disabled ink, and a selected one drops the selected face
+   for the disabled ground, as the calendar's chosen day does. An option cannot see its listbox (C8), so a disabled
+   listbox hands it its state through --_group-disabled, empty while the listbox is disabled (C5 as amended). */
+@layer recipes {
+  @scope ([data-ui="option"]) {
+    :where(:scope) {
+      --_face-hover: var(--option-face-hover, var(--colors-bg-muted-hover));
+      --_face-active: var(--option-face-active, var(--pressed-face));
+      --_face-selected: var(--option-face-selected, var(--selected-face));
+      --_ink-selected: var(--option-ink-selected, var(--on-selected));
+      --_ink-disabled: var(--option-ink-disabled, var(--ink-faint));
+      --_face-selected-disabled: var(--option-face-selected-disabled, var(--colors-bg-disabled));
+      --_group-disabled: inherit;
+      --_paint-selected: var(--_selected-off, var(--_face-selected));
+      --_paint-ink-selected: var(--_ink-off, var(--_ink-selected));
+      --_selected-off: var(--_group-disabled) var(--_face-selected-disabled);
+      --_ink-off: var(--_group-disabled) var(--_ink-disabled);
+      --_height: var(--option-height, var(--collections-rows-menu-row));
+      --_inset: var(--option-inset, calc(var(--controls-control-t) - var(--collections-frame-d_c)));
+      --_radius: var(--option-radius, var(--collections-curvature-r_row));
+      --_border: var(--unit-border-b);
+    }
+
+    /* The recipe's own boxes are border boxes, with or without a reset (C31). */
+    :where(:scope, [data-part]) { box-sizing: border-box; }
+    :scope {
+      display: flex;
+      align-items: center;
+      min-block-size: var(--_height);
+      padding-inline: var(--_inset);
+      border-radius: var(--_radius);
+      white-space: nowrap;
+      cursor: pointer;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+    :scope:where([hidden]:not([hidden="until-found"])) { display: none; }
+
+    @media (hover: hover) {
+      :scope:where(:is(:hover, [data-hover]):where(:not(:is(:disabled, [disabled], [aria-disabled="true"]), :is(:checked, [aria-checked="true"], [checked]:not(input, option)), :is(input[type="checkbox"]:indeterminate, [aria-checked="mixed"], [indeterminate]), :is([aria-pressed="true"], [pressed]), :is([aria-selected="true"], [selected]:not(option)), :is([aria-current]:not([aria-current="false"], [aria-current=""]), [current]), :is([aria-expanded="true"], [expanded]), :is([open], :popover-open)))) { background-color: var(--_face-hover); }
+    }
+    :scope:where(:is(:focus, [data-focus])) { anchor-name: --listbox-thumb; }
+    :scope:where([data-highlighted]):where(:is(:focus, [data-focus])) { background-color: initial; }
+    :scope:where(:is(:active, [data-active]):where(:not(:is(:disabled, [disabled], [aria-disabled="true"])))) { background-color: var(--_face-active); }
+    :scope:where(:is([aria-selected="true"], [selected]:not(option))) {
+      background-color: var(--_paint-selected);
+      color: var(--_paint-ink-selected);
+    }
+    :scope:where(:is(:disabled, [disabled], [aria-disabled="true"])) {
+      color: var(--_ink-disabled);
+      cursor: default;
+    }
+    :scope:where(:is(:disabled, [disabled], [aria-disabled="true"])):where(:is([aria-selected="true"], [selected]:not(option))) { background-color: var(--_face-selected-disabled); }
+
+    @media (prefers-reduced-motion: no-preference) {
+      :scope:where([data-ready]) { transition: background-color 100ms; }
+    }
+    @media (forced-colors: active) {
+      :where(:scope) {
+        --_face-hover: Canvas;
+        --_face-active: Canvas;
+        --_face-selected: Highlight;
+        --_ink-selected: HighlightText;
+        --_ink-disabled: GrayText;
+        --_face-selected-disabled: Canvas;
+      }
+      @media (hover: hover) {
+        :scope:where(:is(:hover, [data-hover]):where(:not(:is(:disabled, [disabled], [aria-disabled="true"]), :is(:checked, [aria-checked="true"], [checked]:not(input, option)), :is(input[type="checkbox"]:indeterminate, [aria-checked="mixed"], [indeterminate]), :is([aria-pressed="true"], [pressed]), :is([aria-selected="true"], [selected]:not(option)), :is([aria-current]:not([aria-current="false"], [aria-current=""]), [current]), :is([aria-expanded="true"], [expanded]), :is([open], :popover-open)))) {
+          outline: var(--_border) solid CanvasText;
+          outline-offset: calc(var(--_border) * -1);
+        }
+      }
+      :scope:where(:is([aria-selected="true"], [selected]:not(option))) { forced-color-adjust: none; }
+      :scope:where(:is([aria-selected="true"], [selected]:not(option))):where([data-highlighted]):where(:is(:focus, [data-focus])) {
+        outline: var(--_border) solid HighlightText;
+        outline-offset: calc(var(--_border) * -2);
+      }
+      :scope:where(:is(:disabled, [disabled], [aria-disabled="true"])):where(:is([aria-selected="true"], [selected]:not(option))) {
+        outline: calc(var(--_border) * 2) solid GrayText;
+        outline-offset: calc(var(--_border) * -2);
+      }
+    }
+  }
+}

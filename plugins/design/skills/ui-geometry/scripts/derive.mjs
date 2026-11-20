@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // UI geometry calculator. Self-contained: a preset holds every constant, the equations are generic.
 //   node derive.mjs --n 16 --density loose --kappa 0.5 [--kappa-card 1] [--card 4] [--width 1280 --columns 12]
-//                   [--preset standard | --preset ./my-preset.json] [--json]
+//                   [--preset ladder (default) | standard | ./my-preset.json] [--json]
 //   node derive.mjs --elevation popup|raised|floating|modal|all|<s> [--layers 5] [--scheme light|dark] [--n 14]
 //   node derive.mjs --viewport 1024 [--dpr 2]   (n from the fluid scale; lengths off the device grid are listed)
 //   node derive.mjs --tier controls|collections|containers|layout   (one tier, with the shared unit)
@@ -70,6 +70,14 @@ export const PRESETS = {
     },
   },
 }
+
+// The ladder preset (the default answer since 2026-11-18): the standard preset on the unit q = ¾n − 6.75, so h = 8q =
+// 6n − 54: 30px controls at n 14 (24 at 13, 36 at 15, 48 at 17, 60 at 19), from a measured product kit's size
+// ladder. Every other constant is the standard preset's; 'standard' keeps h = 32 at 14 (alias 'standard-32').
+PRESETS.ladder = { ...PRESETS.standard, name: 'ladder', unit: { a: 0.75, b: -6.75, nMin: 12 } }
+PRESETS['standard-32'] = PRESETS.standard
+/** The preset an answer uses when none is named. */
+export const DEFAULT_PRESET = 'ladder'
 
 /** The system for one preset. Every function returns q unless named px. */
 export function system(P = PRESETS.standard) {
@@ -347,6 +355,10 @@ export function derive({ preset = PRESETS.standard, n = 14, density = 'default',
   // Card depth follows density: d_δ = d + depthStep·(I_δ − I_default). The gaps below use it.
   { const de = d + ({ ...PRESETS.standard.spacing, ...P.spacing }.depthStep) * (i - X.I('default'))
   if (Math.abs(de - d) > 1e-9) add('frame', `card-${d} at ${density}`, 'd + depthStep·(I − I_default)', de) }
+  // The dialog's depth as a row, so a kit can read it as a token: d_d = dialogRatio · the density's card depth, snapped
+  // as containers() snaps it (whole px when crisp, else ½q). The same value as the "Dialog, sheet" line of --containers.
+  { const sp = { ...PRESETS.standard.spacing, ...P.spacing }, snap = (x) => (P.crisp === false ? Math.round(x * 2) / 2 : roundEven(x * u) / u)
+    add('frame', 'dialog inset', `d_d = ${sp.dialogRatio}·d`, snap(sp.dialogRatio * snap(d + sp.depthStep * (i - X.I('default'))))) }
   // Inside a container the gap is half its depth; a header (an unpainted title row) is spaced as any child, the full
   // depth below as above, so its text has d + I on both sides; only a painted, flush title band gives back the row's
   // inset I (optical). The gap before an action row is the full depth. Every gap snaps to ½q.
@@ -544,7 +556,7 @@ export function validatePreset(p, where = 'preset') {
 const lev = (a, b) => { const m = Array.from({ length: a.length + 1 }, (_, i) => [i, ...new Array(b.length).fill(0)]); for (let j = 1; j <= b.length; j++) m[0][j] = j; for (let i = 1; i <= a.length; i++) for (let j = 1; j <= b.length; j++) m[i][j] = Math.min(m[i - 1][j] + 1, m[i][j - 1] + 1, m[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)); return m[a.length][b.length] }
 
 function loadPreset(name) {
-  if (!name || name in PRESETS) return PRESETS[name ?? 'standard']
+  if (!name || name in PRESETS) return PRESETS[name ?? DEFAULT_PRESET]
   return { ...PRESETS.standard, ...validatePreset(JSON.parse(readFileSync(name, 'utf8')), name) }
 }
 
@@ -557,7 +569,8 @@ function archetypeDials(name) {
 
 function parse(argv) {
   const get = (key) => { const at = argv.indexOf(`--${key}`); return at < 0 ? undefined : argv[at + 1] }
-  let preset = loadPreset(get('preset'))
+  // An archetype's dials were measured and tuned on the standard preset, so it starts there unless a preset is named.
+  let preset = loadPreset(get('preset') ?? (get('archetype') ? 'standard' : undefined))
   // An archetype brings its constants and dial defaults (references/archetypes.json); flags still override them.
   const arch = get('archetype') ? archetypeDials(get('archetype')) : undefined
   if (arch) preset = { ...preset, ...(arch.constants ?? {}), dials: { ...(preset.dials ?? {}), density: arch.density, kappa: { ...arch.kappa } } }

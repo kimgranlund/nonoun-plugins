@@ -280,6 +280,15 @@ const CHECKS = {
     return c.terms.transmissionReach.filter((t) => (c.terms.tokens[t] || {}).scheme && !row.includes(t)).map((t) => `SKILL.md's transmission invariant does not name ${t}, which transmissionReach lists`);
   },
 
+  // Under `line` a face that loses its fill hands its marks to the page's ink: where delineation writes a face token,
+  // it also writes every mark token of that face (terms.json › tokens: `face`, `mark`, `writes`).
+  lineMarks(c) {
+    const tokens = Object.entries(c.terms.tokens), writes = (d) => (d.writes || []).includes('delineation');
+    const faces = new Set(tokens.filter(([, d]) => d.face && !d.mark && writes(d)).map(([, d]) => d.face));
+    return tokens.filter(([, d]) => d.mark && faces.has(d.face) && !writes(d))
+      .map(([t, d]) => `delineation writes the ${d.face} face and not its mark ${t}: under line the mark keeps an ink made for the fill`);
+  },
+
   // Transmission writes only its reach, and the reach lists only what transmission writes.
   reach(c) {
     const f = [], reach = new Set(c.terms.transmissionReach);
@@ -440,6 +449,7 @@ const CONTROLS = {
     (c) => { c.terms.inputs['--line-strong'].for += ' (4.5:1)'; return c; },
   ],
   reachRow: (c) => { c.docs['SKILL.md'] = c.docs['SKILL.md'].replace('the display cover and `--glass-k`', 'and the display cover'); return c; },
+  lineMarks: (c) => { c.terms.tokens['--on-display'].writes = c.terms.tokens['--on-display'].writes.filter((w) => w !== 'delineation'); return c; },
   reach: (c) => { c.terms.tokens['--raised-face'].writes.push('transmission'); return c; },
   presets: (c) => { c.docs['references/composition.md'] = c.docs['references/composition.md'].replace("glass:    { lighting: 'lit',  transmission: 'clear'", "glass:    { lighting: 'lit',  transmission: 'frosted'"); return c; },
   selectors: (c) => addDoc(c, '```css\n[data-transmission][data-lighting="lit"] { }\n```'),

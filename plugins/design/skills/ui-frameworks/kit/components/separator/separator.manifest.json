@@ -1,0 +1,56 @@
+{
+  "$schema": "../../../references/manifest.schema.json",
+  "schema": 1,
+  "id": "separator",
+  "kind": "recipe",
+  "family": "separator",
+  "tier": "layout",
+  "pattern": "https://www.w3.org/TR/wai-aria-1.2/#separator",
+  "summary": "A line between two groups of content.",
+  "element": "hr",
+  "role": null,
+  "focus": "none",
+  "tabindex": null,
+  "formAssociated": false,
+  "attributes": {
+    "orientation": {
+      "type": "enum",
+      "values": [
+        "horizontal",
+        "vertical"
+      ],
+      "default": "horizontal",
+      "kind": "variant",
+      "description": "The way the line runs. Vertical is for a row of items."
+    }
+  },
+  "resets": [],
+  "states": [],
+  "parts": {
+    "root": {
+      "kind": "root",
+      "material": null,
+      "note": "A hairline of ui-geometry's separator thickness across the inline axis, or along the block axis, as tall as its row, when vertical."
+    }
+  },
+  "tokens": [
+    "--separator-line",
+    "--separator-height"
+  ],
+  "behaviours": [],
+  "keys": {},
+  "events": {},
+  "guidance": [
+    {
+      "topic": "naming",
+      "text": "An hr with data-ui=\"separator\". A vertical one also needs aria-orientation=\"vertical\"."
+    }
+  ],
+  "notYet": [],
+  "targets": {
+    "web-components": "built",
+    "react": "planned",
+    "svelte": "planned",
+    "solid": "planned"
+  }
+}

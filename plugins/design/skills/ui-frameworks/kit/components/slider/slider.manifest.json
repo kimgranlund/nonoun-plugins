@@ -75,7 +75,7 @@
         "relief": "recessed",
         "face": "neutral"
       },
-      "note": "The filled share is solid."
+      "note": "A recessed tray as tall as the thumb and fully rounded. The filled share is solid."
     },
     "thumb": {
       "kind": "pseudo",
@@ -85,7 +85,7 @@
         "relief": "raised",
         "face": "neutral"
       },
-      "note": "Round; it sits at the value's share of the track."
+      "note": "Round and as tall as the track, inside it: its edge meets the track's start at the minimum and its end at the maximum. It draws the focus ring, which the root does not."
     },
     "fill": {
       "kind": "pseudo",
@@ -101,6 +101,7 @@
   "tokens": [
     "--slider-track-face",
     "--slider-fill-face",
+    "--slider-fill-face-disabled",
     "--slider-thumb-face",
     "--slider-height",
     "--slider-track-radius"
@@ -127,8 +128,8 @@
   ],
   "targets": {
     "web-components": "built",
-    "react": "planned",
-    "svelte": "planned",
+    "react": "built",
+    "svelte": "built",
     "solid": "planned"
   }
 }

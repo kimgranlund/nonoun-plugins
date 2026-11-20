@@ -3,7 +3,14 @@
 /* The recipe of <ui-switch>. Its shape and rules: docs/specs/css-contract.md. Its conditions: references/states.json.
    The mark is two pseudo-elements of the root (D57): ::before is the track, ::after is the thumb on it.
    The thumb is placed with inset-inline-start, so no box of the root moves when the switch is checked, and
-   it follows the writing direction. */
+   it follows the writing direction.
+   The track is the full icon size of ui-geometry tall, a.full, one q more than the mark row's a.md; its width and the
+   thumb grow from their rows by the same rule: the width by 7/4 of that q, as the switch-track row is 7 × a.md, and the
+   thumb by the q, so its pad inside the track stays g_c and its travel still ends flush at both ends. The label's start
+   follows the track, so the gap to the label is unchanged.
+   Keyboard focus is drawn on the track: the ring is its outline, following its pill, under the root's focus-visible
+   condition, and the root draws none. The thumb is the raised face alone, with no line or shadow of its own: it
+   stands apart from the track by its fill. In forced colours the track's boundary is a border, so the two show together. */
 @layer recipes {
   @scope (ui-switch) {
     :where(:scope) {
@@ -14,19 +21,19 @@
       --_shadow: var(--field-shadow);
       --_shadow-checked: var(--solid-shadow);
       --_thumb-face: var(--raised-face);
-      --_thumb-shadow: var(--raised-shadow-1);
       --_ink: var(--switch-ink, var(--ink));
       --_ink-disabled: var(--switch-ink-disabled, var(--ink-faint));
-      --_fade-disabled: 0.5;
+      --_face-checked-disabled: var(--switch-face-checked-disabled, var(--colors-bg-disabled));
+      --_thumb-face-disabled: var(--switch-thumb-face-disabled, var(--ink-faint));
       --_line-invalid: var(--switch-line-invalid, var(--colors-critical-solid));
       --_height: var(--switch-height, var(--controls-mark-choice-row));
       --_inset: var(--switch-inset, var(--controls-control-i));
       --_gap: var(--controls-control-i);
-      --_track: var(--controls-mark-switch-track);
+      --_track: calc(var(--controls-mark-switch-track) + (var(--_size) - var(--controls-mark-checkbox-box)) * 7 / 4);
       --_start: calc(var(--_track) + var(--_gap));
-      --_size: var(--controls-mark-checkbox-box);
+      --_size: var(--controls-icon-a-full);
       --_radius: calc(var(--_size) / 2);
-      --_thumb: var(--controls-mark-switch-thumb);
+      --_thumb: calc(var(--controls-mark-switch-thumb) + var(--_size) - var(--controls-mark-checkbox-box));
       --_thumb-inset: calc((var(--_size) - var(--_thumb)) / 2);
       --_text: var(--unit-type-body-md);
       --_leading: var(--unit-type-body-md-line);
@@ -49,6 +56,7 @@
       color: var(--_ink);
       font-size: var(--_text);
       line-height: var(--_leading);
+      outline: none;
       cursor: pointer;
     }
     :scope:where([hidden]:not([hidden="until-found"])) { display: none; }
@@ -61,6 +69,7 @@
       margin-block: auto;
     }
     :scope::before {
+      box-sizing: border-box;
       inset-inline-start: 0;
       inline-size: var(--_track);
       block-size: var(--_size);
@@ -74,13 +83,12 @@
       block-size: var(--_thumb);
       border-radius: var(--_radius);
       background-color: var(--_thumb-face);
-      box-shadow: var(--_thumb-shadow);
     }
 
     @media (hover: hover) {
       :scope:where(:is(:hover, [data-hover]):where(:not(:is(:disabled, [disabled], [aria-disabled="true"]), :is(:checked, [aria-checked="true"], [checked]:not(input, option)), :is(input[type="checkbox"]:indeterminate, [aria-checked="mixed"], [indeterminate]), :is([aria-pressed="true"], [pressed]), :is([aria-selected="true"], [selected]:not(option)), :is([aria-current]:not([aria-current="false"], [aria-current=""]), [current]), :is([aria-expanded="true"], [expanded]), :is([open], :popover-open))))::before { background-color: var(--_face-hover); }
     }
-    :scope:where(:is(:focus-visible, [data-focus-visible])) {
+    :scope:where(:is(:focus-visible, [data-focus-visible]))::before {
       outline: var(--_ring-width) solid var(--_ring);
       outline-offset: var(--_ring-offset);
     }
@@ -97,8 +105,14 @@
       color: var(--_ink-disabled);
       cursor: default;
     }
-    :scope:where(:is(:disabled, [disabled], [aria-disabled="true"]))::before,
-    :scope:where(:is(:disabled, [disabled], [aria-disabled="true"]))::after { opacity: var(--_fade-disabled); }
+    /* On and disabled, the track drops the solid face for the disabled ground and takes back the well's ring. The thumb,
+       on or off, is a mark in the disabled ink: the raised face would vanish on the disabled ground, which is the raised
+       face in the dark scheme. Its place tells on from off. Nothing fades (C33). */
+    :scope:where(:is(:disabled, [disabled], [aria-disabled="true"])):where(:is(:checked, [aria-checked="true"], [checked]:not(input, option)))::before {
+      background-color: var(--_face-checked-disabled);
+      box-shadow: var(--_shadow);
+    }
+    :scope:where(:is(:disabled, [disabled], [aria-disabled="true"]))::after { background-color: var(--_thumb-face-disabled); }
 
     @media (prefers-reduced-motion: no-preference) {
       :scope:where([data-ready])::before { transition: background-color 100ms; }
@@ -119,20 +133,25 @@
         --_thumb-face: ButtonText;
         --_shadow: none;
         --_shadow-checked: none;
-        --_thumb-shadow: none;
         --_ink: CanvasText;
         --_ink-disabled: GrayText;
-        --_fade-disabled: 1;
+        --_face-checked-disabled: Canvas;
+        --_thumb-face-disabled: GrayText;
         --_line-invalid: Mark;
         --_ring: Highlight;
       }
-      :scope:where(:is(:checked, [aria-checked="true"], [checked]:not(input, option)))::after { background-color: HighlightText; }
-      :scope::before {
-        outline: var(--_border) solid ButtonText;
-        outline-offset: calc(var(--_border) * -1);
+      /* Hover (D124): the ring one border width heavier than at rest, in the boundary colour, inside; no fill, never Highlight. */
+      @media (hover: hover) {
+        :scope:where(:is(:hover, [data-hover]):where(:not(:is(:disabled, [disabled], [aria-disabled="true"]), :is(:checked, [aria-checked="true"], [checked]:not(input, option)), :is(input[type="checkbox"]:indeterminate, [aria-checked="mixed"], [indeterminate]), :is([aria-pressed="true"], [pressed]), :is([aria-selected="true"], [selected]:not(option)), :is([aria-current]:not([aria-current="false"], [aria-current=""]), [current]), :is([aria-expanded="true"], [expanded]), :is([open], :popover-open))))::before {
+          outline: var(--_border) solid ButtonText;
+          outline-offset: calc(var(--_border) * -2);
+        }
       }
-      :scope:where(:is([aria-invalid]:not([aria-invalid="false"]), :is(input, select, textarea):user-invalid, [invalid]))::before { outline-color: var(--_line-invalid); }
-      :scope:where(:is(:disabled, [disabled], [aria-disabled="true"]))::before { outline-color: GrayText; }
+      :scope:where(:is(:checked, [aria-checked="true"], [checked]:not(input, option)))::after { background-color: HighlightText; }
+      :scope::before { border: var(--_border) solid ButtonText; }
+      :scope:where(:is([aria-invalid]:not([aria-invalid="false"]), :is(input, select, textarea):user-invalid, [invalid]))::before { border-color: var(--_line-invalid); }
+      :scope:where(:is(:disabled, [disabled], [aria-disabled="true"]))::before { border-color: GrayText; }
+      :scope:where(:is(:disabled, [disabled], [aria-disabled="true"]))::after { background-color: var(--_thumb-face-disabled); }
     }
   }
 }

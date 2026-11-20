@@ -13,7 +13,7 @@ import { props as spec } from '../../components/button/button.props.js';
 
 /**
  * @typedef {Omit<import('react').ButtonHTMLAttributes<HTMLButtonElement>, 'type'> & {
- *   variant?: 'neutral' | 'primary',
+ *   variant?: 'neutral' | 'primary' | 'ghost',
  *   type?: 'button' | 'submit' | 'reset',
  *   ref?: import('react').Ref<HTMLButtonElement>,
  * }} ButtonProps

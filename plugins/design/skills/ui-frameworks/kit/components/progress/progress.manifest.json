@@ -1,0 +1,82 @@
+{
+  "$schema": "../../../references/manifest.schema.json",
+  "schema": 1,
+  "id": "progress",
+  "kind": "component",
+  "family": "progress",
+  "tier": "controls",
+  "pattern": "https://www.w3.org/TR/wai-aria-1.2/#progressbar",
+  "summary": "How far a task has got, shown as a filled track, or that it is running when how far is not known.",
+  "role": "progressbar",
+  "focus": "none",
+  "tabindex": null,
+  "formAssociated": false,
+  "attributes": {
+    "value": {
+      "type": "number",
+      "description": "How far the task has got, between min and max. Without it the progress is indeterminate."
+    },
+    "min": {
+      "type": "number",
+      "default": 0,
+      "description": "The value at the start of the task."
+    },
+    "max": {
+      "type": "number",
+      "default": 100,
+      "description": "The value when the task is done."
+    }
+  },
+  "resets": [],
+  "states": [],
+  "parts": {
+    "root": {
+      "kind": "root",
+      "material": {
+        "layer": "base",
+        "relief": "recessed",
+        "face": "neutral"
+      },
+      "note": "The track."
+    },
+    "fill": {
+      "kind": "pseudo",
+      "pseudo": "::before",
+      "material": {
+        "layer": "base",
+        "relief": "recessed",
+        "face": "solid"
+      },
+      "note": "As long as the value's share of the range. With no value it is a third of the track that moves along it, and rests at the start when motion is not allowed."
+    }
+  },
+  "tokens": [
+    "--progress-face",
+    "--progress-fill-face",
+    "--progress-height",
+    "--progress-radius"
+  ],
+  "behaviours": [],
+  "keys": {},
+  "events": {},
+  "guidance": [
+    {
+      "topic": "naming",
+      "text": "The author names the progress with aria-label or aria-labelledby, and may give aria-valuetext."
+    },
+    {
+      "topic": "coordination",
+      "text": "Mark the region the task is filling with aria-busy and aria-describedby naming the progress."
+    }
+  ],
+  "notYet": [
+    "A circular form.",
+    "The fill of a value is painted when the element is defined, not before; the indeterminate run is painted before definition and moves once the root is ready."
+  ],
+  "targets": {
+    "web-components": "built",
+    "react": "built",
+    "svelte": "built",
+    "solid": "planned"
+  }
+}

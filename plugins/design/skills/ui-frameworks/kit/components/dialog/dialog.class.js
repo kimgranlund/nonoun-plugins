@@ -4,7 +4,8 @@
  *
  * The modal layer is the browser's own dialog element, which the author writes inside the root and marks
  * with data-part="panel" (D91). This class opens it as a modal while `open` is set and closes it when `open`
- * goes, removes `open` when the browser closes it (Escape, a form with method="dialog"), and names it after
+ * goes, removes `open` when the browser closes it (Escape, a form with method="dialog"), sets `open` when the
+ * browser opens it (a native button's command="show-modal", a script's showModal()), and names it after
  * its title and description. It adds no focus handling, no inertness and no Escape handling (J40): the native
  * dialog does all of it. It names no tag of the kit and dispatches no event; the part's own `close` event and
  * its `returnValue` are the author's interface.
@@ -26,6 +27,10 @@ export class UIDialog extends UIElement {
   /** @type {HTMLDialogElement | null} The part whose close event is heard. */
   #bound = null;
   #unbind = () => {};
+  /** The browser is opening the part and has not yet said so with `toggle`: the part is not closed meanwhile. */
+  #opening = false;
+  /** This class is the one showing the part. */
+  #mine = false;
   /** @type {Map<string, string>} What this class wrote on the part, by attribute, so that it never replaces an author's. */
   #wrote = new Map();
 
@@ -43,8 +48,10 @@ export class UIDialog extends UIElement {
     if (open && !part.matches(':modal')) {
       // A part that is open but not modal was open when it was put back in the page: it is shown again as a modal.
       if (part.open) part.close();
+      this.#mine = true;
       part.showModal();
-    } else if (!open && part.open) part.close();
+      this.#mine = false;
+    } else if (!open && part.open && !this.#opening) part.close();
   }
 
   /**
@@ -83,8 +90,13 @@ export class UIDialog extends UIElement {
     this.#wrote.clear();
     if (!part) { this.#unbind = () => {}; return; }
     const onClose = () => { if (!part.open && /** @type {any} */ (this).open) /** @type {any} */ (this).open = false; };
+    // The browser opened the part itself: an invoker command, or a script. The root follows, as it follows a close.
+    const onBefore = (/** @type {Event} */ event) => { this.#opening = /** @type {ToggleEvent} */ (event).newState === 'open' && !this.#mine; };
+    const onToggle = (/** @type {Event} */ event) => { this.#opening = false; if (/** @type {ToggleEvent} */ (event).newState === 'open' && !(/** @type {any} */ (this).open)) /** @type {any} */ (this).open = true; };
     part.addEventListener('close', onClose);
-    this.#unbind = () => part.removeEventListener('close', onClose);
+    part.addEventListener('beforetoggle', onBefore);
+    part.addEventListener('toggle', onToggle);
+    this.#unbind = () => { part.removeEventListener('close', onClose); part.removeEventListener('beforetoggle', onBefore); part.removeEventListener('toggle', onToggle); };
   }
 
   connected() {

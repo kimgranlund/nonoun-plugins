@@ -1,8 +1,16 @@
 @layer reset, base, tokens, recipes, utilities;
 
 /* The recipe of <ui-alert>. Its rules: J16 in docs/specs/patterns.md. Its shape: docs/specs/css-contract.md.
-   A row of an optional icon and the message. Each variant re-points the face, the ink and the line to the
-   ui-colors role of its name: subtle, fg and border. The line is an inset shadow, so it takes no room. */
+   A row of an optional icon, which the author marks data-part="icon", and the message. Each variant re-points the
+   face, the ink and the line to the ui-colors role of its name: subtle, fg and border. The line is an inset shadow,
+   so it takes no room.
+   ui-geometry ("controls pad by edge", SKILL.md), the toast's inner geometry too: the message's type is the body
+   row and its line box the body line, L. The block padding is (h - L) / 2, so an alert of one line is a control
+   tall, h, with or without an icon, in every variant. Text sits at the text edge T from either side. The icon, of
+   size a, sits at the icon offset I + (S - a) / 2 from the start, with the same offset before the text, so the text
+   after it sits at 2I + S; its margins centre it on the first line, (L - a) / 2 above and below, so its margin box
+   is one line tall, and it pulls into the inline padding by T minus that offset. A part rule reads only --_mark-*
+   tokens: the element in a part is another kit component, which declares names such as --_height for itself. */
 @layer recipes {
   @scope (ui-alert) {
     :where(:scope) {
@@ -10,9 +18,16 @@
       --_ink: var(--alert-ink, var(--ink));
       --_line: var(--alert-line, var(--line));
       --_inset: var(--alert-inset, var(--controls-control-t));
-      --_gap: var(--alert-gap, var(--controls-control-i));
+      --_height: var(--alert-height, var(--controls-control-h));
+      --_gap: var(--alert-gap, var(--controls-icon-a-md-offset));
       --_radius: var(--alert-radius, var(--controls-curvature-r));
       --_border: var(--unit-border-b);
+      --_text: var(--unit-type-body-md);
+      --_leading: var(--unit-type-body-md-line);
+      --_edge: var(--controls-icon-a-md-offset);
+      --_mark-size: var(--controls-icon-a-md);
+      --_mark-block: calc((var(--_leading) - var(--_mark-size)) / 2);
+      --_mark-pull: calc(var(--_edge) - var(--_inset));
     }
     :where(:scope[variant="info"]) {
       --_face: var(--alert-face, var(--colors-info-subtle));
@@ -41,11 +56,18 @@
       display: flex;
       align-items: start;
       gap: var(--_gap);
-      padding: var(--_inset);
+      padding-block: calc((var(--_height) - var(--_leading)) / 2);
+      padding-inline: var(--_inset);
       border-radius: var(--_radius);
       background-color: var(--_face);
       box-shadow: inset 0 0 0 var(--_border) var(--_line);
       color: var(--_ink);
+      font-size: var(--_text);
+      line-height: var(--_leading);
+    }
+    :scope > [data-part="icon"] {
+      margin-block: var(--_mark-block);
+      margin-inline-start: var(--_mark-pull);
     }
     :scope:where([hidden]:not([hidden="until-found"])) { display: none; }
 

@@ -39,7 +39,7 @@
   "targets": {
     "web-components": "built",
     "react": "built",
-    "svelte": "planned",
+    "svelte": "built",
     "solid": "planned"
   }
 }

@@ -8,7 +8,7 @@
 //
 // The config's `icons.source` is a folder of SVG files, relative to the project or absolute; `icons.names` maps each
 // name the kit uses to a file in it, without the extension. Each name becomes one rule in the tokens cascade layer:
-//   ui-icon[name="<name>"] { --glyph: url("data:image/svg+xml,…"); }
+//   ui-icon[name="<name>"], [data-ui="icon"][name="<name>"] { --glyph: url("data:image/svg+xml,…"); }
 // The recipe of the icon component draws the glyph as a mask over a box in the ink (I1).
 import fs from 'node:fs';
 import path from 'node:path';
@@ -90,7 +90,8 @@ export function build({ config = path.join(root, 'kit/styles/kit.config.json') }
     if (!fs.existsSync(where)) { problems.push(`${name}: ${shown} is missing`); continue; }
     const parsed = parseSvg(fs.readFileSync(where, 'utf8'));
     if ('problem' in parsed) { problems.push(`${name}: ${shown} ${parsed.problem}`); continue; }
-    rules.push(`  ${TAG}[name="${name}"] { --glyph: url("data:image/svg+xml,${encode(parsed.svg)}"); }`);
+    // The second selector is the root a framework target renders: a native element that carries data-ui (X1).
+    rules.push(`  ${TAG}[name="${name}"], [data-ui="icon"][name="${name}"] { --glyph: url("data:image/svg+xml,${encode(parsed.svg)}"); }`);
   }
   if (problems.length) throw new Error(`icons: ${problems.length} problem(s)\n  ${problems.join('\n  ')}`);
   const source = path.relative(root, config).startsWith('..') ? config : path.relative(root, config);

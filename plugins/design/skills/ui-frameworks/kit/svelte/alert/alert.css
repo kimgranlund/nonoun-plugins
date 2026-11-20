@@ -1,0 +1,87 @@
+@layer reset, base, tokens, recipes, utilities;
+
+/* The recipe of <ui-alert>. Its rules: J16 in docs/specs/patterns.md. Its shape: docs/specs/css-contract.md.
+   A row of an optional icon, which the author marks data-part="icon", and the message. Each variant re-points the
+   face, the ink and the line to the ui-colors role of its name: subtle, fg and border. The line is an inset shadow,
+   so it takes no room.
+   ui-geometry ("controls pad by edge", SKILL.md), the toast's inner geometry too: the message's type is the body
+   row and its line box the body line, L. The block padding is (h - L) / 2, so an alert of one line is a control
+   tall, h, with or without an icon, in every variant. Text sits at the text edge T from either side. The icon, of
+   size a, sits at the icon offset I + (S - a) / 2 from the start, with the same offset before the text, so the text
+   after it sits at 2I + S; its margins centre it on the first line, (L - a) / 2 above and below, so its margin box
+   is one line tall, and it pulls into the inline padding by T minus that offset. A part rule reads only --_mark-*
+   tokens: the element in a part is another kit component, which declares names such as --_height for itself. */
+@layer recipes {
+  @scope ([data-ui="alert"]) {
+    :where(:scope) {
+      --_face: var(--alert-face, var(--raised-face));
+      --_ink: var(--alert-ink, var(--ink));
+      --_line: var(--alert-line, var(--line));
+      --_inset: var(--alert-inset, var(--controls-control-t));
+      --_height: var(--alert-height, var(--controls-control-h));
+      --_gap: var(--alert-gap, var(--controls-icon-a-md-offset));
+      --_radius: var(--alert-radius, var(--controls-curvature-r));
+      --_border: var(--unit-border-b);
+      --_text: var(--unit-type-body-md);
+      --_leading: var(--unit-type-body-md-line);
+      --_edge: var(--controls-icon-a-md-offset);
+      --_mark-size: var(--controls-icon-a-md);
+      --_mark-block: calc((var(--_leading) - var(--_mark-size)) / 2);
+      --_mark-pull: calc(var(--_edge) - var(--_inset));
+    }
+    :where(:scope[data-variant="info"]) {
+      --_face: var(--alert-face, var(--colors-info-subtle));
+      --_ink: var(--alert-ink, var(--colors-info-fg));
+      --_line: var(--alert-line, var(--colors-info-border));
+    }
+    :where(:scope[data-variant="success"]) {
+      --_face: var(--alert-face, var(--colors-success-subtle));
+      --_ink: var(--alert-ink, var(--colors-success-fg));
+      --_line: var(--alert-line, var(--colors-success-border));
+    }
+    :where(:scope[data-variant="warning"]) {
+      --_face: var(--alert-face, var(--colors-warning-subtle));
+      --_ink: var(--alert-ink, var(--colors-warning-fg));
+      --_line: var(--alert-line, var(--colors-warning-border));
+    }
+    :where(:scope[data-variant="critical"]) {
+      --_face: var(--alert-face, var(--colors-critical-subtle));
+      --_ink: var(--alert-ink, var(--colors-critical-fg));
+      --_line: var(--alert-line, var(--colors-critical-border));
+    }
+
+    /* The recipe's own boxes are border boxes, with or without a reset (C31). */
+    :where(:scope, [data-part]) { box-sizing: border-box; }
+    :scope {
+      display: flex;
+      align-items: start;
+      gap: var(--_gap);
+      padding-block: calc((var(--_height) - var(--_leading)) / 2);
+      padding-inline: var(--_inset);
+      border-radius: var(--_radius);
+      background-color: var(--_face);
+      box-shadow: inset 0 0 0 var(--_border) var(--_line);
+      color: var(--_ink);
+      font-size: var(--_text);
+      line-height: var(--_leading);
+    }
+    :scope > [data-part="icon"] {
+      margin-block: var(--_mark-block);
+      margin-inline-start: var(--_mark-pull);
+    }
+    :scope:where([hidden]:not([hidden="until-found"])) { display: none; }
+
+    @media (forced-colors: active) {
+      :where(:scope) {
+        --_face: Canvas;
+        --_ink: CanvasText;
+        --_line: CanvasText;
+      }
+      :scope {
+        box-shadow: none;
+        outline: var(--_border) solid CanvasText;
+        outline-offset: calc(var(--_border) * -1);
+      }
+    }
+  }
+}

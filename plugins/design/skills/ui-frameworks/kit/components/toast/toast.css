@@ -1,0 +1,158 @@
+@layer reset, base, tokens, recipes, utilities;
+
+/* The recipe of <ui-toast>. Its rules: J92 and J95 in docs/specs/patterns.md. Its shape: docs/specs/css-contract.md.
+   The alert with a time limit, on a raised overlay panel. Without `open` it has no box, so it takes no room and is
+   not read; with `open` it is a row of an optional icon, the message and an optional close control. The author
+   marks the icon data-part="icon" and the control data-part="close"; the recipe puts the control at the end.
+   ui-materials: the overlay face and its shadow, with the ink and the line. Each variant re-points the face, the ink
+   and the line to the ui-colors role of its name, as the alert does: subtle, fg and border. The line is an outline
+   drawn inside the edge, so it takes no room and stays apart from the overlay's shadow.
+   The close is a hosted control (construction.md, "an action over content is a fade"): the toast is its shape, so
+   whatever element the author writes there, the recipe clears its face, its shadow and its border, makes its box the
+   icon's square and paints only its glyph, in the toast's ink; hover and press change that ink, never a fill. Its
+   ::before is the hit area, reaching the pointer target and, on a coarse pointer, the touch target, centred on the
+   box (C21); the kit's focus ring is an outline of the box (C20).
+   ui-geometry, the alert's inner geometry ("controls pad by edge", SKILL.md): the message's type is the body row and
+   its line box the body line, L. The block padding is (h - L) / 2, so a toast of one line is a control tall, h,
+   with or without an icon or a close control. Text sits at the text edge T from either side. An icon of size a sits
+   at the icon offset I + (S - a) / 2 from the edge it is at, with the same offset between it and the text, so a
+   label after a leading icon sits at 2I + S; each glyph's margins centre it on the first line, (L - a) / 2 above and
+   below, so its margin box is one line tall and never changes the height. The icon and the close pull into the
+   inline padding by T minus that offset. The width is a panel's, the radius a panel padded at 2I.
+   The entry: the class hands --_entering, 1 for two frames after the toast opens, then nothing. Only when motion is
+   allowed does it become the starting opacity, and only a ready root has the transition (D61).
+   In forced colours Chromium and Firefox drop the shadow themselves; WebKit keeps it, hence --_shadow: none.
+   A part rule reads only --_mark-* and --_close-* tokens: the element in a part may be another kit component that
+   declares the root's private names (--_inset, --_ink, …) for itself. */
+@layer recipes {
+  @scope (ui-toast) {
+    :where(:scope) {
+      --_face: var(--toast-face, var(--overlay-face));
+      --_shadow: var(--overlay-shadow);
+      --_ink: var(--toast-ink, var(--ink));
+      --_line: var(--toast-line, var(--line));
+      --_inset: var(--toast-inset, var(--controls-control-t));
+      --_height: var(--toast-height, var(--controls-control-h));
+      --_gap: var(--toast-gap, var(--controls-icon-a-md-offset));
+      --_radius: var(--toast-radius, var(--containers-curvature-r-panel-card-at-2i));
+      --_width: var(--containers-width-panel);
+      --_text: var(--unit-type-body-md);
+      --_leading: var(--unit-type-body-md-line);
+      --_edge: var(--controls-icon-a-md-offset);
+      --_border: var(--unit-border-b);
+      --_mark-size: var(--controls-icon-a-md);
+      --_mark-block: calc((var(--_leading) - var(--_mark-size)) / 2);
+      --_mark-pull: calc(var(--_edge) - var(--_inset));
+      --_close-ink: var(--toast-close-ink, var(--_ink));
+      --_close-ink-hover: var(--toast-close-ink-hover, var(--toast-close-ink, var(--colors-fg-strong)));
+      --_close-ink-active: var(--toast-close-ink-active, var(--toast-close-ink, var(--colors-fg-muted)));
+      --_close-target: var(--controls-target-t_hit-pointer);
+      --_close-ring: var(--colors-focus-ring);
+      --_close-ring-width: var(--controls-focus-ring-width-w);
+      --_close-ring-offset: var(--controls-focus-ring-offset-o);
+      --_entering: 0;
+    }
+    :where(:scope[variant="info"]) {
+      --_face: var(--toast-face, var(--colors-info-subtle));
+      --_ink: var(--toast-ink, var(--colors-info-fg));
+      --_line: var(--toast-line, var(--colors-info-border));
+    }
+    :where(:scope[variant="success"]) {
+      --_face: var(--toast-face, var(--colors-success-subtle));
+      --_ink: var(--toast-ink, var(--colors-success-fg));
+      --_line: var(--toast-line, var(--colors-success-border));
+    }
+    :where(:scope[variant="warning"]) {
+      --_face: var(--toast-face, var(--colors-warning-subtle));
+      --_ink: var(--toast-ink, var(--colors-warning-fg));
+      --_line: var(--toast-line, var(--colors-warning-border));
+    }
+    :where(:scope[variant="critical"]) {
+      --_face: var(--toast-face, var(--colors-critical-subtle));
+      --_ink: var(--toast-ink, var(--colors-critical-fg));
+      --_line: var(--toast-line, var(--colors-critical-border));
+    }
+
+    /* The recipe's own boxes are border boxes, with or without a reset (C31). */
+    :where(:scope, [data-part]) { box-sizing: border-box; }
+    :scope {
+      display: none;
+      align-items: start;
+      gap: var(--_gap);
+      max-inline-size: var(--_width);
+      padding-block: calc((var(--_height) - var(--_leading)) / 2);
+      padding-inline: var(--_inset);
+      border-radius: var(--_radius);
+      background-color: var(--_face);
+      box-shadow: var(--_shadow);
+      outline: var(--_border) solid var(--_line);
+      outline-offset: calc(var(--_border) * -1);
+      color: var(--_ink);
+      font-size: var(--_text);
+      line-height: var(--_leading);
+    }
+    :scope > [data-part="icon"] {
+      margin-block: var(--_mark-block);
+      margin-inline-start: var(--_mark-pull);
+    }
+    :scope > [data-part="close"] {
+      flex: none;
+      position: relative;
+      inline-size: var(--_mark-size);
+      block-size: var(--_mark-size);
+      margin-block: var(--_mark-block);
+      margin-inline-start: auto;
+      margin-inline-end: var(--_mark-pull);
+      padding: 0;
+      border: 0;
+      background: none;
+      box-shadow: none;
+      outline: none;
+      color: var(--_close-ink);
+    }
+    :scope > [data-part="close"]::before {
+      content: "";
+      position: absolute;
+      inset: calc((var(--_mark-size) - var(--_close-target)) / 2);
+    }
+    @media (hover: hover) {
+      :scope > [data-part="close"]:where(:is(:hover, [data-hover]):where(:not(:is(:disabled, [disabled], [aria-disabled="true"]), :is(:checked, [aria-checked="true"], [checked]:not(input, option)), :is(input[type="checkbox"]:indeterminate, [aria-checked="mixed"], [indeterminate]), :is([aria-pressed="true"], [pressed]), :is([aria-selected="true"], [selected]:not(option)), :is([aria-current]:not([aria-current="false"], [aria-current=""]), [current]), :is([aria-expanded="true"], [expanded]), :is([open], :popover-open)))) { color: var(--_close-ink-hover); }
+    }
+    :scope > [data-part="close"]:where(:is(:focus-visible, [data-focus-visible])) {
+      outline: var(--_close-ring-width) solid var(--_close-ring);
+      outline-offset: var(--_close-ring-offset);
+    }
+    :scope > [data-part="close"]:where(:is(:active, [data-active]):where(:not(:is(:disabled, [disabled], [aria-disabled="true"])))) { color: var(--_close-ink-active); }
+
+    :scope:where(:is([open], :popover-open)) { display: flex; }
+    :scope:where([hidden]:not([hidden="until-found"])) { display: none; }
+
+    @media (prefers-reduced-motion: no-preference) {
+      :scope { opacity: calc(1 - var(--_entering)); }
+      :scope:where([data-ready]) { transition: opacity 150ms; }
+    }
+    @media (pointer: coarse) {
+      :where(:scope) { --_close-target: var(--controls-target-t_hit-touch); }
+    }
+
+    @media (forced-colors: active) {
+      :where(:scope) {
+        --_face: Canvas;
+        --_ink: CanvasText;
+        --_line: CanvasText;
+        --_shadow: none;
+        --_close-ink: CanvasText;
+        --_close-ink-hover: CanvasText;
+        --_close-ink-active: Highlight;
+        --_close-ring: Highlight;
+      }
+      /* Hover (D124): the ring one border width heavier than at rest, in the boundary colour, inside; no fill, never Highlight. */
+      @media (hover: hover) {
+        :scope > [data-part="close"]:where(:is(:hover, [data-hover]):where(:not(:is(:disabled, [disabled], [aria-disabled="true"]), :is(:checked, [aria-checked="true"], [checked]:not(input, option)), :is(input[type="checkbox"]:indeterminate, [aria-checked="mixed"], [indeterminate]), :is([aria-pressed="true"], [pressed]), :is([aria-selected="true"], [selected]:not(option)), :is([aria-current]:not([aria-current="false"], [aria-current=""]), [current]), :is([aria-expanded="true"], [expanded]), :is([open], :popover-open)))) {
+          outline: var(--_border) solid CanvasText;
+          outline-offset: calc(var(--_border) * -1);
+        }
+      }
+    }
+  }
+}

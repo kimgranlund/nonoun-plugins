@@ -1,0 +1,42 @@
+@layer reset, base, tokens, recipes, utilities;
+
+/* The recipe of the separator: a native <hr data-ui="separator">. Its rules: J101 in docs/specs/patterns.md. Its shape: docs/specs/css-contract.md.
+   A line of ui-geometry's separator thickness (controls.mark.separator) in the kit's hairline colour, across the inline axis, with the
+   browser's own border and margin reset to nothing. With data-orientation="vertical" it is a line along the block axis that stretches
+   to the height of the flex row it sits in. In forced colours the line is CanvasText. */
+@layer recipes {
+  @scope ([data-ui="separator"]) {
+    :where(:scope) {
+      --_line: var(--separator-line, var(--line));
+      --_height: var(--separator-height, var(--controls-mark-separator));
+      --_inline: auto;
+      --_block: var(--_height);
+      --_align: auto;
+    }
+    :where(:scope[data-orientation="vertical"]) {
+      --_inline: var(--_height);
+      --_block: auto;
+      --_align: stretch;
+    }
+
+    /* The recipe's own boxes are border boxes, with or without a reset (C31). */
+    :where(:scope, [data-part]) { box-sizing: border-box; }
+    :scope {
+      display: block;
+      flex: none;
+      align-self: var(--_align);
+      inline-size: var(--_inline);
+      block-size: var(--_block);
+      margin: 0;
+      border: 0;
+      background-color: var(--_line);
+      color: var(--_line);
+      overflow: visible;
+    }
+    :scope:where([hidden]:not([hidden="until-found"])) { display: none; }
+
+    @media (forced-colors: active) {
+      :where(:scope) { --_line: CanvasText; }
+    }
+  }
+}

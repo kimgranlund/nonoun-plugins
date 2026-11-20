@@ -16,11 +16,12 @@
       "type": "enum",
       "values": [
         "neutral",
-        "primary"
+        "primary",
+        "ghost"
       ],
       "default": "neutral",
       "kind": "variant",
-      "description": "neutral is a raised key; primary is the one filled action of a view."
+      "description": "neutral is a raised key; primary is the one filled action of a view; ghost is a bare label or icon with no face, its box its content, for a control a row, a toolbar or a trail already shapes."
     },
     "type": {
       "type": "enum",
@@ -61,7 +62,7 @@
         "relief": "raised",
         "face": "neutral"
       },
-      "note": "primary: face solid"
+      "note": "primary: face solid; ghost: no part, the host is its shape (hosted control)"
     },
     "submit": {
       "kind": "element",
@@ -83,7 +84,10 @@
     "--button-face-hover",
     "--button-face-active",
     "--button-ink",
+    "--button-ink-hover",
+    "--button-ink-active",
     "--button-ink-disabled",
+    "--button-face-disabled",
     "--button-height",
     "--button-inset",
     "--button-gap",
@@ -106,7 +110,7 @@
   "targets": {
     "web-components": "built",
     "react": "built",
-    "svelte": "planned",
+    "svelte": "built",
     "solid": "planned"
   }
 }

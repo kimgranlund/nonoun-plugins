@@ -1,0 +1,78 @@
+{
+  "$schema": "../../../references/manifest.schema.json",
+  "schema": 1,
+  "id": "file-field",
+  "kind": "component",
+  "family": "file-field",
+  "tier": "controls",
+  "pattern": "https://html.spec.whatwg.org/multipage/input.html#file-upload-state-(type=file)",
+  "summary": "A place to choose files or drop them, around a native file input.",
+  "role": null,
+  "focus": "none",
+  "tabindex": null,
+  "formAssociated": false,
+  "attributes": {
+    "disabled": {
+      "type": "boolean",
+      "state": "disabled",
+      "description": "No file can be chosen or dropped. The component disables its input."
+    }
+  },
+  "resets": [],
+  "states": [
+    "hover",
+    "focus-within",
+    "invalid",
+    "disabled"
+  ],
+  "parts": {
+    "root": {
+      "kind": "root",
+      "material": {
+        "layer": "base",
+        "relief": "ground",
+        "face": "neutral"
+      },
+      "note": "A frame with a dashed boundary around the input and any hint the author writes. Files dropped on it go to the input."
+    },
+    "input": {
+      "kind": "author",
+      "material": null,
+      "note": "A native file input the author writes and marks with data-part=\"input\" (D14). It carries the files under its own name; its button is painted as a button of the kit."
+    }
+  },
+  "tokens": [
+    "--file-field-face",
+    "--file-field-ink",
+    "--file-field-line",
+    "--file-field-inset",
+    "--file-field-gap",
+    "--file-field-radius"
+  ],
+  "behaviours": [],
+  "keys": {},
+  "events": {
+    "input": "The input's own event, also dispatched on it after a drop.",
+    "change": "The input's own event, also dispatched on it after a drop."
+  },
+  "guidance": [
+    {
+      "topic": "naming",
+      "text": "The author names the input with a label, aria-label or aria-labelledby, or puts the field in a form field."
+    },
+    {
+      "topic": "coordination",
+      "text": "A drop keeps only what the input would take: one file without `multiple`, and the kinds its `accept` names."
+    }
+  ],
+  "notYet": [
+    "Showing progress of an upload.",
+    "A list of the chosen files with a way to remove one."
+  ],
+  "targets": {
+    "web-components": "built",
+    "react": "built",
+    "svelte": "built",
+    "solid": "planned"
+  }
+}

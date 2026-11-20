@@ -1,0 +1,27 @@
+@layer reset, base, tokens, recipes, utilities;
+
+/* The recipe of <ui-tag-group>. Its shape and rules: docs/specs/css-contract.md. Its conditions: references/states.json.
+   ui-geometry: the gap for grouped controls. It paints nothing and takes no ring (the remove controls draw their own),
+   so it has no forced-colours block.
+   A disabled group fades nothing (C33). It hands its tags its disabled state through one inherited token,
+   --_group-disabled (C5 as amended): `initial` here, so a tag outside a disabled group, or in an enabled group nested
+   in one, is itself; empty while the group is disabled, so each tag takes its own disabled paint. */
+@layer recipes {
+  @scope ([data-ui="tag-group"]) {
+    :where(:scope) {
+      --_gap: var(--tag-group-gap, var(--controls-gap-grouped));
+      --_group-disabled: initial;
+    }
+
+    /* The recipe's own boxes are border boxes, with or without a reset (C31). */
+    :where(:scope, [data-part]) { box-sizing: border-box; }
+    :scope {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: var(--_gap);
+    }
+    :scope:where([hidden]:not([hidden="until-found"])) { display: none; }
+    :scope:where(:is(:disabled, [disabled], [aria-disabled="true"])) { --_group-disabled: ; }
+  }
+}

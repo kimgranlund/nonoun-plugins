@@ -21,7 +21,7 @@
       --_ink: var(--tooltip-content-ink, var(--on-display));
       --_inset: var(--tooltip-content-inset, var(--controls-control-i));
       --_inset-block: var(--controls-control-m_c);
-      --_radius: var(--tooltip-content-radius, var(--controls-curvature-r_s));
+      --_radius: var(--tooltip-content-radius, var(--controls-curvature-r_o));
       --_gap: var(--tooltip-content-gap, var(--collections-gap-popup-offset-from-its-trigger));
       --_width: var(--collections-width-tooltip);
       --_text: var(--unit-type-label);

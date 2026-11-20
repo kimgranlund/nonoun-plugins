@@ -1,0 +1,108 @@
+{
+  "$schema": "../../../references/manifest.schema.json",
+  "schema": 1,
+  "id": "toast",
+  "kind": "component",
+  "family": "toast",
+  "tier": "containers",
+  "pattern": "https://www.w3.org/WAI/ARIA/apg/patterns/alert/",
+  "summary": "A short message that appears over the page for a while, then leaves.",
+  "role": null,
+  "focus": "none",
+  "tabindex": null,
+  "formAssociated": false,
+  "attributes": {
+    "open": {
+      "type": "boolean",
+      "state": "open",
+      "description": "It is showing. A script adds it; the toast removes it when its time is up."
+    },
+    "variant": {
+      "type": "enum",
+      "values": [
+        "neutral",
+        "info",
+        "success",
+        "warning",
+        "critical"
+      ],
+      "default": "neutral",
+      "kind": "variant",
+      "description": "What the message is about, which sets its colours and how urgently it is announced."
+    },
+    "duration": {
+      "type": "number",
+      "default": 5000,
+      "description": "Milliseconds it stays open. With 0 it stays until it is closed."
+    }
+  },
+  "resets": [],
+  "states": [
+    "open"
+  ],
+  "parts": {
+    "root": {
+      "kind": "root",
+      "material": {
+        "layer": "overlay",
+        "relief": "raised",
+        "face": "neutral"
+      },
+      "note": "A row of an optional icon, the message and an optional close control at its end, on a raised overlay panel. One line of it is a control tall. It takes no room and is not read while closed."
+    },
+    "icon": {
+      "kind": "author",
+      "material": null,
+      "note": "An optional leading icon the author marks with data-part=\"icon\", at the icon offset from the start and centred on the message's first line."
+    },
+    "close": {
+      "kind": "author",
+      "material": null,
+      "note": "An optional control the author marks with data-part=\"close\" and names. The toast hosts it as a ghost: it clears its face, shadow and border, makes its box the icon's square at the icon offset from the end, centred on the first line, and paints its glyph in the toast's ink; hover and press change the ink only. A press closes the toast."
+    }
+  },
+  "tokens": [
+    "--toast-face",
+    "--toast-ink",
+    "--toast-line",
+    "--toast-inset",
+    "--toast-height",
+    "--toast-gap",
+    "--toast-radius",
+    "--toast-close-ink",
+    "--toast-close-ink-hover",
+    "--toast-close-ink-active"
+  ],
+  "behaviours": [
+    "dismiss"
+  ],
+  "keys": {
+    "Escape": "While focus is inside the toast, closes it."
+  },
+  "events": {
+    "close": "Dispatched after the toast closes, by time, by its control or by a script."
+  },
+  "guidance": [
+    {
+      "topic": "coordination",
+      "text": "Put toasts in a toaster. A toast outside one shows where it stands in the page."
+    },
+    {
+      "topic": "naming",
+      "text": "A toast is announced when it opens. Do not put the only way to do something in a toast: it leaves."
+    },
+    {
+      "topic": "coordination",
+      "text": "The time stops while the pointer is over the toast or focus is inside it, and starts again in full when both have left. Use duration=\"0\" for a message that must stay until it is closed."
+    }
+  ],
+  "notYet": [
+    "Swiping a toast away."
+  ],
+  "targets": {
+    "web-components": "built",
+    "react": "built",
+    "svelte": "built",
+    "solid": "planned"
+  }
+}

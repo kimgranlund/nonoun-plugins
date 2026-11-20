@@ -15,7 +15,7 @@ const PREFIX = 'ui';
 /** The files a component built for the Web Components target has (D48). */
 const FILES = (m) => (m.kind === 'recipe' ? [`${m.id}.css`, `${m.id}.manifest.json`] : [`${m.id}.class.js`, `${m.id}.js`, `${m.id}.props.js`, `${m.id}.css`, `${m.id}.manifest.json`]);
 /** The framework targets whose files the checker knows, and the files a built component has in each (X10). */
-export const TARGET_FILES = { targets: ['react'], files: (/** @type {string} */ id) => [`${id}.js`, `${id}.css`] };
+export const TARGET_FILES = { targets: ['react', 'svelte'], files: (/** @type {string} */ id, /** @type {string} */ target = 'react') => [target === 'svelte' ? `${id}.svelte` : `${id}.js`, `${id}.css`] };
 /** The fields a consumer routes by. The registry keeps each one unchanged (H11). */
 export const ROUTING = ['kind', 'family', 'tier', 'role', 'focus'];
 
@@ -135,7 +135,7 @@ export function check(manifests, kit = context()) {
     for (const target of TARGET_FILES.targets) {
       if (m.targets[target] !== 'built') continue;
       const have = kit.targetFiles?.(target, folder) ?? [];
-      for (const file of TARGET_FILES.files(folder)) if (!have.includes(file)) fail('X10', `the ${target} target is marked built, but kit/${target}/${folder}/${file} is missing`);
+      for (const file of TARGET_FILES.files(folder, target)) if (!have.includes(file)) fail('X10', `the ${target} target is marked built, but kit/${target}/${folder}/${file} is missing`);
     }
   }
   return problems;

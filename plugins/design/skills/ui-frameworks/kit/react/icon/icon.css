@@ -1,0 +1,50 @@
+@layer reset, base, tokens, recipes, utilities;
+
+/* The recipe of <ui-icon>. Its rules: docs/specs/icons.md (I1 to I8). Its shape: docs/specs/css-contract.md.
+   An icon is a mark: a square box painted in the ink, seen through its glyph as a mask (I1). The glyph of each
+   name is --glyph, which kit/styles/icons.css sets per name; with no glyph the mask is an empty image, so an
+   unknown name paints nothing and keeps its box (I7).
+   The box is painted as border, not as background (I5): in forced colours Chromium forces a background colour
+   that is not a system colour to Canvas, so a background in currentColor vanishes there, while the border colour
+   reverts to the text colour, which is the system colour of whatever the icon sits in. The border is one side as
+   wide as the box, so no join or rounding opens a gap down the middle. In forced colours the ink is the text colour
+   even when --icon-ink is set: Chromium and Firefox force the border colour so themselves, WebKit needs the block.
+   In a button the icon sits in an S-square slot that the button pulls in to I from its edge (ui-geometry, "controls
+   pad by edge"): the button sets --_icon-pull, the one private token the icon inherits (D110), and the icon adds
+   (S − a)/2 for its own size a, on both inline sides, so it lands right at either edge without knowing which. Outside
+   a button, and in a ghost, the token is not a length, the margin is invalid, and the icon has none. */
+@layer recipes {
+  @scope ([data-ui="icon"]) {
+    :where(:scope) {
+      --_ink: var(--icon-ink, currentColor);
+      --_height: var(--icon-height, var(--controls-icon-a-md));
+      --_icon-pull: inherit;
+      --_slot: var(--controls-control-s);
+      --_glyph: var(--glyph, url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1'/%3E"));
+    }
+    :where(:scope[data-size="sm"]) { --_height: var(--icon-height, var(--controls-icon-a-sm)); }
+    :where(:scope[data-size="md"]) { --_height: var(--icon-height, var(--controls-icon-a-md)); }
+    :where(:scope[data-size="lg"]) { --_height: var(--icon-height, var(--controls-icon-a-lg)); }
+    :where(:scope[data-size="full"]) { --_height: var(--icon-height, var(--controls-icon-a-full)); }
+
+    /* The recipe's own boxes are border boxes, with or without a reset (C31). */
+    :where(:scope, [data-part]) { box-sizing: border-box; }
+    :scope {
+      display: inline-block;
+      flex: none;
+      box-sizing: border-box;
+      inline-size: var(--_height);
+      block-size: var(--_height);
+      vertical-align: middle;
+      margin-inline: calc(var(--_icon-pull) + (var(--_slot) - var(--_height)) / 2);
+      border: 0 solid var(--_ink);
+      border-inline-start-width: var(--_height);
+      mask: var(--_glyph) center / contain no-repeat;
+    }
+    :scope:where([hidden]:not([hidden="until-found"])) { display: none; }
+
+    @media (forced-colors: active) {
+      :where(:scope) { --_ink: currentColor; }
+    }
+  }
+}

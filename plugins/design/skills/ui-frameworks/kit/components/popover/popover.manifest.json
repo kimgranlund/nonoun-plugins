@@ -1,0 +1,83 @@
+{
+  "$schema": "../../../references/manifest.schema.json",
+  "schema": 1,
+  "id": "popover",
+  "kind": "component",
+  "family": "popover",
+  "tier": "containers",
+  "pattern": "https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/",
+  "summary": "A panel beside the control that opens it, for content the user can act on without leaving the page.",
+  "role": null,
+  "focus": "none",
+  "tabindex": null,
+  "formAssociated": false,
+  "attributes": {
+    "open": {
+      "type": "boolean",
+      "state": "open",
+      "description": "It is showing. A script adds and removes it."
+    }
+  },
+  "resets": [],
+  "states": [
+    "open"
+  ],
+  "parts": {
+    "root": {
+      "kind": "root",
+      "material": null,
+      "note": "An inline box around the control that opens it; it is the anchor the content is placed against."
+    },
+    "content": {
+      "kind": "author",
+      "material": {
+        "layer": "overlay",
+        "relief": "raised",
+        "face": "neutral"
+      },
+      "note": "The panel: the author marks it with data-part=\"content\". It gets the dialog role and shows in the top layer while open."
+    }
+  },
+  "tokens": [
+    "--popover-content-face",
+    "--popover-content-ink",
+    "--popover-content-inset",
+    "--popover-content-radius",
+    "--popover-content-gap"
+  ],
+  "behaviours": [
+    "dismiss"
+  ],
+  "keys": {
+    "Enter": "On the control, opens or closes the panel. Opening moves focus to the panel's first focusable element, or to the panel.",
+    "Space": "On the control, opens or closes the panel.",
+    "Escape": "Closes the panel and returns focus to the control. The Escape goes no further, so a layer around the popover stays open.",
+    "Tab": "Moves focus out of the panel at its end, which closes it."
+  },
+  "events": {
+    "toggle": "Dispatched after the panel opens or closes."
+  },
+  "guidance": [
+    {
+      "topic": "coordination",
+      "text": "The control is the popover's first child that is not the content. It gets aria-haspopup, aria-expanded and aria-controls. It opens the popover by its click, so Enter and Space work on a control that clicks on them: the kit's button or a native button. Any other element needs its own keys."
+    },
+    {
+      "topic": "naming",
+      "text": "The author names the panel with aria-label or aria-labelledby on the content part."
+    },
+    {
+      "topic": "coordination",
+      "text": "Each opening, from a script too, moves focus into the panel. The panel gets tabindex=\"-1\" unless the author wrote a tabindex, so that it can take focus when nothing inside it can."
+    }
+  ],
+  "notYet": [
+    "A choice of side: the panel shows below the control, and above where it does not fit."
+  ],
+  "targets": {
+    "web-components": "built",
+    "react": "built",
+    "svelte": "built",
+    "solid": "planned"
+  }
+}

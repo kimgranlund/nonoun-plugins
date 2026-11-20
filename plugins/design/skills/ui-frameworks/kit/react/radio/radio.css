@@ -1,0 +1,243 @@
+@layer reset, base, tokens, recipes, utilities;
+
+/* The recipe of <ui-radio>. Its shape and rules: docs/specs/css-contract.md. Its conditions: references/states.json.
+   The mark is two pseudo-elements of the root, as on the checkbox (D57): ::before is the round recessed well,
+   ::after is the solid bead, shown while checked. Both are centred on the row; the label text follows the well.
+   The well is the full icon size of ui-geometry, a.full, one q more than the mark row's a.md. It is an icon box S, whose
+   glyph is a.md by ui-geometry's rule, and the bead is half of that glyph, the radio-dot row, as the checkbox's glyph is; the label's start grows by the same q, so it clears the well by the choice-label gap.
+   Keyboard focus is drawn on the well: the ring is its outline, round, under the root's focus-visible condition,
+   and the root draws none. In forced colours the well's boundary is a border, so that the ring and it show together.
+
+   In a segmented group (J123) the radio is a segment: its label alone, centred, at the segment height of ui-geometry,
+   with no face at rest, a hover and a press face, and its focus ring drawn on itself, inside, as a tab is. The checked segment's
+   raised face is its group's thumb (C32): the segment names itself the thumb's anchor, --radio-group-thumb, and paints
+   no face of its own, even while it is pressed. A plain radio names no anchor. The well and the bead are not drawn: ::after is not generated, and ::before has no paint
+   and becomes the hit area, reaching over the track's padding. In a row it covers no neighbour, so it needs no
+   place behind the segments, as a tab's does.
+   The radio learns that its group is segmented from one inherited token, --_segmented: empty when segmented, and
+   guaranteed-invalid otherwise (set so by any radio group, and unset outside one). Two forms read it:
+     var(--_segmented) X    is X when segmented, and invalid otherwise, so a fallback after it takes over;
+     var(--_segmented, X)   is X when plain, and empty when segmented, which leaves the property unset.
+   --_on is the same switch as a number, 1 or 0, for lengths that must stay typed inside calc().
+   The group hands its radios its disabled state the same way, through --_group-disabled: empty while the group is
+   disabled, guaranteed-invalid otherwise (C5 as amended). A radio in a disabled group takes the disabled ink for its
+   label and its bead, as a disabled radio does; the group's rule also takes the pointer from its radios. A disabled
+   radio fades nothing (C33): its label and its bead take the disabled ink, and the well keeps its face and ring. */
+@layer recipes {
+  @scope ([data-ui="radio"]) {
+    :where(:scope) {
+      --_segmented: inherit;
+      --_group-disabled: inherit;
+      --_on-segmented: var(--_segmented) 1;
+      --_on: var(--_on-segmented, 0);
+      --_face: var(--radio-face, var(--recessed-face));
+      --_face-hover: var(--radio-face-hover, var(--radio-face, var(--colors-bg-muted-hover)));
+      --_face-active: var(--radio-face-active, var(--radio-face, var(--pressed-face)));
+      --_face-checked: var(--radio-face-checked, var(--solid-face));
+      --_shadow: var(--_segmented, var(--field-shadow));
+      --_shadow-checked: var(--solid-shadow);
+      --_well: var(--_segmented, var(--_face));
+      --_well-hover: var(--_segmented, var(--_face-hover));
+      --_well-active: var(--_segmented, var(--_face-active));
+      --_well-style: var(--_segmented, solid);
+      --_well-size: var(--_well-size-segmented, var(--_size));
+      --_well-size-segmented: var(--_segmented) auto;
+      --_well-radius: var(--_well-radius-segmented, calc(var(--_size) / 2));
+      --_well-radius-segmented: var(--_segmented) 0;
+      --_well-end: var(--_well-end-segmented, auto);
+      --_well-end-segmented: var(--_segmented) 0;
+      --_bead: var(--_bead-segmented, "");
+      --_bead-segmented: var(--_segmented) none;
+      --_lift-hover: var(--_segmented) var(--_face-hover);
+      --_lift-active: var(--_segmented) var(--_face-active);
+      --_anchor: var(--_segmented) --radio-group-thumb;
+      --_lift-ink: var(--_segmented) var(--_text-ink);
+      --_lift-ring: var(--_segmented) var(--_ring);
+      --_lift-off: initial;
+      --_lift-off-ink: var(--_segmented) var(--_ink-disabled);
+      --_ink: var(--radio-ink, var(--ink));
+      --_ink-segmented: var(--_segmented) currentColor;
+      --_text-ink: var(--_ink-segmented, var(--_ink-off, var(--_ink)));
+      --_ink-off: var(--_group-disabled) var(--_ink-disabled);
+      --_ink-checked: var(--_lift-ink, var(--_text-ink));
+      --_ink-disabled: var(--radio-ink-disabled, var(--ink-faint));
+      --_face-checked-disabled: var(--radio-face-checked-disabled, var(--ink-faint));
+      --_bead-face: var(--_bead-off, var(--_face-checked));
+      --_bead-off: var(--_group-disabled) var(--_face-checked-disabled);
+      --_well-line: initial;
+      --_well-line-checked: initial;
+      --_line-off: initial;
+      --_lift-ink-on: initial;
+      --_lift-adjust: initial;
+      --_lift-off-ring: initial;
+      --_height: var(--radio-height, var(--_height-segmented, var(--controls-mark-choice-row)));
+      --_height-segmented: var(--_segmented) var(--collections-rows-segment-tab);
+      --_inset: var(--radio-inset, var(--controls-control-i));
+      --_block: calc(var(--_inset) * (1 - var(--_on)));
+      --_start: var(--_start-segmented, calc(var(--controls-mark-choice-label) + var(--_size) - var(--controls-mark-radio-box)));
+      --_start-segmented: var(--_segmented) var(--_segment-inset);
+      --_end: calc(var(--_segment-inset) * var(--_on));
+      --_segment-inset: calc(var(--controls-control-t) - var(--collections-frame-host-pad));
+      --_bleed: calc(var(--collections-frame-host-pad) * var(--_on));
+      --_display: var(--_display-segmented, inline-block);
+      --_display-segmented: var(--_segmented) inline-flex;
+      --_wrap: var(--_wrap-segmented, normal);
+      --_wrap-segmented: var(--_segmented) nowrap;
+      --_size: var(--controls-icon-a-full);
+      --_dot: var(--controls-mark-radio-dot);
+      --_radius: var(--_radius-segmented, var(--controls-mark-checkbox-radius));
+      --_radius-segmented: var(--_segmented) var(--collections-curvature-r_row);
+      --_text: var(--unit-type-body-md);
+      --_leading: var(--unit-type-body-md-line);
+      --_ring: var(--colors-focus-ring);
+      --_ring-width: var(--controls-focus-ring-width-w);
+      --_ring-offset: var(--controls-focus-ring-offset-o);
+      --_ring-inset: calc(var(--_ring-width) * -1);
+      --_border: var(--unit-border-b);
+      --_reach: var(--controls-target-expansion-of-h-touch);
+      --_reach-root: calc(var(--_reach) * (1 - var(--_on)));
+      --_reach-well: calc(var(--_reach) * var(--_on));
+    }
+
+    /* The recipe's own boxes are border boxes, with or without a reset (C31). */
+    :where(:scope, [data-part]) { box-sizing: border-box; }
+    :scope {
+      display: var(--_display);
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      min-block-size: var(--_height);
+      padding-block: var(--_block);
+      padding-inline-start: var(--_start);
+      padding-inline-end: var(--_end);
+      border-radius: var(--_radius);
+      color: var(--_text-ink);
+      font-size: var(--_text);
+      line-height: var(--_leading);
+      white-space: var(--_wrap);
+      cursor: pointer;
+    }
+    :scope:where([hidden]:not([hidden="until-found"])) { display: none; }
+
+    :scope::before {
+      content: "";
+      box-sizing: border-box;
+      position: absolute;
+      inset-block: calc(var(--_bleed) * -1);
+      inset-inline-start: 0;
+      inset-inline-end: var(--_well-end);
+      margin-block: auto;
+      inline-size: var(--_well-size);
+      block-size: var(--_well-size);
+      border-radius: var(--_well-radius);
+      background-color: var(--_well);
+      box-shadow: var(--_shadow);
+    }
+    :scope::after {
+      content: var(--_bead);
+      position: absolute;
+      inset-block: 0;
+      margin-block: auto;
+      visibility: hidden;
+      inset-inline-start: calc((var(--_size) - var(--_dot)) / 2);
+      inline-size: var(--_dot);
+      block-size: var(--_dot);
+      border-radius: calc(var(--_dot) / 2);
+      background-color: var(--_bead-face);
+      box-shadow: var(--_shadow-checked);
+    }
+
+    @media (hover: hover) {
+      :scope:where(:is(:hover, [data-hover]):where(:not(:is(:disabled, [disabled], [aria-disabled="true"]), :is(:checked, [aria-checked="true"], [checked]:not(input, option)), :is(input[type="checkbox"]:indeterminate, [aria-checked="mixed"], [indeterminate]), :is([aria-pressed="true"], [pressed]), :is([aria-selected="true"], [selected]:not(option)), :is([aria-current]:not([aria-current="false"], [aria-current=""]), [current]), :is([aria-expanded="true"], [expanded]), :is([open], :popover-open))))::before { background-color: var(--_well-hover); }
+      :scope:where(:is(:hover, [data-hover]):where(:not(:is(:disabled, [disabled], [aria-disabled="true"]), :is(:checked, [aria-checked="true"], [checked]:not(input, option)), :is(input[type="checkbox"]:indeterminate, [aria-checked="mixed"], [indeterminate]), :is([aria-pressed="true"], [pressed]), :is([aria-selected="true"], [selected]:not(option)), :is([aria-current]:not([aria-current="false"], [aria-current=""]), [current]), :is([aria-expanded="true"], [expanded]), :is([open], :popover-open)))) { background-color: var(--_lift-hover); }
+    }
+    :scope:where(:is(:focus-visible, [data-focus-visible])) {
+      outline: var(--_segmented) var(--_ring-width) solid var(--_ring);
+      outline-offset: var(--_ring-inset);
+    }
+    :scope:where(:is(:focus-visible, [data-focus-visible]))::before {
+      outline: var(--_segmented, var(--_ring-width) solid var(--_ring));
+      outline-offset: var(--_ring-offset);
+    }
+    :scope:where(:is(:active, [data-active]):where(:not(:is(:disabled, [disabled], [aria-disabled="true"]))))::before { background-color: var(--_well-active); }
+    :scope:where(:is(:active, [data-active]):where(:not(:is(:disabled, [disabled], [aria-disabled="true"])))) { background-color: var(--_lift-active); }
+    :scope:where(:is(:checked, [aria-checked="true"], [checked]:not(input, option)))::after { visibility: visible; }
+    :scope:where(:is(:checked, [aria-checked="true"], [checked]:not(input, option))) {
+      anchor-name: var(--_anchor);
+      background-color: initial;
+      color: var(--_ink-checked);
+    }
+    :scope:where(:is(:disabled, [disabled], [aria-disabled="true"])) {
+      color: var(--_ink-disabled);
+      cursor: default;
+    }
+    :scope:where(:is(:disabled, [disabled], [aria-disabled="true"]))::after { background-color: var(--_face-checked-disabled); }
+
+    @media (prefers-reduced-motion: no-preference) {
+      :scope:where([data-ready]) { transition: background-color 100ms; }
+      :scope:where([data-ready])::before { transition: background-color 100ms; }
+    }
+    @media (pointer: coarse) {
+      :scope {
+        padding-block: calc(var(--_block) + var(--_reach-root));
+        margin-block: calc(var(--_reach-root) * -1);
+      }
+      :scope::before { inset-block: calc((var(--_bleed) + var(--_reach-well)) * -1); }
+    }
+    @media (forced-colors: active) {
+      :where(:scope) {
+        --_face: Canvas;
+        --_face-hover: Canvas;
+        --_face-active: Canvas;
+        --_face-checked: Highlight;
+        --_shadow: none;
+        --_shadow-checked: none;
+        --_ink: CanvasText;
+        --_ink-disabled: GrayText;
+        --_face-checked-disabled: GrayText;
+        --_well-line: var(--_line-off, ButtonText);
+        --_well-line-checked: var(--_line-off, Highlight);
+        --_line-off: var(--_group-disabled) GrayText;
+        --_ring: Highlight;
+        --_lift-ink: var(--_segmented) var(--_lift-ink-on, HighlightText);
+        --_lift-ink-on: var(--_group-disabled) GrayText;
+        --_lift-ring: var(--_segmented) HighlightText;
+        --_lift-adjust: var(--_segmented) none;
+        --_lift-off: var(--_segmented) Canvas;
+        --_lift-off-ink: var(--_segmented) GrayText;
+        --_lift-off-ring: var(--_segmented) calc(var(--_border) * 2) solid GrayText;
+      }
+      :scope::before { border: var(--_border) var(--_well-style) var(--_well-line); }
+      /* Hover (D124): a plain radio's well and a segment each take a ring one border width heavier, in ButtonText, inside;
+         no fill, never Highlight. Each form reads the switch so that the other is unset. */
+      @media (hover: hover) {
+        :scope:where(:is(:hover, [data-hover]):where(:not(:is(:disabled, [disabled], [aria-disabled="true"]), :is(:checked, [aria-checked="true"], [checked]:not(input, option)), :is(input[type="checkbox"]:indeterminate, [aria-checked="mixed"], [indeterminate]), :is([aria-pressed="true"], [pressed]), :is([aria-selected="true"], [selected]:not(option)), :is([aria-current]:not([aria-current="false"], [aria-current=""]), [current]), :is([aria-expanded="true"], [expanded]), :is([open], :popover-open))))::before {
+          outline: var(--_segmented, var(--_border) solid ButtonText);
+          outline-offset: calc(var(--_border) * -2);
+        }
+        :scope:where(:is(:hover, [data-hover]):where(:not(:is(:disabled, [disabled], [aria-disabled="true"]), :is(:checked, [aria-checked="true"], [checked]:not(input, option)), :is(input[type="checkbox"]:indeterminate, [aria-checked="mixed"], [indeterminate]), :is([aria-pressed="true"], [pressed]), :is([aria-selected="true"], [selected]:not(option)), :is([aria-current]:not([aria-current="false"], [aria-current=""]), [current]), :is([aria-expanded="true"], [expanded]), :is([open], :popover-open)))) {
+          outline: var(--_segmented) var(--_border) solid ButtonText;
+          outline-offset: calc(var(--_border) * -1);
+        }
+      }
+      :scope:where(:is(:checked, [aria-checked="true"], [checked]:not(input, option)))::before { border-color: var(--_well-line-checked); }
+      /* C19, D124: the checked segment's label sits on the group's Highlight thumb, a sibling's pseudo-element; Chromium's and
+         Firefox's backplates would cover the thumb behind the glyphs, so the segment opts out of forcing. Its colours are all
+         system colours above. A plain radio keeps forcing: its label is on Canvas. */
+      :scope:where(:is(:checked, [aria-checked="true"], [checked]:not(input, option))) {
+        forced-color-adjust: var(--_lift-adjust, auto);
+        outline-color: var(--_lift-ring, var(--_ring));
+      }
+      :scope:where(:is(:disabled, [disabled], [aria-disabled="true"]))::before { border-color: GrayText; }
+      /* A chosen segment that is disabled covers the thumb with a Canvas face and says chosen with a GrayText frame inside it,
+         its label GrayText (D124). A segment in a disabled group gets the same from the group's thumb. */
+      :scope:where(:is(:disabled, [disabled], [aria-disabled="true"])):where(:is(:checked, [aria-checked="true"], [checked]:not(input, option))) {
+        forced-color-adjust: auto;
+        background-color: var(--_lift-off);
+        color: var(--_lift-off-ink, var(--_ink-disabled));
+        outline: var(--_lift-off-ring);
+        outline-offset: calc(var(--_border) * -2);
+      }
+    }
+  }
+}

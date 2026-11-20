@@ -64,6 +64,7 @@
     "--tree-item-label-face-selected",
     "--tree-item-label-ink",
     "--tree-item-label-ink-selected",
+    "--tree-item-label-face-selected-disabled",
     "--tree-item-label-ink-disabled",
     "--tree-item-label-height",
     "--tree-item-label-inset",
@@ -79,8 +80,8 @@
   ],
   "targets": {
     "web-components": "built",
-    "react": "planned",
-    "svelte": "planned",
+    "react": "built",
+    "svelte": "built",
     "solid": "planned"
   }
 }

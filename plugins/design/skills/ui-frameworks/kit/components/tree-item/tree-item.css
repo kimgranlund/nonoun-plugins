@@ -15,10 +15,11 @@
     :where(:scope) {
       --_face-hover: var(--tree-item-label-face-hover, var(--colors-bg-muted-hover));
       --_face-active: var(--tree-item-label-face-active, var(--pressed-face));
-      --_face-selected: var(--tree-item-label-face-selected, var(--solid-face));
+      --_face-selected: var(--tree-item-label-face-selected, var(--selected-face));
       --_ink: var(--tree-item-label-ink, var(--ink));
-      --_ink-selected: var(--tree-item-label-ink-selected, var(--on-solid));
+      --_ink-selected: var(--tree-item-label-ink-selected, var(--on-selected));
       --_ink-disabled: var(--tree-item-label-ink-disabled, var(--ink-faint));
+      --_face-selected-disabled: var(--tree-item-label-face-selected-disabled, var(--colors-bg-disabled));
       --_height: var(--tree-item-label-height, var(--collections-rows-menu-row));
       --_inset: var(--tree-item-label-inset, calc(var(--controls-control-t) - var(--collections-frame-d_c)));
       --_gap: var(--tree-item-label-gap, var(--controls-control-i));
@@ -26,6 +27,7 @@
       --_indent: var(--tree-item-group-inset, var(--controls-mark-tree-indent));
       --_ring: var(--colors-focus-ring);
       --_ring-width: var(--controls-focus-ring-width-w);
+      --_border: var(--unit-border-b);
     }
 
     /* The recipe's own boxes are border boxes, with or without a reset (C31). */
@@ -73,6 +75,8 @@
       cursor: default;
       pointer-events: none;
     }
+    /* A selected item that is disabled drops the selected face for the disabled ground, as the calendar's chosen day does; nothing fades (C33). */
+    :scope:where(:is(:disabled, [disabled], [aria-disabled="true"])):where(:is([aria-selected="true"], [selected]:not(option))) > [data-part="label"] { background-color: var(--_face-selected-disabled); }
 
     @media (prefers-reduced-motion: no-preference) {
       :scope:where([data-ready]) > [data-part="label"] { transition: background-color 100ms; }
@@ -85,8 +89,19 @@
         --_ink: CanvasText;
         --_ink-selected: HighlightText;
         --_ink-disabled: GrayText;
+        --_face-selected-disabled: Canvas;
         --_ring: CanvasText; /* Chromium and Firefox already draw the ring in a system colour; WebKit 27.2 needs it said */
       }
+      /* Hover (D124): a ring of one border width inside the label, in its ink; no fill, never Highlight. */
+      @media (hover: hover) {
+        :scope > [data-part="label"]:where(:is(:hover, [data-hover]):where(:not(:is(:disabled, [disabled], [aria-disabled="true"]), :is(:checked, [aria-checked="true"], [checked]:not(input, option)), :is(input[type="checkbox"]:indeterminate, [aria-checked="mixed"], [indeterminate]), :is([aria-pressed="true"], [pressed]), :is([aria-selected="true"], [selected]:not(option)), :is([aria-current]:not([aria-current="false"], [aria-current=""]), [current]), :is([aria-expanded="true"], [expanded]), :is([open], :popover-open)))) {
+          outline: var(--_border) solid CanvasText;
+          outline-offset: calc(var(--_border) * -1);
+        }
+      }
+      /* C19, D124: the selected label sits on its own Highlight face; it opts out of forcing, or Chromium's Canvas backplate
+         covers the face behind the glyphs. Every colour it paints is a system colour above. */
+      :scope:where(:is([aria-selected="true"], [selected]:not(option))) > [data-part="label"] { forced-color-adjust: none; }
     }
   }
 }

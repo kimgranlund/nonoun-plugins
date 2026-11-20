@@ -39,6 +39,16 @@
       "type": "boolean",
       "state": "disabled",
       "description": "It cannot be changed or focused."
+    },
+    "variant": {
+      "type": "enum",
+      "values": [
+        "plain",
+        "segmented"
+      ],
+      "default": "plain",
+      "kind": "variant",
+      "description": "segmented joins the radios into one control of segments, each a label with no mark."
     }
   },
   "resets": [
@@ -54,11 +64,28 @@
     "root": {
       "kind": "root",
       "material": null,
-      "note": "Stacks its radios and paints nothing."
+      "note": "Stacks its radios and paints nothing. Segmented, it is one recessed track as tall as a control, and gives its ink to the segments."
+    },
+    "thumb": {
+      "kind": "pseudo",
+      "pseudo": "::before",
+      "material": {
+        "layer": "base",
+        "relief": "raised",
+        "face": "neutral"
+      },
+      "note": "Segmented only: the raised face of the checked segment, never the solid face. It takes the box of the checked segment, its anchor, and moves to the next one checked (C32). Drawn as a pseudo-element, so it is in place before the elements are defined. A plain group generates none."
     }
   },
   "tokens": [
-    "--radio-group-gap"
+    "--radio-group-gap",
+    "--radio-group-face",
+    "--radio-group-thumb-face",
+    "--radio-group-ink",
+    "--radio-group-ink-disabled",
+    "--radio-group-height",
+    "--radio-group-inset",
+    "--radio-group-radius"
   ],
   "behaviours": [
     "roving-focus"
@@ -90,15 +117,25 @@
     {
       "topic": "first paint",
       "text": "Write `checked` on the chosen radio, so that it is painted before the group is defined."
+    },
+    {
+      "topic": "first paint",
+      "text": "Write `variant=\"segmented\"` on the group alone: its radios are painted as the segments of one track, in a row, before either element is defined. The keys, the roles and the form value do not change."
+    },
+    {
+      "topic": "coordination",
+      "text": "A segmented group is a row whatever its orientation; write `orientation=\"horizontal\"` as well so that assistive technology hears a row. Keep it to a few short labels: segments do not wrap."
     }
   ],
   "notYet": [
-    "Translated messages."
+    "Translated messages.",
+    "A segmented group that is disabled still shows the hover face of a segment under the pointer, as a plain one tints the well.",
+    "The hit area of a segment reaches over the kit's track padding, not over a padding set with `--radio-group-inset`."
   ],
   "targets": {
     "web-components": "built",
-    "react": "planned",
-    "svelte": "planned",
+    "react": "built",
+    "svelte": "built",
     "solid": "planned"
   }
 }

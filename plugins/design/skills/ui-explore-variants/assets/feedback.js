@@ -88,7 +88,9 @@
     `</form>` +
     `<div class="fb-actions"><button type="button" class="fb-copy">Copy feedback JSON</button><button type="button" class="fb-clear">Clear</button><span class="fb-status" role="status"></span></div>` +
     `<details class="fb-json"><summary>Preview the JSON</summary><textarea readonly rows="10" aria-label="Feedback JSON"></textarea></details>`;
-  sections[sections.length - 1].parentNode.appendChild(box);
+  // At the container's end, never inside the last variant's wrapper: from round 2 that wrapper can be an earlier
+  // round's moment, hidden while the page shows the current round, and the form would hide with it.
+  root.appendChild(box);
   const of = box.querySelector('form'), out = box.querySelector('.fb-json textarea'), status = box.querySelector('.fb-status'), sum = box.querySelector('.fb-sum');
   of.addEventListener('submit', (e) => e.preventDefault());
   of.addEventListener('input', () => { o.next = (of.querySelector('[name="fb-next"]:checked') || {}).value || null; o.note = of.querySelector('textarea').value; save(); });

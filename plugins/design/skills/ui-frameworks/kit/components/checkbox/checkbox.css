@@ -2,6 +2,12 @@
 
 /* The recipe of <ui-checkbox>. Its shape and rules: docs/specs/css-contract.md. Its conditions: references/states.json.
    The mark is two pseudo-elements of the root (D57): ::before is the box, ::after is the glyph on it.
+   The box is the full icon size of ui-geometry, a.full: one q more than a.md, the mark row's size. The label's start
+   grows by the same q, so the label clears the box by the gap of the choice-label row. The box is an icon box S, so by
+   ui-geometry's rule its glyph is a.md, centred, with a margin of (S − a)/2 on every side; the dash is the same glyph.
+   Keyboard focus is drawn on the box: the ring is the box's outline, following its radius, under the root's
+   focus-visible condition; the root draws none. In forced colours the box's boundary is a border, not an outline,
+   so that the ring and the boundary show together.
    The glyphs are Phosphor "check" and "minus", regular weight (MIT, phosphoricons.com), drawn as masks so they take a token colour. */
 @layer recipes {
   @scope (ui-checkbox) {
@@ -15,12 +21,14 @@
       --_ink: var(--checkbox-ink, var(--ink));
       --_mark: var(--checkbox-mark-ink, var(--on-solid));
       --_ink-disabled: var(--checkbox-ink-disabled, var(--ink-faint));
-      --_fade-disabled: 0.5;
+      --_face-checked-disabled: var(--checkbox-face-checked-disabled, var(--colors-bg-disabled));
+      --_mark-disabled: var(--checkbox-mark-ink-disabled, var(--ink-faint));
       --_line-invalid: var(--checkbox-line-invalid, var(--colors-critical-solid));
       --_height: var(--checkbox-height, var(--controls-mark-choice-row));
       --_inset: var(--checkbox-inset, var(--controls-control-i));
-      --_start: var(--controls-mark-choice-label);
-      --_size: var(--controls-mark-checkbox-box);
+      --_start: calc(var(--controls-mark-choice-label) + var(--_size) - var(--controls-mark-checkbox-box));
+      --_size: var(--controls-icon-a-full);
+      --_glyph: var(--controls-icon-a-md);
       --_radius: var(--checkbox-radius, var(--controls-mark-checkbox-radius));
       --_text: var(--unit-type-body-md);
       --_leading: var(--unit-type-body-md-line);
@@ -45,6 +53,7 @@
       color: var(--_ink);
       font-size: var(--_text);
       line-height: var(--_leading);
+      outline: none;
       cursor: pointer;
     }
     :scope:where([hidden]:not([hidden="until-found"])) { display: none; }
@@ -60,11 +69,15 @@
       block-size: var(--_size);
     }
     :scope::before {
+      box-sizing: border-box;
       border-radius: var(--_radius);
       background-color: var(--_face);
       box-shadow: var(--_shadow);
     }
     :scope::after {
+      inset-inline-start: calc((var(--_size) - var(--_glyph)) / 2);
+      inline-size: var(--_glyph);
+      block-size: var(--_glyph);
       visibility: hidden;
       background-color: var(--_mark);
       mask: var(--_check) center / contain no-repeat;
@@ -73,7 +86,7 @@
     @media (hover: hover) {
       :scope:where(:is(:hover, [data-hover]):where(:not(:is(:disabled, [disabled], [aria-disabled="true"]), :is(:checked, [aria-checked="true"], [checked]:not(input, option)), :is(input[type="checkbox"]:indeterminate, [aria-checked="mixed"], [indeterminate]), :is([aria-pressed="true"], [pressed]), :is([aria-selected="true"], [selected]:not(option)), :is([aria-current]:not([aria-current="false"], [aria-current=""]), [current]), :is([aria-expanded="true"], [expanded]), :is([open], :popover-open))))::before { background-color: var(--_face-hover); }
     }
-    :scope:where(:is(:focus-visible, [data-focus-visible])) {
+    :scope:where(:is(:focus-visible, [data-focus-visible]))::before {
       outline: var(--_ring-width) solid var(--_ring);
       outline-offset: var(--_ring-offset);
     }
@@ -96,8 +109,14 @@
       color: var(--_ink-disabled);
       cursor: default;
     }
-    :scope:where(:is(:disabled, [disabled], [aria-disabled="true"]))::before,
-    :scope:where(:is(:disabled, [disabled], [aria-disabled="true"]))::after { opacity: var(--_fade-disabled); }
+    /* Checked or mixed and disabled, the box drops the solid face for the disabled ground and takes back the well's
+       ring; the glyph takes the disabled ink. Unchecked and disabled, only the label's ink changes. Nothing fades (C33). */
+    :scope:where(:is(:disabled, [disabled], [aria-disabled="true"])):where(:is(:checked, [aria-checked="true"], [checked]:not(input, option)))::before,
+    :scope:where(:is(:disabled, [disabled], [aria-disabled="true"])):where(:is(input[type="checkbox"]:indeterminate, [aria-checked="mixed"], [indeterminate]))::before {
+      background-color: var(--_face-checked-disabled);
+      box-shadow: var(--_shadow);
+    }
+    :scope:where(:is(:disabled, [disabled], [aria-disabled="true"]))::after { background-color: var(--_mark-disabled); }
 
     @media (prefers-reduced-motion: no-preference) {
       :scope:where([data-ready])::before { transition: background-color 100ms; }
@@ -119,16 +138,21 @@
         --_ink: CanvasText;
         --_mark: HighlightText;
         --_ink-disabled: GrayText;
-        --_fade-disabled: 1;
+        --_face-checked-disabled: Canvas;
+        --_mark-disabled: GrayText;
         --_line-invalid: Mark;
         --_ring: Highlight;
       }
-      :scope::before {
-        outline: var(--_border) solid ButtonText;
-        outline-offset: calc(var(--_border) * -1);
+      /* Hover (D124): the ring one border width heavier than at rest, in the boundary colour, inside; no fill, never Highlight. */
+      @media (hover: hover) {
+        :scope:where(:is(:hover, [data-hover]):where(:not(:is(:disabled, [disabled], [aria-disabled="true"]), :is(:checked, [aria-checked="true"], [checked]:not(input, option)), :is(input[type="checkbox"]:indeterminate, [aria-checked="mixed"], [indeterminate]), :is([aria-pressed="true"], [pressed]), :is([aria-selected="true"], [selected]:not(option)), :is([aria-current]:not([aria-current="false"], [aria-current=""]), [current]), :is([aria-expanded="true"], [expanded]), :is([open], :popover-open))))::before {
+          outline: var(--_border) solid ButtonText;
+          outline-offset: calc(var(--_border) * -2);
+        }
       }
-      :scope:where(:is([aria-invalid]:not([aria-invalid="false"]), :is(input, select, textarea):user-invalid, [invalid]))::before { outline-color: var(--_line-invalid); }
-      :scope:where(:is(:disabled, [disabled], [aria-disabled="true"]))::before { outline-color: GrayText; }
+      :scope::before { border: var(--_border) solid ButtonText; }
+      :scope:where(:is([aria-invalid]:not([aria-invalid="false"]), :is(input, select, textarea):user-invalid, [invalid]))::before { border-color: var(--_line-invalid); }
+      :scope:where(:is(:disabled, [disabled], [aria-disabled="true"]))::before { border-color: GrayText; }
     }
   }
 }

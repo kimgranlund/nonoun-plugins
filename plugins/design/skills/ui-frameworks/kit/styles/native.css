@@ -9,6 +9,8 @@
     all: unset;
     box-sizing: border-box;
   }
+  /* `all: unset` also takes the raise the reset gives a part holding focus (C20, F-001): give it back. */
+  button[data-ui]:where(:is(:focus-visible, [data-focus-visible])) { z-index: 1; }
   [data-ui] > input[data-part="input"]:where([type="checkbox"], [type="radio"]) {
     position: absolute;
     inset-block-start: 0;

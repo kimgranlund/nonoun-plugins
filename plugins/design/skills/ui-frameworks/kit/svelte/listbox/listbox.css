@@ -1,0 +1,110 @@
+@layer reset, base, tokens, recipes, utilities;
+
+/* The recipe of <ui-listbox>. Its shape and rules: docs/specs/css-contract.md. Its conditions: references/states.json.
+   ui-materials: base layer, recessed relief, neutral face, like a field, with its options stacked inside.
+   ui-geometry: a frame padded like a menu, its radius concentric with its rows. The focus ring is an outline
+   outside the frame, as the button draws it; the invalid ring is the line the checkbox draws.
+   C32: ::before is the thumb, the tint of the highlighted option, the row the keys point at. While the listbox, or
+   the select or combobox around it, has focus, it writes data-focus on that option and on no other, which then
+   names itself the anchor --listbox-thumb; the root scopes that name to itself, and the thumb takes the
+   anchor's box, behind the options. Unlike the tab list's, the root
+   is positioned: the thumb's containing block is then the scroll container itself, so the thumb scrolls with its
+   option and is clipped to the frame. The scope, not the containing block, keeps a nested listbox's option from
+   being this listbox's anchor. With no highlighted option the insets are invalid and the thumb has no size.
+   Selection does not travel: a selected option keeps its own solid face, which covers the thumb.
+   A disabled listbox hands its options its disabled state through one inherited token, --_group-disabled (C5 as
+   amended): `initial` here, empty while disabled; a selected option then drops its face for the disabled ground. */
+@layer recipes {
+  @scope ([data-ui="listbox"]) {
+    :where(:scope) {
+      --_face: var(--listbox-face, var(--recessed-face));
+      --_shadow: var(--field-shadow);
+      --_ink: var(--listbox-ink, var(--ink));
+      --_ink-disabled: var(--listbox-ink-disabled, var(--ink-faint));
+      --_group-disabled: initial;
+      --_line-invalid: var(--listbox-line-invalid, var(--colors-critical-solid));
+      --_inset: var(--listbox-inset, var(--collections-frame-d_c));
+      --_radius: var(--listbox-radius, var(--collections-curvature-r_frame));
+      --_text: var(--unit-scale-f);
+      --_ring: var(--colors-focus-ring);
+      --_ring-width: var(--controls-focus-ring-width-w);
+      --_ring-offset: var(--controls-focus-ring-offset-o);
+      --_border: var(--unit-border-b);
+      --_thumb-face: var(--listbox-thumb-face, var(--colors-bg-muted-hover));
+      --_thumb-radius: var(--collections-curvature-r_row);
+    }
+
+    /* The recipe's own boxes are border boxes, with or without a reset (C31). */
+    :where(:scope, [data-part]) { box-sizing: border-box; }
+    :scope {
+      display: grid;
+      align-content: start;
+      position: relative;
+      isolation: isolate;
+      padding: var(--_inset);
+      border-radius: var(--_radius);
+      overflow: auto;
+      background-color: var(--_face);
+      box-shadow: var(--_shadow);
+      color: var(--_ink);
+      font-size: var(--_text);
+      anchor-scope: --listbox-thumb;
+    }
+    :scope:where([hidden]:not([hidden="until-found"])) { display: none; }
+    :scope::before {
+      content: "";
+      position: absolute;
+      z-index: -1;
+      position-anchor: --listbox-thumb;
+      inset-block-start: anchor(--listbox-thumb start);
+      inset-block-end: anchor(--listbox-thumb end);
+      inset-inline-start: anchor(--listbox-thumb start);
+      inset-inline-end: anchor(--listbox-thumb end);
+      border-radius: var(--_thumb-radius);
+      background-color: var(--_thumb-face);
+    }
+
+    :scope:where(:is(:focus-visible, [data-focus-visible])) {
+      outline: var(--_ring-width) solid var(--_ring);
+      outline-offset: var(--_ring-offset);
+    }
+    :scope:where(:is([aria-invalid]:not([aria-invalid="false"]), :is(input, select, textarea):user-invalid, [invalid])) { box-shadow: inset 0 0 0 var(--_border) var(--_line-invalid); }
+    :scope:where(:is(:disabled, [disabled], [aria-disabled="true"])) {
+      --_group-disabled: ;
+      color: var(--_ink-disabled);
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+      :scope:where([data-ready])::before { transition: inset-block-start 200ms, inset-block-end 200ms, inset-inline-start 200ms, inset-inline-end 200ms; }
+    }
+
+    @media (forced-colors: active) {
+      :where(:scope) {
+        --_face: Canvas;
+        --_shadow: none;
+        --_thumb-face: Canvas;
+        --_ink: CanvasText;
+        --_ink-disabled: GrayText;
+        --_line-invalid: Mark;
+        --_ring: Highlight;
+      }
+      :scope {
+        outline: var(--_border) solid CanvasText;
+        outline-offset: calc(var(--_border) * -1);
+      }
+      /* The highlight is a frame (C19, D124): a Highlight border two widths wide round a Canvas thumb, so the highlighted
+         option keeps its CanvasText label and needs no opt-out, and a selected option, whose own Highlight face covers the
+         thumb, still differs from it. The thumb's box is its insets, so the border falls inside it. */
+      :scope::before {
+        box-sizing: border-box;
+        border: calc(var(--_border) * 2) solid Highlight;
+      }
+      :scope:where(:is(:focus-visible, [data-focus-visible])) {
+        outline: var(--_ring-width) solid var(--_ring);
+        outline-offset: var(--_ring-offset);
+      }
+      :scope:where(:is([aria-invalid]:not([aria-invalid="false"]), :is(input, select, textarea):user-invalid, [invalid])) { outline-color: var(--_line-invalid); }
+      :scope:where(:is(:disabled, [disabled], [aria-disabled="true"])) { outline-color: GrayText; }
+    }
+  }
+}

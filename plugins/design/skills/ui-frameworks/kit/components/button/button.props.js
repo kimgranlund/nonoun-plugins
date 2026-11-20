@@ -7,7 +7,8 @@ export const props = {
     "type": "enum",
     "values": [
       "neutral",
-      "primary"
+      "primary",
+      "ghost"
     ],
     "default": "neutral"
   },

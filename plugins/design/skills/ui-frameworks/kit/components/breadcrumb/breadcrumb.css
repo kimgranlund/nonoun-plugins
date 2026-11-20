@@ -24,6 +24,8 @@
     :scope > * { color: var(--_ink); }
     :scope > * + *::before {
       content: "/" / "";
+      /* An inline block takes none of its link's underline: the separator is not part of the link's text. */
+      display: inline-block;
       margin-inline-end: var(--_gap);
     }
 

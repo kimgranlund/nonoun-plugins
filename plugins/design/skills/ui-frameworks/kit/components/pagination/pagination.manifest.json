@@ -1,0 +1,69 @@
+{
+  "$schema": "../../../references/manifest.schema.json",
+  "schema": 1,
+  "id": "pagination",
+  "kind": "recipe",
+  "family": "pagination",
+  "tier": "collections",
+  "pattern": "https://www.w3.org/WAI/ARIA/apg/patterns/landmarks/examples/navigation.html",
+  "summary": "Links to the pages of a long list: previous, next and page numbers.",
+  "element": "nav",
+  "role": null,
+  "focus": "none",
+  "tabindex": null,
+  "formAssociated": false,
+  "attributes": {},
+  "resets": [],
+  "states": [
+    "hover",
+    "focus-visible",
+    "active",
+    "current",
+    "disabled"
+  ],
+  "parts": {
+    "root": {
+      "kind": "root",
+      "material": null,
+      "note": "A nav with data-ui=\"pagination\" around a list of links, in a row."
+    },
+    "item": {
+      "kind": "author",
+      "material": {
+        "layer": "base",
+        "relief": "ground",
+        "face": "neutral"
+      },
+      "note": "Each anchor or button inside: a square of a control's height. The one marked aria-current=\"page\" is the selected one."
+    }
+  },
+  "tokens": [
+    "--pagination-gap",
+    "--pagination-item-face",
+    "--pagination-item-face-hover",
+    "--pagination-item-face-active",
+    "--pagination-item-face-current",
+    "--pagination-item-ink",
+    "--pagination-item-ink-current",
+    "--pagination-item-ink-disabled",
+    "--pagination-item-height",
+    "--pagination-item-inset",
+    "--pagination-item-radius"
+  ],
+  "behaviours": [],
+  "keys": {},
+  "events": {},
+  "guidance": [
+    {
+      "topic": "naming",
+      "text": "Name the nav with aria-label, such as Pagination, mark the current page's link with aria-current=\"page\", and name the previous and next links."
+    }
+  ],
+  "notYet": [],
+  "targets": {
+    "web-components": "built",
+    "react": "planned",
+    "svelte": "planned",
+    "solid": "planned"
+  }
+}

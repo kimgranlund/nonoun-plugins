@@ -3,8 +3,11 @@
 /* The recipe of <ui-grid>. Its rules: J71 in docs/specs/patterns.md. Its shape: docs/specs/css-contract.md.
    The root is a block that scrolls sideways when the table is wider. The table, the author's own element marked
    data-part="table", is painted as the table recipe paints a table (J67), with the same kit values: full width,
-   rows as tall as ui-geometry's row, a hairline under each row, header cells in the muted ink, a tint on a body
-   row under the pointer. data-align=end on a cell aligns its text to the end, for numbers, as in the table.
+   rows as tall as ui-geometry's row, a hairline under each row, a tint on a body row under the pointer. A column
+   header (a th in the thead) is a label on the ground, with no face: ui-geometry's label type, the medium weight the
+   recipes use for emphasis, the muted ink, and the strong line under the last header row; it keeps a cell's height,
+   inset and ring. A row header (a th in the body) is data: the ink, with the same weight. data-align=end on a cell
+   aligns its text to the end, for numbers, as in the table.
    The rows and cells are the table's own elements, selected through the table's row groups, so a table nested in
    a cell is left alone. A focused cell or row draws its ring inside itself; a control a cell hands focus to draws
    its own. In a treegrid the first cell of a row is indented by ui-geometry's tree indent per level below the
@@ -14,8 +17,12 @@
   @scope (ui-grid) {
     :where(:scope) {
       --_ink: var(--grid-ink, var(--ink));
-      --_ink-head: var(--ink-muted);
+      --_ink-head: var(--grid-header-ink, var(--ink-muted));
+      --_ink-caption: var(--ink-muted);
       --_line: var(--grid-line, var(--line));
+      --_line-head: var(--grid-header-line, var(--line-strong));
+      --_text-head: var(--unit-type-label);
+      --_leading-head: var(--unit-type-label-line);
       --_height: var(--grid-height, var(--collections-rows-row));
       --_inset: var(--grid-inset, var(--collections-rows-cell-inline-padding));
       --_gap: var(--containers-gap-group-caption-content);
@@ -43,7 +50,7 @@
       padding-block-end: var(--_gap);
       padding-inline: var(--_inset);
       text-align: start;
-      color: var(--_ink-head);
+      color: var(--_ink-caption);
     }
     :scope > [data-part="table"] > * > tr > :is(th, td) {
       block-size: var(--_height);
@@ -52,10 +59,13 @@
       text-align: start;
       vertical-align: middle;
     }
-    :scope > [data-part="table"] > * > tr > th {
+    :scope > [data-part="table"] > * > tr > th { font-weight: 600; }
+    :scope > [data-part="table"] > thead > tr > th {
       color: var(--_ink-head);
-      font-weight: normal;
+      font-size: var(--_text-head);
+      line-height: var(--_leading-head);
     }
+    :scope > [data-part="table"] > thead > tr:last-child > :is(th, td) { border-block-end-color: var(--_line-head); }
     :scope > [data-part="table"] > * > tr > :is(th, td)[data-align=end] {
       text-align: end;
       font-variant-numeric: tabular-nums;
@@ -77,9 +87,19 @@
 
     @media (forced-colors: active) {
       :where(:scope) {
+        --_ink-head: CanvasText;
+        --_ink-caption: CanvasText; /* Chromium and Firefox already force the ink; WebKit needs both inks said */
         --_line: CanvasText;
+        --_line-head: CanvasText;
         --_face-hover: Canvas;
         --_ring: CanvasText; /* Chromium and Firefox already draw the ring in a system colour; WebKit needs it said */
+      }
+      /* Hover (D124): the ring one border width heavier than at rest, in the boundary colour, inside; no fill, never Highlight. */
+      @media (hover: hover) {
+        :scope > [data-part="table"] > tbody > tr:where(:is(:hover, [data-hover]):where(:not(:is(:disabled, [disabled], [aria-disabled="true"]), :is(:checked, [aria-checked="true"], [checked]:not(input, option)), :is(input[type="checkbox"]:indeterminate, [aria-checked="mixed"], [indeterminate]), :is([aria-pressed="true"], [pressed]), :is([aria-selected="true"], [selected]:not(option)), :is([aria-current]:not([aria-current="false"], [aria-current=""]), [current]), :is([aria-expanded="true"], [expanded]), :is([open], :popover-open)))) {
+          outline: var(--_border) solid CanvasText;
+          outline-offset: calc(var(--_border) * -1);
+        }
       }
     }
   }

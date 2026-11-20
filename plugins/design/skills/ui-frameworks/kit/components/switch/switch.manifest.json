@@ -53,7 +53,7 @@
     "root": {
       "kind": "root",
       "material": null,
-      "note": "Holds the author's label text and draws no face of its own."
+      "note": "Holds the author's label text and draws no face and no focus ring of its own."
     },
     "track": {
       "kind": "pseudo",
@@ -63,7 +63,7 @@
         "relief": "recessed",
         "face": "neutral"
       },
-      "note": "checked: face solid."
+      "note": "checked: face solid. The full icon size of ui-geometry tall (a.full, one q more than a.md), and 7/4 of that wide. Keyboard focus draws the ring round it, following its pill."
     },
     "thumb": {
       "kind": "pseudo",
@@ -73,7 +73,7 @@
         "relief": "raised",
         "face": "neutral"
       },
-      "note": "Sits at the start of the track when off and at the end when on."
+      "note": "Sits at the start of the track when off and at the end when on, g_c inside it at either end; it grows by the same q as the track. The raised face alone: no line or shadow of its own."
     }
   },
   "tokens": [
@@ -81,6 +81,8 @@
     "--switch-face-hover",
     "--switch-face-active",
     "--switch-face-checked",
+    "--switch-face-checked-disabled",
+    "--switch-thumb-face-disabled",
     "--switch-ink",
     "--switch-ink-disabled",
     "--switch-line-invalid",
@@ -107,8 +109,8 @@
   ],
   "targets": {
     "web-components": "built",
-    "react": "planned",
-    "svelte": "planned",
+    "react": "built",
+    "svelte": "built",
     "solid": "planned"
   }
 }

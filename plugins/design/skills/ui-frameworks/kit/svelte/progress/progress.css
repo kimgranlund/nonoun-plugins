@@ -1,0 +1,71 @@
+@layer reset, base, tokens, recipes, utilities;
+
+/* The recipe of <ui-progress>. Its rules: J97 in docs/specs/patterns.md (and J18, which it copies from the meter).
+   The root is the track; the fill is its ::before. With a value the fill is as long as the value's share of the
+   range, --_share, which the class writes on the root's inline style (0 until the element is defined). With no
+   value attribute the fill is a third of the track at its inline start, selected by the attribute alone (`:not([value])`;
+   the lint refuses it inside :where as a condition outside the state matrix) so that it is painted before the
+   element is defined. It moves along the track only when motion is allowed and the root is ready (D108). */
+@layer recipes {
+  @scope ([data-ui="progress"]) {
+    :where(:scope) {
+      --_share: 0;
+      --_face: var(--progress-face, var(--recessed-face));
+      --_face-value: var(--progress-fill-face, var(--solid-face));
+      --_shadow: var(--recessed-shadow);
+      --_height: var(--progress-height, var(--controls-track-progress-slider-track));
+      --_radius: var(--progress-radius, calc(var(--_height) / 2));
+      --_length: var(--controls-track-slider-minimum-length);
+      --_border: var(--unit-border-b);
+    }
+
+    /* The recipe's own boxes are border boxes, with or without a reset (C31). */
+    :where(:scope, [data-part]) { box-sizing: border-box; }
+    :scope {
+      display: block;
+      block-size: var(--_height);
+      min-inline-size: var(--_length);
+      border-radius: var(--_radius);
+      background-color: var(--_face);
+      box-shadow: var(--_shadow);
+      overflow: hidden;
+    }
+    :scope:where([hidden]:not([hidden="until-found"])) { display: none; }
+
+    :scope::before {
+      content: "";
+      display: block;
+      block-size: 100%;
+      inline-size: calc(var(--_share) * 100%);
+      background-color: var(--_face-value);
+    }
+
+    /* Indeterminate: no value attribute. The fill is a third of the track, at its inline start. */
+    :scope:not([value])::before {
+      inline-size: calc(100% / 3);
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+      :scope:where([data-ready]):not([value])::before {
+        animation: progress-run 1400ms ease-in-out infinite alternate;
+      }
+    }
+
+    @media (forced-colors: active) {
+      :where(:scope) {
+        --_face: Canvas;
+        --_face-value: Highlight;
+        --_shadow: none;
+      }
+      :scope {
+        outline: var(--_border) solid CanvasText;
+        outline-offset: calc(var(--_border) * -1);
+      }
+    }
+  }
+
+  @keyframes progress-run {
+    from { margin-inline-start: 0; }
+    to { margin-inline-start: calc(100% * 2 / 3); }
+  }
+}

@@ -1,0 +1,73 @@
+@layer reset, base, tokens, recipes, utilities;
+
+/* The recipe of <ui-toaster>. Its rules: J94 in docs/specs/patterns.md. Its shape: docs/specs/css-contract.md.
+   A stack fixed to the corner of the window that `placement` names, one inset from both edges, no wider than a
+   panel and never wider than the window allows. It paints nothing, and it undoes the browser's own face, border,
+   padding, inset and overflow for a popover (its auto margin is 0 once an inset on each axis is auto), so that it sits in the same place in the top layer and out of
+   it, before and after it is defined. It is displayed in both: a toast without `open` already takes no room.
+   The newest toast, the last child, is nearest the corner: a stack at the block end runs down to it, one at the
+   block start runs up to it. Presses pass through the stack and land on its children.
+   ui-geometry: the viewport margin as the inset, the gap between cards, the width of a panel. */
+@layer recipes {
+  @scope ([data-ui="toaster"]) {
+    :where(:scope) {
+      --_gap: var(--toaster-gap, var(--layout-gap-card));
+      --_inset: var(--toaster-inset, var(--layout-width-viewport-margin));
+      --_width: var(--containers-width-panel);
+      --_block-start: auto;
+      --_block-end: var(--_inset);
+      --_inline-start: auto;
+      --_inline-end: var(--_inset);
+      --_direction: column;
+      --_align: end;
+    }
+    :where(:scope[data-placement="block-end inline-start"]) {
+      --_inline-start: var(--_inset);
+      --_inline-end: auto;
+      --_align: start;
+    }
+    :where(:scope[data-placement="block-start inline-end"]) {
+      --_block-start: var(--_inset);
+      --_block-end: auto;
+      --_direction: column-reverse;
+    }
+    :where(:scope[data-placement="block-start inline-start"]) {
+      --_block-start: var(--_inset);
+      --_block-end: auto;
+      --_inline-start: var(--_inset);
+      --_inline-end: auto;
+      --_direction: column-reverse;
+      --_align: start;
+    }
+
+    /* The recipe's own boxes are border boxes, with or without a reset (C31). */
+    :where(:scope, [data-part]) { box-sizing: border-box; }
+    :scope {
+      display: flex;
+      flex-direction: var(--_direction);
+      align-items: var(--_align);
+      gap: var(--_gap);
+      position: fixed;
+      inset-block-start: var(--_block-start);
+      inset-block-end: var(--_block-end);
+      inset-inline-start: var(--_inline-start);
+      inset-inline-end: var(--_inline-end);
+      inline-size: var(--_width);
+      max-inline-size: calc(100% - var(--_inset) * 2);
+      block-size: auto;
+      max-block-size: calc(100% - var(--_inset) * 2);
+      padding: 0;
+      border: 0;
+      overflow: visible;
+      background: none;
+      color: inherit;
+      pointer-events: none;
+    }
+    :scope > * { pointer-events: auto; }
+    :scope:where([hidden]:not([hidden="until-found"])) { display: none; }
+
+    @media (forced-colors: active) {
+      :scope { background: none; }
+    }
+  }
+}

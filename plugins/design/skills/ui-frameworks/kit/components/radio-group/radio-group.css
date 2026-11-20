@@ -1,26 +1,133 @@
 @layer reset, base, tokens, recipes, utilities;
 
 /* The recipe of <ui-radio-group>. Its shape and rules: docs/specs/css-contract.md. Its conditions: references/states.json.
-   It stacks its radios, or puts them in a row when horizontal, and paints nothing, so it has no forced-colours block. */
+   Plain, it stacks its radios, or puts them in a row when horizontal, and paints nothing: the tokens it paints with
+   are `initial`, so each declaration that reads one is invalid at computed-value time and leaves the property unset.
+   Segmented (J123), it is a recessed track as tall as a control, padded so that a segment and the padding make that
+   height, as the tab list is (ui-geometry: host, segment).
+   A radio cannot see its group (C17, C8), so the group tells it: --_segmented is `initial` here and empty when
+   segmented. The radio declares it as `inherit` and builds its own tokens from it. Nothing else crosses.
+   C32: ::before is the thumb, the raised face of the checked segment. It is generated only when segmented: its content,
+   --_thumb, is `none` here and "" in the segmented block, which also isolates the track so that the thumb, behind the
+   segments, still lies on its face. A plain group generates no thumb and is no stacking context. The checked segment
+   names itself the anchor --radio-group-thumb, the root scopes that name to itself, and the thumb takes the anchor's
+   box. The root is not positioned, so the scope, not the containing block, keeps a nested group's segment from being
+   this group's anchor. With no checked segment the insets are invalid and the thumb has no size.
+   Disabled, plain or segmented, the group fades nothing (C33): it takes the disabled ink, takes the pointer from its
+   radios (an enabled group nested in it takes it back), and hands them its disabled state through a second inherited token, --_group-disabled (C5 as amended):
+   `initial` here, empty while the group is disabled. Each radio then paints its label and bead in the disabled ink. */
 @layer recipes {
   @scope (ui-radio-group) {
     :where(:scope) {
+      --_segmented: initial;
       --_gap: var(--radio-group-gap, var(--controls-gap-grouped));
+      --_direction: column;
+      --_align: flex-start;
+      --_wrap: wrap;
+      --_inline-size: auto;
+      --_face: initial;
+      --_shadow: none;
+      --_ink: initial;
+      --_ink-disabled: var(--radio-group-ink-disabled, var(--ink-faint));
+      --_group-disabled: initial;
+      --_line: initial;
+      --_height: auto;
+      --_inset: 0;
+      --_radius: 0;
+      --_border: var(--unit-border-b);
+      --_isolation: auto;
+      --_thumb: none;
+      --_thumb-face: var(--radio-group-thumb-face, var(--raised-face));
+      --_thumb-shadow: var(--raised-shadow-1);
+      --_thumb-radius: var(--collections-curvature-r_row);
+    }
+    :where(:scope[variant="segmented"]) {
+      --_segmented: ;
+      --_gap: var(--radio-group-gap, 0);
+      --_direction: row;
+      --_align: stretch;
+      --_wrap: nowrap;
+      --_inline-size: fit-content;
+      --_face: var(--radio-group-face, var(--recessed-face));
+      --_shadow: var(--recessed-shadow);
+      --_ink: var(--radio-group-ink, var(--ink));
+      --_height: var(--radio-group-height, var(--controls-control-h));
+      --_inset: var(--radio-group-inset, var(--collections-frame-host-pad));
+      --_radius: var(--radio-group-radius, var(--controls-curvature-r));
+      --_isolation: isolate;
+      --_thumb: "";
     }
 
     /* The recipe's own boxes are border boxes, with or without a reset (C31). */
     :where(:scope, [data-part]) { box-sizing: border-box; }
     :scope {
       display: flex;
-      flex-direction: column;
-      align-items: flex-start;
+      flex-direction: var(--_direction);
+      align-items: var(--_align);
       gap: var(--_gap);
+      inline-size: var(--_inline-size);
+      max-inline-size: 100%;
+      min-block-size: var(--_height);
+      padding: var(--_inset);
+      border-radius: var(--_radius);
+      background-color: var(--_face);
+      box-shadow: var(--_shadow);
+      color: var(--_ink);
+      isolation: var(--_isolation);
+      anchor-scope: --radio-group-thumb;
+      pointer-events: auto;
     }
     :scope:where([hidden]:not([hidden="until-found"])) { display: none; }
 
+    :scope::before {
+      content: var(--_thumb);
+      position: absolute;
+      z-index: -1;
+      position-anchor: --radio-group-thumb;
+      inset-block-start: anchor(--radio-group-thumb start);
+      inset-block-end: anchor(--radio-group-thumb end);
+      inset-inline-start: anchor(--radio-group-thumb start);
+      inset-inline-end: anchor(--radio-group-thumb end);
+      border-radius: var(--_thumb-radius);
+      background-color: var(--_thumb-face);
+      box-shadow: var(--_thumb-shadow);
+    }
+
     :scope:where(:is([aria-orientation="horizontal"], [orientation="horizontal"])) {
       flex-direction: row;
-      flex-wrap: wrap;
+      flex-wrap: var(--_wrap);
+    }
+    :scope:where(:is(:disabled, [disabled], [aria-disabled="true"])) {
+      --_group-disabled: ;
+      color: var(--_ink-disabled);
+      pointer-events: none;
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+      :scope:where([data-ready])::before { transition: inset-block-start 200ms, inset-block-end 200ms, inset-inline-start 200ms, inset-inline-end 200ms; }
+    }
+
+    @media (forced-colors: active) {
+      :where(:scope) {
+        --_face: var(--_segmented) Canvas;
+        --_shadow: none;
+        --_ink: var(--_segmented) CanvasText;
+        --_ink-disabled: GrayText;
+        --_line: var(--_segmented) ButtonBorder;
+        --_thumb-face: Highlight;
+        --_thumb-shadow: none;
+      }
+      :scope {
+        outline: var(--_border) solid var(--_line);
+        outline-offset: calc(var(--_border) * -1);
+      }
+      /* A disabled group's thumb: Canvas with a GrayText frame two border widths wide, so the chosen segment still shows and
+         its GrayText label reads on Canvas (D124). The thumb is a pseudo-element with no content: its box is its insets. */
+      :scope:where(:is(:disabled, [disabled], [aria-disabled="true"]))::before {
+        box-sizing: border-box;
+        background-color: Canvas;
+        border: calc(var(--_border) * 2) solid GrayText;
+      }
     }
   }
 }

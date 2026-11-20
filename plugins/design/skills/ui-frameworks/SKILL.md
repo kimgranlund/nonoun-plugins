@@ -1,6 +1,6 @@
 ---
 name: ui-frameworks
-description: Creates a UI kit in a project - light-DOM custom elements (or React) with plain CSS recipes, built on a signals foundation, covering the WAI-ARIA APG patterns (button, checkbox, switch, radio group, tabs, menu and menubar, listbox, combobox, tree, dialog, tooltip, slider, spinbutton, splitter, grid and treegrid, feed, carousel, text field, form field and more), each with a manifest, overridable tokens such as --button-face, every ARIA and native state styled, and forced-colours rules. Tokens come from ui-colors, ui-geometry and ui-materials. Use for "create a UI kit", "add a tabs component", "give me accessible web components", "a component library with our palette", "a Panda preset for the kit", or to extend or restyle a kit this skill made. NOT for colours or palettes (ui-colors), lengths and radii (ui-geometry), paint and materials (ui-materials), one-off interaction code (ui-interaction-dev), a showcase page (ui-showcase-bento), or components for another design system's own kit.
+description: Creates a UI kit in a project - light-DOM custom elements (or React, or Svelte 5) with plain CSS recipes, built on a signals foundation, covering the WAI-ARIA APG patterns (button, checkbox, switch, radio group, tabs, menu, listbox, combobox, tree, dialog, tooltip, slider, spinbutton, grid, carousel, text field, form field and more) plus select, date field, calendar, popover, toast, drawer, progress, file field and more, each with a manifest, overridable tokens such as --button-face, every ARIA and native state styled, and forced-colours rules. Tokens come from ui-colors, ui-geometry and ui-materials. Use for "create a UI kit", "add a tabs component", "give me accessible web components", "a Panda preset for the kit", or to extend or restyle a kit this skill made. NOT for colours or palettes (ui-colors), lengths and radii (ui-geometry), paint and materials (ui-materials), one-off interaction code (ui-interaction-dev), a showcase page (ui-showcase-bento), or components for another design system's own kit.
 ---
 
 # UI frameworks
@@ -18,7 +18,8 @@ Contents: [Route](#route) · [Create a kit](#create-a-kit) · [Use a component](
 | Change colours, density, font size or icons | `kit/styles/kit.config.json` | [Restyle](#restyle) |
 | Override one component's look | The `tokens` list of its manifest | Set the public token on any ancestor: `--button-face: …` |
 | A new component or recipe | `docs/specs/css-contract.md`, `docs/specs/foundation.md`, `docs/specs/manifest.md` | [Extend](#extend) |
-| React | `docs/specs/targets.md` | `create-kit.mjs --target react` |
+| React | `docs/specs/targets.md` | `create-kit.mjs --target react`; [Use a component](#use-a-component) |
+| Svelte 5 | `docs/specs/targets.md`, Svelte | `create-kit.mjs --target svelte`; [Use a component](#use-a-component) |
 | Panda CSS | `kit/panda/preset.js` | Add it to `presets`, and load `styles/kit.css` as it is |
 | Why something is the way it is | `docs/decisions.md` (D1 onwards) | |
 
@@ -35,13 +36,15 @@ Markup is the API: `<ui-button variant="primary">Save</ui-button>`. State is an 
 
 Open its manifest. `attributes` are its API, `parts` the children it expects (`author`) or creates (`element`), `keys` its keyboard, `events` what it dispatches, `tokens` what can be overridden, `guidance` and `notYet` its limits. Style-only items (link, card, badge, table) have `kind: "recipe"`: a native element carrying `data-ui="<id>"`.
 
+In React the same manifest holds: `import { Tabs } from './kit/react/tabs/tabs.js'`, attributes are props in camel case, a held value is `value` with `onChange(value, event)` or `defaultValue`, and events are `on<Name>` props. Link `kit/styles/kit.css` of the React kit, which adds `native.css`. A component with parts is composed as in its manifest, each `ui-<id>` child being that id's component and an author part staying a native element: `<Select name="plan" defaultValue="b"><div data-part="popup"><Listbox><Option value="a">Free</Option></Listbox></div></Select>`. A style-only recipe has no React component: write the native element with `data-ui`. In Svelte 5: `import Tabs from './kit/svelte/tabs/tabs.svelte'`, a held value is bound (`bind:value`) or given plain to start it, events are lower-case callback props (`onchange(value, event)`), and children are markup inside the component. The selected tab is `value` on the tabs element; a tab has no `selected`. A select's chosen text appears at hydration. A control with no native input (listbox, select, slider, calendar) submits through a hidden input and has no `required` validity; the targets spec lists what else differs.
+
 ## Restyle
 
-Edit `kit/styles/kit.config.json` (font size `n`, densities, the ui-colors request, the icon folder and names), then run `node scripts/tokens.mjs` and `node scripts/icons.mjs`. They read ui-colors, ui-geometry and ui-materials from `~/.claude/skills` (or `SKILLS_DIR`) and rewrite `tokens.css` and `icons.css`. Never edit those two files by hand. Dark mode, contrast modes and density are attributes or media queries the tokens already answer; a recipe never changes for them.
+Restyle the project's copy, never this skill's own kit: copy this skill's `scripts/` and `references/` beside the project's `kit/`, edit the project's `kit/styles/kit.config.json` (font size `n`, densities, the ui-colors request, the icon folder and names), then run `node scripts/tokens.mjs` and `node scripts/icons.mjs` from the kit's parent folder. The shape of the colour request is ui-colors' own. They read ui-colors, ui-geometry and ui-materials from `~/.claude/skills` (or `SKILLS_DIR`) and rewrite `tokens.css` and `icons.css`. Never edit those two files by hand. Dark mode, contrast modes and density are attributes or media queries the tokens already answer; a recipe never changes for them.
 
 ## Extend
 
-A new component starts as a manifest (schema: `references/manifest.schema.json`), then its files beside it. The rules it must follow are the specs in `docs/specs/`: the CSS contract for the recipe, the foundation for the class, the state matrix (`references/states.json`) for every state selector, copied unchanged. Then run the commands below until they pass. Copy from a family that is close: tabs for a coordinating element, menu button for an overlay, checkbox for a form control, meter for a value shown as a share.
+A new component starts as a manifest (schema: `references/manifest.schema.json`), then its files beside it. The rules it must follow are the specs in `docs/specs/`: the CSS contract for the recipe, the foundation for the class, the state matrix (`references/states.json`) for every state selector, copied unchanged. Then run the commands below until they pass. Copy from a family that is close: tabs for a coordinating element, menu button for an overlay, checkbox for a form control, meter for a value shown as a share. Motion that repeats is a `@keyframes <id>-<word>` block after the recipe's scope, used only inside the reduced-motion query.
 
 ## Commands
 
@@ -58,7 +61,7 @@ Run from the kit's parent folder (this folder, or a project that copied `scripts
 - `kit/registry.json`: the index of every component. Generated.
 - `kit/foundation/`: the signals kernel, `UIElement`, `UIFormElement`. `kit/behaviours/`: roving focus, grid focus, typeahead, dismiss, press, active descendant, as plain functions any framework can mount.
 - `kit/components/<id>/`: class, defining module, generated props, recipe, manifest.
-- `kit/react/<id>/`: the React components that exist. `kit/panda/preset.js`: the Panda preset.
+- `kit/react/<id>/`: the React component of every component, as a plain module with no build step. `kit/svelte/<id>/`: the Svelte 5 component of every component, as `.svelte` source for the project's compiler. `kit/panda/preset.js`: the Panda preset.
 - `kit/styles/`: `reset.css`, `tokens.css`, `icons.css`, `kit.css`, `kit.config.json`.
 - `docs/specs/`: vocabulary, state matrix, foundation, CSS contract, manifest, icons, patterns (the rules of every component, J1 onwards), targets. `docs/decisions.md`: why.
 - `references/`: `manifest.schema.json`, `states.json`, `terms.json`.

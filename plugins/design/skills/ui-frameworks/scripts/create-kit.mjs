@@ -2,7 +2,7 @@
 // every module they import, and writes the kit's index stylesheet. The copy keeps the layout of kit/, so
 // every relative import still resolves and nothing is rewritten except a recipe for a framework target (D62).
 //
-//   node scripts/create-kit.mjs <destination> [--target web-components|react] [--components all|id,id,…] [--tokens all|used] [--keep name,prefix-*,…] [--force]
+//   node scripts/create-kit.mjs <destination> [--target web-components|react|svelte] [--components all|id,id,…] [--tokens all|used] [--keep name,prefix-*,…] [--force]
 //
 // A component brings its whole family (a tab brings tabs, tab list and tab panel). `--components` defaults to
 // all the components built for the target. `--tokens used` trims tokens.css to the custom properties the copied
@@ -68,7 +68,7 @@ export function createKit({ destination, target = 'web-components', components =
       const css = rewrite(fs.readFileSync(path.join(root, `${folder}/${id}.css`), 'utf8'), { id, prefix: registry.prefix, variants: variantsOf(manifest) });
       out.set(`${target}/${id}/${id}.css`, Buffer.from(css));
       recipes.push(`../${target}/${id}/${id}.css`);
-      for (const f of reach(`kit/${target}/${id}/${id}.js`)) copy(f);
+      for (const f of reach(`kit/${target}/${id}/${id}.${target === 'svelte' ? 'svelte' : 'js'}`)) copy(f);
     }
   }
   let trimmed;
@@ -95,7 +95,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const args = process.argv.slice(2);
   const flag = (name) => (args.includes(name) ? args[args.indexOf(name) + 1] : undefined);
   const destination = args.find((a, i) => !a.startsWith('--') && !['--target', '--components', '--tokens', '--keep'].includes(args[i - 1]));
-  if (!destination) { console.error('usage: node scripts/create-kit.mjs <destination> [--target web-components|react] [--components all|id,id,…] [--tokens all|used] [--keep name,prefix-*,…] [--force]'); process.exit(2); }
+  if (!destination) { console.error('usage: node scripts/create-kit.mjs <destination> [--target web-components|react|svelte] [--components all|id,id,…] [--tokens all|used] [--keep name,prefix-*,…] [--force]'); process.exit(2); }
   try {
     const list = flag('--components');
     const made = createKit({ destination: path.resolve(destination), target: flag('--target'), components: !list || list === 'all' ? 'all' : list.split(','), force: args.includes('--force'), tokens: /** @type {'all' | 'used' | undefined} */ (flag('--tokens')), keep: flag('--keep')?.split(',') });

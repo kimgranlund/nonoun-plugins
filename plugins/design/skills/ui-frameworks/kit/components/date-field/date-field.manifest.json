@@ -1,0 +1,164 @@
+{
+  "$schema": "../../../references/manifest.schema.json",
+  "schema": 1,
+  "id": "date-field",
+  "kind": "component",
+  "family": "date-field",
+  "tier": "controls",
+  "pattern": "https://www.w3.org/WAI/ARIA/apg/patterns/combobox/examples/combobox-datepicker/",
+  "summary": "A text field for a date the user can type, with a calendar to choose it from.",
+  "role": null,
+  "focus": "none",
+  "tabindex": null,
+  "formAssociated": true,
+  "attributes": {
+    "value": {
+      "type": "string",
+      "description": "The date, as yyyy-mm-dd, whatever the field shows."
+    },
+    "name": {
+      "type": "string",
+      "description": "The name the value is submitted under."
+    },
+    "min": {
+      "type": "string",
+      "description": "The first date allowed, as yyyy-mm-dd."
+    },
+    "max": {
+      "type": "string",
+      "description": "The last date allowed, as yyyy-mm-dd."
+    },
+    "open": {
+      "type": "boolean",
+      "state": "open",
+      "description": "The calendar is showing. A script adds and removes it."
+    },
+    "required": {
+      "type": "boolean",
+      "state": "required",
+      "description": "The form cannot be submitted while the field holds no date."
+    },
+    "disabled": {
+      "type": "boolean",
+      "state": "disabled",
+      "description": "The field cannot be changed or focused. The component disables its input."
+    }
+  },
+  "resets": [
+    "value"
+  ],
+  "states": [
+    "hover",
+    "focus-within",
+    "open",
+    "required",
+    "invalid",
+    "read-only",
+    "disabled"
+  ],
+  "parts": {
+    "root": {
+      "kind": "root",
+      "material": {
+        "layer": "base",
+        "relief": "recessed",
+        "face": "neutral"
+      },
+      "note": "The field: a recessed box around the input and the control that opens the calendar. It is the anchor the popup is placed against."
+    },
+    "input": {
+      "kind": "author",
+      "material": null,
+      "note": "A native text input the author writes and marks with data-part=\"input\" (D14), with no name of its own. It shows the date in the page's language and takes what the user types. The field gives it the combobox role, aria-haspopup, aria-expanded, aria-controls, aria-required and aria-invalid, and disables it while the field is disabled."
+    },
+    "toggle": {
+      "kind": "element",
+      "tag": "span",
+      "at": "end",
+      "attrs": {
+        "role": "button",
+        "tabindex": "-1"
+      },
+      "material": null,
+      "note": "Opens and closes the calendar. Not a Tab stop: Alt+ArrowDown does the same. Named \"Choose a date\" unless the author names it; hidden while the input is read-only."
+    },
+    "popup": {
+      "kind": "author",
+      "material": {
+        "layer": "overlay",
+        "relief": "raised",
+        "face": "neutral"
+      },
+      "note": "The element marked data-part=\"popup\" that holds a calendar. It shows in the top layer while open. The field gives it popover=\"manual\", the dialog role and an id when the author wrote none; the author names it."
+    }
+  },
+  "tokens": [
+    "--date-field-face",
+    "--date-field-face-hover",
+    "--date-field-face-read-only",
+    "--date-field-ink",
+    "--date-field-ink-disabled",
+    "--date-field-face-disabled",
+    "--date-field-line-invalid",
+    "--date-field-height",
+    "--date-field-inset",
+    "--date-field-gap",
+    "--date-field-radius",
+    "--date-field-popup-face",
+    "--date-field-popup-inset",
+    "--date-field-popup-radius",
+    "--date-field-popup-gap"
+  ],
+  "behaviours": [
+    "dismiss"
+  ],
+  "keys": {
+    "Enter": "Takes the typed text as a date, then does what Enter does in a form.",
+    "Escape": "Closes the calendar; with it closed, puts back the text of the date held when the user has typed and not committed; otherwise it is left to the page.",
+    "Alt+ArrowDown": "Opens the calendar on the date held, with focus in its grid.",
+    "Alt+ArrowUp": "Closes the calendar, and focus goes back to the input."
+  },
+  "events": {
+    "input": "Dispatched when the date changes, by typing or from the calendar.",
+    "change": "Dispatched after input."
+  },
+  "uses": [
+    "calendar"
+  ],
+  "writes": {
+    "calendar": [
+      "value",
+      "min",
+      "max"
+    ],
+    "date-field": [
+      "invalid"
+    ]
+  },
+  "guidance": [
+    {
+      "topic": "naming",
+      "text": "The author names the input with a label, aria-label or aria-labelledby, or puts the field in a form field, and names the popup with aria-label."
+    },
+    {
+      "topic": "coordination",
+      "text": "The calendar is found inside the popup part by its grid. The field hands it value, min and max when the popup opens and when its own change, and takes the day the user chooses there. It writes nothing else on the calendar. The input's own input and change events stop at the field: listen on the field, whose events come when the date changes, after the text is read on blur or Enter, or a day is chosen."
+    },
+    {
+      "topic": "first paint",
+      "text": "Write `value` on the field; the input shows the date once the field is defined. Write readonly on the input to make the field read-only: the recipe reads it there, so the etched face shows before definition."
+    }
+  ],
+  "notYet": [
+    "A range of dates.",
+    "Typing a part of the date at a time, as a native date input does.",
+    "Translated messages: the toggle's name and the validation messages are English.",
+    "A lang that changes while a date is shown is followed only at the next write of the text."
+  ],
+  "targets": {
+    "web-components": "built",
+    "react": "built",
+    "svelte": "built",
+    "solid": "planned"
+  }
+}

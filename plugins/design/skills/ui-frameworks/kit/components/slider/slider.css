@@ -2,8 +2,13 @@
 
 /* The recipe of <ui-slider>. Its rules: J56 in docs/specs/patterns.md. Its shape: docs/specs/css-contract.md.
    The root is the hit area, ui-geometry's slider hit area tall, and draws no face. ::before is the track, centred in
-   it; the fill is the track's second layer, its content box, which ends where the padding at the inline end begins.
-   ::after is the thumb. Both are placed from --_share, which the class writes on the root's inline style (0 until
+   it: a recessed tray as tall as the thumb (ui-geometry gives a slider's thumb no pad inside its track), fully rounded.
+   The fill is the track's second layer, its content box, which starts at the track's start and ends where the padding
+   at the inline end begins, at the thumb's centre, so its end is hidden under the thumb; the content box keeps the
+   track's rounded start, so the fill is clipped to the track's shape. ::after is the thumb, a raised part inside the
+   track: its edge meets the track's start at the minimum and its end at the maximum, so its centre travels the track's
+   length less one thumb. Keyboard focus is drawn on the thumb: the ring is its outline, round, under the root's
+   focus-visible condition, and the root draws none. Both are placed from --_share, which the class writes on the root's inline style (0 until
    the element is defined), so a change of value moves no box of the root. Everything is placed on the inline axis,
    so it follows the writing direction. A vertical slider turns the root's writing mode, with its inline start at
    the bottom, so the same rules run the track upwards. */
@@ -15,11 +20,12 @@
       --_fill-face: var(--slider-fill-face, var(--solid-face));
       --_thumb-face: var(--slider-thumb-face, var(--raised-face));
       --_thumb-face-active: var(--pressed-face);
+      --_fill-face-disabled: var(--slider-fill-face-disabled, var(--line-strong));
       --_track-shadow: var(--recessed-shadow);
       --_thumb-shadow: var(--raised-shadow-1);
       --_thumb-shadow-hover: var(--raised-shadow-2);
       --_height: var(--slider-height, var(--controls-track-slider-hit-area));
-      --_track: var(--controls-track-progress-slider-track);
+      --_track: var(--_thumb);
       --_radius: var(--slider-track-radius, calc(var(--_track) / 2));
       --_thumb: var(--controls-track-slider-thumb);
       --_thumb-radius: calc(var(--_thumb) / 2);
@@ -28,7 +34,6 @@
       --_tall: calc(var(--_length) * 4);
       --_touch: max(var(--_height), var(--controls-target-t_hit-touch));
       --_stop: calc(var(--_thumb) / 2 + var(--_share) * (100% - var(--_thumb)));
-      --_fade-disabled: 0.5;
       --_ring: var(--colors-focus-ring);
       --_ring-width: var(--controls-focus-ring-width-w);
       --_ring-offset: var(--controls-focus-ring-offset-o);
@@ -43,6 +48,7 @@
       block-size: var(--_height);
       min-inline-size: var(--_length);
       border-radius: var(--_root-radius);
+      outline: none;
       cursor: pointer;
       touch-action: pan-y;
       -webkit-user-select: none;
@@ -86,14 +92,13 @@
     @media (hover: hover) {
       :scope:where(:is(:hover, [data-hover]):where(:not(:is(:disabled, [disabled], [aria-disabled="true"]), :is(:checked, [aria-checked="true"], [checked]:not(input, option)), :is(input[type="checkbox"]:indeterminate, [aria-checked="mixed"], [indeterminate]), :is([aria-pressed="true"], [pressed]), :is([aria-selected="true"], [selected]:not(option)), :is([aria-current]:not([aria-current="false"], [aria-current=""]), [current]), :is([aria-expanded="true"], [expanded]), :is([open], :popover-open))))::after { box-shadow: var(--_thumb-shadow-hover); }
     }
-    :scope:where(:is(:focus-visible, [data-focus-visible])) {
+    :scope:where(:is(:focus-visible, [data-focus-visible]))::after {
       outline: var(--_ring-width) solid var(--_ring);
       outline-offset: var(--_ring-offset);
     }
     :scope:where(:is(:active, [data-active]):where(:not(:is(:disabled, [disabled], [aria-disabled="true"]))))::after { background-color: var(--_thumb-face-active); }
     :scope:where(:is(:disabled, [disabled], [aria-disabled="true"])) { cursor: default; }
-    :scope:where(:is(:disabled, [disabled], [aria-disabled="true"]))::before,
-    :scope:where(:is(:disabled, [disabled], [aria-disabled="true"]))::after { opacity: var(--_fade-disabled); }
+    :scope:where(:is(:disabled, [disabled], [aria-disabled="true"]))::before { background-image: linear-gradient(var(--_fill-face-disabled), var(--_fill-face-disabled)), none; }
 
     @media (pointer: coarse) {
       :scope {
@@ -105,12 +110,11 @@
       :where(:scope) {
         --_track-face: Canvas;
         --_fill-face: Highlight;
-        --_thumb-face: ButtonText;
-        --_thumb-face-active: ButtonText;
+        --_thumb-face: ButtonFace;
+        --_thumb-face-active: ButtonFace;
         --_track-shadow: none;
         --_thumb-shadow: none;
         --_thumb-shadow-hover: none;
-        --_fade-disabled: 1;
         --_ring: Highlight;
       }
       :scope::before {
@@ -118,11 +122,28 @@
         outline: var(--_border) solid ButtonText;
         outline-offset: calc(var(--_border) * -1);
       }
+      /* The thumb's boundary is its outline, inside it; the focus ring takes its place. WebKit does not recolour an
+         outline here and keeps shadows, so both are written. */
+      :scope::after {
+        outline: var(--_border) solid ButtonBorder;
+        outline-offset: calc(var(--_border) * -1);
+      }
+      /* Hover (D124): the ring one border width heavier than at rest, in the boundary colour, inside; no fill, never Highlight. */
+      @media (hover: hover) {
+        :scope:where(:is(:hover, [data-hover]):where(:not(:is(:disabled, [disabled], [aria-disabled="true"]), :is(:checked, [aria-checked="true"], [checked]:not(input, option)), :is(input[type="checkbox"]:indeterminate, [aria-checked="mixed"], [indeterminate]), :is([aria-pressed="true"], [pressed]), :is([aria-selected="true"], [selected]:not(option)), :is([aria-current]:not([aria-current="false"], [aria-current=""]), [current]), :is([aria-expanded="true"], [expanded]), :is([open], :popover-open))))::after {
+          outline: calc(var(--_border) * 2) solid ButtonText;
+          outline-offset: calc(var(--_border) * -2);
+        }
+      }
+      :scope:where(:is(:focus-visible, [data-focus-visible]))::after {
+        outline: var(--_ring-width) solid var(--_ring);
+        outline-offset: var(--_ring-offset);
+      }
       :scope:where(:is(:disabled, [disabled], [aria-disabled="true"]))::before {
         outline-color: GrayText;
         background-image: linear-gradient(GrayText, GrayText), none;
       }
-      :scope:where(:is(:disabled, [disabled], [aria-disabled="true"]))::after { background-color: GrayText; }
+      :scope:where(:is(:disabled, [disabled], [aria-disabled="true"]))::after { outline-color: GrayText; }
     }
   }
 }

@@ -1,0 +1,75 @@
+@layer reset, base, tokens, recipes, utilities;
+
+/* The recipe of <ui-popover>. Its rules: J90 and J91 in docs/specs/patterns.md. Its shape:
+   docs/specs/css-contract.md. Its conditions: references/states.json.
+   The root is an inline box around the control and the anchor its content is placed against (D77);
+   anchor-scope keeps the name to this element, so each content finds its own root. The root paints nothing.
+   The content is displayed exactly while the root has `open`: the recipe alone decides, so nothing shows
+   and nothing takes room before the element is defined, and a popover written open is already placed (J90).
+   Placement: below the control, start edges aligned; above it where there is no room below; end edges
+   aligned where there is no room after the start edge; both where neither fits. The margin in the block
+   axis is the gap, which the flips carry to the other side. The inline margin is 0, so that the browser's
+   auto margin for a popover does not centre it in the area instead of aligning it.
+   ui-materials: an overlay with a raised, neutral face: the overlay face and the overlay shadow, as the
+   menu and the dialog paint theirs. ui-geometry: a popover's padding is three quarters of a card's depth,
+   and its radius that padding plus the card's own curve: the card-4 rows at nesting f = 0.25, (1 − f)·d and
+   R − f·d, which are those two lengths. The popup offset from its trigger, no wider than a popover.
+   In forced colours the face is Canvas, the ink CanvasText, the boundary an outline; WebKit keeps shadows,
+   hence --_shadow: none. */
+@layer recipes {
+  @scope ([data-ui="popover"]) {
+    :where(:scope) {
+      --_face: var(--popover-content-face, var(--overlay-face));
+      --_shadow: var(--overlay-shadow);
+      --_ink: var(--popover-content-ink, var(--ink));
+      --_inset: var(--popover-content-inset, var(--containers-frame-nest-f-0-25-depth));
+      --_radius: var(--popover-content-radius, var(--containers-curvature-nest-f-0-25-in-card-4));
+      --_gap: var(--popover-content-gap, var(--collections-gap-popup-offset-from-its-trigger));
+      --_width: var(--collections-width-popover);
+      --_text: var(--unit-scale-f);
+      --_border: var(--unit-border-b);
+    }
+
+    /* The recipe's own boxes are border boxes, with or without a reset (C31). */
+    :where(:scope, [data-part]) { box-sizing: border-box; }
+    :scope {
+      display: inline-block;
+      anchor-name: --popover;
+      anchor-scope: --popover;
+    }
+    :scope:where([hidden]:not([hidden="until-found"])) { display: none; }
+
+    :scope > [data-part="content"] {
+      display: none;
+      position: fixed;
+      margin-block: var(--_gap);
+      margin-inline: 0;
+      position-anchor: --popover;
+      position-area: block-end span-inline-end;
+      position-try-fallbacks: flip-block, flip-inline, flip-block flip-inline;
+      max-inline-size: var(--_width);
+      padding: var(--_inset);
+      border: 0;
+      border-radius: var(--_radius);
+      overflow: auto;
+      background-color: var(--_face);
+      box-shadow: var(--_shadow);
+      color: var(--_ink);
+      font-size: var(--_text);
+    }
+
+    :scope:where(:is([open], :popover-open)) > [data-part="content"] { display: block; }
+
+    @media (forced-colors: active) {
+      :where(:scope) {
+        --_face: Canvas;
+        --_ink: CanvasText;
+        --_shadow: none;
+      }
+      :scope > [data-part="content"] {
+        outline: var(--_border) solid CanvasText;
+        outline-offset: calc(var(--_border) * -1);
+      }
+    }
+  }
+}

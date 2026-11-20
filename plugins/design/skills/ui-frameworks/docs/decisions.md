@@ -15,7 +15,7 @@ Design decisions for the UI-kit skill. D1 to D84 were put to the author and conf
 - D80 to D84 with the manifest schema and the registry, extracted from the spike. The manifest spec first listed them as W1 to W5.
 - D85 to D88 with the icon contract, and D89 with the changes that let several families be built at once. Decided by the session.
 
-Each renumbered entry keeps its old id. Brief ids (B…) refer to [the brief](plan.md#the-brief). The evidence is in [prior-art.md](prior-art.md) and [checks.md](checks.md).
+Each renumbered entry keeps its old id. Brief ids (B…) refer to the brief. The evidence is in prior-art.md and [checks.md](checks.md).
 
 | Id | Decision |
 |---|---|
@@ -125,6 +125,22 @@ Each renumbered entry keeps its old id. Brief ids (B…) refer to [the brief](pl
 | D104 | The read-only condition also holds for a root whose input is read-only |
 | D105 | A grid cell with several controls is entered with Enter or F2 and left with Escape |
 | D106 | The carousel's slides are a polite live region |
+| D107 | The second set is nine families a product needs beyond the APG patterns |
+| D108 | A recipe may hold keyframes named for it, after its scope |
+| D109 | The third set is dates, files, a tag group, and three looks |
+| D110 | An item may inherit one private token that carries its coordinator's variant |
+| D111 | `rovingFocus` passes over a key whose default is already prevented |
+| D112 | React is built for every component, by family, to one authoring guide |
+| D113 | Routines both targets need live in their own module, beside the class |
+| D114 | The preview shows React by translating the same sections |
+| D115 | The entry file routes by task, and the shipped skill has no link to a file it does not ship |
+| D116 | A state that moves between the items of a collection is one highlight that travels |
+| D117 | The kit's own tokens take Instrumental Modernism's neutral, primary and quieter edges, and a curvature of 0.5 |
+| D118 | The dialog follows a panel the browser opened, and the platform review of 2026-11-15 changes nothing else |
+| D119 | Svelte is built as `.svelte` source for Svelte 5, proved on the same nine components |
+| D120 | An amendment to this skill is made in the source and reaches the installed skill by packaging |
+| D121 | The Svelte select stays blank before hydration, a Svelte tab has no `selected`, and amendments arrive in an inbox |
+| D122 | Every root that raises itself on focus has a case, a held primary takes the pressed-solid face, and the dialog reads the dialog depth |
 
 ## D1 · Text entry may use a native `<input>`
 
@@ -152,7 +168,7 @@ Each part's layer, relief and face (the `ui-materials` terms) go in the manifest
 
 ## D5 · A fresh foundation that ports from the earlier kits
 
-Nothing is forked. The earlier kits are sources of mechanisms and lessons, listed in [prior-art.md](prior-art.md#what-to-port). They may become presets of this system later; they do not constrain it now.
+Nothing is forked. The earlier kits are sources of mechanisms and lessons, listed in prior-art.md. They may become presets of this system later; they do not constrain it now.
 
 ## D6 · The browser floor is current evergreen
 
@@ -719,7 +735,7 @@ An icon beside a label says nothing the label does not. One that stands alone is
 
 No builder of a component family edits a file another family uses. `kit/styles/kit.css` and `kit/registry.json` are generated from the manifests; the definition test reads the registry; mutation sets live in `tests/mutations/<family>.mjs` and the preview in `preview/sections/<family>.html`, both discovered. A manifest starts with its target `planned`, and the tests that read code apply once it says `built`. The Node tests touch no file a browser run serves.
 
-Several agents can then build different families at the same time, each to the rules of [authoring.md](authoring.md).
+Several agents can then build different families at the same time, each to the rules of authoring.md.
 
 ## D90 · A list that must not take focus highlights an option; a menu, a tree and tabs move real focus
 
@@ -785,13 +801,13 @@ Installing is a copy of `dist/ui-frameworks` to `~/.claude/skills/ui-frameworks`
 
 ## D101 · A framework target loads `native.css`
 
-Decided by the session, from the React proof ([report](reports/react.md)). The recipes, conditions, behaviours and manifests carried the nine React components unchanged. Two things were missing, and both come from a native root, not from a recipe: a native `button` keeps the browser's border, padding and font (59.92px wide against 51.22px), and the checkbox's native input shows inside its label. `kit/styles/native.css` resets the first and hides the second, in the `reset` layer, and each framework target's `kit.css` loads it (X11). The Web Components target does not.
+Decided by the session, from the React proof (report). The recipes, conditions, behaviours and manifests carried the nine React components unchanged. Two things were missing, and both come from a native root, not from a recipe: a native `button` keeps the browser's border, padding and font (59.92px wide against 51.22px), and the checkbox's native input shows inside its label. `kit/styles/native.css` resets the first and hides the second, in the `reset` layer, and each framework target's `kit.css` loads it (X11). The Web Components target does not.
 
 Left open by the proof, and recorded in the targets spec: a menu rendered open on the server paints closed until hydration, because nothing in HTML opens a popover; a `label` root cannot carry ARIA states, so it mirrors them as plain attributes; a disabled fieldset does not reach a checkbox's label; a trigger's ARIA is written after hydration.
 
 ## D102 · A recipe makes its own boxes border boxes
 
-Decided by the author on 2026-11-14, after a review ([report](reports/review-tree-shaking-and-css.md)). Without `reset.css`, 12 of 32 families changed size, because the recipes relied on the reset's `box-sizing: border-box`. Every recipe now carries one rule, `:where(:scope, [data-part]) { box-sizing: border-box; }`, and the table and grid recipes add `caption, th, td` to it (C31). The rule leaves `::before` and `::after` alone. The reset named them inside `:where()`, where a pseudo-element is not valid and is dropped, so they were content boxes all along and the recipes were written for that: with them made border boxes, two tests of the slider's fill failed in three engines. The reset now says what it does, `:where(*)`. The lint requires the rule. With it, no family differs with or without the reset. `reset.css` stays in the kit and in `kit.css`: it still serves the project's own content.
+Decided by the author on 2026-11-14, after a review (report). Without `reset.css`, 12 of 32 families changed size, because the recipes relied on the reset's `box-sizing: border-box`. Every recipe now carries one rule, `:where(:scope, [data-part]) { box-sizing: border-box; }`, and the table and grid recipes add `caption, th, td` to it (C31). The rule leaves `::before` and `::after` alone. The reset named them inside `:where()`, where a pseudo-element is not valid and is dropped, so they were content boxes all along and the recipes were written for that: with them made border boxes, two tests of the slider's fill failed in three engines. The reset now says what it does, `:where(*)`. The lint requires the rule. With it, no family differs with or without the reset. `reset.css` stays in the kit and in `kit.css`: it still serves the project's own content.
 
 A project's unlayered reset still beats a recipe. That is how cascade layers work, and the skill says to put such a reset in a layer.
 
@@ -814,3 +830,164 @@ Decided by the session on 2026-11-14, from the APG grid pattern. A cell with one
 ## D106 · The carousel's slides are a polite live region
 
 Decided by the session on 2026-11-14, from the APG carousel pattern. The kit's carousel never rotates by itself, so its slides part carries `aria-live="polite"` and a slide the user brings into view is announced (J78). The author's own `aria-live` is kept.
+
+## D107 · The second set is nine families a product needs beyond the APG patterns
+
+Decided by the session on 2026-11-14, when the author asked for the second component set. The core set is the APG patterns (D7). The second set is what a product reaches for next and the APG has no pattern of its own for: select, popover, toast (with its toaster) and progress as components, and pagination, tag, avatar, separator and skeleton as style-only recipes (D93). Their rules are J82 to J102.
+
+Each reuses what exists. The select is the APG's select-only combobox over the kit's listbox and options, with the `activeDescendant`, `typeahead` and `dismiss` behaviours. The popover is a non-modal dialog placed as the tooltip is. The toast is the alert with a time limit that pauses under the pointer and focus (WCAG 2.2.1). The progress is the meter with a state for a value that is not known.
+
+Left for a later set, because each needs rules of its own first: date entry and a calendar, a drawer (a side of the dialog), a segmented control (a look of the radio group), a tag group with keyboard removal, a file field, and a stepper.
+
+## D108 · A recipe may hold keyframes named for it, after its scope
+
+Decided by the session on 2026-11-14, from the builds of the progress and the skeleton. D53 gave a recipe one shape, one `@scope` in the recipes layer, and so refused `@keyframes`; that was a matter of shape, with no reason against motion that repeats. The progress then had to run its movement from its class, which every other target would have to copy, and the skeleton, which has no class, could not pulse at all.
+
+A recipe may now hold `@keyframes <id>-<word>` blocks in its `@layer recipes` block, after the scope. Keyframe names are global, so the name carries the recipe's id. C18 still holds: an `animation` is declared only inside `@media (prefers-reduced-motion: no-preference)`, and for a component only on a ready root. A style-only recipe has no ready state, and no first paint that differs from a later one, so the media query alone is enough for it.
+
+## D109 · The third set is dates, files, a tag group, and three looks
+
+Decided by the session on 2026-11-14, when the author asked for the third component set. It is the list D107 left for later: a calendar and a date field, a tag group, a file field, and a stepper as new families (J103 to J121, J124); a drawer and a segmented control as looks of families that exist (J122, J123).
+
+A drawer is the dialog with a `side`, because everything that makes a drawer work (the top layer, the focus trap, Escape, the backdrop) is the dialog's. A segmented control is the radio group with `variant="segmented"`, because it is one choice among few, with the radio group's keys and form value; a second component would be a second copy of both. The tag group asks the page to remove a tag and never removes one itself, so a page that keeps its own list stays in charge of it. The file field keeps the browser's file input visible and working without script (D14), and adds only the drop.
+
+The date rules are ui-interaction-dev's: a `yyyy-mm-dd` value whatever the language shows, the Gregorian calendar, typed text read on leaving the field and never on each key, text that is no date kept and marked invalid. Not built: a range of dates, more than one month, and other calendars.
+
+## D110 · An item may inherit one private token that carries its coordinator's variant
+
+Decided by the session on 2026-11-14, from the build of the segmented control. A recipe is one scope on its own tag, and a variant block sets private tokens only (D58), so a radio's recipe had no way to know that its group is segmented. The other ways out were worse: the author repeating the variant on every radio, the group writing an attribute on its radios (late, so U2 breaks), or the group's recipe painting its radios with rules that would outrank the radio's own.
+
+The group sets one private token, `--_segmented`, to `initial` in its token block and to empty in its `variant="segmented"` block. The radio declares the same token as `inherit` and builds each segment value from it. Because every group sets the token, a plain group inside a segmented one stays plain, and a radio in no group is plain. C8 stays otherwise as it was: this is the one inheritance it allows, declared by name on both sides.
+
+## D111 · `rovingFocus` passes over a key whose default is already prevented
+
+Decided by the session on 2026-11-14, at the author's request, from the build of the calendar. The calendar moves among its days by its own rule (a week down, a month on) and mounts `rovingFocus` only for the Tab stop. `rovingFocus` acted on every arrow key whatever had happened to it, so the calendar had to stop its keys with `stopImmediatePropagation()`, and a listener on an ancestor never heard them.
+
+`rovingFocus` now returns at once for a key whose default action is prevented, as `gridFocus` already did (B8). A component takes a key for itself by acting on it and preventing its default in a listener added before the behaviour is mounted, and the key still reaches the page. The calendar's stop is removed.
+
+## D112 · React is built for every component, by family, to one authoring guide
+
+Decided by the session on 2026-11-14, when the author asked to finish React. D98 built React for nine components to prove the contract neutral and left the rest to be built on demand. The rest are now built: the 40 other components, by family, each by an agent to authoring-react.md, which states X1 to X11 as working rules and points at the proof set.
+
+Three readings are fixed there, so that forty builds agree. A component of another family is found in the DOM by its role and written to after each render, as the menu button finds its trigger; context is for a family's own members (X6). Keys of a component's own go through React's `onKeyDown`, and the behaviours stay the only native key listeners (X4). A form control with no native control of its own renders a hidden input that carries its name and value; what only `ElementInternals` gives, required-ness and custom validity, is not built for React.
+
+The ten style-only recipes have no React component: their root is a native element with `data-ui` in every target (D93), and `create-kit.mjs --target react` already copies their recipes. Their `react` target stays `planned` in the manifest, because `built` means a component file exists (X10).
+
+## D113 · Routines both targets need live in their own module, beside the class
+
+Decided by the session on 2026-11-14, from the React build of the calendar. The calendar's date arithmetic and the date field's reading of typed text were static members of their Web Component classes. A React component may not import a class module (X6), and could not if it were allowed: a class extends `HTMLElement`, so the module cannot even be loaded where a server renders. Writing the routines twice would give two calendars that can disagree about a leap year.
+
+They are now `kit/components/calendar/calendar.dates.js` and `kit/components/date-field/date-field.text.js`: modules that import nothing from the foundation, run nothing when loaded and touch no element. The classes import them and keep `UICalendar.dates` and `UIDateField.text` as they were. X6 allows a React component to import such a module, `kit/components/<id>/<id>.<word>.js`, and never a class or another component's props. `create-kit.mjs` follows imports, so either target's copy brings them. The mutations of the routines moved with them, into the sets `calendar-dates` and `date-field-text`.
+
+## D114 · The preview shows React by translating the same sections
+
+Decided by the session on 2026-11-15, when the author asked for the preview to show React too. The 46 files in `preview/sections/` stay the only specimens. With `?target=react`, preview/react.js translates a section's markup into React elements: `ui-<id>` becomes the component of `kit/react/<id>/<id>.js`, a manifest attribute becomes a camel-case prop typed from the manifest, a held one is passed as `default<Name>` where the component's signature has that name, and each manifest event is an `on<Name>` prop that writes to the page's log. A native element stays the element it is, with React's names for its attributes. A second set of specimens written in React was refused: two sets drift, and the point of the page is to see one specimen in both targets.
+
+The header has a segmented control for the target, and a change reloads the page. In React mode the page's own chrome is still Web Components and only those seven modules are defined. With scripts off, React mode shows `renderToString` output that is never hydrated, which is the first paint X7 speaks of. The import map for `react` is in the page's head and resolves to `/vendor/react/`, which `tests/serve.mjs` already serves.
+
+A section's own `<script>` speaks to the Web Components, so the translator skips it and the page component stands in: a button with `id="open-<x>"` opens the component with id `<x>` through state, and the toast section's button adds toasts to its toaster. That is the one place a family is written for React by hand; any other family that translation cannot express gets its case there too. Section scripts had not run for the Web Components either, because markup placed with `innerHTML` does not run scripts; the page now puts each again as a new element.
+
+Checked in Chromium only: all 46 families render in the browser and on the server with no console error, and every specimen's box is the same size in both targets.
+
+## D115 · The entry file routes by task, and the shipped skill has no link to a file it does not ship
+
+Decided by the session on 2026-11-15, from a static routing review with the `context-system` skill, which the author asked for. Five tasks were followed from `CLAUDE.md`: build a component, build it for React, restyle, change the preview, verify. The first two reached their guide in one read. Restyling had no row at all, the preview row gave a command and not the guide for a section, and what "done" means was only in the authoring guide. The table was keyed by what a file is, so a reader had to know the file to find it.
+
+`CLAUDE.md` now says who it is for, routes by task with a condition for each read, and names no count that goes stale ("D1 onwards"). It stays the only entry of the source; `skill/SKILL.md` stays the only entry of the shipped skill.
+
+The link check found 20 links in `dist/ui-frameworks` that ended at files the skill leaves out (the plan, the authoring guides, the reports, the `checks/` folder). D100 kept every link unchanged. `scripts/package.mjs` now writes such a link as its text alone, and `--check` compares against the same bytes, so the built skill cannot hold one. Links between shipped files are untouched.
+
+Not changed: the reports have no index, because `docs/reports/<family>.md` and `react.<family>.md` are found by name; `docs/prior-art.md` cites paths in other projects, which the link check reads as stale and are not; the registry's paths are from the kit's parent folder, as `create-kit.mjs` expects. No fresh-agent trial was run, so this is a static result. D114 is the React preview, decided in another session.
+
+Two fresh-agent planning trials followed, on 2026-11-15, each from the entry alone. The consumer, from the built skill, planned a React select and dialog with a brand colour and compact density and met every criterion; it had to guess which `kit.config.json` to edit and read source to compose a select, so `skill/SKILL.md` now says to restyle the project's copy and shows a component with parts in React. The author, from `CLAUDE.md`, planned a stronger selected state for the tag and found the routes, the checks and the generated-recipe rule, but planned a React component for a style-only recipe; `CLAUDE.md` and both authoring guides now say such a recipe has none. The same brief, rerun with a new agent, kept `react` as `planned` and changed one recipe. These were plans, not builds.
+
+## D116 · A state that moves between the items of a collection is one highlight that travels
+
+Decided by the session on 2026-11-15, at the author's request: the highlight of a listbox, a segmented control and the tabs is to be a free shape that moves from one item to the next. The peer system Instrumental Modernism does the same: its chosen segment is a raised thumb in a tray that travels over 200 ms while its ink settles.
+
+The collection paints the state's face as one pseudo-element of its root, the thumb, and the item paints none (C32). The item in the state names itself the thumb's anchor; the collection scopes the anchor name to itself and sets the thumb's insets from it. A probe on 2026-11-15 moved the anchor from one item to another under a transition of the four insets: Chromium 156 and WebKit 27.2 were midway after half the time, and Firefox 157 was already at the end. Firefox therefore shows the state at once, as it did before, and gains the movement when it interpolates anchored insets.
+
+The other ways were worse. A script that measures the item and writes the thumb's box would move in Firefox too, but the thumb would be missing until the element is defined (U2, C17), and every resize, density change and font load would need measuring again. A face on each item that fades in and out is not a shape that moves. A view transition would move it, but takes the whole document's rendering for one tab.
+
+Consequences. The face of the state becomes the collection's token, `--<collection id>-thumb-face`: `--tab-face-selected` gives way to `--tab-list-thumb-face`. The item keeps its ink for the state. The travel takes 200 ms, a literal until the kit has motion tokens (css-contract, Open). A state that several items hold at once does not travel. The first family is the tabs; the segmented radio group, the listbox's highlighted option and the menu's highlighted item follow once the tabs pass.
+
+## D117 · The kit's own tokens take Instrumental Modernism's neutral, primary and quieter edges, and a curvature of 0.5
+
+Decided by the session on 2026-11-15, at the author's request to study the peer project and change colour, size and density, curvature, and edges and material. All of it is `kit/styles/kit.config.json`; no recipe changed.
+
+- **Colour.** The ui-colors request splits the neutral into ground, surface and ink, each tinted 12 toward HCT hue 87, on a light page of tone 95.5 and a dark page of tone 9, with the primary anchored to `oklch(67% 0.175 50)` in both schemes. That is IM's warm grey and its orange. ui-colors reports no contrast pair under its threshold in either scheme, and one warning: the light orange solid is lighter than step 9's target (Lc 51.5 against 61.6), as IM's is. Pinning the neutral's first and last steps to IM's exact values with `ground` and `ink` anchors was tried and dropped: the steps between kept other hues, and the dark surface fell under the separation gate.
+- **Edges.** With a split neutral a raised face is lighter than its ground, so its Flat ring drops from the strong line to the line. A field and an overlay keep the strong line, which an operable boundary needs (ui-materials, fills.md). IM's Flat draws no ring at all; the kit does not go that far, because ui-colors puts the raised face about Lc 5 from the ground, under the `apca.ui` threshold.
+- **Curvature.** `kit.config.json` gains `kappa`, which `scripts/tokens.mjs` passes to ui-geometry's `derive.mjs`; without the key the output is as before. The value is 0.5: a control's radius goes from 12px to 8px, a row's to 5px, the smallest to 2px. IM's square shape is 3px, which is κ 0.19 here, but ui-geometry's rows nest inward: at 0.19 a row and the smallest radius are 0, and at 0.375 the smallest is still 0, which leaves a tag, a link's ring and a tooltip square, against their own rules. 0.5 is the lowest value that keeps every radius above 0 and whole.
+- **Size and density.** Unchanged. IM's default text is 14px and its control 32px, which is the kit's `n` of 14, and the three densities stay.
+
+Fourteen expectations in ten recipe tests repeated the old radii as numbers. They now resolve the token they mean, so a later change of curvature needs no test edit.
+
+Not done: type (IM sets controls in Inter at weight 450; no sibling owns families) and motion tokens (IM's `--settle` and `--travel` are 200ms; the recipes still hold a literal 100ms for paint, and the thumbs of D116 a literal 200ms).
+
+## D118 · The dialog follows a panel the browser opened, and the platform review of 2026-11-15 changes nothing else
+
+Decided by the session on 2026-11-15, when the author asked that the foundations be modern and use the platform's own overlays. A probe of 48 features in Chromium 156, Firefox 157 and WebKit 27.2 ([checks.md, check 8](checks.md#check-8--the-platform-in-november-2026)) was read against what the kit uses.
+
+**Already the platform's.** Every popup is in the top layer through the Popover API. The dialog is the browser's `<dialog>` shown with `showModal()`, with no focus trap, inertness or Escape handling of the kit's (J40). Every popup is placed by CSS anchor positioning with `position-area`, `position-try-fallbacks`, `anchor-scope` and `position-visibility`, and no script measures a popup. Form controls use `ElementInternals`, validity shows through `:user-invalid`, a closed panel is `hidden="until-found"`, the carousel is scroll snap with `scrollend`, and `inert` hides what must not be reached.
+
+**One gap, now closed.** A native button with `commandfor` and `command="show-modal"` opened the dialog's panel, and the root did not get `open`; a change inside the panel before the next task then closed it again. The dialog now hears the panel's `beforetoggle` and `toggle`: it sets `open` when the browser opened the panel, and does not close a panel the browser is opening (J39). React does the same, with an `onOpen` prop beside `onClose`. `closedby="any"` on the panel already worked, because the panel is the author's element; it is now tested and said in the manifest, and "closing on a press outside" has left the dialog's `notYet`. Chrome 129, the floor, has neither invoker commands nor `closedby` (134 and 135); there the attributes do nothing and the dialog works as before, so the floor stays.
+
+**Looked at and left.**
+
+- `popover="manual"` with the `dismiss` behaviour stays (D77). `showPopover({ source })` exists in all three engines, and [check 9](checks.md#check-9--popoverauto-from-a-custom-trigger) probed it the same day: a source does not exempt a custom trigger from light dismiss. A press on the trigger of an open popover closes it when the pointer comes up, and the click that follows opens it again, with a source and without, in all three engines. That is the reason D77 gave, and it still holds. A source does chain a nested popover to its parent, and Escape inside a modal dialog closes the popover first, but the kit would still need its own script for the trigger and for closing when focus leaves, which light dismiss does not do. `auto` would also close every unrelated open popover, the page's own among them. Nothing changes.
+- `popover="hint"` for the tooltip still waits for Safari's stable release (D21).
+- `:state()` stays unused (D32): a native root cannot hold a custom state.
+- Entry transitions with `@starting-style` and `transition-behavior: allow-discrete` work in all three engines. An exit transition held the popover displayed only in Chromium in the probe. Whether popups fade in is a styling question and is left to that work; C18 already says where a transition may be declared.
+- `interestfor`, `interpolate-size`, `calc-size()`, `overlay`, scroll-state queries, `reading-flow` and `focusgroup` are Chromium only. Customizable `<select>` is missing in Firefox, `moveBefore` and `ariaNotify` in WebKit. None can be leaned on.
+- `<details name>` exists everywhere, but the disclosure keeps its own button and panel: a summary cannot hold the heading structure the accordion pattern asks for, and the React target would render another element.
+
+## D119 · Svelte is built as `.svelte` source for Svelte 5, proved on the same nine components
+
+Decided by the session on 2026-11-15, when the author asked to start Svelte. D99 left Svelte without a sequence. It starts as React did (D98): the nine components of the spike first, to prove the contract carries a third target, then the rest by family.
+
+A Svelte component is a `.svelte` file, not a plain module. React could be written with `createElement` and need no build step (X6); Svelte has no such form, because its runtime is the compiler's output, and a hand-written module against `svelte/internal` would break with a minor release. A Svelte project always compiles, so the kit ships source and adds no build step of its own. Svelte 5 in runes mode, with `<script lang="ts">`, which the compiler reads without a preprocessor and D24 already named for the adapters.
+
+Props follow Svelte's own idiom and not React's: a held value is `$bindable` (`bind:checked`), an event is a lower-case callback prop (`onchange`), children are a snippet. The roots, the states, the recipes, the behaviours and the parity tests are the ones React has (X1 to X3, X8 to X11); V1 to V7 in the targets spec replace X4 to X7.
+
+The tests need what React's did not: `tests/serve.mjs` compiles a `.svelte` file when it is requested, bundles Svelte's runtime once from the borrowed copy (5.57), and renders a component on the server in Node at `/svelte/render`, because Svelte's server and browser builds of `svelte` cannot share a page. Tests render fixtures, `tests/browser/svelte/*.svelte`, since a snippet cannot be written in a test file.
+
+Not decided here: whether `svelte-check` can run without an install, and the byte budget; both wait for the proof.
+
+Built on 2026-11-15 for the tabs, the segmented radio group and the listbox. `--radio-face-checked` stays as the face of a plain radio's bead, and the checked segment's face is `--radio-group-thumb-face`; a plain radio group has no thumb. `--option-face-highlighted` gives way to `--listbox-thumb-face`, which is the row tint, with no material and no shadow; a selected option keeps its own solid face, which covers the thumb. The thumb takes its radius from the item's geometry row, so `--tab-radius` no longer shapes the selected face.
+
+Two things are left as they are, on purpose for now. In forced colours a highlighted option and a highlighted selected option look the same, both `Highlight` with an outline, where they differed before; and a checked, disabled segment keeps its own `GrayText` face over the thumb, because a thumb cannot see its anchor's state without `:has()`, which the lint refuses as no condition of the state matrix. The menu's highlighted item is not built: it follows hover and is absent when nothing is hovered, so it is not a state that always sits on one item.
+
+This entry was first written as D117, at the same time as another session wrote the D117 above; it was renumbered the same day, and the documents that cite it now say D119.
+
+## D120 · An amendment to this skill is made in the source and reaches the installed skill by packaging
+
+Decided by the author on 2026-11-15: amendments to `ui-frameworks` are implemented at the right level, not directly on the installed skill. The installed copy in `~/.claude/skills/ui-frameworks` had become a repository of its own, and four amendments were committed there: F-001 (a part holding focus rises over its neighbours), F-002 (the repository itself), F-003 (the check `checks/focus-on-top`) and F-004 (tokens and the Panda preset regenerated). The next copy of `dist/ui-frameworks` would have erased F-001 and F-003, because the source did not have them.
+
+The levels, from the top: a rule is a row in a spec under `docs/specs/`; the kit follows it in `kit/`; its proof is a test under `tests/`, a mutation, or a check under `checks/`; the reason is a decision here; the skill is built by `node scripts/package.mjs`; and the installed skill is that build, copied by the author. An amendment enters at the highest level it changes and is carried down. Nothing is edited in `dist/` or in `~/.claude/skills/ui-frameworks`. An amendment that belongs to `ui-colors`, `ui-geometry`, `ui-materials` or `ui-interaction-dev` is theirs to make; this skill then regenerates (`tokens.mjs`, `panda.mjs`, `package.mjs`).
+
+F-001 and F-003 are now in the source: C20 says the ring is never painted over, the reset raises a part on the focus-visible condition, and a root whose focus is on a part raises itself, which here is the text field, the combobox and the spinbutton, as amended, and the date field and the file field, which are of the same kind and were built since. `checks/focus-on-top/run.mjs` proves it in three engines with a negative control. F-004 needed nothing: the source had already regenerated and renamed the dialog's inset.
+
+Not done here: the installed copy still holds the amendments as its own commits. The author's copy of the next build replaces its files; its `.git` folder and its `checks/` folder are not part of the build.
+
+## D121 · The Svelte select stays blank before hydration, a Svelte tab has no `selected`, and amendments arrive in an inbox
+
+Decided by the session on 2026-11-15. The author was shown four choices on one page (`docs/explore/svelte-direction/index.html`) and answered "do what you think is right".
+
+**The select.** The page recommended rendering the value part after the options, so the options could register their text first. That does not work: an option's text is its `children` snippet, which a component cannot read as a string on the server or anywhere else; the Svelte select reads it from the DOM after mount. What remains is a second statement of the text by the author, which can go stale and then shows the wrong text, or options given as data, which is a second way to write a select. Neither is worth it for a paint that is blank, not wrong: the box holds its size and nothing moves. The select stays as built.
+
+**The tabs.** Here the first paint is wrong, not blank: with a later tab marked `selected` and no `value` on the tabs element, the server shows the first tab and its panel, and hydration jumps. A prop that is right only in the browser is a trap, and `value` on the tabs element already says the same thing in one pass. The Svelte tab therefore has no `selected` prop; using it is a type error. This is the one exception to V2, which otherwise makes every manifest attribute a prop.
+
+**Amendments.** D120 said where an amendment is made. This adds how it arrives: as a file in `docs/amendments/`, with an id, the evidence and a status, whoever raised it. The installed skill is a plain copy of the build with no repository of its own; `node scripts/install.mjs` makes that copy and refuses when the destination holds files the build does not, so a write made there is seen before it is erased. F-001 to F-004 are recorded in the inbox as done or declined.
+
+**Next.** A real SvelteKit build is the check no builder could run, and it needs packages installed, which is the author's to allow: no Vite and no Svelte plugin can be borrowed. Until then `node tests/svelte-build.mjs` compiles every component for production, for the browser and the server, and bundles it.
+
+## D122 · Every root that raises itself on focus has a case, a held primary takes the pressed-solid face, and the dialog reads the dialog depth
+
+Decided by the author on 2026-11-15 ("go"), after the explore page of the three questions. Amendments F-006, F-007 and F-008 (`docs/amendments/`).
+
+**The focus check covers every raising rule (F-006).** `checks/focus-on-top/run.mjs` had cases for the reset and the text field, while its negative control also stripped the combobox and spinbutton rules, and the date field and file field rules were not stripped at all. It now has one case per rule: the button (the reset), the text field, the combobox, the spinbutton, the date field and the file field. A guard reads the reset and every recipe before a browser starts, lists each rule whose selector names a focus condition and whose block sets `z-index`, and fails when one has no case, so a root that starts raising itself cannot go unchecked. The file field is taller than a button, so its neighbour is centred on it: joined at the top, the sample at the field's middle missed the button and the case passed with its rule removed. A case now also fails when the neighbour does not span the sample's row. `--strip=<case>` removes one rule; only that case may then see the neighbour on top.
+
+**A held primary takes the pressed-solid face (F-007).** `--_face-active` of the primary is `var(--button-face-active, var(--button-face, var(--solid-pressed-face)))`. The author chose this form over `var(--button-face-active, var(--solid-pressed-face))`: a consumer's recolour by `--button-face`, such as a red Delete, keeps its own held face and is never overridden by the kit's pressed colour; a recolour that wants a darker held face sets `--button-face-active` too. The face reaches ui-colors' `*-solid-active` through ui-materials' `--solid-pressed-face`, not directly, so a material can still change it. Of the other parts that read `--solid-face` (radio, checkbox and switch when checked, slider and range slider fills, progress and meter values, the stepper's current marker and done line), none paints a held state, so the button is the only line.
+
+**The dialog reads the dialog depth (F-008).** The panel's padding is `--containers-frame-dialog-inset`, ui-geometry's dialog depth d_d = 1½ card depths (G-040), 18, 24 and 30px at compact, default and loose, in place of the page inset (16, 24, 32px), which F-004 had used because the depth was not a row. The body gap stays half the padding, which is no longer the panel inset row at compact and loose, so the rhythm test holds the padding to the depth and the gap to half of it.
+

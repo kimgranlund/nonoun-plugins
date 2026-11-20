@@ -22,6 +22,14 @@ export const props = {
   },
   "disabled": {
     "type": "boolean"
+  },
+  "variant": {
+    "type": "enum",
+    "values": [
+      "plain",
+      "segmented"
+    ],
+    "default": "plain"
   }
 };
 

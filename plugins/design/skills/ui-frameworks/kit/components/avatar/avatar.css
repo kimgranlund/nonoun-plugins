@@ -1,0 +1,87 @@
+@layer reset, base, tokens, recipes, utilities;
+
+/* The recipe of the avatar: a native <span data-ui="avatar">. Its rules: J100 in docs/specs/patterns.md. Its shape: docs/specs/css-contract.md.
+   A circle of ui-geometry's avatar size (controls.media.avatar-*), medium by default, in the raised neutral face: its radius is half
+   its own height, so an author's --avatar-height still gives a circle, and --avatar-radius overrides it. It clips an image inside to
+   cover it, centres initials, and sets their size from its own. It does not shrink in a row. Each size block sets private tokens
+   only (D58).
+
+   In an avatar group (data-ui="avatar-group") the avatars overlap by a quarter of their height, and the first lies on top. Every
+   avatar after the first is cut by a real mask, not painted over: a circle concentric with the avatar before it, wider than that
+   avatar by the group's gap, so the page shows through between them as a crescent, on any ground. The avatar learns that it is in
+   a group from one inherited token (D110), --_stack-gap: the group's gap, set by every group, and guaranteed-invalid outside one,
+   so the margin and the mask that read it fall back to none and a stray avatar is only a circle. It tells first from the rest with
+   :first-child, because the group may not declare a token on its children (C5) nor read the avatar's height (C8).
+   The mask is one image: a square four notches wide with the notch a hole at its centre (even-odd), so it holds whatever the
+   avatar's ink or face is. One image, not a whole box less a circle: two composited layers leaked a hairline of the avatar's own
+   edge inside the notch in all three engines. The notch assumes the avatar before it is the same size. Right to left, the avatar
+   before it is on the right, and the notch moves there. */
+@layer recipes {
+  @scope ([data-ui="avatar"]) {
+    :where(:scope) {
+      --_face: var(--avatar-face, var(--raised-face));
+      --_ink: var(--avatar-ink, var(--ink));
+      --_height: var(--avatar-height, var(--controls-media-avatar-md));
+      --_radius: var(--avatar-radius, calc(var(--_height) / 2));
+      --_border: var(--unit-border-b);
+      --_stack-gap: inherit;
+      --_overlap: calc(var(--_height) / 4);
+      --_notch-box: calc(var(--_height) * 4 + var(--_stack-gap) * 8);
+      --_notch: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3E%3Cpath fill-rule='evenodd' d='M-4-4H4V4H-4ZM1 0A1 1 0 0 0-1 0A1 1 0 0 0 1 0Z'/%3E%3C/svg%3E");
+    }
+    :where(:scope[data-size="xs"]) { --_height: var(--avatar-height, var(--controls-media-avatar-xs)); }
+    :where(:scope[data-size="sm"]) { --_height: var(--avatar-height, var(--controls-media-avatar-sm)); }
+    :where(:scope[data-size="lg"]) { --_height: var(--avatar-height, var(--controls-media-avatar-lg)); }
+    :where(:scope[data-size="xl"]) { --_height: var(--avatar-height, var(--controls-media-avatar-xl)); }
+
+    /* The recipe's own boxes are border boxes, with or without a reset (C31). */
+    :where(:scope, [data-part]) { box-sizing: border-box; }
+    :scope {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex: none;
+      inline-size: var(--_height);
+      block-size: var(--_height);
+      overflow: hidden;
+      border-radius: var(--_radius);
+      background-color: var(--_face);
+      color: var(--_ink);
+      font-size: calc(var(--_height) * 0.4);
+      line-height: 1;
+      text-transform: uppercase;
+      white-space: nowrap;
+      user-select: none;
+    }
+    :scope:where([hidden]:not([hidden="until-found"])) { display: none; }
+    /* In a group: overlap the avatar before, and cut the notch where it lies: a circle of the avatar's height plus two gaps,
+       centred on the avatar before, the overlap less half the height from this avatar's start. --_notch-box, the image around
+       it, reads the group's gap, so outside a group the mask is invalid and none. */
+    :scope:not(:first-child) {
+      margin-inline-start: calc(var(--_stack-gap) * 0 - var(--_overlap));
+      mask: var(--_notch) calc(var(--_overlap) - var(--_height) / 2 - var(--_notch-box) / 2) calc(var(--_height) / 2 - var(--_notch-box) / 2) / var(--_notch-box) var(--_notch-box) no-repeat;
+    }
+    :scope:dir(rtl):not(:first-child) {
+      mask-position: calc(var(--_height) * 1.5 - var(--_overlap) - var(--_notch-box) / 2) calc(var(--_height) / 2 - var(--_notch-box) / 2);
+    }
+    :scope > img {
+      display: block;
+      inline-size: 100%;
+      block-size: 100%;
+      object-fit: cover;
+    }
+
+    /* In forced colours the notch is still cut: the ring of an avatar beneath is open where its neighbour lies, a gap away from
+       that neighbour's whole ring. */
+    @media (forced-colors: active) {
+      :where(:scope) {
+        --_face: Canvas;
+        --_ink: CanvasText;
+      }
+      :scope {
+        outline: var(--_border) solid CanvasText;
+        outline-offset: calc(var(--_border) * -1);
+      }
+    }
+  }
+}
