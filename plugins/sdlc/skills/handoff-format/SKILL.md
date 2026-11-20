@@ -169,7 +169,7 @@ Keys: `stage` (the stage that normally checks it, informational), `owner` (a low
 
 Never write `grep -P` in a criterion or guard: BSD grep on macOS has no -P, so a negated pipeline passes vacuously and `steps.py lint` refuses it; use `python3 -c` or `grep -E` with a literal byte sequence.
 
-The step's `### Do` states its validation scope (see `agents/planner.md`): the affected behavior and named dependents, tests named by stable title and file rather than by source line, and the integration gate that owns broad coverage when the handoff assigns one.
+The step's `### Do` states its validation scope (see `agents/planner.md`): the affected behavior and named dependents, tests named by stable title and file rather than by source line, and the integration gate that owns broad coverage when the handoff assigns one. A criterion names the narrow check that covers the change (in the sdlc repository `check.sh --changed $SDLC_BASE_SHA`), not the full suite: the full `check.sh` belongs to the land gate and a release, and a role runs each check once, again only after a fix.
 
 `### Read first` is optional: the nearest non-root `AGENTS.md` and the routed skill of each file the step changes (`references/step-handoff-rules.md`).
 
