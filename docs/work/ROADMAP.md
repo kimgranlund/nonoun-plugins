@@ -6,8 +6,13 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | ID | Ticket | Title | Type | Size | Pri | Depends on | Status |
 |---|---|---|---|---|---|---|---|
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔴 blocked |
-| T-0857 | [0857-tickets-in-docs-tickets](0857-tickets-in-docs-tickets/handoff.md) | Keep tickets in docs/tickets instead of .sdlc folders | feature | L2 | P2 | none | ⏳ proposed |
-| T-0858 | [0858-isolated-incremental-testing](0858-isolated-incremental-testing/handoff.md) | Make testing during incremental work isolated and parallel, not a slow sequential suite | feature | L2 | P2 | none | ⏳ proposed |
+| T-0857 | [0857-tickets-in-docs-tickets](0857-tickets-in-docs-tickets/handoff.md) | New repos keep tickets in docs/tickets | feature | L2 | P2 | none | 🔵 ready |
+| T-0858 | [0858-isolated-incremental-testing](0858-isolated-incremental-testing/handoff.md) | check.sh --changed runs only the jobs a diff touches | feature | L2 | P2 | none | 🔵 ready |
+| T-0859 | [0859-role-test-guidance](0859-role-test-guidance/handoff.md) | Roles run the checks for their change, once, never the full suite mid-ticket | chore | L2 | P2 | T-0858 | 🔵 ready |
+| T-0860 | [0860-faster-full-suite](0860-faster-full-suite/handoff.md) | Cut check.sh wall time by sharding its slowest selftests | chore | L3 | P2 | none | 🔵 ready |
+| T-0861 | [0861-rerun-failed-jobs](0861-rerun-failed-jobs/handoff.md) | check.sh reruns only failed or affected jobs after a fix | feature | L2 | P2 | T-0858, T-0860 | 🔵 ready |
+| T-0862 | [0862-ui-frameworks-sibling-lookup](0862-ui-frameworks-sibling-lookup/handoff.md) | ui-frameworks finds sibling skills inside the plugin | bug | L2 | P2 | none | 🔵 ready |
+| T-0863 | [0863-explore-variants-browser-check](0863-explore-variants-browser-check/handoff.md) | Run the ui-explore-variants browser check with Playwright | chore | L2 | P2 | none | 🔵 ready |
 
 Closed: 818 done, 30 dropped (git log or .NNNN-* folders)
 
