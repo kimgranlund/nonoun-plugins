@@ -2,7 +2,7 @@
 id: T-0861
 title: "check.sh reruns only failed or affected jobs after a fix"
 type: feature        # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: [T-0858, T-0860]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -39,3 +39,12 @@ After a fix during a release or a land, one command reruns only the jobs that fa
 
 ## Constraints
 - A job that never ran green for the recorded tree is never reported as passed.
+
+## Outcome
+
+2026-11-20 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: 702773dc3f67
+- Changed: see commits
+- Commits: 9fc09e3 T-0861: replan criterion 3 for the verifier cap; f2bf483 T-0861: check.sh --rerun reruns only failed or affected jobs
+- Check: 1 Selftest cases cover failed-job-only rerun, changed leaf script, no record refuses, clean rerun s...: pass
+- Check: 3 `check_pool.py selftest` and `check.sh --fast` exit 0, `git diff --check` clean: pass
+- Follow-up: note: the Constraint a job that never ran green is never reported as... -> notes.md
