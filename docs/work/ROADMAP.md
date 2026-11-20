@@ -25,6 +25,10 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0875 | [0875-lane-claims-commit-guard](0875-lane-claims-commit-guard/handoff.md) | A lane cannot land or mark ready a change to a path another lane owns, and a user can wire the same check as a | feature | L2 | P2 | T-0874 | 🔵 ready |
 | T-0876 | [0876-risky-change-verify-reminder](0876-risky-change-verify-reminder/handoff.md) | In a Claude session, a commit or merge that touches a configured risky path reminds the agent once per change | feature | L2 | P2 | T-0870 | 🔵 ready |
 | T-0877 | [0877-stale-plugin-guard-everywhere](0877-stale-plugin-guard-everywhere/handoff.md) | A session agent that calls sdlc scripts from an older cached version is told so, and refused for state-changin | bug | L2 | P2 | T-0875, T-0867, T-0868 | 🔵 ready |
+| T-0878 | [0878-fanout-keeps-skips-md](0878-fanout-keeps-skips-md/handoff.md) | fanout land keeps a committed skips.md tracked in the closed ticket folder | bug | L1 | P2 | none | ⏳ proposed |
+| T-0879 | [0879-specgate-cross-step-repeats](0879-specgate-cross-step-repeats/handoff.md) | specgate allows a later step to repeat an earlier step's check | bug | L1 | P2 | none | ⏳ proposed |
+| T-0880 | [0880-gate-lock-host-capacity](0880-gate-lock-host-capacity/handoff.md) | gate_lock default capacity scales with the host | feature | L2 | P2 | none | ⏳ proposed |
+| T-0881 | [0881-gate-lock-short-job-slot](0881-gate-lock-short-job-slot/handoff.md) | gate_lock keeps one slot for jobs that declare a short duration | feature | L2 | P2 | none | ⏳ proposed |
 
 Closed: 820 done, 30 dropped (git log or .NNNN-* folders)
 

@@ -73,7 +73,7 @@ Ticket lifecycle:
 
 - Evals: `../docs/work/evals/` holds the dated model and effort experiments and `table-lock.json`; read `../docs/work/evals/AGENTS.md` before changing a model or effort row in `plugins/sdlc-lite/scripts/run.sh` or `plugins/sdlc-lite/adapters/codex/models.json`.
 - Proposals: `../docs/work/proposals/` holds candidate changes that `proposals.py scan` mined from past runs; read `../docs/work/proposals/AGENTS.md` before scanning, accepting, rejecting, or promoting one.
-<!-- sdlc:managed:start v1 sha256:055731ef187f -->
+<!-- sdlc:managed:start v1 sha256:b3fbd8242b89 -->
 # Work records
 
 This folder holds SDLC `config`, this router, and the git-ignored `runtime/` and `messages/`. Tickets, task records, `docs/work/ROADMAP.md`, and `docs/work/NOTES.md` are in the work root `docs/work/`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `docs/work/ROADMAP.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -85,7 +85,11 @@ This folder holds SDLC `config`, this router, and the git-ignored `runtime/` and
 
 ## Stages
 
-- proposed: 0
+- proposed: 4
+  - T-0878 fanout land keeps a committed skips.md tracked in the closed ticket folder (docs/work/0878-fanout-keeps-skips-md)
+  - T-0879 specgate allows a later step to repeat an earlier step's check (docs/work/0879-specgate-cross-step-repeats)
+  - T-0880 gate_lock default capacity scales with the host (docs/work/0880-gate-lock-host-capacity)
+  - T-0881 gate_lock keeps one slot for jobs that declare a short duration (docs/work/0881-gate-lock-short-job-slot)
 - ready: 15
   - T-0859 Roles run the checks for their change, once, never the full suite mid-ticket (docs/work/0859-role-test-guidance)
   - T-0861 check.sh reruns only failed or affected jobs after a fix (docs/work/0861-rerun-failed-jobs)
