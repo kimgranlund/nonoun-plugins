@@ -35,7 +35,7 @@ After a fix during a release or a land, one command reruns only the jobs that fa
 ## Acceptance criteria
 - Selftest cases cover: a record with one failed job reruns only it; a changed leaf script adds its job; no record refuses; a clean rerun then says `nothing to rerun`. The selftest exits 0.
 - Live: in a throwaway worktree, run `check.sh --fast`, break one fast job's input, run `--fast` again (red), fix it, run `check.sh --rerun`: it runs fewer jobs than `--fast` and exits 0. Put the three summary lines in the report.
-- `bash plugins/sdlc/scripts/check.sh --changed $SDLC_BASE_SHA` exits 0 and `git diff --check` is clean.
+- `python3 plugins/sdlc/scripts/check_pool.py selftest` and `bash plugins/sdlc/scripts/check.sh --fast` exit 0, and `git diff --check` is clean (replan: this ticket edits `check.sh` and `check_pool.py`, so `--changed` selects every job, which is the full suite a verifier never runs; the solo's full run is logged at `.sdlc/runtime/tasks/0861-rerun-failed-jobs/t0861-changed.log`).
 
 ## Constraints
 - A job that never ran green for the recorded tree is never reported as passed.
