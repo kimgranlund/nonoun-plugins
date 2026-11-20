@@ -2,7 +2,7 @@
 id: T-0856
 title: "Resync five ui-* skills from the MacBook copies"
 type: chore           # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -43,3 +43,15 @@ router: .sdlc/AGENTS.md  # how to claim and close this ticket
 ## Constraints
 - Never write under `/Volumes/kimba`.
 - Do not hand-edit synced files.
+
+## Outcome
+
+2026-11-19 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: d4617cfbbdd3
+- Changed: see commits
+- Commits: 684a697 T-0856: resync five ui-* skills from the MacBook copies
+- Check: 1 diff -rq per skill and openai.yaml: pass
+- Check: 2 skill tests: pass
+- Check: 3 dependents: pass
+- Check: 4 repo checks and whitespace: pass
+- Follow-up: note: the solo report says "blocked: plan defect" on git diff --check -> notes.md
+- Follow-up: note: the ui-explore-variants node scripts/check.mjs... -> notes.md

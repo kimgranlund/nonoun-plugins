@@ -965,3 +965,8 @@
 ## T-0855: Resync four ui-* skills from the MacBook copies (2026-11-15)
 
 - note: `plugins/design/AGENTS.md` ui-explore-variants row names `6e5d784`, not the ticket's `79ce3f9`; the source moved during the build. The diff criterion passes against the live source today, and a later source commit would turn it red.
+
+## T-0856: Resync five ui-* skills from the MacBook copies (2026-11-19)
+
+- note: the solo report says "blocked: plan defect" on `git diff --check`. The handoff's replan already excludes `plugins/design/skills/ui-frameworks` from that criterion, so the block no longer applies and the criterion passes as written.
+- note: the ui-explore-variants `node scripts/check.mjs <project-with-playwright>` run was not performed (no Playwright project in the tree) and is not a criterion. This is the only unverified item the solo report names.
