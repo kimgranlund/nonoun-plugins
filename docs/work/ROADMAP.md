@@ -6,7 +6,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | ID | Ticket | Title | Type | Size | Pri | Depends on | Status |
 |---|---|---|---|---|---|---|---|
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔴 blocked |
-| T-0872 | [0872-finish-ticketless-land-guards](0872-finish-ticketless-land-guards/handoff.md) | Landing a ticketless lane with `lanes.py finish --no-ticket` can never commit conflict markers, resolves confl | feature | L3 | P2 | T-0871, T-0870 | 🟡 claimed |
+| T-0872 | [0872-finish-ticketless-land-guards](0872-finish-ticketless-land-guards/handoff.md) | Landing a ticketless lane with `lanes.py finish --no-ticket` can never commit conflict markers, resolves confl | feature | L3 | P2 | T-0871, T-0870 | 🟡 claimed (branch lane/T-0872-t0872) |
 | T-0873 | [0873-lanes-status-view](0873-lanes-status-view/handoff.md) | `lanes.py status` answers 'is anything stuck or about to collide' for every open lane in one table | feature | L2 | P2 | T-0872, T-0865 | 🔵 ready |
 | T-0874 | [0874-lane-path-claims](0874-lane-path-claims/handoff.md) | The lead can claim paths for one lane, and every lane sees who owns a path before it creates or changes it | feature | L2 | P2 | T-0873 | 🔵 ready |
 | T-0875 | [0875-lane-claims-commit-guard](0875-lane-claims-commit-guard/handoff.md) | A lane cannot land or mark ready a change to a path another lane owns, and a user can wire the same check as a | feature | L2 | P2 | T-0874 | 🔵 ready |
