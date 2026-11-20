@@ -3,10 +3,10 @@
 OS user and host, across every session, repo and worktree, so a pile of lanes does not run the machine out of
 CPU and memory. Design: docs/specs/sdlc/gate-lock-admission.md (protocol sdlc-gate/2, tickets T-0386, T-0409).
 
-Usage: gate_lock.py run [--need RES=N[,RES=N...]] [--slots N] [--priority P] [--name X] [--repo PATH] [--nice]
-                        [--timeout SECS] [--receipt FILE] -- <cmd...>
+Usage: gate_lock.py run [--need RES=N[,RES=N...]] [--slots N] [--priority P] [--expect DUR] [--name X] [--repo PATH]
+                        [--nice] [--timeout SECS] [--receipt FILE] -- <cmd...>
        gate_lock.py context [--json] | capabilities --json | status [--json]
-       gate_lock.py policy show | policy set [RES=N...] [max_load=N] [max_rss_mb=N] [--default RES=N...] | policy reset
+       gate_lock.py policy show | policy set [RES=N...] [max_load=N] [max_rss_mb=N] [short_max_s=N] [--default RES=N...] | policy reset
        gate_lock.py reset --confirm | reap [--older-than MIN] [--kill] [--match REGEX] | selftest
 
   run     queues for a grant of the weighted demand (a vector of resources, all or none), waits in order, runs the
@@ -22,16 +22,23 @@ Usage: gate_lock.py run [--need RES=N[,RES=N...]] [--slots N] [--priority P] [--
           password database, never TMPDIR. ledger.json holds boot id, grants and queue under a short flock; the
           optional policy.json holds capacity and default_need. Built-in policy: capacity browser_jobs 3,
           default_need compute_units 3, and a compute_units capacity derived from the host (T-0880, issue #90):
-          max(6, min(CPUs // 2, RAM GB // 4)), so a host with at most 13 CPUs or under 28 GB keeps the approved 6 (two
-          undeclared gates at once) and 18 CPUs with 64 GB gets 9. Override order: policy.json compute_units
+          max(6, min(CPUs // 2, RAM GB // 4)), so a host with at most 13 CPUs or under 28 GB keeps the approved 6 and
+          18 CPUs with 64 GB gets 9. Override order: policy.json compute_units
           (`policy set compute_units=N`), then SDLC_GATE_CAPACITY=N, then the derived figure; SDLC_GATE_RAM_MB
           (tests only) replaces the RAM and SDLC_GATE_CPUS the CPU count. A run with no --need asks for default_need; --slots N (or SDLC_GATE_SLOTS=N, 1 or more) asks
           for max(1, compute capacity // N) compute units, a demand share and never a cap; --need names resources
           (a resource the policy does not cap is recorded and not charged). A need above a capped resource is
           too_large at once. Order: highest --priority (default 0, or SDLC_GATE_PRIORITY) first, then FIFO by
           arrival; among the repos at the top priority, round robin after the repo granted last; the head keeps its
-          turn until it fits (no backfill); a queued job is never preempted by a later one and a running job is
-          never stopped by admission. Load cap: when policy.json has a top-level max_load (a whole number, set
+          turn until it fits (no backfill, but for short jobs below); a running job is never stopped by admission.
+          Short jobs (T-0881, issue #94): --expect DUR (90s, 3m, 1h; a bare number is seconds) declares the run time,
+          and a job is short when it is at most the policy key short_max_s (default 300, `policy set short_max_s=N`).
+          One default need of compute units is kept for short jobs when the capacity minus it still holds a default
+          need (6 keeps 3, 5 keeps none): long jobs (no --expect, a longer one, a legacy holder) together stay within
+          the capacity minus that reserve, so on capacity 6 one undeclared gate runs at a time. A long job larger than
+          that room is admitted when nothing is held. When the head is long and waits only for the unreserved room,
+          short entries behind it are granted into the reserved room, in order, up to its size; they never pass a
+          head that waits for an idle gate. An older plugin's waiter ignores the reserve. Load cap: when policy.json has a top-level max_load (a whole number, set
           with `policy set max_load=N`; 0 is off; absent is max(1, int(0.8 * CPU count)), and `policy show` says
           `default from N CPUs` then), no new grant is admitted while a grant is held and the
           host's 1-minute load average (os.getloadavg) is above it; a load equal to it admits, with no grant held the head is admitted at any load (load from outside never starves the queue), a held grant is
@@ -59,7 +66,10 @@ Usage: gate_lock.py run [--need RES=N[,RES=N...]] [--slots N] [--priority P] [--
   context   exit 0 and print the grant when the caller runs inside a valid grant, else exit 1.
   status    first `capacity: N (derived from <cpus> CPUs, <ram> GB)`, `(from SDLC_GATE_CAPACITY)` or `(configured)`, then
             queued and admitted rows (name, pid, need, repo, priority, age, then `head <sha>  cwd <path>  session <id>`,
-            each only when the entry records it); `no holders` after the capacity row when empty. A new entry records the short HEAD of the
+            each only when the entry records it); `no holders` after the capacity row when empty. The second row is
+            `reserved: N for jobs that expect at most <dur>, free|in use|<n> free` or `reserved: none (capacity C is
+            under two default needs of D)`; a row with --expect shows `expect <dur>`, and an admitted job past twice
+            its declared time `overran` (nothing is stopped); --json adds `reserve`, `expect_s` and `overran`. A new entry records the short HEAD of the
             directory `run` started in, that directory and the owning session (CLAUDE_CODE_SESSION_ID, else
             CODEX_THREAD_ID); an entry from an older plugin version has none and still renders. A row whose head is more
             than BEHIND_MAX (20) commits behind its branch (the cwd's upstream, else local main, else master, else
@@ -86,7 +96,8 @@ Usage: gate_lock.py run [--need RES=N[,RES=N...]] [--slots N] [--priority P] [--
           Admission never calls it.
   selftest  real child processes in a temp SDLC_GATE_DIR: weighted caps, FIFO, priority, liveness (a dead holder
           reclaimed, a live group not), nesting, cancel, timeout, reboot, corrupt ledger, receipts, status, the
-          legacy bridge, the load cap, the capacity hint, the derived capacity (small host, large host, configured), the job owner and behind warning (an older entry
+          legacy bridge, the load cap, the capacity hint, the derived capacity (small host, large host, configured), the room kept for short jobs (a short job
+          passes a waiting long one, an undeclared job never takes the room, a tiny capacity keeps none), the job owner and behind warning (an older entry
           without them still renders) and the old exit codes, each control observed failing in a mutant copy of this script;
           then the reap cases with a fake orphan and a live-parent fake.
 
@@ -108,6 +119,7 @@ BUILTIN_POLICY = {'capacity': {'browser_jobs': 3}, 'default_need': {'compute_uni
 CAPACITY_FLOOR = 6  # the approved fixed compute capacity; the derived default never goes below it (T-0880)
 COMPUTE = 'compute_units'
 RSS_SECS = 2.0
+SHORT_MAX_S = 300  # a job whose --expect is at most this many seconds is short (policy key short_max_s overrides it)
 
 
 class GateError(Exception):
@@ -430,6 +442,10 @@ def load_policy(root):
             if not (isinstance(d['max_rss_mb'], int) and not isinstance(d['max_rss_mb'], bool) and d['max_rss_mb'] >= 0):
                 raise ValueError('max_rss_mb must be a whole number')
             pol['max_rss_mb'] = d['max_rss_mb']  # 0 is off
+        if 'short_max_s' in d:
+            if not (isinstance(d['short_max_s'], int) and not isinstance(d['short_max_s'], bool) and d['short_max_s'] >= 1):
+                raise ValueError('short_max_s must be a whole number of 1 or more')
+            pol['short_max_s'] = d['short_max_s']
     except (OSError, ValueError) as e:
         raise GateError('state_unavailable', f'{path} is not a usable policy: {e}')
     set_default_capacity(pol)
@@ -492,6 +508,35 @@ def add_usage(usage, need):
 
 
 def order_key(e): return (-e['priority'], e['seq'])  # QUEUE-ORDER
+
+
+def parse_duration(text):
+    """Seconds from a duration such as 90, 90s, 3m, 1.5h or 1h; ValueError otherwise."""
+    m = re.fullmatch(r'\s*(\d+(?:\.\d+)?)\s*([smh]?)\s*', text or '')
+    if not m or float(m.group(1)) <= 0:
+        raise ValueError(f'--expect {text!r} is not a duration such as 90s, 3m or 1h')
+    return float(m.group(1)) * {'': 1, 's': 1, 'm': 60, 'h': 3600}[m.group(2)]
+
+
+def dur_text(sec):
+    sec = int(round(sec))
+    return f'{sec // 3600}h' if sec and sec % 3600 == 0 else f'{sec // 60}m' if sec and sec % 60 == 0 else f'{sec}s'
+
+
+def short_max(pol):
+    return pol.get('short_max_s') or SHORT_MAX_S
+
+
+def is_short(e, pol):
+    """A job is short when it declared --expect at most short_max_s; no --expect (or an older entry) is long."""
+    return e.get('expect_s') is not None and e['expect_s'] <= short_max(pol)
+
+
+def reserve_units(pol):
+    """The compute units kept for short jobs: one default need, or 0 when the capacity minus it would not hold one
+    default long job (a small host reserves nothing)."""
+    c, step = pol['capacity'].get(COMPUTE), default_need(pol).get(COMPUTE, 0)
+    return step if c and step and c - step >= step else 0  # RESERVE-UNITS
 
 
 def host_load():
@@ -591,8 +636,13 @@ def capacity_hint(ledger, pol, legacy_n, load):
     held = bool(ledger['grants'] or legacy_n)
     if max_load and held and load is not None and load > max_load: return None  # HINT-LOAD
     step = default_need(pol).get(COMPUTE, 0)
-    used = sum(g['need'].get(COMPUTE, 0) for g in ledger['grants']) + legacy_n * step
-    if used + next_head(ledger)['need'].get(COMPUTE, 0) <= c:
+    head = next_head(ledger)
+    if is_short(head, pol) or not reserve_units(pol):
+        used, room = sum(g['need'].get(COMPUTE, 0) for g in ledger['grants']) + legacy_n * step, c
+    else:  # a long head waits on the unreserved room
+        used = sum(g['need'].get(COMPUTE, 0) for g in ledger['grants'] if not is_short(g, pol)) + legacy_n * step
+        room = c - reserve_units(pol)
+    if used + head['need'].get(COMPUTE, 0) <= room:
         return None  # the head waits on another resource, not compute
     why = ('the host reports no load' if load is None else f'load {load:.1f} is under {max_load}' if max_load
            else f'load {load:.1f} has no load cap')
@@ -614,18 +664,42 @@ def schedule(ledger, pol, legacy_n=0, load=None):
         add_usage(usage, g['need'])
     for _ in range(legacy_n):
         add_usage(usage, default_need(pol))
+    reserve = reserve_units(pol)
+    long_cap = {COMPUTE: cap[COMPUTE] - reserve} if reserve else None
+    long_used = {COMPUTE: sum(g['need'].get(COMPUTE, 0) for g in ledger['grants'] if not is_short(g, pol))
+                 + legacy_n * default_need(pol).get(COMPUTE, 0)}
+    in_reserve = sum(g['need'].get(COMPUTE, 0) for g in ledger['grants'] if g.get('reserved'))
+
+    def grant(entry, turn=True):
+        ledger['queue'].remove(entry)
+        entry['granted_at'] = time.time()
+        ledger['grants'].append(entry)
+        if turn:  # a short job that passes the head leaves the round-robin turn where it is
+            ledger['rr'] = entry['repo']
+        add_usage(usage, entry['need'])
+        granted.append(entry['id'])
     granted = []
     while ledger['queue']:
         entry = next_head(ledger)
         if max_load and load is not None and load > max_load and (ledger['grants'] or legacy_n): break  # LOAD-CAP
-        if not fits(usage, entry['need'], cap):
+        held = bool(ledger['grants'] or legacy_n)
+        fits_all = fits(usage, entry['need'], cap)
+        if long_cap and held and not is_short(entry, pol) and not (fits_all and fits(long_used, entry['need'], long_cap)):  # RESERVE
+            # A long head waits for the unreserved room (one larger than that room waits for an idle gate). Short
+            # jobs behind a head that fits the unreserved room may pass it, into the reserved room only.
+            if entry['need'].get(COMPUTE, 0) <= long_cap[COMPUTE]:
+                for e in sorted(ledger['queue'], key=order_key):
+                    n = e['need'].get(COMPUTE, 0)
+                    if is_short(e, pol) and in_reserve + n <= reserve and fits(usage, e['need'], cap):  # BYPASS
+                        e['reserved'] = True
+                        in_reserve += n
+                        grant(e, turn=False)
             break
-        ledger['queue'].remove(entry)
-        entry['granted_at'] = time.time()
-        ledger['grants'].append(entry)
-        ledger['rr'] = entry['repo']
-        add_usage(usage, entry['need'])
-        granted.append(entry['id'])
+        if not fits_all:
+            break
+        if not is_short(entry, pol):
+            add_usage(long_used, {COMPUTE: entry['need'].get(COMPUTE, 0)})
+        grant(entry)
     return granted
 
 
@@ -710,6 +784,13 @@ def owner_text(row):
     out = ''.join(f'  {k} {row[k]}' for k in ('head', 'cwd', 'session') if row.get(k))
     b = row.get('behind')
     return out + (f"  (behind {b['branch']} by {b['commits']})" if b else '')
+
+
+def expect_text(row):
+    """`  expect 3m` for a row that declared a duration, with `  overran` once an admitted job runs past twice it."""
+    if row.get('expect_s') is None:
+        return ''
+    return f"  expect {dur_text(row['expect_s'])}" + ('  overran' if row.get('overran') else '')
 
 
 def need_text(need):
@@ -876,7 +957,7 @@ def run_nested(root, pol, gid, need, nice, cmd, receipt, name, t0):
     return rc
 
 
-def run(slots, name, nice, timeout, cmd, explicit_need=None, priority=0, repo_arg=None, receipt=None):
+def run(slots, name, nice, timeout, cmd, explicit_need=None, priority=0, repo_arg=None, receipt=None, expect_s=None):
     t0 = time.monotonic()
     bare = slots is not None and slots < 1
     for s in (signal.SIGTERM, signal.SIGINT, signal.SIGHUP):
@@ -891,7 +972,7 @@ def run(slots, name, nice, timeout, cmd, explicit_need=None, priority=0, repo_ar
         gid_env = os.environ.get('SDLC_GATE_GRANT')
         if gid_env:
             return run_nested(root, pol, gid_env, need, nice, cmd, receipt, name, t0)
-        return run_top(root, pol, need, name, nice, timeout, cmd, priority, repo_arg, receipt, t0)
+        return run_top(root, pol, need, name, nice, timeout, cmd, priority, repo_arg, receipt, t0, expect_s)
     except GateError as e:
         print(f'gate_lock: {e.code}: {e.detail}', file=sys.stderr)
         write_receipt(receipt, {'protocol': PROTOCOL, 'grant': None, 'name': name, 'outcome': e.code, 'rc': 3, 'wait_ms': 0, 'run_ms': None,
@@ -924,11 +1005,13 @@ def run_bare(name, nice, cmd, receipt, t0):
     return rc
 
 
-def run_top(root, pol, need, name, nice, timeout, cmd, priority, repo_arg, receipt, t0):
+def run_top(root, pol, need, name, nice, timeout, cmd, priority, repo_arg, receipt, t0, expect_s=None):
     legacy_n = len(legacy_holders())
     me = {'id': secrets.token_hex(16), 'repo': repo_identity(os.getcwd(), repo_arg), 'name': name, 'cmd': ' '.join(cmd)[:200], 'need': need,
           'priority': priority, 'pid': os.getpid(), 'pid_start': pid_start(os.getpid()) or '', 'pgid': None, 'enqueued_at': time.time(),
           'cwd': os.getcwd(), 'head': git_out(os.getcwd(), 'rev-parse', '--short', 'HEAD', timeout=10), 'session': job_session()}
+    if expect_s is not None:
+        me['expect_s'] = expect_s
     gid, child, rc, outcome, pgid = me['id'], None, 1, 'ok', None
     t_grant = t_run = t_exit = None
     env = dict(os.environ)
@@ -1048,8 +1131,10 @@ def status_data(root):
         wrapper = alive(g['pid'], g.get('pid_start'))
         group = group_alive(g.get('pgid'))
         state = 'admitted' if wrapper else 'orphaned_group' if group else 'dead'
+        age = int(now - g.get('granted_at', now))
         grants.append({'state': state, 'id': g['id'], 'name': g.get('name', '?'), 'pid': g['pid'], 'pgid': g.get('pgid'), 'need': g['need'],
-                       'repo': g['repo'], 'priority': g.get('priority', 0), 'age_s': int(now - g.get('granted_at', now)), **owner(g)})
+                       'repo': g['repo'], 'priority': g.get('priority', 0), 'age_s': age, 'expect_s': g.get('expect_s'),
+                       'overran': g.get('expect_s') is not None and age > 2 * g['expect_s'], **owner(g)})  # OVERRAN
     queue = []
     held = sum(g['need'].get(COMPUTE, 0) for g in L['grants'])
     holders = [g.get('name', '?') for g in sorted(L['grants'], key=lambda g: g['seq'])]
@@ -1057,7 +1142,8 @@ def status_data(root):
     for i, e in enumerate(queue_view(L)):
         queue.append({'state': 'queued' if alive(e['pid'], e.get('pid_start')) else 'dead', 'position': i + 1, 'id': e['id'],
                       'name': e.get('name', '?'), 'pid': e['pid'], 'need': e['need'], 'repo': e['repo'], 'priority': e['priority'],
-                      'waited_s': int(now - e.get('enqueued_at', now)), 'ahead': ahead, 'blocking': holders, **owner(e)})
+                      'waited_s': int(now - e.get('enqueued_at', now)), 'ahead': ahead, 'blocking': holders, 'expect_s': e.get('expect_s'),
+                      **owner(e)})
         ahead += e['need'].get(COMPUTE, 0)
     d = {'protocol': PROTOCOL, 'state_root': str(root), 'boot': L.get('boot', ''), 'grants': grants, 'queue': queue, 'legacy': legacy_holders()}
     try:
@@ -1067,6 +1153,10 @@ def status_data(root):
     max_load = pol.get('max_load') if pol else None
     if pol:
         d['capacity'] = {'value': pol['capacity'].get(COMPUTE), 'how': pol.get('compute_units_default', 'configured')}
+        r, c = reserve_units(pol), pol['capacity'].get(COMPUTE) or 0
+        used = sum(g['need'].get(COMPUTE, 0) for g in L['grants']) + len(d['legacy']) * default_need(pol).get(COMPUTE, 0)
+        d['reserve'] = {'units': r, 'free': max(0, min(r, c - used)), 'short_max_s': short_max(pol),
+                        'step': default_need(pol).get(COMPUTE, 0)}
     if pol and queue:
         hint = capacity_hint(L, pol, len(d['legacy']), host_load())
         if hint:  # HINT-STATUS
@@ -1092,14 +1182,20 @@ def cmd_status(argv):
         print(json.dumps(d, indent=1, sort_keys=True))
         return 0
     rows = [f"capacity: {d['capacity']['value']} ({d['capacity']['how']})"] if d.get('capacity') else []
+    rv = d.get('reserve')
+    if rv and rv['units']:
+        free = 'free' if rv['free'] >= rv['units'] else 'in use' if not rv['free'] else f"{rv['free']} free"
+        rows.append(f"reserved: {rv['units']} for jobs that expect at most {dur_text(rv['short_max_s'])}, {free}")
+    elif rv:
+        rows.append(f"reserved: none (capacity {d['capacity']['value']} is under two default needs of {rv['step']})")
     for g in d['grants']:
         note = {'admitted': '', 'orphaned_group': '  (orphaned group: wrapper dead, still charged)', 'dead': '  (dead: will be reclaimed)'}[g['state']]
         rows.append(f"{'admitted' if g['state'] != 'dead' else 'dead':<9} name {g['name']}  pid {g['pid']}  need {need_text(g['need'])}  "
-                    f"repo {os.path.basename(g['repo'])}  priority {g['priority']}  age {g['age_s']}s{owner_text(g)}{note}")
+                    f"repo {os.path.basename(g['repo'])}  priority {g['priority']}  age {g['age_s']}s{expect_text(g)}{owner_text(g)}{note}")
     for q in d['queue']:
         rows.append(f"{'queued' if q['state'] == 'queued' else 'dead':<9} name {q['name']}  pid {q['pid']}  #{q['position']}  need {need_text(q['need'])}  "
                     f"repo {os.path.basename(q['repo'])}  priority {q['priority']}  age {q['waited_s']}s  "
-                    f"ahead {q['ahead']}  blocking {','.join(q['blocking']) or 'none'}{owner_text(q)}")
+                    f"ahead {q['ahead']}  blocking {','.join(q['blocking']) or 'none'}{expect_text(q)}{owner_text(q)}")
     if d['queue'] and d.get('load', {}).get('over'):
         rows.append(f"waiting: load {d['load']['value']:.1f} over cap {d['load']['max_load']}")
         if d.get('stall'):
@@ -1174,8 +1270,12 @@ def cmd_policy(argv):
                 return 2
             max_load = caps.pop('max_load', None)  # a top-level key, never a capacity; 0 turns it off
             max_rss = caps.pop('max_rss_mb', None)  # likewise; 0 turns the memory cap off
-            if not caps and not defs and max_load is None and max_rss is None:
-                print('usage: gate_lock.py policy set [RES=N...] [max_load=N] [max_rss_mb=N] [--default RES=N...]', file=sys.stderr)
+            short_s = caps.pop('short_max_s', None)  # likewise a top-level key: the longest --expect that counts as short
+            if not caps and not defs and max_load is None and max_rss is None and short_s is None:
+                print('usage: gate_lock.py policy set [RES=N...] [max_load=N] [max_rss_mb=N] [short_max_s=N] [--default RES=N...]', file=sys.stderr)
+                return 2
+            if short_s is not None and short_s < 1:
+                print('gate_lock.py policy set: short_max_s must be 1 or more', file=sys.stderr)
                 return 2
             if any(v < 1 for v in caps.values()):
                 print('gate_lock.py policy set: a capacity must be 1 or more', file=sys.stderr)
@@ -1194,17 +1294,20 @@ def cmd_policy(argv):
                     pol['max_load'] = max_load  # 0 is written: it turns the default cap off
                 if max_rss is not None:
                     pol['max_rss_mb'] = max_rss  # 0 is written: it turns the memory cap off
+                if short_s is not None:
+                    pol['short_max_s'] = short_s
                 tmp = root / f'.policy-{os.getpid()}.tmp'
                 tmp.write_text(json.dumps(pol, sort_keys=True))
                 os.replace(tmp, root / 'policy.json')
             print(f'policy set: capacity {need_text(pol["capacity"])}; default need {need_text(pol["default_need"])}'
                   + (f'; max load {pol["max_load"]}' if pol.get('max_load') else '')
-                  + (f'; max rss {pol["max_rss_mb"]} MB' if pol.get('max_rss_mb') else ''))
+                  + (f'; max rss {pol["max_rss_mb"]} MB' if pol.get('max_rss_mb') else '')
+                  + (f'; short at most {pol["short_max_s"]}s' if pol.get('short_max_s') else ''))
             return 0
     except GateError as e:
         print(f'gate_lock: {e.code}: {e.detail}', file=sys.stderr)
         return 3
-    print('usage: gate_lock.py policy show | set [RES=N...] [max_load=N] [max_rss_mb=N] [--default RES=N...] | reset', file=sys.stderr)
+    print('usage: gate_lock.py policy show | set [RES=N...] [max_load=N] [max_rss_mb=N] [short_max_s=N] [--default RES=N...] | reset', file=sys.stderr)
     return 2
 
 
@@ -1355,6 +1458,9 @@ M_HINT = "line, hinted = line + f'; hint: {hint}', True" + '  # HINT-LINE'
 M_HINTLOAD = 'if max_load and held and load is not None and load > max_load: return None' + '  # HINT-LOAD'
 M_NOTRUN = "({holders}); command not" + " run')"
 M_BEHIND = "if n.isdigit() and int(n) > BEHIND_MAX:" + '  # BEHIND'
+M_RESERVE = "if long_cap and held and not is_short(entry, pol) and not (fits_all and fits(long_used, entry['need'], long_cap)):" + '  # RESERVE'
+M_BYPASS = "if is_short(e, pol) and in_reserve + n <= reserve and fits(usage, e['need'], cap):" + '  # BYPASS'
+M_RUNITS = "return step if c and step and c - step >= step else 0" + '  # RESERVE-UNITS'
 M_LOAD = "if max_load and load is not None and load > max_load and (ledger['grants'] or legacy_n): break" + '  # LOAD-CAP'
 # the reap fakes: a python that records its pid and sleeps, its last argument the name that makes it match;
 # the orphaner double forks it so its parent is pid 1 and its own command line carries no matching name
@@ -1463,14 +1569,15 @@ def queued_names(py, env):
 
 
 def case_cap(py, base, label):
-    """Weighted caps: two default gates hold, a third waits and says so; a browser job beyond the browser cap waits."""
+    """Weighted caps: two short default gates hold (the second in the reserved room), a third waits and says so; a
+    browser job beyond the browser cap waits."""
     m, bad, procs = base / f'm-{label}', [], []
     m.mkdir()
     env = env_for(base, label, SDLC_GATE_REPORT_SECS='0.3')
     try:
-        procs = [holder(py, env, m, 1), holder(py, env, m, 2)]
+        procs = [holder(py, env, m, 1, '--expect', '1m'), holder(py, env, m, 2, '--expect', '1m')]
         if not waitfor(lambda: (m / 'started-1').exists() and (m / 'started-2').exists()):
-            return ['the first two default gates did not start together']
+            return ['the first two short default gates did not start together']
         procs.append(holder(py, env, m, 3))
         waitfor(lambda: (m / 'started-3').exists() or 'waiting for a slot' in (m / 'err-3').read_text(), 5)
         if (m / 'started-3').exists():
@@ -1531,6 +1638,64 @@ def case_sequence(py, base, label, specs, order):
                 break
             got.append(n)
             (m / f'go-{n}').touch()
+        return bad
+    finally:
+        release_all(m, procs)
+
+
+def status_rows(py, env):
+    r = gl(py, env, 'status')
+    return r.stdout.splitlines() if r.returncode == 0 else [f'rc={r.returncode} {r.stderr!r}']
+
+
+def case_reserve(py, base, label, part):
+    """The room kept for short jobs (T-0881, issue #94), capacity 6 with a default need of 3, so 3 is reserved.
+    part 'short': long H1 fills the unreserved room, long H2 queues, then short S (--expect 1s) queues behind it: S
+    starts at once and H2 waits; status shows S's declared time and, past twice it, `overran` while S keeps running.
+    part 'undeclared': with long H1 holding, an undeclared H2 waits although 3 units are free, and runs once H1 ends.
+    part 'tiny': SDLC_GATE_CAPACITY=5 reserves nothing (5 - 3 cannot hold a default need), so beside a holder of 2 a
+    default long job starts, and status says nothing is reserved."""
+    m, bad, procs = base / f'm-{label}', [], []
+    m.mkdir()
+    env = env_for(base, label, **({'SDLC_GATE_CAPACITY': '5'} if part == 'tiny' else {}))
+    try:
+        procs.append(holder(py, env, m, 1, *(['--need', 'compute_units=2'] if part == 'tiny' else [])))
+        if not waitfor(lambda: (m / 'started-1').exists()):
+            return ['the first long holder did not start']
+        procs.append(holder(py, env, m, 2))
+        waitfor(lambda: 'H2' in queued_names(py, env) or (m / 'started-2').exists(), 5)
+        if part == 'tiny':
+            if not waitfor(lambda: (m / 'started-2').exists(), 5):
+                bad.append('with capacity 5 a default long job did not start beside a holder of 2: the tiny capacity reserved room')
+            rows = status_rows(py, env)
+            if 'reserved: none (capacity 5 is under two default needs of 3)' not in rows:
+                bad.append(f'status does not say the tiny capacity reserves nothing, got {rows!r}')
+            return bad
+        time.sleep(3 * POLL)
+        if (m / 'started-2').exists():
+            return ['the long H2 started in the reserved room beside a long holder']
+        if part == 'undeclared':
+            rows = status_rows(py, env)
+            if 'reserved: 3 for jobs that expect at most 5m, free' not in rows:
+                bad.append(f'status does not show the free reserved room, got {rows!r}')
+            (m / 'go-1').touch()
+            if not waitfor(lambda: (m / 'started-2').exists()):
+                bad.append('the undeclared H2 did not run after the long holder ended')
+            return bad
+        procs.append(holder(py, env, m, 'S', '--expect', '1s'))
+        if not waitfor(lambda: (m / 'started-S').exists(), 5):
+            return bad + ['the short job did not start in the reserved room behind a waiting long job']
+        if (m / 'started-2').exists():
+            bad.append('the long H2 started together with the short job')
+        time.sleep(3.2)  # status ages are whole seconds: 3 > 2 x 1
+        rows = status_rows(py, env)
+        srow = next((x for x in rows if 'name HS' in x), '')
+        if not (srow.startswith('admitted') and '  expect 1s  overran' in srow):
+            bad.append(f'status does not mark the short job past twice its declared time as overran, got {rows!r}')
+        if 'reserved: 3 for jobs that expect at most 5m, in use' not in rows:
+            bad.append(f'status does not show the reserved room in use, got {rows!r}')
+        if procs[-1].poll() is not None:
+            bad.append('the gate stopped the job that overran')
         return bad
     finally:
         release_all(m, procs)
@@ -1653,7 +1818,7 @@ def case_load(py, base, label):
         if not waitfor(lambda: (m / 'started-1').exists()):
             return ['the holder did not start with the load under the cap']
         set_load(36.5)
-        procs.append(holder(py, env, m, 2))  # two default needs fit the capacity, so only the load holds it
+        procs.append(holder(py, env, m, 2, '--expect', '1m'))  # a short default need fits beside it, so only the load holds it
         waitfor(lambda: 'H2' in queued_names(py, env) or (m / 'started-2').exists(), 5)
         time.sleep(3 * POLL)
         if (m / 'started-2').exists():
@@ -1709,7 +1874,7 @@ def case_stall(py, base, label, raw=False):
                       '900003 1 900003 60.5 node vite\n'
                       '900004 1 900004 10.0 quiet\n').encode())
         lf.write_text('36.5\n')
-        procs.append(holder(py, env, m, 2))
+        procs.append(holder(py, env, m, 2, '--expect', '1m'))  # short: only the load holds it
         waitfor(lambda: 'H2' in queued_names(py, env) or (m / 'started-2').exists(), 5)
         time.sleep(3 * POLL)
         if (m / 'started-2').exists():
@@ -1764,7 +1929,7 @@ def case_owner(py, base, label):
     for k in [k for k in env if k.startswith('GIT_') and k not in genv]:
         env.pop(k)
     try:
-        procs = [holder(py, env, m, 1, cwd=repo), holder(py, env, m, 2, cwd=wt2)]
+        procs = [holder(py, env, m, 1, '--expect', '1m', cwd=repo), holder(py, env, m, 2, '--expect', '1m', cwd=wt2)]  # short: both fit
         if not waitfor(lambda: (m / 'started-1').exists() and (m / 'started-2').exists()):
             return ['the two owner holders did not start']
         try:
@@ -1985,7 +2150,7 @@ def case_load_default(py, base, label):
         if not waitfor(lambda: (m / 'started-1').exists()):
             return ['the holder did not start with the load under the default cap']
         lf.write_text('12\n')
-        procs.append(holder(py, env, m, 2))
+        procs.append(holder(py, env, m, 2, '--expect', '1m'))  # short, so the reserved room fits it and only the load holds it
         waitfor(lambda: 'H2' in queued_names(py, env) or (m / 'started-2').exists(), 5)
         time.sleep(3 * POLL)
         if (m / 'started-2').exists():
@@ -2089,6 +2254,21 @@ def case_rr():
     granted = schedule(L, capped, load=36.5)
     if granted != ['b3']:
         bad.append(f'over the load cap with no grant held the schedule granted {granted}, wanted only b3 (the head, then the cap holds)')
+    # the room kept for short jobs (T-0881): capacity 10 keeps 3. Two long grants of 3 and a long head of 5 that fits
+    # neither the total nor the unreserved room 7: the short job of 3 behind it still takes the free reserved room.
+    pol10 = {'capacity': {COMPUTE: 10}, 'default_need': {COMPUTE: 3}}
+    short = dict(entry('a5', 'A', 3), expect_s=60)
+    L = {'grants': [entry('h1', 'Z', 3), entry('h2', 'Z', 3)], 'rr': '', 'queue': [entry('a4', 'A', 5), short]}
+    granted = schedule(L, pol10)
+    if granted != ['a5']:
+        bad.append(f'a short job behind a long head that fits neither room was granted {granted}, wanted a5 in the free reserved room')
+    # capacity 6 keeps 3: a short job that passes repo A's waiting long head leaves the round-robin turn with A
+    pol6 = {'capacity': {COMPUTE: 6}, 'default_need': {COMPUTE: 3}}
+    L = {'grants': [entry('h1', 'Z', 3)], 'rr': '',
+         'queue': [entry('a1', 'A', 3), dict(entry('a2', 'A', 3), expect_s=60), entry('b3', 'B', 3)]}
+    granted = schedule(L, pol6)
+    if granted != ['a2'] or next_head(L)['id'] != 'a1':
+        bad.append(f'a short job that passed the head moved the turn: granted {granted}, next head {next_head(L)["id"]}, wanted a2 and a1')
     return bad
 
 
@@ -2200,6 +2380,14 @@ def selftest():
             ('derived capacity', case_capacity, M_CAPDERIVE, "return CAPACITY_FLOOR, 'derived'  # CAP-DERIVE", 'capacity not derived'),
             ('capacity hint', case_hint, M_HINT, 'pass  # HINT-LINE', 'carries no capacity hint'),
             ('no capacity hint under load', case_hint_load, M_HINTLOAD, 'pass  # HINT-LOAD', 'capacity hint under load'),
+            ('reserved room for short jobs', lambda p, b, lb: case_reserve(p, b, lb, 'short'), M_RESERVE, 'if False:  # RESERVE',
+             'started in the reserved room'),
+            ('short job passes a waiting long job', lambda p, b, lb: case_reserve(p, b, lb, 'short'), M_BYPASS, 'if False:  # BYPASS',
+             'did not start in the reserved room'),
+            ('undeclared job never takes the reserved room', lambda p, b, lb: case_reserve(p, b, lb, 'undeclared'), M_RESERVE,
+             'if False:  # RESERVE', 'started in the reserved room'),
+            ('tiny capacity reserves nothing', lambda p, b, lb: case_reserve(p, b, lb, 'tiny'), M_RUNITS,
+             'return step  # RESERVE-UNITS', 'the tiny capacity reserved room'),
             ('timeout says command not run', case_notrun, M_NOTRUN, "({holders})')", 'does not say command not run'),
             ('job owner and behind branch', case_owner, M_BEHIND, 'if False:  # BEHIND', 'carries no behind warning'))
         for i, (label, case, marker, repl, tell) in enumerate(controls):
@@ -2393,8 +2581,8 @@ def selftest():
         r = gl(script, env, 'run', '--need', 'compute_units=4', '--timeout', '1', '--', 'true')
         expect(f'legacy: a live old-version holder is charged 3 compute units, so a need of 4 waits, got rc={r.returncode} {r.stderr!r}',
                r.returncode == 3 and r.stderr.startswith('gate_lock: timeout'))
-        r = gl(script, env, 'run', '--need', 'compute_units=3', '--timeout', '5', '--', 'true')
-        expect(f'legacy: a need that fits beside it runs, got rc={r.returncode} {r.stderr!r}', r.returncode == 0)
+        r = gl(script, env, 'run', '--need', 'compute_units=3', '--expect', '1m', '--timeout', '5', '--', 'true')
+        expect(f'legacy: a short need that fits beside it runs (the legacy holder counts as long), got rc={r.returncode} {r.stderr!r}', r.returncode == 0)
         st = gl(script, env, 'status')
         expect(f'legacy: status lists the holder and says protection is partial, got {st.stdout!r}', 'legacy' in st.stdout and 'oldholder' in st.stdout and 'partial' in st.stdout)
         expect('legacy: the old slot file is never touched', (legacy / 'slot-0').exists())
@@ -2454,7 +2642,7 @@ def selftest():
     return 0
 
 
-USAGE = ('usage: gate_lock.py run [--need RES=N,...] [--slots N] [--priority P] [--name X] [--repo PATH] [--nice] [--timeout SECS] [--receipt FILE] -- <cmd...> '
+USAGE = ('usage: gate_lock.py run [--need RES=N,...] [--slots N] [--priority P] [--expect DUR] [--name X] [--repo PATH] [--nice] [--timeout SECS] [--receipt FILE] -- <cmd...> '
          '| context [--json] | capabilities --json | status [--json] | policy show|set|reset | reset --confirm | reap [--older-than MIN] [--kill] [--match REGEX] | selftest')
 
 
@@ -2473,14 +2661,17 @@ def main(argv):
         return cmd_reset(argv[1:])
     if argv[:1] == ['reap']:
         return cmd_reap(argv[1:])
-    if argv[:1] != ['run'] or '--' not in argv:
+    asks_help = argv[:1] == ['run'] and '--' not in argv and ('-h' in argv or '--help' in argv)
+    if argv[:1] != ['run'] or ('--' not in argv and not asks_help):
         print(USAGE, file=sys.stderr)
         return 2
-    cut = argv.index('--')
+    cut = argv.index('--') if not asks_help else len(argv)
     ap = argparse.ArgumentParser(prog='gate_lock.py run', description=__doc__.split('\n')[0])
     ap.add_argument('--slots', type=int, help='demand share: max(1, compute capacity // N) compute units (default env SDLC_GATE_SLOTS; below 1 runs with no admission)')
     ap.add_argument('--need', help='weighted demand, RES=N[,RES=N...] (default: the policy default need)')
     ap.add_argument('--priority', type=int, help='queue priority, higher first (default env SDLC_GATE_PRIORITY, else 0)')
+    ap.add_argument('--expect', metavar='DUR', help=f'declared run time such as 90s, 3m or 1h; at most the policy short_max_s '
+                    f'(default {dur_text(SHORT_MAX_S)}) is a short job, which may take the compute room kept for short jobs (default: long)')
     ap.add_argument('--name', help='holder name shown in status and wait lines (default the command)')
     ap.add_argument('--repo', help='repo identity for round robin (default the git common dir of the cwd)')
     ap.add_argument('--nice', action='store_true', help='run the command at nice 10')
@@ -2501,10 +2692,11 @@ def main(argv):
     try:
         need = parse_needs(a.need)
         priority = a.priority if a.priority is not None else int(os.environ.get('SDLC_GATE_PRIORITY') or 0)
+        expect_s = parse_duration(a.expect) if a.expect is not None else None
     except ValueError as e:
         print(f'gate_lock.py run: {e}', file=sys.stderr)
         return 2
-    return run(slots, a.name or os.path.basename(cmd[0]), a.nice, a.timeout, cmd, need, priority, a.repo, a.receipt)
+    return run(slots, a.name or os.path.basename(cmd[0]), a.nice, a.timeout, cmd, need, priority, a.repo, a.receipt, expect_s)
 
 
 if __name__ == '__main__':
