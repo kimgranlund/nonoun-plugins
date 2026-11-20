@@ -1055,3 +1055,7 @@
 
 - note: the installed plugin copy (1.0.2) has no `--expect`, so the verifier gated check.sh through it without a declared duration; unrelated to the build.
 - note: undeclared gates lose one default need of room (one at a time on capacity 6), as the builder reported and CHANGELOG states; this follows the handoff's rule.
+
+## T-0878: fanout land keeps a committed skips.md tracked in the closed ticket folder (2026-11-20)
+
+- note: the leftover untracked `docs/work/<NNNN>-<slug>/skips.md` after `lanes.py finish` is not fixed here; the builder says it comes from `lanes.py` carry_records (lanes.py:1500-1511), not the fanout land close path. It is a candidate for a new ticket.

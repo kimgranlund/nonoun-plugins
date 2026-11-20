@@ -73,7 +73,7 @@ Ticket lifecycle:
 
 - Evals: `../docs/work/evals/` holds the dated model and effort experiments and `table-lock.json`; read `../docs/work/evals/AGENTS.md` before changing a model or effort row in `plugins/sdlc-lite/scripts/run.sh` or `plugins/sdlc-lite/adapters/codex/models.json`.
 - Proposals: `../docs/work/proposals/` holds candidate changes that `proposals.py scan` mined from past runs; read `../docs/work/proposals/AGENTS.md` before scanning, accepting, rejecting, or promoting one.
-<!-- sdlc:managed:start v1 sha256:1fad9ac95b7a -->
+<!-- sdlc:managed:start v1 sha256:edbbd3905fb4 -->
 # Work records
 
 This folder holds SDLC `config`, this router, and the git-ignored `runtime/` and `messages/`. Tickets, task records, `docs/work/ROADMAP.md`, and `docs/work/NOTES.md` are in the work root `docs/work/`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `docs/work/ROADMAP.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -91,13 +91,12 @@ This folder holds SDLC `config`, this router, and the git-ignored `runtime/` and
   - T-0874 The lead can claim paths for one lane, and every lane sees who owns a path before it creates or changes it (docs/work/0874-lane-path-claims)
   - T-0875 A lane cannot land or mark ready a change to a path another lane owns, and a user can wire the same check as a (docs/work/0875-lane-claims-commit-guard)
   - T-0877 A session agent that calls sdlc scripts from an older cached version is told so, and refused for state-changin (docs/work/0877-stale-plugin-guard-everywhere)
-- claimed: 2
+- claimed: 1
   - T-0872 Landing a ticketless lane with `lanes.py finish --no-ticket` can never commit conflict markers, resolves confl (docs/work/0872-finish-ticketless-land-guards), claimed by nonoun-author 2026-11-20, branch lane/T-0872-t0872
-  - T-0878 fanout land keeps a committed skips.md tracked in the closed ticket folder (docs/work/0878-fanout-keeps-skips-md), claimed by nonoun-author 2026-11-20, branch lane/T-0878-t0878
 - paused: 0
 - blocked: 1
   - T-0611 Rehearse a Pi host working tickets beside Claude and Codex (docs/work/0611-pi-host-rehearsal)
-- done: 837
+- done: 838
 - dropped: 30
 
 ## Procedures
