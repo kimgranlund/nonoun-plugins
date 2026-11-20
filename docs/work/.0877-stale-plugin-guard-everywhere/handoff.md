@@ -2,14 +2,12 @@
 id: T-0877
 title: "A session agent that calls sdlc scripts from an older cached version is told so, and refused for state-changin"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: [T-0875, T-0867, T-0868]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
 created: 2026-11-19
 claimed_by: nonoun-author 2026-11-20
-branch: lane/T-0877-t0877
-worktree: ../sdlc-lite.worktrees/T-0877-t0877
 router: .sdlc/AGENTS.md  # how to claim and close this ticket
 ---
 
@@ -34,9 +32,19 @@ A session agent that calls sdlc scripts from an older cached version is told so,
 3. Update the T-0808 paragraph in the `plugin_min.py` docstring, the sdlc-internals entry and the CHANGELOG `[Unreleased]`.
 
 ## Acceptance criteria
-- The lanes selftest shard holding the new case and `python3 plugins/sdlc/scripts/tickets.py selftest` exit 0 with the new cases; with the call removed from `lanes.py`, the refusal case fails (state the observed red).
+- `python3 plugins/sdlc/scripts/tickets.py selftest` exits 0 with the new cases, which also run `lanes.py` from a fake cache folder (replan: the lanes case lives in the tickets selftest so `lanes.py` takes one line while T-0873 edits it), and both lanes selftest shards exit 0; with the call removed from `lanes.py`, the refusal case fails (state the observed red).
 - `python3 plugins/sdlc/scripts/steps.py selftest` and `python3 plugins/sdlc/scripts/messages.py selftest` exit 0.
 - `bash plugins/sdlc/scripts/check.sh --fast` exits 0 and `git diff --check` is clean.
 
 ## Constraints
 - A source checkout never refuses.
+
+## Outcome
+
+2026-11-20 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: f84dcc01a215
+- Changed: see commits
+- Commits: d2f3d2c T-0877: replan criterion 1, the lanes case lives in the tickets selftest; 09ada4c T-0877: lanes, tickets, steps and messages run the stale plugin check (#91)
+- Check: 1 tickets.py selftest exits 0 with the new cases (tickets.py and lanes.py from a fake cache folder)...: pass
+- Check: 2 steps.py and messages.py selftests exit 0: pass
+- Check: 3 `bash plugins/sdlc/scripts/check.sh --fast` exits 0 and `git diff --check` is clean: pass
+- Follow-up: note: messages.py count/read/ack/wait are not in READ_ONLY, so a stale... -> notes.md

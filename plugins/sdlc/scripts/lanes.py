@@ -3077,6 +3077,8 @@ def main(argv=None):
             print(f'lanes.py: {e}', file=sys.stderr)
             return 2
         return selftest(a.shard, a.list)
+    if plugin_min.check_stale(warn_only=a.cmd in plugin_min.READ_ONLY):  # T-0808, T-0877: an older cache folder refuses
+        return 2
     try:
         if a.cmd == 'open':
             ids = merge_tickets(a.ticket, a.tickets)
