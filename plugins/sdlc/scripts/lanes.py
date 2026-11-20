@@ -24,7 +24,7 @@
   lanes.py archive list [<branch>]
   lanes.py archive restore <date>/<branch>
   lanes.py orphans                         read-only: snapshot refs and dangling commits whose work is on no local branch
-  lanes.py selftest
+  lanes.py selftest [--shard i/n] [--list]
 
 Design: docs/specs/sdlc/lane-lifecycle.md (section 17 wins over sections 1 to 16). Python API for callers:
 open_lane, close_lane, finish, sweep, list_lanes, still_open(root, ticket), landed, patch_landed, landed_and_gone, config, host_record. open_lane and close_lane
@@ -275,6 +275,7 @@ import results  # same scripts/ dir: the verifier verdict
 import wtroot  # same scripts/ dir: the worktree root, owner markers and the crash sweep (T-0550)
 import plugin_min  # same scripts/ dir: the repo's minimum plugin version (T-0593)
 import roots  # same scripts/ dir: the work-root record prefixes (T-0626)
+import shards  # same scripts/ dir: the selftest cases as check.sh shard jobs (T-0860)
 
 Path = pathlib.Path
 RECORD = '.lane.json'
@@ -2518,7 +2519,9 @@ def main(argv=None):
     q = asub.add_parser('restore')
     q.add_argument('spec', metavar='<date>/<branch>')
     sub.add_parser('orphans')
-    sub.add_parser('selftest')
+    st = sub.add_parser('selftest')
+    st.add_argument('--shard', metavar='I/N', help='run shard I of N of the cases (check.sh pool jobs, T-0860)')
+    st.add_argument('--list', action='store_true', help='print the case names (of the shard) and run nothing')
     a = ap.parse_args(argv)
     if a.cmd == 'open' and a.claim and (a.dry_run or a.no_claim):
         ap.error('--claim takes no --dry-run or --no-claim')
@@ -2531,7 +2534,12 @@ def main(argv=None):
     if a.cmd == 'list' and a.overlap and (a.all or a.stale or a.ready or a.json):
         ap.error('--overlap takes no --all, --stale, --ready or --json')
     if a.cmd == 'selftest':
-        return selftest()
+        try:
+            shards.parse_spec(a.shard) if a.shard else None
+        except ValueError as e:
+            print(f'lanes.py: {e}', file=sys.stderr)
+            return 2
+        return selftest(a.shard, a.list)
     try:
         if a.cmd == 'open':
             ids = merge_tickets(a.ticket, a.tickets)
@@ -4538,9 +4546,13 @@ def case_finish_no_ticket(script, base):
     return fails
 
 
-def selftest():
+def selftest(spec=None, listing=False):
     script = Path(__file__).resolve()
     src = script.read_text()
+    cases = shards.Cases('lanes', spec)  # T-0860: check.sh runs them as `selftest --shard i/n` pool jobs
+    if listing:
+        run_selftest(script, src, None, cases)
+        return cases.list()
     saved = dict(os.environ)
     with tempfile.TemporaryDirectory() as t:
         base = Path(os.path.realpath(t))
@@ -4568,7 +4580,12 @@ def selftest():
                     return 1
             os.chdir(str(sentinel))  # a cwd-relative leak in any case lands here, never in the real repository
             before = sentinel_state(sentinel)
-            run_selftest(script, src, base)
+            run_selftest(script, src, base, cases)
+            try:
+                cases.run()
+            except LaneError as e:
+                print(f'FAIL: fixture: {e}')
+                sys.exit(1)
             fails = []
             d = state_diff(before, sentinel_state(sentinel))
             if d:
@@ -4602,14 +4619,16 @@ def state_diff(a, b):
     return '; '.join([f'-{l}' for l in sorted(la - lb)] + [f'+{l}' for l in sorted(lb - la)])
 
 
-def run_selftest(script, src, base):
+def run_selftest(script, src, base, cases):
+    """Register the selftest cases on cases (shards.Cases, T-0860); selftest() runs them inside its sentinel check."""
     def need(label, fails, okline):
         if fails:
             print(f'FAIL: {label}: ' + ' | '.join(fails))
             sys.exit(1)
         print(f'ok: {label}: {okline}')
 
-    try:
+    @cases(32)
+    def truth_table():
         rows = (('row 1', case_row1, 'a manual tree refuses with exit 2'), ('row 2', case_row2, 'no lane <name>'),
                 ('row 3', case_row3, 'a branch checked out in another worktree refuses'),
                 ('row 4', case_row4, 'an integration tree with an open lane refuses'),
@@ -4635,6 +4654,9 @@ def run_selftest(script, src, base):
         need('carry work root', case_carry_work_root(script, base),
              'under work_root: docs/work close carries the lane records of a docs/work ticket into main')
         print('ok: C6: every truth table row gives its outcome')
+
+    @cases(40)
+    def checks_c1_to_c13():
         need('C1', case_c1_nested(script, base) + case_c1_outside(script, base),
              'a stray nested tree, a record outside the lanes root and a lane really under the checkout fail')
         need('C2', case_c2(script, base), 'two records on one port and a port outside lane_ports fail; open picks distinct ports')
@@ -4657,6 +4679,9 @@ def run_selftest(script, src, base):
         need('orphans', case_orphans(script, base),
              'a dangling commit with a unique change is listed, a squash-landed snapshot ref is not, nothing written')
         need('C13', case_c13(script, base), 'the description is set at open and copied into the archive tag')
+
+    @cases(58)
+    def open_and_close():
         need('branch list', case_branch_list(script, base),
              'list --all joins a manual worktree to its ticket by branch: with verdict pass; no branch:, no ticket')
         need('branch record', case_branch_record(script, base), 'open --kind solo --ticket writes branch:, close removes it')
@@ -4689,6 +4714,9 @@ def run_selftest(script, src, base):
         need('local settings unignored', case_local_settings_unignored(script, base),
              'a repo that does not ignore .claude/settings.local.json: git add -A in a lane never stages it (T-0724)')
         need('sibling root', case_sibling_root(script, base), 'the default lanes root is <parent>/<name>.worktrees, outside the main checkout (T-0563)')
+
+    @cases(26)
+    def host_lanes_and_ready():
         need('host record', case_host_record(script, base), 'every field written under the lanes.lock port pick, and discover reads it')
         need('host-owned', case_host_owned(script, base),
              'a landed Codex tree and a landed agent-x tree with a host record are kept as host-owned (T-0564)')
@@ -4713,6 +4741,9 @@ def run_selftest(script, src, base):
              'and lane path, replaces the warning, and a failing command still exits 0')
         need('sweep merge.lock', case_sweep_mergelock(script, base),
              'a held merge.lock keeps a landed lane as merging; once released sweep closes it')
+
+    @cases(89)
+    def finish():
         need('finish pass', case_finish_pass(script, base),
              'a pass verdict commits, lands through the gate, settles, closes, backs up and removes the lane; a rerun is done')
         need('finish resume', case_finish_resume(script, base),
@@ -4736,6 +4767,9 @@ def run_selftest(script, src, base):
              'list --overlap names each lane touching a path, committed or uncommitted, and not one that does not (T-0821)')
         need('finish no ticket', case_finish_no_ticket(script, base),
              'finish --no-ticket lands a ticketless lane behind the gate, refuses a hash_bound path and a ticket lane (T-0821)')
+
+    @cases(39)
+    def mutants():
         for marker, line, repl, case, tell, why in MUTANTS:
             if src.count(line) != 1:
                 need(f'mutant {marker}', [f'the marked line is in the script {src.count(line)} times, want 1'], '')
@@ -4746,10 +4780,6 @@ def run_selftest(script, src, base):
             got = case(mutant, base)
             need(f'mutant {marker}', [] if any(tell in g for g in got) else [f'the mutant must fail its case with {tell!r}, got {got}'],
                  why)
-    except LaneError as e:
-        print(f'FAIL: fixture: {e}')
-        sys.exit(1)
-    return 0
 
 
 if __name__ == '__main__':

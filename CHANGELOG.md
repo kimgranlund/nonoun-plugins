@@ -4,6 +4,10 @@ SDLC releases (named SDLC Lite before 1.0.0), newest first, in [Keep a Changelog
 
 ## [Unreleased]
 
+### Changed
+
+- `sdlc`: the full `check.sh` runs the `fanout.py`, `dispatch.py` and `lanes.py` selftests as 4, 3 and 2 shard jobs (`selftest --shard i/n`), so its wall time is no longer set by one 600 s selftest. Each script names its cases; `shards.py` packs them by weight, every case in exactly one shard, and a plain `selftest` still runs every case. A new fast `shards-closure` job (`shards.py check`) fails when a shard job line is missing or a case is in no shard or in two (T-0860).
+
 ## [1.0.8] - 2026-11-19
 
 Report: [docs/reports/2026-11-19-release-1-0-8.md](docs/reports/2026-11-19-release-1-0-8.md). Marketplace release: `design` 0.5.0; `sdlc` 1.0.3, `context` 0.8.0 and `dev-tools` 0.1.1 are unchanged. 2 tickets (T-0855, T-0856). Details are in [the design changelog](plugins/design/CHANGELOG.md).
