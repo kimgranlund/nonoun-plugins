@@ -975,3 +975,7 @@
 
 - note: with SKILLS_DIR set but lacking a file, the resolver falls through to the plugin folder and `~/.claude/skills` rather than failing; the error appears only when no place has the file. This matches the handoff's resolution order.
 - note: the user should take the same change upstream to the MacBook source of ui-frameworks (builder report says so).
+
+## T-0863: Run the ui-explore-variants browser check with Playwright (2026-11-19)
+
+- note: redck.py deviations printed no `process deviation:` lines; the ticket has no `(red)` criteria.

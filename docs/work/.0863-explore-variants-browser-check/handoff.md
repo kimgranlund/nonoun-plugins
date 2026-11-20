@@ -2,7 +2,7 @@
 id: T-0863
 title: "Run the ui-explore-variants browser check with Playwright"
 type: chore           # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -41,3 +41,13 @@ The `ui-explore-variants` browser check has run for real against the shipped tem
 ## Constraints
 - Never write under `/Volumes/kimba`.
 - Scratch files stay outside the repository.
+
+## Outcome
+
+2026-11-19 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: 56f58584bfaf
+- Changed: see commits
+- Commits: bb61c1a T-0863: run the ui-explore-variants browser check and document it
+- Check: 1 Report holds the full summary of `node scripts/check.mjs <scratch>` with exit code and names fail...: pass
+- Check: 2 `plugins/design/AGENTS.md` names the command and its Playwright prerequisite: pass
+- Check: 3 No change under ui-explore-variants, no tracked node_modules or lockfile, packaging exit 0, diff ...: pass
+- Follow-up: note: redck.py deviations printed no process deviation: lines; the ticket... -> notes.md
