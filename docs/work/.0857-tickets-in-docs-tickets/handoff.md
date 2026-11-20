@@ -2,7 +2,7 @@
 id: T-0857
 title: "New repos keep tickets in docs/tickets"
 type: feature        # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -41,3 +41,15 @@ A repository onboarded to sdlc keeps its tickets under `docs/tickets/` by defaul
 ## Constraints
 - This repo's `.sdlc/config` stays `work_root: docs/work`.
 - A repo with no `work_root` line behaves as before.
+
+## Outcome
+
+2026-11-19 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: 0a82cf148510
+- Changed: see commits
+- Commits: 3aa1734 T-0857: new repos keep tickets in docs/tickets
+- Check: 1 onboard selftest exits 0, includes the two new cases, and removing the default line makes the fre...: pass
+- Check: 2 throwaway git repo, onboard then `tickets.py --root .sdlc new chore x "x"` files under docs/tickets/: pass
+- Check: 3 roots.py selftest and tickets.py selftest exit 0: pass
+- Check: 4 check.sh --fast, check-packaging.py, git diff --check: pass
+- Follow-up: decide: plugins/sdlc/scripts/onboard.py ticket_root_change: a repo that... -> notes.md
+- Follow-up: note: the selftest compares against ONBOARD_CONFIG_LINE rather than the... -> notes.md

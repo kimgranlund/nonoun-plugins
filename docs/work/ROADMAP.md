@@ -6,7 +6,6 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | ID | Ticket | Title | Type | Size | Pri | Depends on | Status |
 |---|---|---|---|---|---|---|---|
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔴 blocked |
-| T-0857 | [0857-tickets-in-docs-tickets](0857-tickets-in-docs-tickets/handoff.md) | New repos keep tickets in docs/tickets | feature | L2 | P2 | none | 🟡 claimed (branch lane/T-0857-t0857) |
 | T-0859 | [0859-role-test-guidance](0859-role-test-guidance/handoff.md) | Roles run the checks for their change, once, never the full suite mid-ticket | chore | L2 | P2 | T-0858 | 🟡 claimed (branch lane/T-0859-t0859) |
 | T-0860 | [0860-faster-full-suite](0860-faster-full-suite/handoff.md) | Cut check.sh wall time by sharding its slowest selftests | chore | L3 | P2 | none | 🟡 claimed (branch lane/T-0860-t0860) |
 | T-0861 | [0861-rerun-failed-jobs](0861-rerun-failed-jobs/handoff.md) | check.sh reruns only failed or affected jobs after a fix | feature | L2 | P2 | T-0858, T-0860 | 🔵 ready |
@@ -28,7 +27,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0880 | [0880-gate-lock-host-capacity](0880-gate-lock-host-capacity/handoff.md) | gate_lock default capacity scales with the host | feature | L2 | P2 | T-0865 | 🔵 ready |
 | T-0881 | [0881-gate-lock-short-job-slot](0881-gate-lock-short-job-slot/handoff.md) | gate_lock keeps one slot for jobs that declare a short duration | feature | L2 | P2 | T-0880 | 🔵 ready |
 
-Closed: 822 done, 30 dropped (git log or .NNNN-* folders)
+Closed: 823 done, 30 dropped (git log or .NNNN-* folders)
 
 ## Open follow-ups
 
@@ -157,3 +156,4 @@ Closed: 822 done, 30 dropped (git log or .NNNN-* folders)
 - decide: plugins/design/skills/ui-frameworks/scripts/tokens.mjs and icons.mjs: note: read sibling skills from `~/.claude/skills` or `SKILLS_DIR`, not the plugin tree; imported behaviour, unchanged. (from T-0853: Import six ui-* skills into design (2026-11-15))
 - decide: plugins/sdlc/scripts/gate_lock.py:980: the `HINT-STATUS` marker has no mutant control of its own, but the capacity case asserts the status text row and the `--json` key, so removing it would fail that case. (from T-0864: When gated checks queue for capacity on an idle machine, the operator sees how to raise the capacity, and a ca (2026-11-19))
 - decide: plugins/sdlc/scripts/gate_lock.py (`next_head`): `schedule` now uses a function extracted from its inline head selection; the FIFO, priority and round-robin selftests pass unchanged. (from T-0864: When gated checks queue for capacity on an idle machine, the operator sees how to raise the capacity, and a ca (2026-11-19))
+- decide: plugins/sdlc/scripts/onboard.py (`ticket_root_change`): a repo that already has docs/layout.md with the default `work/` home but no `.sdlc/config` gets `work_root: docs/tickets`; observed in scratch repo r2, `docs_check.py` then reports `D-1 docs/tickets/` and `D-12 docs/tickets/ROADMAP.md` errors after the first ticket. The builder flagged this as an untested edge; no criterion covers it. (from T-0857: New repos keep tickets in docs/tickets (2026-11-19))
