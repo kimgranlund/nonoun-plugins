@@ -4,6 +4,10 @@ SDLC releases (named SDLC Lite before 1.0.0), newest first, in [Keep a Changelog
 
 ## [Unreleased]
 
+### Changed
+
+- `sdlc`: `gate_lock.py run` ends its first waiting line, once per run, with `hint: capacity compute_units=<C> is full while load <x> is under <max_load>; an operator can raise it: gate_lock.py policy set compute_units=<N>` when the queue waits on capacity at a quiet load, and `status` ends with the same `hint:` row (`hint` in `--json`, only then); the wait timeout line ends `; command not run`; the docstring and `run-operations.md` show a function for batching named gated runs that zsh does not word-split (T-0864, issues #90, #99).
+
 ## [1.0.8] - 2026-11-19
 
 Report: [docs/reports/2026-11-19-release-1-0-8.md](docs/reports/2026-11-19-release-1-0-8.md). Marketplace release: `design` 0.5.0; `sdlc` 1.0.3, `context` 0.8.0 and `dev-tools` 0.1.1 are unchanged. 2 tickets (T-0855, T-0856). Details are in [the design changelog](plugins/design/CHANGELOG.md).
