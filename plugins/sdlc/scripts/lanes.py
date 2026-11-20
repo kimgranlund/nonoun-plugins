@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""lanes.py: the one home of the lane lifecycle. Open, close, finish, ready, sweep, list, check, port and archive a lane.
+"""lanes.py: the one home of the lane lifecycle. Open, close, finish, ready, sweep, list, status, check, port and archive a lane.
 
   lanes.py open <name> [--base REF] [--into REF] [--ticket ID]... [--tickets ID,ID] [--kind fanout|integration|live|solo] [--title TEXT]
                 [--root .sdlc] [--path DIR] [--branch NAME] [--no-claim | --claim [--by AGENT]] [--dry-run]
@@ -18,6 +18,10 @@
   lanes.py list --ready [--json]           one line per ready ref: ticket, lane, sha, path, and stale when the lane moved
   lanes.py list --overlap <path>...        `overlap <lane> <path>` per open plugin lane (not the current tree) whose diff
                                            from its base (committed, uncommitted, untracked) holds the path or a path under it
+  lanes.py status [--json]                 read-only (T-0873): one row per plugin lane: ahead/behind its into, merges
+                                           clean (git merge-tree --write-tree; ? on git before 2.38), uncommitted count,
+                                           last commit age, newest uncommitted-file mtime, its gate_lock grant or queue
+                                           row (cwd under the lane), and `overlaps <lane>` per lane sharing a changed path
   lanes.py who [--json]                    `factory <session> <evidence>` per sign of an active factory session (T-0821):
                                            a live claude receiver naming a factory, a *.running marker a live process names,
                                            an open fanout or solo lane other than the current tree; else `none`; exit 0
@@ -29,7 +33,7 @@
   lanes.py selftest [--shard i/n] [--list]
 
 Design: docs/specs/sdlc/lane-lifecycle.md (section 17 wins over sections 1 to 16). Python API for callers:
-open_lane, close_lane, finish, sweep, list_lanes, still_open(root, ticket), landed, patch_landed, landed_and_gone, config, host_record. open_lane and close_lane
+open_lane, close_lane, finish, sweep, list_lanes, lane_status, still_open(root, ticket), landed, patch_landed, landed_and_gone, config, host_record. open_lane and close_lane
 return a dict with rc, message, lane, path and branch; sweep returns (list of those dicts, rc); finish returns the exit code
 and prints through its say= callable. open_lane takes
 keyword-only path= (the tree; the leaf is its basename), branch= (used verbatim) and check_claim=False (skip the claim
@@ -2510,6 +2514,108 @@ def overlap(paths, cwd='.'):
     return rows
 
 
+def gate_rows():
+    """The grant and queue rows of `gate_lock.py status --json` (read-only), or None when it cannot say."""
+    r = run([sys.executable, str(HERE / 'gate_lock.py'), 'status', '--json'], HERE, timeout=20)
+    try:
+        d = json.loads(r.stdout) if r is not None and r.returncode == 0 else None
+    except ValueError:
+        d = None
+    if not isinstance(d, dict):
+        return None
+    return [dict(g, state='running' if g.get('state') != 'dead' else 'dead') for g in d.get('grants') or []] + \
+        [dict(q, state='queued' if q.get('state') == 'queued' else 'dead') for q in d.get('queue') or []]
+
+
+def age_text(s):
+    if s is None:
+        return '-'
+    s = max(0, int(s))
+    for unit, n in (('d', 86400), ('h', 3600), ('m', 60)):
+        if s >= n:
+            return f'{s // n}{unit}'
+    return f'{s}s'
+
+
+def lane_status(cwd='.'):
+    """T-0873 (#101): one read-only row per plugin lane: ahead and behind its into, whether it merges cleanly
+    (git merge-tree --write-tree; '?' when git cannot say), uncommitted count, last commit time, newest mtime of an
+    uncommitted file, its gate_lock grant or queue row (by cwd under the lane path), and the lanes whose changed paths
+    meet its own. No fetch, no lock (GIT_OPTIONAL_LOCKS=0), no write."""
+    saved = os.environ.get('GIT_OPTIONAL_LOCKS')
+    os.environ['GIT_OPTIONAL_LOCKS'] = '0'
+    try:
+        ctx = Ctx(cwd)
+        now = time.time()
+        gates = gate_rows()
+        rows, changed = [], {}
+        for d in discover(ctx):
+            if not d['owner']:
+                continue
+            b = d['branch'] if d['branch'] and has_ref(ctx.top, f'refs/heads/{d["branch"]}') else None
+            ref = resolve_into(ctx, d['into'] or ctx.main, fetch=False)[0] if b else None
+            ahead = behind = None
+            merge = '?'
+            if ref:
+                n = (out(ctx.top, 'rev-list', '--left-right', '--count', f'{ref}...refs/heads/{b}') or '').split()
+                if len(n) == 2 and all(x.isdigit() for x in n):
+                    behind, ahead = int(n[0]), int(n[1])
+                rc = git(ctx.top, 'merge-tree', '--write-tree', ref, f'refs/heads/{b}').returncode
+                merge = {0: 'clean', 1: 'conflict'}.get(rc, '?')
+            ct = out(ctx.top, 'log', '-1', '--format=%ct', f'refs/heads/{b}') if b else None
+            commit = int(ct) if ct and ct.isdigit() else None
+            dirty = change = None
+            if d['exists']:
+                r = git(d['path'], 'status', '--porcelain', '--untracked-files=all')
+                if r.returncode == 0:
+                    lines = [l for l in r.stdout.splitlines() if l]
+                    dirty = len(lines)
+                    for l in lines:
+                        try:
+                            m = os.lstat(os.path.join(d['path'], l[3:].split(' -> ')[-1].strip('"'))).st_mtime
+                        except OSError:
+                            continue
+                        change = m if change is None else max(change, m)
+            gate = None if gates is None else [
+                dict(state=g['state'], name=g.get('name', '?'), pid=g.get('pid'), position=g.get('position'))
+                for g in gates if g.get('cwd') and d['exists'] and under(g['cwd'], d['path'])]
+            changed[d['path']] = lane_paths(ctx, d) or set()  # keyed by path: two lanes can share a leaf name
+            rows.append(dict(lane=d['lane'], path=d['path'], branch=d['branch'], kind=d['kind'], into=d['into'],
+                             ahead=ahead, behind=behind, merge=merge, uncommitted=dirty, last_commit=commit,
+                             last_commit_age_s=None if commit is None else int(now - commit), last_change=change,
+                             last_change_age_s=None if change is None else int(now - change), gate=gate))
+        for r in rows:
+            hits = {}
+            for o in rows:  # a union per name: two lanes can share a leaf name
+                if o['path'] != r['path']:
+                    hits[o['lane']] = sorted(set(hits.get(o['lane'], ())) | (changed[r['path']] & changed[o['path']]))
+            r['overlaps'] = {k: v for k, v in hits.items() if v}  # STATUS-OVERLAP
+        return rows
+    finally:
+        if saved is None:
+            os.environ.pop('GIT_OPTIONAL_LOCKS', None)
+        else:
+            os.environ['GIT_OPTIONAL_LOCKS'] = saved
+
+
+def status_lines(rows):
+    """The status table: a header and one line per row of lane_status."""
+    def gate(r):
+        if r['gate'] is None:
+            return '?'
+        g = r['gate'][0] if r['gate'] else None
+        return '-' if g is None else f"{g['state']}{' #' + str(g['position']) if g['state'] == 'queued' and g['position'] else ''} {g['name']}"
+    table = [('lane', 'branch', 'ahead/behind', 'merge', 'uncommitted', 'commit', 'changed', 'gate', 'overlaps')]
+    for r in rows:
+        ab = '?' if r['ahead'] is None else f'+{r["ahead"]}/-{r["behind"]}'
+        table.append((r['lane'], r['branch'] or '(detached)', ab, r['merge'],
+                      '-' if r['uncommitted'] is None else str(r['uncommitted']), age_text(r['last_commit_age_s']),
+                      age_text(r['last_change_age_s']), gate(r),
+                      ' '.join(f'overlaps {k}' for k in sorted(r['overlaps'])) or '-'))
+    w = [max(len(t[i]) for t in table) for i in range(len(table[0]) - 1)]
+    return ['  '.join(c.ljust(w[i]) for i, c in enumerate(t[:-1])) + '  ' + t[-1] for t in table]
+
+
 def still_open(root, ticket):
     """The `lane still open: <path> (branch <b>, <reason>)` lines for every plugin lane whose record lists the
     ticket or whose host name is <ticket>-solo. Prints nothing."""
@@ -2671,7 +2777,7 @@ def orphans(cwd='.'):
 
 def main(argv=None):
     ap = argparse.ArgumentParser(prog='lanes.py', description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    sub = ap.add_subparsers(dest='cmd', metavar='{open,close,finish,ready,sweep,list,who,check,port,archive,orphans,selftest}')
+    sub = ap.add_subparsers(dest='cmd', metavar='{open,close,finish,ready,sweep,list,status,who,check,port,archive,orphans,selftest}')
     sub.required = True
     p = sub.add_parser('open')
     p.add_argument('name')
@@ -2715,6 +2821,8 @@ def main(argv=None):
     p.add_argument('--fail', action='store_true')
     p.add_argument('--json', action='store_true')
     p.add_argument('--overlap', nargs='+', metavar='PATH', help='each open lane whose diff from its base touches a path (T-0821)')
+    p = sub.add_parser('status')
+    p.add_argument('--json', action='store_true')
     p = sub.add_parser('who')
     p.add_argument('--json', action='store_true')
     p = sub.add_parser('check')
@@ -2779,6 +2887,10 @@ def main(argv=None):
             r = ready(a.target, ticket=a.ticket, notify_cmd=a.notify_cmd)
             print(r['message'])
             return r['rc']
+        if a.cmd == 'status':
+            rows = lane_status()
+            print(json.dumps(rows, indent=2) if a.json else '\n'.join(status_lines(rows)))
+            return 0
         if a.cmd == 'who':
             hits = who()
             if a.json:
@@ -4535,6 +4647,60 @@ def case_finish_live_into(script, base):
     return fails
 
 
+def case_status(script, base):
+    """T-0873: lanes.py status, two lanes touching keep.txt: a commits it twice-ahead, b commits b.txt and edits
+    keep.txt uncommitted, main then changes keep.txt. a is +2/-1 and conflicts, b is +1/-1, clean, 1 uncommitted file
+    with a change time; each row names the other in overlaps. A fake gate ledger (temp SDLC_GATE_DIR) with a grant
+    whose cwd is under a and a queue row in b shows running on a and queued on b; an empty one shows none."""
+    import gate_lock  # same scripts/ dir; local because only this case writes a ledger
+    t = Fixture(base, script, 'status')
+    la, ta, _ = t.open('a', 'T-1')
+    lb, tb, _ = t.open('b', 'T-2')
+    t.work(ta, {'keep.txt': 'a\n'})
+    t.work(ta, {'a2.txt': 'a2\n'})
+    t.work(tb, {'b.txt': 'b\n'})
+    (tb / 'keep.txt').write_text('b\n')
+    t.commit('main moves', {'keep.txt': 'main\n'})
+    empty, gdir = t.dir / 'gate-empty', t.dir / 'gate'
+    empty.mkdir()
+    gdir.mkdir()
+    led = gate_lock.empty_ledger()
+    me = dict(pid=os.getpid(), need={gate_lock.COMPUTE: 1}, repo=str(t.top), priority=0)
+    led['grants'].append(dict(me, id='g1', name='gate-a', seq=1, granted_at=time.time(), cwd=str(ta / 'src')))
+    led['queue'].append(dict(me, id='q1', name='gate-b', seq=2, enqueued_at=time.time(), cwd=str(tb)))
+    led['seq'] = 2
+    (gdir / 'ledger.json').write_text(json.dumps(led))
+    fails = []
+    rc, o = t.lanes('status', '--json', env={'SDLC_GATE_DIR': str(empty)})
+    try:
+        rows = {r['lane']: r for r in json.loads(o)} if not rc else {}
+    except ValueError:
+        rows = {}
+    a, b = rows.get(la, {}), rows.get(lb, {})
+    if set(rows) != {la, lb}:
+        return [f'status: want rows for {la} and {lb}, got {rc}: {o}']
+    if (a.get('ahead'), a.get('behind'), a.get('merge'), a.get('uncommitted'), a.get('last_change')) != (2, 1, 'conflict', 0, None):
+        fails.append(f'status a: want +2/-1, conflict, 0 uncommitted, no change time, got {a}')
+    if (b.get('ahead'), b.get('behind'), b.get('merge'), b.get('uncommitted')) != (1, 1, 'clean', 1) or not b.get('last_change'):
+        fails.append(f'status b: want +1/-1, clean, 1 uncommitted with a change time, got {b}')
+    if not a.get('last_commit') or a.get('last_commit_age_s', 0) < 86400:
+        fails.append(f'status a: want a last commit days old, got {a}')
+    if a.get('overlaps') != {lb: ['keep.txt']} or b.get('overlaps') != {la: ['keep.txt']}:
+        fails.append(f'status overlap: want each row to name the other on keep.txt, got {a.get("overlaps")} and {b.get("overlaps")}')
+    if a.get('gate') != [] or b.get('gate') != []:
+        fails.append(f'status gate: an empty ledger shows a gate row, got {a.get("gate")} and {b.get("gate")}')
+    rc, o = t.lanes('status', env={'SDLC_GATE_DIR': str(gdir)})
+    lines = o.splitlines()
+    row = {l.split()[0]: l for l in lines[1:] if l.split()}
+    if rc or not lines or not lines[0].startswith('lane') or set(row) != {la, lb}:
+        return fails + [f'status text: want a header and two rows, got {rc}: {o}']
+    if not re.search(r'\+2/-1\s+conflict\s+0\s', row[la]) or 'running gate-a' not in row[la] or not row[la].endswith(f'overlaps {lb}'):
+        fails.append(f'status text a: want +2/-1 conflict 0, running gate-a and overlaps {lb}, got {row[la]}')
+    if not re.search(r'\+1/-1\s+clean\s+1\s', row[lb]) or 'queued #1 gate-b' not in row[lb] or not row[lb].endswith(f'overlaps {la}'):
+        fails.append(f'status text b: want +1/-1 clean 1, queued #1 gate-b and overlaps {la}, got {row[lb]}')
+    return fails
+
+
 # markers the mutant copies edit; each is joined so the selftest's own text does not contain the marked line
 MUTANTS = (
     ('HOST-OWNED', "host = wtroot.host_owned(d0['path'])" + '  # HOST-OWNED', 'host = None  # HOST-OWNED', case_host_owned,
@@ -4575,6 +4741,9 @@ MUTANTS = (
     ('MARKER-STAGED', "hit = diff_markers(git_text(tree, 'diff', '--cached', *DIFF_FLAGS))" + '  # MARKER-STAGED',
      'hit = None  # MARKER-STAGED', case_finish_markers, 'staged marker committed',
      'without the staged marker guard finish --no-ticket commits a conflict marker in the lane'),
+    ('STATUS-OVERLAP', "r['overlaps'] = {k: v for k, v in hits.items() if v}" + '  # STATUS-OVERLAP',
+     "r['overlaps'] = {}" + '  # STATUS-OVERLAP', case_status, 'status overlap',
+     'without the overlap column status names no lane sharing a changed path'),
     ('MARKER-RANGE', 'hit = diff_markers(log)' + '  # MARKER-RANGE', 'hit = None  # MARKER-RANGE', case_finish_markers,
      'range marker landed', 'without the range marker guard a lane commit holding a conflict marker lands'),
 )
@@ -5211,6 +5380,11 @@ def run_selftest(script, src, base, cases):
              'lane_after_land: runs in main after the fast-forward; a failing command exits 1 with main landed (T-0872)')
         need('finish live into', case_finish_live_into(script, base),
              'finish --no-ticket lands a live lane --into another branch there, main unmoved (T-0872)')
+
+    @cases(6)
+    def status_view():
+        need('status', case_status(script, base),
+             'status shows ahead/behind, merges clean or conflict, uncommitted count, the gate row by cwd and overlaps on both rows (T-0873)')
 
     @cases(49)
     def mutants():

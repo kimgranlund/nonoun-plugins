@@ -1064,3 +1064,8 @@
 
 - decide: plugins/sdlc/scripts/lanes.py:1639: the marker guard covers `finish --no-ticket` only; ticketed `finish` and `fanout.py land` are unchanged, which matches the Non-goals reading. The builder flagged it as an open question.
 - decide: plugins/sdlc/scripts/lanes.py:1818: `lane_regenerate` and `lane_after_land` run through `sh`, while `land_gate` runs through `bash -c`; documented in the Finish section, so decide: whether to unify.
+
+## T-0873: `lanes.py status` answers 'is anything stuck or about to collide' for every open lane in one table (2026-11-20)
+
+- note: plugins/sdlc/scripts/lanes.py case_status: the docstring says "a commits it twice-ahead"; the case commits keep.txt and a2.txt (two commits), so it reads fine, no change needed.
+- note: no em dashes in the added lines (checked with grep on the diff).
