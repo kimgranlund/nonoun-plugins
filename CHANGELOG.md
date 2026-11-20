@@ -22,6 +22,7 @@ SDLC releases (named SDLC Lite before 1.0.0), newest first, in [Keep a Changelog
 ### Fixed
 
 - `sdlc`: live mode's lane flow works without a ticket: `lanes.py open live-<slug> --kind live [--into <branch>]` opens a ticket-free lane (`lane/<slug>`, locked by the session, no ticket line, claim ref or main commit) that `list --overlap` and `list --json` show and `who` does not count; `ready` on it pins `refs/sdlc/ready/<slug>` with no criteria test, `list --ready` shows it, and `finish <lane> --no-ticket` lands it when its into is main. Kind live refuses `--ticket` and `--claim`; fanout and solo still need `--ticket`. `agents/live.md` names the new command (T-0870, issue #100).
+- `dispatch.py prepare verifier` in a lane that merged its integration branch keeps that branch's other tickets out of the Base sha diff: the lane fork floor is taken against the lane record's `into` branch when it resolves, before the main checkout HEAD (T-0869, issue #86).
 - `sdlc`: the `/sdlc:ask` ticket step treats a `not a ticket root` refusal from `tickets.py blockers` as `no tickets` and goes on with the rest of the sweep, instead of starting with an error in a repo that uses live mode without tickets; the root guard in `tickets.py` is unchanged (T-0866, issue #95).
 
 ## [1.0.8] - 2026-11-19

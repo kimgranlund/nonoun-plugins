@@ -483,17 +483,30 @@ def exec_tree(directory):
     return top if cd and cd[0] != cd[1] and cd[1] == hd[1] else directory
 
 
+def fork_ref(directory):
+    """The ref a lane worktree's fork floor is taken against, as (ref, label): SDLC_BASE_REF when set, else the
+    into branch its lane record names when that resolves (#86, T-0869: a lane that merged its integration branch
+    keeps that branch's other tickets out of its diff), else the main checkout HEAD; ('', '') when none."""
+    ref = os.environ.get('SDLC_BASE_REF', '').strip()
+    if ref:
+        return ref, 'SDLC_BASE_REF ' + ref
+    top = git('rev-parse', '--show-toplevel', cwd=directory).stdout.strip()
+    into = str(wtroot.lane_record(top, top).get('into') or '').strip() if top else ''
+    if into and git('rev-parse', '-q', '--verify', into + '^{commit}', cwd=directory).stdout.strip():
+        return into, "the lane's into branch " + into
+    m = re.search(r'^HEAD ([0-9a-f]{7,64})$', git('worktree', 'list', '--porcelain', cwd=directory).stdout, re.M)
+    return (m.group(1), 'the main checkout HEAD') if m else ('', '')
+
+
 def fork_floor(directory):
-    """In a linked (lane) worktree, the commit the lane forked from: git merge-base HEAD <main checkout HEAD>
-    (SDLC_BASE_REF names another ref). '' in the main checkout or when git cannot say (T-0376)."""
+    """In a linked (lane) worktree, the commit the lane forked from: git merge-base HEAD <fork_ref> (SDLC_BASE_REF,
+    else the lane record's into branch, else the main checkout HEAD). '' in the main checkout or when git cannot say
+    (T-0376)."""
     gd = git('rev-parse', '--git-dir', cwd=directory).stdout.strip()
     common = git('rev-parse', '--git-common-dir', cwd=directory).stdout.strip()
     if not gd or not common or os.path.realpath(os.path.join(str(directory), gd)) == os.path.realpath(os.path.join(str(directory), common)):
         return ''
-    ref = os.environ.get('SDLC_BASE_REF', '').strip()
-    if not ref:
-        m = re.search(r'^HEAD ([0-9a-f]{7,64})$', git('worktree', 'list', '--porcelain', cwd=directory).stdout, re.M)
-        ref = m.group(1) if m else ''
+    ref = fork_ref(directory)[0]
     return git('merge-base', 'HEAD', ref, cwd=directory).stdout.strip() if ref else ''
 
 
@@ -627,7 +640,7 @@ def build_base(directory, records=None, tree=None, role=None):
         # T-0748: a verifier whose recorded base predates a main merge gets the lane start too, never HEAD (an empty diff)
         start = lane_start(cwd, floor) if role == 'verifier' and (not stored or below_floor(stored)) else ''
         if start and below_floor(start):  # the lane merged main after it started: its merge point with main keeps main's changes out
-            say('the lane merged main after its start %s: Base sha is its merge point with main %s' % (start[:12], floor[:12]))
+            say('the lane merged %s after its start %s: Base sha is its merge point with it %s' % (fork_ref(cwd)[1] or 'main', start[:12], floor[:12]))
             start = floor
         if start and start != base and ancestor(start):  # a lane resumed after its driver died: HEAD is its WIP commit (T-0546)
             if not lane_record_base(cwd):  # T-0745: a fanout record names the lane start, the expected base; only a fork-point guess is ambiguous
@@ -3914,6 +3927,27 @@ def selftest(spec=None, listing=False):
             case('a verifier after the lane merged main (attempt %d): the base diff holds both lane commits and no main-only file' % n,
                  dv1['base_sha'] == start4 and d['base_sha'] not in (head4, merge4) and files4 == ['fix4.txt', 'pass4.txt'])
         l4base.unlink()
+        # T-0869 (#86): a fanout lane whose record names an into (integration) branch merges it after another ticket
+        # landed there: the verifier's base diff holds the lane's own files, not the other ticket's (fork_floor reads into)
+        lw6, iw6 = rr.parent / (rr.name + '-lane6'), rr.parent / (rr.name + '-integ6')
+        gt(rr, 'worktree', 'add', '-q', '-b', 'lane6', str(lw6), 'HEAD')
+        gt(rr, 'worktree', 'add', '-q', '-b', 'integ6', str(iw6), 'HEAD')
+        start6 = gt(lw6, 'rev-parse', 'HEAD')
+        (lw6 / '.lane.json').write_text(json.dumps({'lane': 'lane6', 'base_sha': start6, 'into': 'integ6'}))
+        (lw6 / 'own6.txt').write_text('o')
+        gt(lw6, 'add', 'own6.txt')
+        gt(lw6, 'commit', '-qm', 'lane6 work')
+        (iw6 / 'other6.txt').write_text('x')
+        gt(iw6, 'add', 'other6.txt')
+        gt(iw6, 'commit', '-qm', 'another ticket lands on the integration branch')
+        gt(lw6, 'merge', '-q', '--no-edit', 'integ6')
+        (lw6 / 'fix6.txt').write_text('f')
+        gt(lw6, 'add', 'fix6.txt')
+        gt(lw6, 'commit', '-qm', 'lane6 fix after the sync')
+        rc6, dv6, err6 = prep(rr, 'verifier', 'L1', str(mhand), '--dry-run', '--tree', str(lw6))
+        files6 = gt(lw6, 'diff', '--name-only', dv6.get('base_sha') or 'HEAD', 'HEAD', '--', '.', ':(exclude).lane.json').split()
+        case('a verifier after the lane merged its into branch: the base diff holds the lane files and not the other ticket\'s (#86)',
+             rc6 == 0 and files6 == ['fix6.txt', 'own6.txt'] and dv6['base_sha'] == gt(lw6, 'rev-parse', 'integ6'))
         # T-0750 (#55, #49): one tree writes base-sha, another reads it. prepare --tree <lane> builder for the main-checkout
         # handoff, run from the main checkout, records in the lane twin (wtroot.owner_tree), so a verifier prepared from
         # inside the lane for the lane's copy of the handoff reads the build base, not the lane start.
