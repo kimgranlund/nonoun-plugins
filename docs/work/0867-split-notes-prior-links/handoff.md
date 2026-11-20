@@ -34,7 +34,7 @@ After `steps.py split --supersede`, every prior-report link in a step handoff, t
 ## Acceptance criteria
 - `python3 plugins/sdlc/scripts/steps.py selftest` exits 0 and includes the new case.
 - With the old order restored (Notes appended after the rewrite), the new case fails (state the observed red).
-- `bash plugins/sdlc/scripts/check.sh --fast` exits 0 and `git diff --check` is clean.
+- `bash plugins/sdlc/scripts/check.sh --changed $SDLC_BASE_SHA` exits 0 and `git diff --check` is clean (replan: the T-0859 rule, a ticket runs the jobs its diff touches; `--fast` timed out in the gate queue under load).
 
 ## Constraints
 - The printed `steps: step N: rewrote prior-report link` lines may now include Notes links; no other output changes.
