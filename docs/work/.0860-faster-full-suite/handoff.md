@@ -2,7 +2,7 @@
 id: T-0860
 title: "Cut check.sh wall time by sharding its slowest selftests"
 type: chore           # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L3             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -43,3 +43,16 @@ The full `check.sh` finishes in well under its current 600 s on this machine, wi
 ## Constraints
 - No case removed, skipped or loosened.
 - `--fast` keeps its job set apart from renamed shards.
+
+## Outcome
+
+2026-11-19 · lane: solo L3 · verdict: closed by reason (delivered by the solo agent (level L3); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: 9240273912c6
+- Changed: see commits
+- Commits: 764a338 T-0860: replan criteria so a verifier can run them inside its cap; dae5c09 T-0860: shard the fanout, dispatch and lanes selftests
+- Check: 1 check-full.log: pass
+- Check: 2 shards.py selftest and check: pass
+- Check: 3 nine shard jobs together: pass
+- Check: 4 no case removed or loosened: pass
+- Check: 5 git diff --check: pass
+- Follow-up: note: the shards.py check scratch-copy control needs the scripts beside... -> notes.md
+- Follow-up: note: T-0858 check_select.py must map each sharded script to all its... -> notes.md
