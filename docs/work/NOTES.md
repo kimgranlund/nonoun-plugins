@@ -970,3 +970,8 @@
 
 - note: the solo report says "blocked: plan defect" on `git diff --check`. The handoff's replan already excludes `plugins/design/skills/ui-frameworks` from that criterion, so the block no longer applies and the criterion passes as written.
 - note: the ui-explore-variants `node scripts/check.mjs <project-with-playwright>` run was not performed (no Playwright project in the tree) and is not a criterion. This is the only unverified item the solo report names.
+
+## T-0862: ui-frameworks finds sibling skills inside the plugin (2026-11-19)
+
+- note: with SKILLS_DIR set but lacking a file, the resolver falls through to the plugin folder and `~/.claude/skills` rather than failing; the error appears only when no place has the file. This matches the handoff's resolution order.
+- note: the user should take the same change upstream to the MacBook source of ui-frameworks (builder report says so).
