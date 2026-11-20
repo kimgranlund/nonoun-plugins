@@ -17,6 +17,10 @@ SDLC releases (named SDLC Lite before 1.0.0), newest first, in [Keep a Changelog
 - `sdlc`: `specgate.py check` flags a `duplicate span` only when a criterion repeats inside one step; a later step may re-run an earlier step's check, in either order (T-0879) (#87).
 - Builders, solos and verifiers run the check a criterion names, or `check.sh --changed $SDLC_BASE_SHA` in the sdlc repository, once after the change and again only after a fix; the full `check.sh` belongs to the land gate and a release, never to a role mid-ticket (T-0859).
 
+### Fixed
+
+- `sdlc`: the `/sdlc:ask` ticket step treats a `not a ticket root` refusal from `tickets.py blockers` as `no tickets` and goes on with the rest of the sweep, instead of starting with an error in a repo that uses live mode without tickets; the root guard in `tickets.py` is unchanged (T-0866, issue #95).
+
 ## [1.0.8] - 2026-11-19
 
 Report: [docs/reports/2026-11-19-release-1-0-8.md](docs/reports/2026-11-19-release-1-0-8.md). Marketplace release: `design` 0.5.0; `sdlc` 1.0.3, `context` 0.8.0 and `dev-tools` 0.1.1 are unchanged. 2 tickets (T-0855, T-0856). Details are in [the design changelog](plugins/design/CHANGELOG.md).
