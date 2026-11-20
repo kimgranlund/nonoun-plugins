@@ -2,7 +2,7 @@
 id: T-0870
 title: "Live mode's documented lane flow works without a ticket: open a registered lane, see it in overlap and list, m"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L3             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: [T-0860]          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -44,3 +44,16 @@ Live mode's documented lane flow works without a ticket: open a registered lane,
 ## Constraints
 - A live lane never writes a ticket file or a claim ref.
 - Fanout and solo still need `--ticket`.
+
+## Outcome
+
+2026-11-20 · lane: solo L3 · verdict: closed by reason (delivered by the solo agent (level L3); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: 81210f4e2b0c
+- Changed: see commits
+- Commits: dd57995 T-0870: a ticket-free live lane kind (#100)
+- Check: 1 Selftest shard with the new cases exits 0, full selftest exits 0, observed red with the live bran...: pass
+- Check: 2 Throwaway repo: `open live-docs --kind live` exits 0, prints `locked:`, `list --json` shows kind ...: pass
+- Check: 3 check.py, codex_roles.py generate --check, claude_roles.py generate --check exit 0: pass
+- Check: 4 `check.sh --fast` exits 0 and `git diff --check` clean: pass
+- Follow-up: decide: plugins/sdlc/scripts/lanes.py open --kind live with --into... -> notes.md
+- Follow-up: note: plugins/sdlc/agents/live.md:42 still says "Claim a ticket... -> notes.md
+- Follow-up: note: docs/references/sdlc-internals.md:145 still lists lanes.py as... -> notes.md
