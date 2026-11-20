@@ -4,6 +4,10 @@ SDLC releases (named SDLC Lite before 1.0.0), newest first, in [Keep a Changelog
 
 ## [Unreleased]
 
+### Changed
+
+- `sdlc`: `onboard.py setup --init` in a new repo with no `.sdlc/config` now writes `work_root: docs/tickets`, so tickets live in `docs/tickets/` and the docs layout names the work home `tickets/` (T-0857). An existing `.sdlc/config` is never changed; a bare `tickets.py new` in a repo never onboarded still records `ticket_root: tickets`.
+
 ## [1.0.8] - 2026-11-19
 
 Report: [docs/reports/2026-11-19-release-1-0-8.md](docs/reports/2026-11-19-release-1-0-8.md). Marketplace release: `design` 0.5.0; `sdlc` 1.0.3, `context` 0.8.0 and `dev-tools` 0.1.1 are unchanged. 2 tickets (T-0855, T-0856). Details are in [the design changelog](plugins/design/CHANGELOG.md).
