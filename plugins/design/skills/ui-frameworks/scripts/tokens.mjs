@@ -3,7 +3,7 @@
 //   node scripts/tokens.mjs           write the file
 //   node scripts/tokens.mjs --check   exit 1 if the file differs from what the siblings and the recipes give now
 //
-// The sibling skills are looked up in ~/.claude/skills, or in the folder SKILLS_DIR names.
+// The sibling skills are looked up in the folder SKILLS_DIR names, then beside this skill, then in ~/.claude/skills (siblings.mjs).
 //   colour:    ui-colors' system.css, unchanged, wrapped in the tokens cascade layer (T1)
 //   material:  ui-materials' base block from references/fills.md, its Flat values (T2)
 //   geometry:  the rows of ui-geometry's derive.mjs that some recipe reads, as literal lengths per density (T3 to T5)
@@ -13,15 +13,15 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { reads, trim } from './trim-tokens.mjs';
+import { sibling } from './siblings.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const skills = process.env.SKILLS_DIR ?? path.join(os.homedir(), '.claude/skills');
 const check = process.argv.includes('--check');
 const config = JSON.parse(fs.readFileSync(path.join(root, 'kit/styles/kit.config.json'), 'utf8'));
 const LAYERS = '@layer reset, base, tokens, recipes, utilities;';
 const indent = (text, by = '  ') => text.split('\n').map((line) => (line ? by + line : line)).join('\n');
 const run = (script, args) => {
-  const result = spawnSync(process.execPath, [path.join(skills, script), ...args], { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
+  const result = spawnSync(process.execPath, [sibling(script), ...args], { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
   if (result.status !== 0) throw new Error(`${script} failed: ${result.stderr || result.stdout}`);
   return result.stdout;
 };
@@ -47,7 +47,7 @@ export function modeScopes(colourCss) {
   return [':root', ...new Set(classes)];
 }
 function material(colourCss) {
-  const fills = fs.readFileSync(path.join(skills, 'ui-materials/references/fills.md'), 'utf8');
+  const fills = fs.readFileSync(sibling('ui-materials/references/fills.md'), 'utf8');
   const block = /## Base block[\s\S]*?```css\n([\s\S]*?)```/.exec(fills);
   if (!block) throw new Error('ui-materials/references/fills.md has no base block');
   if (!/^:root \{/m.test(block[1])) throw new Error('the base block of ui-materials no longer starts with ":root {"');

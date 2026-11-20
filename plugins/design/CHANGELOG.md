@@ -4,6 +4,10 @@ The design plugin, newest first. Releases before this file are recorded in the r
 
 ## [Unreleased]
 
+### Fixed
+
+- `ui-frameworks` (T-0862): `scripts/tokens.mjs` (and `scripts/panda.mjs`, which builds on it) find `ui-colors`, `ui-geometry` and `ui-materials` inside the plugin's own `skills/` folder, so they run without copies in `~/.claude/skills`. One helper, `scripts/siblings.mjs`, tries `SKILLS_DIR`, then the folder beside the skill, then `~/.claude/skills`, and names every place tried when none has the file. A deliberate difference from the MacBook source. Generated output is unchanged.
+
 ## [0.5.0] - 2026-11-19
 
 ### Changed
