@@ -2755,11 +2755,11 @@ def split(target, only=None, guard_timeout=None, override_review=None, tree=None
         d.mkdir(parents=True, exist_ok=True)
         path = d / 'handoff.md'
         body = inherit_widened(f'## Task goal\n{goal}\n\n{steps[n]}\n', earlier_widened(rec, n))
+        if folded and folded.get(n):
+            body += '\n### Notes\n' + ''.join(f'- {x}\n' for x in folded[n])
         body, moved = rewrite_prior_links(body, sdlc_base(task_dir))
         for old_rel, new_rel in moved:
             print(f'steps: step {n}: rewrote prior-report link {old_rel} -> {new_rel}', file=sys.stderr)
-        if folded and folded.get(n):
-            body += '\n### Notes\n' + ''.join(f'- {x}\n' for x in folded[n])
         path.write_text(body, encoding='utf-8')
         written.append(path)
     return written
@@ -8259,6 +8259,17 @@ def selftest():
               all(run_main(['lint', str(ln(td, n))])[0] == 0 for n in (3, 4, 9)))
         check('(L) split never touches a finished report',
               (td / 'step-3.superseded-1' / 'builder-L3.md').read_text(encoding='utf-8') == hdr('builder-L3.md', '## Status\ndone\n'))
+        # T-0867: a folded plan-review ### Notes citation of the superseded step's report is rewritten too
+        td = l_task({'step-3.superseded-1': ['builder-L3.md']}, live={'step-3': ['builder-L3.md']}, cites={3: 'builder-L3.md'})
+        (td / 'plan-reviewer-L1.md').write_text(hdr('plan-reviewer-L1.md',
+            '## Verdict\npass\n\n## Findings\n- step 3: notes-fix: read .sdlc/0001-x/step-3/builder-L3.md first.\n\n'
+            '## Missing decisions\nNone\n'), encoding='utf-8')
+        rc, out, err = run_main(['split', str(td), '--supersede'])
+        h3 = rd(td, 3)
+        notes = h3.split('### Notes\n', 1)[1] if '### Notes\n' in h3 else ''
+        check('(L) T-0867: split --supersede rewrites a folded Notes citation to the superseded folder',
+              rc == 0 and 'step-3.superseded-2/builder-L3.md' in notes and '/step-3/builder-L3.md' not in notes
+              and (td / 'step-3.superseded-2' / 'builder-L3.md').is_file())
         # the newest superseded attempt holding the report is the previous one
         td = l_task({'step-3.superseded-1': ['builder-L3.md'], 'step-3.superseded-2': ['builder-L3.md']},
                     cites={3: 'builder-L3.md'})
