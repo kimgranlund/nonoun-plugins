@@ -1023,3 +1023,7 @@
 ## T-0867: After `steps.py split --supersede`, every prior-report link in a step handoff, the folded `### Notes` included (2026-11-20)
 
 - note: in attempt 3, the exit code of the check.sh run was read from its `22 jobs ok` summary line. zsh `time` hid `PIPESTATUS`.
+
+## T-0880: gate_lock default capacity scales with the host (2026-11-20)
+
+- note: docs/specs/sdlc/gate-lock-admission.md:231 documents that there is no per-run capacity flag, while the handoff Context lists "explicit flag" first in the override order; the implemented order is policy.json, SDLC_GATE_CAPACITY, derived, consistent with the handoff's Do and criteria.
