@@ -9,7 +9,9 @@
                                            --no-ticket (T-0821): a lane with no local ticket commits, merges into a scratch
                                            tree at into, runs the land gate there, fast-forwards into and closes the lane;
                                            no record, verdict or ticket close; a hash_bound: path needs a pass verdict
-                                           from --verifier-agent-id (its transcript's final message or the file it names)
+                                           from --verifier-agent-id (its transcript's final message or the file it names);
+                                           T-0872: refuses conflict markers, regenerates lane_generated: conflicts, runs
+                                           lane_after_land:, and lands into the record's into, main or not (Finish)
   lanes.py ready [<name|path>] [--ticket ID] [--notify-cmd CMD]   pin the review sha, unlock, and tell the factory (default: the current lane)
   lanes.py sweep [--apply]                 a dry run by default; --apply closes every landed plugin lane
   lanes.py list [--all] [--stale [--fail]] [--json]
@@ -206,6 +208,31 @@ steps are skipped` (exit 1). Each step skips itself when its effect is already t
               Without it nothing is pushed.
   A lane already gone with a landed archive ref prints `finish: <lane> is already finished (archive <ref>)` and exits 0,
   after the backup step when --backup is given.
+  --no-ticket (T-0821, T-0872 for #92): a lane whose record lists no local ticket (a live or integration lane) lands into
+  the record's into, which may be any local branch (a live lane opened --into <b>), with no record, verdict or close:
+  verdict (a hash_bound: path needs --verifier-agent-id with a pass), commit (`lane <lane>`), land, settle, lane, backup.
+    marker guard  a line `<<<<<<< ` or `>>>>>>> ` (MARKER_RE, agents/planner.md's pattern: `^\+\+?(<<<<<<<|>>>>>>>)( |$)`
+                  over a diff; a bare ======= alone is a setext heading, not a marker) added by the staged change stops
+                  the commit step (`commit: stopped: conflict marker in <path> (staged): <line>; nothing committed`), and
+                  one added by any commit in <into>..<branch> (git log --cc, so a merge resolved with markers counts)
+                  stops before the merge (`land: stopped: conflict marker in <path> at <sha7> <subject>: <line>; nothing
+                  merged`). Trailing whitespace is not checked (no git diff --check).
+    land          git merge --no-ff in a detached scratch tree <lanes root>/finish/<lane> at into. A conflict stops with
+                  nothing merged, unless lane_regenerate: is set and every conflicted path matches a lane_generated: glob:
+                  then each takes into's side (removed when into lacks it), lane_regenerate runs through the shell (sh, as
+                  lane_setup) in the scratch tree, every path the globs match is staged, the marker guard reruns over
+                  the staged merge, and the merge commits, printed `land: regenerated <paths> (<cmd>)`. Any other
+                  conflicted path stops: `conflict in <path> (not a lane_generated: path); nothing merged`. Then the
+                  land_gate: runs there (through gate_lock.py unless SDLC_GATE_SLOTS=0).
+    settle        into fast-forwards to the gated merge: merge --ff-only in the worktree that has into checked out (the
+                  main checkout for main), else update-ref from its old sha; into only ever moves by fast-forward.
+    after-land    each lane_after_land: command, in order, through the shell (sh) in that worktree, only on the run that
+                  fast-forwarded into; `after-land: ok (<cmd>)` each, or `after-land: failed rc=<n> (<cmd>)` and the rest
+                  skipped. A failure keeps the landing, the lane still closes, and finish exits 1 (`finish: <lane>
+                  landed and closed, but lane_after_land failed; ...`): rerun the command by hand. No worktree holding
+                  into prints `after-land: skipped (no worktree has <into> checked out)`.
+  On Codex these commands write .git and trees outside the checkout: run finish with full access (plugins/sdlc AGENTS.md
+  Lanes).
 
 Ready (T-0590): `ready [<lane>] [--ticket ID]`, run by the worker when its ticket is done, on any host. The ticket is
 --ticket, else the record's first local ticket; a live lane with neither (T-0870) uses its leaf as the <id>, skips the
@@ -269,6 +296,13 @@ Config (.sdlc/config of the main worktree; blank and # lines ignored):
   factory: <name>         the mailbox receiver ready sends to; default factory (T-0590)
   lane_landing: local       finish lands into main locally although main tracks an upstream, so open commits the claim
                             and the record in main; default: a PR repo when main tracks an upstream (T-0609, T-0804)
+  lane_generated: <glob>... finish --no-ticket's generated paths (git :(top,glob) pathspecs; repeat or list several);
+                            default none (T-0872)
+  lane_regenerate: <cmd>    run in the scratch tree when a --no-ticket merge conflicts only in lane_generated: paths,
+                            after into's side is taken; default none, and then every conflict stops (T-0872)
+  lane_after_land: <cmd>    run after finish --no-ticket fast-forwards into, in the worktree holding into (the main
+                            checkout for main); repeat the line for several, run in order, the first failure stops the
+                            rest and makes finish exit 1 with the landing kept (T-0872)
 """
 import argparse, contextlib, datetime, fcntl, io, json, os, pathlib, re, shutil, socket, subprocess, sys, tempfile, time
 
@@ -294,7 +328,9 @@ PRUNE_REL = Path('.sdlc') / 'runtime' / 'prune.json'  # dispatch.py PRUNE_REL
 PRUNE_TTL = 6 * 3600
 NAMESPACES = ('lane/', 'wave/', 'release/')
 CONFIG_KEYS = ('lanes_root', 'lane_into', 'lane_setup', 'lane_ports', 'lane_stale_days', 'lane_min_age_hours',
-               'lane_keep', 'lane_names', 'lane_sweep', 'land_gate', 'factory', 'lane_landing')
+               'lane_keep', 'lane_names', 'lane_sweep', 'land_gate', 'factory', 'lane_landing', 'lane_generated',
+               'lane_regenerate', 'lane_after_land')
+MARKER_RE = re.compile(r'^\+\+?(<<<<<<<|>>>>>>>)( |$)')  # T-0872: agents/planner.md's conflict-marker pattern over a diff
 READY_REFS = 'refs/sdlc/ready/'  # T-0590: dispatch.py READY_REFS
 SNAPSHOT_SUBJECT = 'sdlc ready snapshot:'
 SNAPSHOT_SKIP = (':(exclude,glob)**/*.log', ':(exclude,glob)**/.run.lock', ':(exclude,glob)**/*.running')
@@ -380,7 +416,7 @@ def flock(path):
 def config(toplevel):
     """The lane keys of <toplevel>/.sdlc/config with their defaults (see the docstring)."""
     top = Path(toplevel)
-    vals, keep, setups = {}, [], []
+    vals, keep, setups, gen, after = {}, [], [], [], []
     path = top / '.sdlc' / 'config'
     lines = path.read_text(encoding='utf-8').splitlines() if path.is_file() else []
     for line in lines:
@@ -395,6 +431,11 @@ def config(toplevel):
         elif k == 'lane_setup':  # T-0692: every line counts, in order
             if v:
                 setups.append(v)
+        elif k == 'lane_generated':  # T-0872: globs on every line, as lane_keep
+            gen += [x for x in re.split(r'[\s,]+', v) if x and x not in gen]
+        elif k == 'lane_after_land':  # T-0872: every line counts, in order, as lane_setup
+            if v:
+                after.append(v)
         else:
             vals[k] = v
     ports = None
@@ -414,7 +455,8 @@ def config(toplevel):
                 lane_setup=setups, lane_ports=ports, lane_stale_days=num('lane_stale_days', 10),
                 lane_min_age_hours=num('lane_min_age_hours', 2), lane_keep=keep, lane_names=vals.get('lane_names'),
                 lane_sweep=vals.get('lane_sweep'), land_gate=vals.get('land_gate') or None, factory=vals.get('factory') or None,
-                lane_landing=vals.get('lane_landing') or None)
+                lane_landing=vals.get('lane_landing') or None, lane_generated=gen,
+                lane_regenerate=vals.get('lane_regenerate') or None, lane_after_land=after)
 
 
 def worktrees(cwd):
@@ -1398,13 +1440,15 @@ def finish_steps(target, backup, transcript, verifier_transcript, cwd, say, solo
     tree, b, into = Path(d['path']), d['branch'], d['into']
     if ctx.current and samepath(tree, ctx.current):
         return stop('lane', f'run finish from the main checkout {top}, not from the lane it removes')
-    if into != ctx.main:
-        return stop('lane', f'the lane lands into {into}, not {ctx.main} (the branch of the main checkout {top})')
     ids = [str(t) for t in d['tickets'] if LOCAL_ID.fullmatch(str(t))]
-    if no_ticket:
+    if no_ticket:  # T-0872: a ticketless lane lands into its own into, main or not (a live lane --into <branch>)
         if ids:
             return stop('lane', f'--no-ticket takes a lane with no local ticket; the record lists {", ".join(ids)}')
+        if not has_ref(top, f'refs/heads/{into}'):
+            return stop('lane', f'the lane lands into {into}, which is no local branch')
         return finish_ticketless(ctx, d, stop, say, backup, verifier_agent_id, verifier_transcript)
+    if into != ctx.main:
+        return stop('lane', f'the lane lands into {into}, not {ctx.main} (the branch of the main checkout {top})')
     if len(ids) != 1:
         return stop('lane', f'finish takes a lane with one local ticket; the record lists {ids or "none"}')
     tid = ids[0]
@@ -1563,8 +1607,10 @@ def transcript_verdict(agent_id, transcript):
 def finish_ticketless(ctx, d, stop, say, backup, verifier_agent_id, verifier_transcript):
     """finish --no-ticket (T-0821): a lane with no local ticket (a live session's lane) lands behind the land gate with
     no record, verdict or ticket close. A lane touching a hash_bound: path stops unless --verifier-agent-id names a
-    verifier whose verdict is pass. Steps: commit, land (merge into a detached scratch tree at into, run the gate there),
-    settle (fast-forward into), lane (close_lane), backup; a rerun skips the done steps."""
+    verifier whose verdict is pass. Steps: commit (refused when the staged change adds a conflict marker), land (refused
+    when a commit in into..branch added one; merge into a detached scratch tree at into, lane_generated: conflicts
+    regenerated by lane_regenerate:, run the gate there), settle (fast-forward into in the tree holding it, else
+    update-ref), after-land (lane_after_land:), lane (close_lane), backup; a rerun skips the done steps (T-0872)."""
     import steps  # same scripts/ dir; local because steps is heavy
     top, tree, b, into, name = ctx.top, Path(d['path']), d['branch'], d['into'], d['lane']
     base = out(top, 'merge-base', f'refs/heads/{into}', f'refs/heads/{b}')
@@ -1588,17 +1634,30 @@ def finish_ticketless(ctx, d, stop, say, backup, verifier_agent_id, verifier_tra
     if porcelain(tree):
         r = git(tree, 'add', '-A', '--', '.', ':(exclude,glob)**/*.log', ':(exclude,glob)**/.run.lock',
                 ':(exclude,glob)**/*.running')
-        if r.returncode or git(tree, 'commit', '-q', '-m', f'lane {name}').returncode:
-            return stop('commit', err(r) if r.returncode else 'git commit failed')
+        if r.returncode:
+            return stop('commit', err(r))
+        hit = diff_markers(git_text(tree, 'diff', '--cached', *DIFF_FLAGS))  # MARKER-STAGED
+        if hit:
+            return stop('commit', f'conflict marker in {hit[1]} (staged): {hit[2]}; nothing committed')
+        if git(tree, 'commit', '-q', '-m', f'lane {name}').returncode:
+            return stop('commit', 'git commit failed')
         say(f'commit: {out(tree, "rev-parse", "--short=7", "HEAD")} lane {name}')
     else:
         say('commit: clean')
 
     tip = out(top, 'rev-parse', '--verify', f'refs/heads/{b}^{{commit}}')
     gate = ctx.cfg['land_gate']
+    landed_tree, after_rc = None, 0
     if git(top, 'merge-base', '--is-ancestor', tip, f'refs/heads/{into}').returncode == 0:
         say(f'land: skipped ({b} is in {into})')
     else:
+        # T-0872 (#92): a marker any lane commit added (a rebase or merge continued over one) never reaches into
+        log = git_text(top, 'log', '--reverse', '--cc', *DIFF_FLAGS, '--format=%x00%h %s', f'refs/heads/{into}..refs/heads/{b}')
+        if log is None:
+            return stop('land', f'cannot read the commits {into}..{b}; nothing merged')
+        hit = diff_markers(log)  # MARKER-RANGE
+        if hit:
+            return stop('land', f'conflict marker in {hit[1]} at {hit[0]}: {hit[2]}; nothing merged')
         scratch = ctx.root / 'finish' / name
         if scratch.exists():
             git(top, 'worktree', 'remove', '--force', str(scratch))
@@ -1614,8 +1673,10 @@ def finish_ticketless(ctx, d, stop, say, backup, verifier_agent_id, verifier_tra
 
         r = git(scratch, 'merge', '--no-ff', '-q', '-m', f'Merge lane {name}', f'refs/heads/{b}')
         if r.returncode:
-            drop()
-            return stop('land', f'merging {b} into {into} failed: {err(r)}')
+            why = resolve_generated(ctx, scratch, f'Merge lane {name}', err(r), say)
+            if why:
+                drop()
+                return stop('land', f'merging {b} into {into} failed: {why}')
         if gate:
             cmd = ['bash', '-c', gate]
             try:
@@ -1631,11 +1692,16 @@ def finish_ticketless(ctx, d, stop, say, backup, verifier_agent_id, verifier_tra
                 return stop('land', f'land gate red (exit {g.returncode}): {tail[0]}; nothing merged')
         merged = out(scratch, 'rev-parse', 'HEAD')
         drop()
-        r = git(top, 'merge', '--ff-only', '-q', merged)
-        if r.returncode:
-            return stop('settle', f'{into} cannot fast-forward to the gated merge {merged[:7]}: {err(r)}')
+        landed_tree, why = advance(top, into, merged)  # T-0872: into's own tree, so a live lane --into <b> lands too
+        if why:
+            return stop('settle', f'{into} cannot fast-forward to the gated merge {merged[:7]}: {why}')
         say(f'land: merged {b} into {into}' + (f' (gate: {gate})' if gate else ' (no land_gate)'))
-        say(f'settle: {into} at {out(top, "rev-parse", "--short=7", "HEAD")}')
+        say(f'settle: {into} at {out(top, "rev-parse", "--short=7", f"refs/heads/{into}")}')
+        if ctx.cfg['lane_after_land']:
+            if landed_tree:
+                after_rc = after_land(ctx.cfg['lane_after_land'], landed_tree, say)
+            else:
+                say(f'after-land: skipped (no worktree has {into} checked out)')
 
     pre = porcelain(top)
     r = close_lane(str(tree), cwd=top)
@@ -1647,7 +1713,123 @@ def finish_ticketless(ctx, d, stop, say, backup, verifier_agent_id, verifier_tra
     say('lane: ' + '; '.join(l for l in r['message'].splitlines() if l) + (f' ({sha} lane {name} closed)' if sha else ''))
     if push_backup(top, into, backup, say):
         return 1
+    if after_rc:  # T-0872: the landing is kept; the after-land command is the user's to fix and rerun
+        say(f'finish: {name} landed and closed, but lane_after_land failed; rerun that command in {landed_tree}')
+        return 1
     say(f'finish: {name} done')
+    return 0
+
+
+DIFF_FLAGS = ('-p', '-U0', '--no-color', '--no-ext-diff', '--no-textconv')
+
+
+def git_text(cwd, *args):
+    """git output decoded with errors replaced (a diff may hold any bytes), or None when git fails."""
+    r = subprocess.run(['git', '-c', 'core.quotePath=false', *args], cwd=str(cwd), capture_output=True, text=True,
+                       errors='replace')
+    return r.stdout if r.returncode == 0 else None
+
+
+def diff_markers(text):
+    """T-0872 (#92): (commit, path, line) of the first conflict-marker line (MARKER_RE: a `<<<<<<< ` or `>>>>>>> ` line,
+    with `++` in a combined diff) a git diff or `git log --format=%x00%h %s -p` output adds; commit is `<sha7> <subject>`
+    from the log's NUL-led line, '' for a plain diff. None when there is none or text is None. A bare `=======` alone is
+    not a marker (a setext heading)."""
+    commit, path, head = '', '', False
+    for line in (text or '').splitlines():
+        if line.startswith('\x00'):
+            commit, path, head = line[1:].strip(), '', False
+        elif line.startswith('diff '):
+            head, path = True, line.split(' ')[-1]
+        elif head and line.startswith('+++ '):
+            p = line[4:].strip('"')
+            path = p[2:] if p.startswith('b/') else p
+        elif line.startswith('@@'):
+            head = False
+        elif not head and MARKER_RE.match(line):
+            return commit, path, line.lstrip('+')[:60]
+    return None
+
+
+def resolve_generated(ctx, scratch, msg, why, say):
+    """T-0872 (#92): after a conflicted scratch merge, when lane_regenerate: is set and every conflicted path matches a
+    lane_generated: glob (a git :(top,glob) pathspec): take into's side of each (ours in the scratch tree; removed when
+    into lacks it), run lane_regenerate through the shell in the scratch tree, stage every path the globs match, re-run
+    the marker guard and commit the merge as msg. Returns None once committed, else why it stopped (why unchanged when
+    neither key is set, so such a repo stops as before)."""
+    globs, cmd = ctx.cfg['lane_generated'], ctx.cfg['lane_regenerate']
+    if not (globs or cmd):
+        return why
+    conflicted = (out(scratch, 'diff', '--name-only', '--diff-filter=U') or '').splitlines()
+    if not conflicted:
+        return why
+    specs = ['--'] + [':(top,glob)' + g for g in globs]
+    gen = set((out(scratch, 'diff', '--name-only', '--diff-filter=U', *specs) or '').splitlines()) if globs else set()
+    other = [p for p in conflicted if p not in gen]
+    if other:
+        return f'conflict in {other[0]} (not a lane_generated: path); nothing merged'
+    if not cmd:
+        return f'conflict in generated {conflicted[0]} and no lane_regenerate: line; nothing merged'
+    for p in conflicted:
+        took = git(scratch, 'checkout', '--ours', '--', p) if git(scratch, 'cat-file', '-e', f'HEAD:{p}').returncode == 0 \
+            else git(scratch, 'rm', '-q', '-f', '--', p)
+        if took.returncode:
+            return f'cannot take {p} from into: {err(took)}; nothing merged'
+    try:
+        g = subprocess.run(cmd, shell=True, cwd=str(scratch), capture_output=True, text=True, errors='replace',
+                           stdin=subprocess.DEVNULL)
+        rc, tail = g.returncode, ((g.stdout + g.stderr).strip().splitlines() or [''])[-1]
+    except OSError as e:
+        rc, tail = 127, str(e)
+    if rc:
+        return f'lane_regenerate failed rc={rc} ({cmd}): {tail}; nothing merged'
+    listed = git(scratch, 'ls-files', '-z', '--cached', '--others', '--exclude-standard', *specs)
+    paths = sorted({x for x in listed.stdout.split('\0') if x}) if not listed.returncode else None
+    r = git(scratch, 'add', '-A', '--', *paths) if paths else listed  # by path: an unmatched glob must not fail the add
+    if paths is None or r.returncode:
+        return f'cannot stage the regenerated paths: {err(r)}; nothing merged'
+    left = out(scratch, 'diff', '--name-only', '--diff-filter=U')
+    if left:
+        return f'{left.splitlines()[0]} is still conflicted after lane_regenerate; nothing merged'
+    hit = diff_markers(git_text(scratch, 'diff', '--cached', *DIFF_FLAGS))
+    if hit:
+        return f'conflict marker in {hit[1]} after lane_regenerate: {hit[2]}; nothing merged'
+    r = git(scratch, 'commit', '-q', '-m', msg)
+    if r.returncode:
+        return f'cannot commit the regenerated merge: {err(r)}; nothing merged'
+    say(f'land: regenerated {", ".join(conflicted)} ({cmd})')
+    return None
+
+
+def advance(top, into, new):
+    """T-0872: fast-forward refs/heads/<into> to new: merge --ff-only in the worktree that has into checked out (the main
+    checkout for main), else update-ref from its old sha. Returns (that worktree or None, why it failed or None)."""
+    holder = next((w['path'] for w in worktrees(top) if w['branch'] == into and not w['bare']), None)
+    if holder:
+        r = git(holder, 'merge', '--ff-only', '-q', new)
+        return holder, (err(r) if r.returncode else None)
+    old = out(top, 'rev-parse', '--verify', f'refs/heads/{into}')
+    if not old or git(top, 'merge-base', '--is-ancestor', old, new).returncode:
+        return None, f'{new[:7]} is not a fast-forward of {into}'
+    r = git(top, 'update-ref', f'refs/heads/{into}', new, old)
+    return None, (err(r) if r.returncode else None)
+
+
+def after_land(cmds, cwd, say):
+    """T-0872 (#92): each lane_after_land: command through the shell in cwd, in order; prints `after-land: ok (<cmd>)`,
+    or `after-land: failed rc=<n> (<cmd>)` and its last output line, and the first failure stops the rest. Returns that
+    rc, else 0."""
+    for cmd in cmds:
+        try:
+            g = subprocess.run(cmd, shell=True, cwd=str(cwd), capture_output=True, text=True, errors='replace',
+                               stdin=subprocess.DEVNULL)
+            rc, tail = g.returncode, ((g.stdout + g.stderr).strip().splitlines() or [''])[-1]
+        except OSError as e:
+            rc, tail = 127, str(e)
+        if rc:
+            say(f'after-land: failed rc={rc} ({cmd})' + (f'\nafter-land: {tail}' if tail else ''))
+            return rc
+        say(f'after-land: ok ({cmd})')
     return 0
 
 
@@ -4234,6 +4416,123 @@ def case_live_lane(script, base):
     return fails
 
 
+# conflict-marker lines for the T-0872 cases, built so no line of this script starts with one
+LT, EQ, GT = '<' * 7, '=' * 7, '>' * 7
+CONFLICTED = f'top\n{LT} HEAD\nours\n{EQ}\ntheirs\n{GT} lane\n'
+
+
+def case_finish_markers(script, base):
+    """T-0872 (#92): finish --no-ticket refuses a staged conflict marker at the commit step with nothing committed, and a
+    lane commit that added one (under a clean tip) before the merge with nothing merged; trailing whitespace still lands."""
+    t = Fixture(base, script, 'fin-markers')
+    fails = []
+    leaf, tree, b = t.open('staged', None, '--kind', 'integration')
+    t.work(tree, {'ok.txt': 'ok\n'})
+    t.write({'a.txt': CONFLICTED}, cwd=tree)
+    head, tip = t.g('rev-parse', 'main'), t.g('rev-parse', b)
+    rc, o = t.lanes('finish', leaf, '--no-ticket', env=FIN_ENV)
+    if t.g('rev-parse', b) != tip:
+        fails.append(f'staged marker committed: the lane branch moved, got {rc}: {o}')
+    if rc != 1 or 'commit: stopped: conflict marker in a.txt (staged)' not in o or 'nothing committed' not in o:
+        fails.append(f'staged marker: want exit 1 naming a.txt, got {rc}: {o}')
+    if t.g('rev-parse', 'main') != head or not tree.is_dir():
+        fails.append('staged marker: main moved or the lane was closed')
+    leaf, tree, b = t.open('range', None, '--kind', 'integration')
+    t.work(tree, {'b.txt': CONFLICTED})
+    bad = t.g('rev-parse', '--short=7', 'HEAD', cwd=tree)
+    t.work(tree, {'b.txt': 'resolved\n'})
+    rc, o = t.lanes('finish', leaf, '--no-ticket', env=FIN_ENV)
+    if t.g('rev-parse', 'main') != head or not tree.is_dir():
+        fails.append(f'range marker landed: main moved or the lane was closed, got {rc}: {o}')
+    if rc != 1 or f'land: stopped: conflict marker in b.txt at {bad} work' not in o or 'nothing merged' not in o:
+        fails.append(f'range marker: want exit 1 naming b.txt at {bad}, got {rc}: {o}')
+    leaf, tree, b = t.open('space', None, '--kind', 'integration')
+    t.work(tree, {'w.txt': 'trailing   \n\tmixed \t\n'})
+    rc, o = t.lanes('finish', leaf, '--no-ticket', env=FIN_ENV)
+    if rc or f'finish: {leaf} done' not in o or t.g('show', 'main:w.txt') != 'trailing   \n\tmixed':
+        fails.append(f'trailing whitespace: want it landed, got {rc}: {o}')
+    return fails
+
+
+def case_finish_generated(script, base):
+    """T-0872 (#92): a scratch-merge conflict only in lane_generated: paths takes into's side, runs lane_regenerate and
+    lands the regenerated content; a conflict in any other path stops with nothing merged."""
+    t = Fixture(base, script, 'fin-gen')
+    t.write({'.sdlc/config': 'lane_generated: gen/*.txt none/*.json\nlane_regenerate: cat src/a.txt src/b.txt > gen/out.txt\n'})
+    t.commit('sources', {'src/a.txt': 'a1\n', 'src/b.txt': 'b1\n', 'gen/out.txt': 'a1\nb1\n'})
+    fails = []
+    leaf, tree, b = t.open('regen', None, '--kind', 'integration')
+    t.work(tree, {'src/b.txt': 'b2\n', 'gen/out.txt': 'a1\nb2\n'})
+    t.commit('main moves', {'src/a.txt': 'a2\n', 'gen/out.txt': 'a2\nb1\n'})
+    rc, o = t.lanes('finish', leaf, '--no-ticket', env=FIN_ENV)
+    got = t.g('show', 'main:gen/out.txt') if t.ok('cat-file', '-e', 'main:gen/out.txt') else None
+    if rc or 'land: regenerated gen/out.txt (cat src/a.txt src/b.txt > gen/out.txt)' not in o or got != 'a2\nb2':
+        fails.append(f'generated conflict: want exit 0 and gen/out.txt regenerated as a2 b2, got {got!r}, {rc}: {o}')
+    if tree.exists() or t.g('status', '--porcelain'):
+        fails.append('generated conflict: the lane is left or main is dirty')
+    leaf, tree, b = t.open('other', None, '--kind', 'integration')
+    t.work(tree, {'keep.txt': 'lane\n', 'gen/out.txt': 'lane\n'})
+    t.commit('main keeps', {'keep.txt': 'main\n', 'gen/out.txt': 'main\n'})
+    head = t.g('rev-parse', 'main')
+    rc, o = t.lanes('finish', leaf, '--no-ticket', env=FIN_ENV)
+    if rc != 1 or 'conflict in keep.txt (not a lane_generated: path)' not in o or 'nothing merged' not in o:
+        fails.append(f'other conflict: want exit 1 naming keep.txt, got {rc}: {o}')
+    if t.g('rev-parse', 'main') != head or not tree.is_dir():
+        fails.append('other conflict: main moved or the lane was closed')
+    return fails
+
+
+def case_finish_after_land(script, base):
+    """T-0872 (#92): lane_after_land: commands run in order in the main checkout after the fast-forward; a failing one
+    prints after-land: failed rc=<n> (<cmd>), skips the rest and exits 1 with main fast-forwarded and the lane closed."""
+    t = Fixture(base, script, 'fin-after')
+    log = t.dir / 'after.log'
+    t.write({'.sdlc/config': f'lane_after_land: pwd -P > {log}\nlane_after_land: git log -1 --format=%s >> {log}\n'})
+    fails = []
+    leaf, tree, b = t.open('after', None, '--kind', 'integration')
+    t.work(tree, {'built.txt': 'x\n'})
+    rc, o = t.lanes('finish', leaf, '--no-ticket', env=FIN_ENV)
+    got = log.read_text().splitlines() if log.is_file() else []
+    if rc or f'after-land: ok (pwd -P > {log})' not in o or got != [str(t.top), f'Merge lane {leaf}']:
+        fails.append(f'after-land: want exit 0 and the commands run in main after the merge, got {got}, {rc}: {o}')
+    never = t.dir / 'never'
+    t.write({'.sdlc/config': f'lane_after_land: exit 3\nlane_after_land: touch {never}\n'})
+    leaf, tree, b = t.open('fails', None, '--kind', 'integration')
+    t.work(tree, {'built2.txt': 'x\n'})
+    rc, o = t.lanes('finish', leaf, '--no-ticket', env=FIN_ENV)
+    if rc != 1 or 'after-land: failed rc=3 (exit 3)' not in o or never.exists():
+        fails.append(f'after-land failed: want exit 1, the failed line and the rest skipped, got {rc}: {o}')
+    if not t.ok('cat-file', '-e', 'main:built2.txt') or t.g('show', '-s', '--format=%s', 'main') != f'Merge lane {leaf}' \
+            or tree.exists():
+        fails.append('after-land failed: main is not fast-forwarded to the merge or the lane is left')
+    return fails
+
+
+def case_finish_live_into(script, base):
+    """T-0872: finish --no-ticket lands a live lane opened --into another branch into that branch, by update-ref when no
+    tree has it checked out and by a fast-forward in the tree that has; main does not move."""
+    t = Fixture(base, script, 'fin-into')
+    fails = []
+    head = t.g('rev-parse', 'main')
+    t.g('branch', 'dev')
+    t.g('branch', 'wip')
+    wt = t.dir / 'wip-tree'
+    t.g('worktree', 'add', '-q', str(wt), 'wip')
+    for into, f in (('dev', 'dev.txt'), ('wip', 'wip.txt')):
+        leaf, tree, b = t.open(f'live-{into}', None, '--kind', 'live', '--into', into)
+        t.work(tree, {f: 'x\n'})
+        rc, o = t.lanes('finish', leaf, '--no-ticket', env=FIN_ENV)
+        if rc or f'land: merged {b} into {into}' not in o or not t.ok('cat-file', '-e', f'{into}:{f}'):
+            fails.append(f'live --into {into}: want exit 0 and {f} on {into}, got {rc}: {o}')
+        if tree.exists() or t.ok('rev-parse', '--verify', '-q', f'refs/heads/{b}'):
+            fails.append(f'live --into {into}: the lane tree or branch is left')
+    if t.g('rev-parse', 'main') != head:
+        fails.append('live --into: main moved')
+    if not (wt / 'wip.txt').is_file() or t.g('status', '--porcelain', cwd=wt):
+        fails.append('live --into wip: the tree holding wip was not fast-forwarded clean')
+    return fails
+
+
 # markers the mutant copies edit; each is joined so the selftest's own text does not contain the marked line
 MUTANTS = (
     ('HOST-OWNED', "host = wtroot.host_owned(d0['path'])" + '  # HOST-OWNED', 'host = None  # HOST-OWNED', case_host_owned,
@@ -4271,6 +4570,11 @@ MUTANTS = (
      'without the live branch of open_lane a live lane does not open'),
     ('SWEEP-MINE', 'if wtroot.mine(p, ctx.top):' + '  # SWEEP-MINE', 'if True:  # SWEEP-MINE', case_sweep_other_repo,
      'sweep other repo', "without the own-repo test the sweep names another repo's unmarked folders"),
+    ('MARKER-STAGED', "hit = diff_markers(git_text(tree, 'diff', '--cached', *DIFF_FLAGS))" + '  # MARKER-STAGED',
+     'hit = None  # MARKER-STAGED', case_finish_markers, 'staged marker committed',
+     'without the staged marker guard finish --no-ticket commits a conflict marker in the lane'),
+    ('MARKER-RANGE', 'hit = diff_markers(log)' + '  # MARKER-RANGE', 'hit = None  # MARKER-RANGE', case_finish_markers,
+     'range marker landed', 'without the range marker guard a lane commit holding a conflict marker lands'),
 )
 
 
@@ -4868,7 +5172,7 @@ def run_selftest(script, src, base, cases):
         need('sweep merge.lock', case_sweep_mergelock(script, base),
              'a held merge.lock keeps a landed lane as merging; once released sweep closes it')
 
-    @cases(89)
+    @cases(112)
     def finish():
         need('finish pass', case_finish_pass(script, base),
              'a pass verdict commits, lands through the gate, settles, closes, backs up and removes the lane; a rerun is done')
@@ -4896,8 +5200,17 @@ def run_selftest(script, src, base, cases):
         need('live lane', case_live_lane(script, base),
              'kind live opens with no ticket and locked; overlap names it, who skips it, ready pins refs/sdlc/ready/<leaf>, '
              'finish --no-ticket lands it; fanout and solo still refuse no ticket (T-0870)')
+        need('finish markers', case_finish_markers(script, base),
+             'finish --no-ticket refuses a staged conflict marker and an earlier lane commit holding one, nothing committed '
+             'or merged; trailing whitespace lands (T-0872)')
+        need('finish generated', case_finish_generated(script, base),
+             'a conflict only in lane_generated: paths lands regenerated by lane_regenerate:; any other conflict stops (T-0872)')
+        need('finish after land', case_finish_after_land(script, base),
+             'lane_after_land: runs in main after the fast-forward; a failing command exits 1 with main landed (T-0872)')
+        need('finish live into', case_finish_live_into(script, base),
+             'finish --no-ticket lands a live lane --into another branch there, main unmoved (T-0872)')
 
-    @cases(39)
+    @cases(49)
     def mutants():
         for marker, line, repl, case, tell, why in MUTANTS:
             if src.count(line) != 1:

@@ -221,6 +221,11 @@ Optional, each one `.sdlc/config` line:
 - `lane_ports: <lo>-<hi>` for lanes that run a dev server or browser probe; gates read `$SDLC_LANE_PORT` or call `lanes.py port`.
 - `lane_stale_days: <n>` and `lane_sweep: off`.
 - No config line for auto-merge: it is a per-PR `--auto-merge <method>` flag (section 9, 17.8).
+- Landing a ticketless lane with `lanes.py finish <lane> --no-ticket` (T-0872, issue #92), which lands into the lane record's `into`, main or another local branch (a live lane opened `--into <branch>`), always by fast-forward:
+  - No config: a line starting `<<<<<<< ` or `>>>>>>> ` added by the staged lane change stops the commit step with nothing committed, and one added by any commit in `<into>..<branch>` (merges read with `--cc`) stops before the merge with nothing merged; the stop names the path, and the commit for the second. Trailing whitespace is not checked. Without the lines below a repo lands as before.
+  - `lane_generated: <glob>...` and `lane_regenerate: <cmd>`: when the scratch merge conflicts only in paths the globs match (git `:(top,glob)` pathspecs), each takes into's side, the command regenerates them in the scratch tree, the marker guard reruns, and the merge commits; any other conflicted path still stops.
+  - `lane_after_land: <cmd>`, repeatable and run in order: after the fast-forward, in the worktree holding into (the main checkout for main), for example an install and a build. A failure prints `after-land: failed rc=<n> (<cmd>)`, keeps the landing, closes the lane, and makes `finish` exit 1.
+  - The commands run through `sh`, as `lane_setup:` does. On Codex, run `finish` with full access, as the Lanes section of `plugins/sdlc/AGENTS.md` says.
 
 The plugin pins no Node binary: `lane_setup` is the repo's own command and selects Node through the repo's version manager (`fnm exec --using .nvmrc`, `mise exec`, or a `.nvmrc`-aware script). For gen-ui-kit the lines would be `lane_ports: 7400-7699`, `lane_into: origin/main`, and `lane_setup:` running `pnpm install` then `node scripts/dev/bootstrap-worktree.mjs` under their Node 22 lookup, which replaces `~/.claude/lane/`; its lanes root is the bare-clone default (T-0561), so it sets no `lanes_root:`.
 
