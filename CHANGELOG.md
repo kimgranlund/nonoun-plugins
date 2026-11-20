@@ -7,6 +7,7 @@ SDLC releases (named SDLC Lite before 1.0.0), newest first, in [Keep a Changelog
 ### Added
 
 - `check.sh --changed [<base>]` runs only the check jobs that cover the changed and untracked files, picked by the new `scripts/check_select.py` from `check.sh`'s own job list and the scripts' import lines (T-0858).
+- `sdlc`: every full and `--fast` `check.sh` run writes the run record `.sdlc/runtime/check-last.json` (head sha, a tree hash of the tracked, dirty and untracked files, each job's exit code and seconds), and `check.sh --rerun` reruns only the jobs that failed plus the ones `check_select.py` picks for the paths changed since that run, printing `rerun: <k> of <N> jobs; <m> passed earlier at <sha>` or `nothing to rerun`; it refuses with no record or a record whose commit is not an ancestor of `HEAD`. A release is green when the record has tier `full` and shows every job ok for the release tree (T-0861).
 - `sdlc`: `messages.py findings [--receiver NAME]` lists cross-session findings as `<id>\t<where>\t<blocking>\t<state>\t<sender>`, state `open`, `fixed-in <sha>`, `wontfix` or `worked-around` from the receiver's reply. A finding is an ordinary message with topic `finding <id>` and a body that opens with `finding:`, `where:`, `repro:`, `worked-around:` and `blocking:` lines; a reply opens with `fixed-in: <sha>`, `wontfix: <reason>` or `worked-around: <how>`. No new kind, and the command never claims, moves or prints prose (T-0868, issue #96).
 
 ### Changed
