@@ -1,7 +1,7 @@
 <title>NAME THE EXPLORATION</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <style>
-/* Layout: one reading column; every variant is live, drawn from one shared fixture, under one shared stress control. */
+/* Layout: one reading column; every variant is the thing itself, made from one shared fixture, under one shared stress control. */
 :root {
   --bg: #f1f1f4; --panel: #fdfdfc; --ink: #1c2024; --muted: #5b606a; --quiet: #868a94;
   --line: #dcdde3; --fill: #e9e9ee; --focus: #3d4fc9;
@@ -56,7 +56,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--focus); out
      data-pick="one" here or on a wrapper around one moment makes the first verdict exclusive in that moment. -->
 <div class="page" data-explore data-round="1"
      data-question="STATE THE QUESTION"
-     data-aspects="Layout,Density,Readability,Interaction,Fits the system">
+     data-aspects="NAME,THE,ASPECTS">
 
   <header class="top">
     <span class="kicker">WHERE THIS LIVES · THE FIXTURE</span>
@@ -64,26 +64,29 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--focus); out
     <p class="lede">What is wrong today, in one or two sentences, and what every variant below must achieve. Say what the shared control does.</p>
   </header>
 
-  <!-- One shared stress control. It changes the thing that makes the problem hard (width, count, length, time). -->
+  <!-- One shared stress control. It changes the thing that makes the problem hard (width, count, length, time), or
+       chooses a named scenario: a group of buttons with aria-pressed, in an element marked data-fb-control-group="<name>". -->
   <div class="control">
     <label for="stress">STRESS AXIS</label>
     <input id="stress" type="range" min="260" max="748" step="4" value="440" data-fb-control="width">
     <output id="stressout" for="stress">440 px</output>
   </div>
 
-  <!-- Repeat once per variant. id and data-variant are short, stable slugs. data-moment names the component or UI
-       moment the variant answers (one per question on the page); it stays the same across rounds, so Compare can lay
-       every answer to it side by side. A variant kept from an earlier round also carries its own data-round,
+  <!-- Repeat once per variant. id and data-variant are short, stable slugs. data-moment names the
+       moment (the one decision) the variant answers, one per question on the page; it stays the same across rounds,
+       so Compare can lay every answer to it side by side. A variant kept from an earlier round also carries its own data-round,
        and so does that round's table or reading: the page opens on the current round and hides the earlier ones
        until the reader chooses "All rounds". -->
   <section class="opt" id="variant-a" data-variant="variant-a" data-moment="NAME-THE-MOMENT">
     <div class="opt-head"><span class="kicker">Option A</span><h2>NAME IT BY ITS MECHANISM</h2>
       <p class="lede">How it works, in one or two sentences, with no reference to the other variants.</p></div>
+    <!-- The stage holds the specimen: a live mock, a diagram with the fixture traced through it, a plan, the piece itself. -->
     <div class="stage"><div class="mock" id="mA"></div></div>
     <div class="facts">
       <div><b>Keeps</b><span>What survives from today.</span></div>
       <div><b>Gives up</b><span>The cost, stated plainly.</span></div>
       <div><b>Breaks when</b><span>The condition where it fails.</span></div>
+      <!-- Where the variant cannot be operated: <div><b>Depends on</b><span>The assumption that sinks it if false.</span></div> -->
     </div>
   </section>
 

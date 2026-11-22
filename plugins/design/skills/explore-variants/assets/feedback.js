@@ -4,7 +4,7 @@
 // Reads from `[data-explore]`: data-question, data-round, data-aspects (comma list; a section or a wrapper around a
 // moment's sections may carry its own, and the nearest wins). Controls marked `data-fb-control`
 // (a width slider, a time scrubber) are recorded with their current values, so the feedback says what was on screen.
-// Compare: each section may carry data-moment (the component or UI moment it answers) and, when kept from an earlier
+// Compare: each section may carry data-moment (the one decision it answers) and, when kept from an earlier
 // round, its own data-round. A corner button, the key C and a "Compare all" button in each variant open a modal dialog
 // that holds every variant of one moment side by side, live: the variant's `.stage` is moved into its card and put back
 // on close, with a placeholder of the same height left in the page. Compare is a view; the JSON gains nothing.
@@ -17,10 +17,10 @@
   if (!root) return;
   const sections = [...root.querySelectorAll('section[data-variant]')];
   if (!sections.length) return;
-  const KEY = 'ui-explore-variants:' + document.title + ':' + (root.dataset.round || '1');
+  const KEY = 'explore-variants:' + document.title + ':' + (root.dataset.round || '1');
   const DEFAULT_VERDICTS = [['pursue', 'Pursue'], ['parts', 'Keep parts'], ['drop', 'Drop']];
   const NEXT = [['refine', 'Refine the picks'], ['combine', 'Combine the picks'], ['more', 'Explore further'], ['build', 'Build it']];
-  const DEFAULT_ASPECTS = 'Layout,Density,Readability,Interaction,Fits the system';
+  const DEFAULT_ASPECTS = 'Clear,Fits the need,Worth its cost'; // a fallback only: a page names its own
   // the nearest data-aspects wins: the variant's own, a wrapper around one moment's variants, then the container's
   const aspectsOf = (s) => {
     const host = s.closest('[data-aspects]');
@@ -100,7 +100,7 @@
     document.querySelectorAll('[data-fb-control]').forEach((c) => { controls[c.dataset.fbControl || c.id] = c.type === 'checkbox' ? c.checked : c.value; });
     document.querySelectorAll('[data-fb-control-group] [aria-pressed="true"]').forEach((b) => { controls[b.closest('[data-fb-control-group]').dataset.fbControlGroup] = b.textContent.trim(); });
     return {
-      skill: 'ui-explore-variants', schema: 1,
+      skill: 'explore-variants', schema: 1,
       exploration: document.title, question: root.dataset.question || null, round: Number(root.dataset.round || 1),
       controls,
       ...(VERDICTS === OWN_VERDICTS ? { verdicts: VERDICTS.map(([k]) => k) } : {}), // only when the page named its own
@@ -176,7 +176,7 @@
   const moments = [...new Set(sections.map(momentOf))];
   const rounds = [...new Set(sections.map(roundOf))].sort((a, b) => a - b);
   const VIRTUAL = 24; // beyond this many cards, only those near the view hold their stage
-  const KEYPREF = 'ui-explore-variants:compare-key';
+  const KEYPREF = 'explore-variants:compare-key';
   const opt = (v, l) => `<option value="${esc(v)}">${esc(l)}</option>`;
 
   const dlg = document.createElement('dialog');
