@@ -1,20 +1,32 @@
 ---
-name: ui-explore-variants
-description: Explore a UI design problem as a set of coarsely distinct layout or interaction solutions on one published page - each variant live, drawn from one shared fixture, under one shared stress control (width, count, length, time), with what it keeps, gives up and where it breaks, a comparison table, a recommendation, and a feedback form per variant (multiple choice and text) that copies one JSON object the user pastes back in chat. Then run the next round from that JSON. Use for "explore N ways to...", "how else could we show...", "show me options for this layout", "I'm not sure how this should work, explore it", a component that fails at some size or state and needs rethinking, or when the user pastes ui-explore-variants feedback JSON. NOT for comparing code implementations of one settled design (component-variants), whole-page wireframes (wireframe-review), tuning a system's constants (ui-kit-inspector), a showcase of finished components (ui-showcase-bento), or building the chosen variant in the product.
+name: explore-variants
+description: Explore one open question as a set of answers that differ in kind, on one published page - each answer shown as the thing itself at small scale (a live mock, a diagram with one case traced through it, a plan's first moves, the same piece written in each direction), from one shared fixture, under one shared stress, with what it keeps, gives up, depends on and where it breaks, a comparison table, a recommendation, and a feedback form per answer that copies one JSON object the user pastes back in chat. Then run the next round from that JSON. Use for "explore N ways to...", "what are our options for...", "how else could we...", "show me directions for...", a UI layout or interaction, an architecture, a strategy, a decision, a name, a voice or creative direction, a review of what was built (keep or go back), or when the user pastes explore-variants or ui-explore-variants feedback JSON. NOT for a design whose decisions are mostly unmade (grill), designing one settled approach (architect), mapping what exists (system-atlas), comparing code implementations of one settled design (component-variants), whole-page wireframes (wireframe-review), tuning constants (ui-kit-inspector), or building the chosen answer.
 ---
 
-# UI explore variants
+# Explore variants
 
-One design question, several answers that differ in kind, on one page the user can operate, judge and answer.
+One open question, several answers that differ in kind, on one page the user can operate, judge and answer.
 The page is a thinking tool: it is finished when the user can say which way to go, not when it is pretty.
 
 ## Route
 
 | You have | Do |
 |---|---|
-| A design problem, no page yet | The procedure below, from step 1 |
-| A page and pasted feedback JSON | [Reading the feedback](#reading-the-feedback), then a round 2 |
-| A request for a different number of variants, or a named axis | Step 3 with that number or axis fixed |
+| An open question, no page yet | The recipe for its subject (next table), then the procedure from step 1 |
+| A page and pasted feedback JSON | The recipe for its subject, then [Reading the feedback](#reading-the-feedback) and the next round |
+| A request for a different number of variants, or a named axis | The recipe, then step 3 with that number or axis fixed |
+
+| The question is about | Read first |
+|---|---|
+| A UI layout or interaction | `references/ui.md` |
+| A system's structure | `references/architecture.md` |
+| A plan, or a choice among courses | `references/strategy.md` |
+| Words, a name, a voice or a visual direction | `references/creative.md` |
+| Work already done (keep or go back) | `references/review.md` |
+
+Read the recipe before choosing variants and again before each later round: it holds rules for later rounds
+too. A question that fits none takes the three questions every recipe
+answers: what is the specimen, what is the fixture, what is the stress.
 
 Files, relative to this folder: `assets/template.html` (page skeleton), `assets/feedback.css` and
 `assets/feedback.js` (the feedback module), `scripts/inline.mjs` (puts the module into a page),
@@ -24,29 +36,27 @@ after any change to the module).
 ## Procedure
 
 1. **State the one question.** In the user's words, as a headline: "Five ways to show an event without wrapping its
-   title". Say what is wrong today in one or two sentences, from the screenshot or element they sent. If the request
-   holds two questions, explore the first and name the second.
+   title", "Four places the session state could live". Say what is wrong today in one or two sentences, from what
+   they sent. If the request holds two questions, explore the first and name the second.
 2. **Look for existing work first.** Other branches, prototypes, a related skill, a decision record. If someone has
    already explored this, say so on the page or in the reply, and build on it.
-3. **Choose variants that differ in kind.** List the structural axes of the problem (what carries the text, what
-   carries the quantity, whether the frame is kept or dropped, orientation, all at once or one in focus, where
-   detail lives). Each variant moves a different axis. Tests: each is described in one sentence without naming
-   another; no two share a silhouette at thumbnail size; none is a restyling of another. Include the user's own
-   idea as one variant when they offered one. Default five. A variant you already believe is wrong still earns
-   its place if it shows a real trade.
-4. **One fixture for all.** Real content, the same in every variant, including the cases that make the problem
-   hard (the long title, the overlap, the very short item, the empty day). Never lorem ipsum, never a variant
-   flattered by easier content. When a variant stands for a kind of product, the fixture is that product in use
-   (the player playing, the article being read, the game being played), with no navigation or headline about it;
-   a landing page is a fixture only when the subject is a landing page.
-5. **One shared stress control.** A slider or toggle that changes what makes the problem hard, applied to every
-   variant at once, so the reader sees where each gives out. Add a second control only when round 2 needs it
-   (a "now" scrubber for time-dependent states). Mark each with `data-fb-control="<name>"` so the feedback records
+3. **Choose variants that differ in kind.** List the structural axes of the problem (the recipe names the usual
+   ones for its subject). Each variant moves a different axis. Tests: each is described in one sentence without
+   naming another; none is a restatement or a restyling of another. Include the user's own idea as one variant
+   when they offered one. Default five. A variant you already believe is wrong still earns its place if it shows
+   a real trade.
+4. **One fixture for all.** One real case, the same in every variant, including the parts that make the problem
+   hard. Never a placeholder, never a variant flattered by an easier case. The recipe says what a fixture is for
+   its subject.
+5. **One shared stress control.** A control (a slider, a toggle, a set of named scenarios) that changes what makes
+   the problem hard, applied to every variant at once, so the reader sees where each gives out. Add a second
+   control only when round 2 needs it. Mark each with `data-fb-control="<name>"`, or a group of buttons with
+   `data-fb-control-group="<name>"` where the chosen button carries `aria-pressed="true"`, so the feedback records
    what was on screen.
-6. **Make every variant live.** Rendered from the fixture by script, operable where the idea depends on operation
-   (choose a day, open a column). A static picture of an interactive idea hides its cost.
+6. **Show the thing, not a description of it.** Each variant is the answer itself at small scale, made from the
+   fixture. A description of an answer hides its cost.
 7. **Three facts per variant:** Keeps, Gives up, Breaks when. One sentence each. The cost is stated as plainly
-   as the benefit.
+   as the benefit. A variant that cannot be operated carries a fourth, Depends on (see Rules).
 8. **Compare and take a position.** One table with the same criteria for every variant, then your reading as a
    sentence: which you would pick, and when. A ladder (this one at this size, that one at that) is a valid
    answer. Mark every figure that is an estimate, not a measurement.
@@ -54,14 +64,12 @@ after any change to the module).
    one line, your reading, the choices you made that the user may want different, and what you could not verify
    (for example that you could not render-check the page).
 
-Build on the Artifact tool's page contract (theme tokens in both schemes, side gutters, a named title). Use the
-product's own tokens in the mocks. Write every visible word of the page (question, headings, facts, comparison,
-recommendation, aspect labels) in plain language a person outside the project understands: say what an option does
-("Make the button a bit darker, whatever colour it is"), not its internal name. No amendment ids, token names or
-system shorthand in headings or the main text; when the builder needs them, put them in one collapsed "Technical
-details" block per moment. Keep the page utilitarian: no hero, no decoration; the
-variants are the content. Follow the product's standing rules in the mocks (for example no borders, neutral
-selected states) or the reader judges the wrong thing.
+Build on the Artifact tool's page contract (theme tokens in both schemes, side gutters, a named title). Write every
+visible word of the page (question, headings, facts, comparison, recommendation, aspect labels) in plain language a
+person outside the project understands: say what an option does ("Make the button a bit darker, whatever colour it
+is"), not its internal name. No amendment ids, token names or system shorthand in headings or the main text; when
+the builder needs them, put them in one collapsed "Technical details" block per moment. Keep the page utilitarian:
+no hero, no decoration; the variants are the content.
 
 ## Feedback capture
 
@@ -78,7 +86,7 @@ The module reads `--fb-ink`, `--fb-panel`, `--fb-fill`, `--fb-muted`, `--fb-quie
 falling back to the same names without the prefix. A page that inlines a design system's tokens sets the `--fb-*`
 names, so the system's own `--ink` or `--panel` never reach the form.
 
-Each variant also carries `data-moment="<slug>"`, the component or UI moment it answers (a page about one question
+Each variant also carries `data-moment="<slug>"`, the one decision it answers (a page about one question
 has one moment; a page about several has one per question), and keeps it across rounds. A variant kept from an
 earlier round also carries its own `data-round`. A page that sets no moment has one. The module then adds
 **Compare**: a button fixed to the page's corner, the shortcut `C` (the reader can turn it off), and a "Compare all"
@@ -96,7 +104,7 @@ a layer inside a variant that takes Escape first must cancel the keydown. Beyond
 hold their stage. Compare is a view: the JSON gains nothing.
 
 The module adds to each variant: a verdict (Pursue, Keep parts, Drop), "Works" and "Does not" choices from the
-aspects, and a note. After the last section it adds "Send feedback": what to do next (Refine the picks, Combine
+aspects, and a note. At the end of the container it adds "Send feedback": what to do next (Refine the picks, Combine
 the picks, Explore further, Build it), an overall note, **Copy feedback JSON**, and a preview. Answers are kept
 as a draft in the reader's browser. Where the clipboard is refused, the JSON is selected for copying by hand.
 
@@ -108,7 +116,7 @@ around that moment or on its variants: giving one variant the first verdict move
 are not judged, or that held it, to the last verdict, so one click answers the moment. A middle verdict is left alone.
 
 ```json
-{ "skill": "ui-explore-variants", "schema": 1,
+{ "skill": "explore-variants", "schema": 1,
   "exploration": "Calendar Event Layouts", "question": "…", "round": 2,
   "controls": { "width": "440", "now": "560", "view": "Week" },
   "variants": [ { "id": "dots", "name": "Dots, with the day spelled out below",
@@ -120,7 +128,8 @@ are not judged, or that held it, to the last verdict, so one click answers the m
 
 ## Reading the feedback
 
-The JSON is the user's answer; treat its notes as their words. Save it beside the page as
+The JSON is the user's answer; treat its notes as their words. A JSON whose `skill` is `ui-explore-variants` comes
+from a page built before the rename; read it the same way. Save it beside the page as
 `feedback.round-<n>.json` before acting on it, so what was decided can be checked later. Then:
 
 1. Restate it in two lines: what is pursued, kept in part and dropped, and the next step they chose.
@@ -147,27 +156,22 @@ The JSON is the user's answer; treat its notes as their words. Save it beside th
 
 ## Rules
 
-- Variants differ in structure, never only in styling.
+- Variants differ in kind, never only in wording or styling.
 - One fixture, one stress control, the same facts and criteria for every variant.
 - Plain language on the page; internal names only under Technical details.
 - Every variant names its moment, so Compare can gather it.
 - State the cost of each variant, and your own recommendation, even when the user has a favourite.
-- State by shape as well as colour (hollow and filled, size, weight), so a variant is judged without colour.
 - An estimate is labelled an estimate. An unverified page is reported as unverified.
-- A specimen that stands for a system takes that system's own values (its label on a solid, its ramp steps, its
-  lengths), in both schemes. Where a value is the page's own stand-in, the page says so.
-- A page built from values derived at build time (a size system's rows, a palette) keeps each round's derived
-  values with that round's file. Rebuilding an earlier round must not redraw it with today's values.
+- Where a variant cannot be operated, it carries a fourth fact, Depends on: the assumption that sinks it if false.
+- Every claim on such a page is marked measured, sourced, estimated or assumed.
 - Republish to the same artifact across rounds; label each publish with what the round added. Keep the previous
   round's file beside the page, so a later round can be diffed against what the user judged.
-- When a round fixes something the user pointed at, say whether the fix was looked at in a render, and in which
-  schemes and states it was not.
 - Stop exploring when the user picks. More variants after a decision is noise.
 
 ## Worked example
 
-The calendar event problem this skill was written from: a week scheduler whose event titles wrapped inside
-narrow day columns. Round 1: five variants on five axes (a rail with a floating label; dots with one day
+The UI recipe, on the calendar event problem this skill was written from: a week scheduler whose event titles
+wrapped inside narrow day columns. Round 1: five variants on five axes (a rail with a floating label; dots with one day
 listed below; an agenda list with no grid; a sideways timeline; one day wide with the rest as slivers), nine
 shared events including an overlap and a quarter-hour meeting, a width slider, a ladder as the reading. The user
 picked dots and agenda with a toggle and asked three questions (emphasise the current or next meeting, a

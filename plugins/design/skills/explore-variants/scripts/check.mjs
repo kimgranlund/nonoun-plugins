@@ -57,6 +57,12 @@ const CHECKS = [
     fn: async (p) => { const before = [await shown(p, 'section[data-variant="old-a"]'), await shown(p, '#old-table'), await shown(p, 'section[data-variant="t-a"]')]
       await p.locator('.fb-rounds input[value="all"]').click()
       return eq(before, [false, false, true]) && await shown(p, 'section[data-variant="old-a"]') && (await json(p)).variants.length === 6 } },
+  { name: 'the JSON names the skill',
+    control: { js: (s) => edit(s, "skill: 'explore-variants'", "skill: 'ui-explore-variants'") },
+    fn: async (p) => (await json(p)).skill === 'explore-variants' },
+  { name: 'Send feedback shows while the page shows the current round',
+    control: { js: (s) => edit(s, 'root.appendChild(box);', 'sections[sections.length - 1].parentNode.appendChild(box);') },
+    fn: async (p) => await shown(p, '.fb-overall') },
   { name: 'verdicts: a page’s own verdicts are offered, exported and summarised',
     page: OWN, control: { js: (s) => edit(s, "root.dataset.verdicts || ''", "''") },
     fn: async (p) => { const labels = await p.evaluate(() => [...document.querySelectorAll('section[data-variant="t-a"] input[name="fb-t-a-verdict"]')].map((i) => i.value + ':' + i.nextElementSibling.textContent))
@@ -104,5 +110,5 @@ for (const name of engines) {
   say((html.match(/@begin feedback\.js/g) || []).length === 1 && (html.match(/@begin feedback\.css/g) || []).length === 1 && html.includes(`/*@begin feedback.js*/\n${JS.trim()}\n/*@end feedback.js*/`),
     'inline.mjs, run twice, leaves one fenced copy of each file, equal to the asset (no control)') }
 rmSync(tmp, { recursive: true, force: true })
-console.log(bad ? `${bad} unexpected` : 'ui-explore-variants check passed')
+console.log(bad ? `${bad} unexpected` : 'explore-variants check passed')
 process.exit(bad ? 1 : 0)
