@@ -4,6 +4,8 @@ The design plugin, newest first. Releases before this file are recorded in the r
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-11-22
+
 ### Changed
 
 - `explore-variants`, formerly `ui-explore-variants`: renamed and synced from the MacBook copy at `8ab4c62`. The skill explores any open question with several answers, not only a UI layout: `SKILL.md` holds the method, and `references/` holds one recipe per subject (`ui.md` with the UI rules that were in `SKILL.md`, `architecture.md`, `strategy.md`, `creative.md`, `review.md`), each naming the specimen, the fixture and the stress. A variant that cannot be operated carries a fourth fact, Depends on, and its claims are marked measured, sourced, estimated or assumed. The feedback JSON's `skill` is `explore-variants`; a JSON from a page built before the rename is still read. The module's storage keys and fallback aspects changed with it.

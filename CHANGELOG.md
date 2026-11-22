@@ -4,6 +4,18 @@ SDLC releases (named SDLC Lite before 1.0.0), newest first, in [Keep a Changelog
 
 ## [Unreleased]
 
+## [1.0.10] - 2026-11-22
+
+Report: [docs/reports/2026-11-22-release-1-0-10.md](docs/reports/2026-11-22-release-1-0-10.md). Marketplace release: `design` 0.6.0; `sdlc` 1.1.0, `context` 0.8.0 and `dev-tools` 0.1.1 are unchanged. No tickets: PR #103. Details are in [the design changelog](plugins/design/CHANGELOG.md).
+
+### Changed
+
+- `design` 0.6.0: `ui-explore-variants` is renamed `explore-variants` and synced from its source at `8ab4c62`. It explores any open question with several answers, with one recipe per subject in `references/` (UI, architecture, strategy, creative, review). Call `/explore-variants` instead of `/ui-explore-variants` (#103).
+
+### Fixed
+
+- `design`: the `explore-variants` "Send feedback" block stays visible on the current round of a page with earlier rounds (#103).
+
 ## [1.0.9] - 2026-11-20
 
 Report: [docs/reports/2026-11-20-release-1-0-9.md](docs/reports/2026-11-20-release-1-0-9.md). Marketplace release: `sdlc` 1.1.0 and `design` 0.5.1; `context` 0.8.0 and `dev-tools` 0.1.1 are unchanged. 25 tickets (T-0857 to T-0881), 17 of them from GitHub issues #85 to #102. Design details are in [the design changelog](plugins/design/CHANGELOG.md).
