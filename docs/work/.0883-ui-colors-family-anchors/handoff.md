@@ -2,7 +2,7 @@
 id: T-0883
 title: "ui-colors: family anchors, role-name checks, one bright-hue verdict, families.mjs"
 type: feature        # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -42,3 +42,16 @@ router: .sdlc/AGENTS.md  # how to claim and close this ticket
 ## Constraints
 - Never write under `/Volumes/kimba`.
 - Default output (`{}` request) stays byte-identical to `main`.
+
+## Outcome
+
+2026-11-25 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: d25d333fcdf2
+- Changed: see commits
+- Commits: 71ae913 T-0883: design changelog for the ui-colors family anchors; 6028d43 T-0883: record lane T-0883-t0883
+- Check: 1 git log -2 includes the patch subject: pass
+- Check: 2 check.mjs passes, digest check identical to main if it fails: pass
+- Check: 3 unknown roles key exits 2; familyAnchors moves only that family's step 9: pass
+- Check: 4 grep -q familyAnchors plugins/design/CHANGELOG.md: pass
+- Check: 5 check-packaging.py exits 0 and git diff --check 49f390f0 is clean: pass
+- Check: 6 Constraint, default output byte-identical to main: pass
+- Follow-up: note: the author's reported digest failure neutrals: default run... -> notes.md

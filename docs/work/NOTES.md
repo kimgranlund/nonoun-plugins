@@ -1086,3 +1086,7 @@
 ## T-0882: design: import the 11 designer agents from the MacBook (2026-11-24)
 
 - note: plugins/design/.codex-plugin/plugin.json and .claude-plugin/plugin.json descriptions match each other (parity kept); the Codex one says "(Claude Code only)" for agents, which is accurate.
+
+## T-0883: ui-colors: family anchors, role-name checks, one bright-hue verdict, families.mjs (2026-11-25)
+
+- note: the author's reported digest failure (`neutrals: default run byte-identical to the recorded digest`) did not reproduce here, on the lane or on main.
