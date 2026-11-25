@@ -2,7 +2,7 @@
 id: T-0882
 title: "design: import the 11 designer agents from the MacBook"
 type: feature        # feature | bug | chore | spike | idea
-status: claimed        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -43,3 +43,14 @@ The design plugin ships the 11 designer agents from the user's MacBook share, so
 ## Constraints
 - Never write under `/Volumes/kimba`.
 - Do not edit the agent files or any skill.
+
+## Outcome
+
+2026-11-24 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: 739a4f46bd6d
+- Changed: see commits
+- Commits: af58a5d T-0882: record lane T-0882-t0882
+- Check: 1 11 files and identical to source: pass
+- Check: 2 registered in AGENTS.md and CHANGELOG: pass
+- Check: 3 packaging and whitespace: pass
+- Check: 4 host command output names the design agents: pass
+- Follow-up: note: plugins/design/.codex-plugin/plugin.json and... -> notes.md

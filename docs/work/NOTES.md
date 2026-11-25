@@ -1082,3 +1082,7 @@
 ## T-0875: A lane cannot land or mark ready a change to a path another lane owns, and a user can wire the same check as a (2026-11-20)
 
 - note: plugins/sdlc/scripts/lanes.py `claims_stop` skips the check when the lane tree is clean and its branch is already in into, so a rerun after the land does not recheck; matches the docstring.
+
+## T-0882: design: import the 11 designer agents from the MacBook (2026-11-24)
+
+- note: plugins/design/.codex-plugin/plugin.json and .claude-plugin/plugin.json descriptions match each other (parity kept); the Codex one says "(Claude Code only)" for agents, which is accurate.
