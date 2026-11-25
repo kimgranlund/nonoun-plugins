@@ -6,7 +6,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | ID | Ticket | Title | Type | Size | Pri | Depends on | Status |
 |---|---|---|---|---|---|---|---|
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔴 blocked |
-| T-0884 | [0884-ui-colors-cusp-step10](0884-ui-colors-cusp-step10/handoff.md) | ui-colors: step 10 of a cusp-bright solid barely changes in dark | bug | L2 | P2 | none | ⏳ proposed |
+| T-0884 | [0884-ui-colors-cusp-step10](0884-ui-colors-cusp-step10/handoff.md) | ui-colors: step 10 of a cusp-bright solid barely changes in dark | bug | L2 | P2 | none | 🟡 claimed |
 | T-0885 | [0885-ui-colors-radix-scales](0885-ui-colors-radix-scales/handoff.md) | ui-colors: bundle the full Radix scales and add compare radix | feature | L3 | P2 | none | ⏳ proposed |
 | T-0886 | [0886-ui-colors-warm-text-brown](0886-ui-colors-warm-text-brown/handoff.md) | ui-colors: warm text steps 11 and 12 read brown at the default targets | bug | L1 | P2 | none | ⏳ proposed |
 | T-0887 | [0887-ui-geometry-density-affine](0887-ui-geometry-density-affine/handoff.md) | ui-geometry: --density does nothing under the affine preset | bug | L1 | P2 | none | 🟡 claimed (branch lane/T-0887-t0887) |
