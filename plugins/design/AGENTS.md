@@ -22,7 +22,7 @@ Read [repository guidance](../../AGENTS.md) first. This plugin ships design skil
 
 ## Agents
 
-Claude Code only: Claude Code finds them in `agents/` and names them `design:<name>`; Codex has no design agents. Each is a design director formed by one designer's principles, method and context: it sets direction, makes and reviews visual artifacts (websites, documents, reports, dashboards, decks, interfaces, demos) and critiques work through that designer's thinking. Imported unchanged from the MacBook share (`~/.claude/agents/`, files dated 2026-11-23, `massimo-vignelli` 2026-11-24); keep them identical to the source on the next sync. Their `model: opus` line is a user decision; `massimo-vignelli` has none in its source, so it runs on the session's model.
+Claude Code only: Claude Code finds them in `agents/` and names them `design:<name>`; Codex has no design agents. Each is a design director formed by one designer's principles, method and context: it sets direction, makes and reviews visual artifacts (websites, documents, reports, dashboards, decks, interfaces, demos) and critiques work through that designer's thinking. Imported unchanged from the MacBook share (`~/.claude/agents/`, files dated 2026-11-23, `massimo-vignelli` 2026-11-24); keep them identical to the source on the next sync. Their `model: opus` line is a user decision.
 
 | Agent | Use when the user wants work directed through |
 |---|---|
