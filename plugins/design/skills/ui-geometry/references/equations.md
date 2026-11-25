@@ -14,7 +14,7 @@ For another preset, substitute its constants: a_q, b_q in q = a_q·n + b_q; I_δ
 
 - Pixel grid: n·q is a whole px when n·(n/2 − 3) is an integer.
 - All four icon sizes land on whole px when n ≡ 2 (mod 4), that is n = 10, 14, 18 or 22. Icon md (4q) is whole for every whole n.
-- **The ladder preset (the default).** h = 6n − 54 straight from the scope's size (18, 24, 30, 36, 48, 60 at n 12, 13, 14, 15, 17, 19), q = h/8 = ¾n − 6.75; every other constant is the standard preset's, and crisp snapping lands each ladder step on whole px (at 14: I 6, S 18, g_c 2). A kit may name its sizes as steps of one ladder of n taken from the scope (sm one step down, lg one up), so a nested control reads its n from its parent, never the root; step tokens must then resolve on the element that uses them. The worked values below are the standard preset's (`--preset standard`).
+- **The ladder preset** (a unit preset; the default before affine, section 21)**.** h = 6n − 54 straight from the scope's size (18, 24, 30, 36, 48, 60 at n 12, 13, 14, 15, 17, 19), q = h/8 = ¾n − 6.75; every other constant is the standard preset's, and crisp snapping lands each ladder step on whole px (at 14: I 6, S 18, g_c 2). A kit may name its sizes as steps of one ladder of n taken from the scope (sm one step down, lg one up), so a nested control reads its n from its parent, never the root; step tokens must then resolve on the element that uses them. The worked values below are the standard preset's (`--preset standard`).
 
 ## 2. Type
 
@@ -505,7 +505,7 @@ An archetype is a named character held as a profile: for each observable, the ba
 
 **Finding the lines of a project.** `node scripts/fit.mjs lengths.json --lines` takes lengths measured at two or more n and prints each one's line, its largest residual and the n at which it crosses zero. Every line of a unit system crosses zero at the same n, −b_q / a_q (6 for standard, 9 for ladder); where the zeros spread, no one unit holds the system and each constant is written as its own line.
 
-**The affine preset** (`--preset affine`) is such a system. The rows below are a measured kit's own lines, and `scripts/derive.test.mjs` holds the calculator to them (`PRESETS.affine.source`); its other constants are the nearest expression of the standard preset's rows in the same lines, and are not that kit's. Two rows are not that kit's and are not in the list: the popover depth and the menu item, which it does not state as lines.
+**The affine preset** is such a system, and the default: `node scripts/derive.mjs` with no `--preset` answers in it. A caller that needs a unit preset names it. The rows below are a measured kit's own lines, and `scripts/derive.test.mjs` holds the calculator to them (`PRESETS.affine.source`); its other constants are the nearest expression of the standard preset's rows in the same lines, and are not that kit's. Two rows are not that kit's and are not in the list: the popover depth and the menu item, which it does not state as lines.
 
 <!-- generated:lines -->
 | Length | Row | Line | n = 10 | 14 | 22 |

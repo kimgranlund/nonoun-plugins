@@ -1,7 +1,7 @@
 // Generated from ui-geometry/scripts/derive.mjs by scripts/build.mjs; run npm run build, do not edit.
 // UI geometry calculator. Self-contained: a preset holds every constant, the equations are generic.
 //   node derive.mjs --n 16 --density loose --kappa 0.5 [--kappa-card 1] [--card 4] [--width 1280 --columns 12]
-//                   [--preset ladder (default) | standard | ./my-preset.json] [--json]
+//                   [--preset affine (default) | ladder | standard | ./my-preset.json] [--json]
 //   node derive.mjs --elevation popup|raised|floating|modal|all|<s> [--layers 5] [--scheme light|dark] [--n 14]
 //   node derive.mjs --viewport 1024 [--dpr 2]   (n from the fluid scale; lengths off the device grid are listed)
 //   node derive.mjs --tier controls|collections|containers|layout   (one tier, with the shared unit)
@@ -11,6 +11,8 @@
 //   node derive.mjs --whole [--preset affine] [--from 10 --to 24]   (where each length is whole px with nothing snapped; exit 1 on a fractional row the preset does not name)
 //   node derive.mjs --emit css|json [--preset affine]   (custom properties, each a line in the font size, with an exact em fallback)
 // Prints every length of a scope as a multiple of the unit q and in px. Every length is a line in n; --lines prints it.
+// Under the default preset, affine, q is one px, so the q column and --card <d> are px; a caller that needs the earlier
+// answers names its preset (--preset ladder).
 
 
 /** A preset is the whole parameter set. Every length in it is in q. */
@@ -72,7 +74,7 @@ export const PRESETS = {
   },
 }
 
-// The ladder preset (the default answer since 2026-11-18): the standard preset on the unit q = ¾n − 6.75, so h = 8q =
+// The ladder preset (the default answer from 2026-11-18 until affine took its place): the standard preset on the unit q = ¾n − 6.75, so h = 8q =
 // 6n − 54: 30px controls at n 14 (24 at 13, 36 at 15, 48 at 17, 60 at 19), from a measured product kit's size
 // ladder. Every other constant is the standard preset's; 'standard' keeps h = 32 at 14 (alias 'standard-32').
 PRESETS.ladder = { ...PRESETS.standard, name: 'ladder', unit: { a: 0.75, b: -6.75, nMin: 12 } }
@@ -151,7 +153,7 @@ PRESETS.affine = {
 }
 
 /** The preset an answer uses when none is named. */
-export const DEFAULT_PRESET = 'ladder'
+export const DEFAULT_PRESET = 'affine'
 
 /** The system for one preset. Every function returns q unless named px. */
 export function system(P = PRESETS.standard) {

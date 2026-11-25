@@ -10,7 +10,7 @@ The design plugin, newest first. Releases before this file are recorded in the r
 
 ### Changed
 
-- `ui-geometry`: `SKILL.md` states the line as the primitive and the unit as one way to give it. The unit presets print what they printed before (`ladder` is still the default). The message for a refused `cardRadius` names three values.
+- `ui-geometry`: `SKILL.md` states the line as the primitive and the unit as one way to give it. **The default preset is `affine`**, no longer `ladder`: `scripts/derive.mjs` with no `--preset` answers in the exact system, where q is 1px, so its q column and `--card <d>` are px. A unit preset named by `--preset` prints what it printed before. `ui-frameworks` `scripts/tokens.mjs` and `component-variants` `scripts/geometry.mjs` now name `--preset ladder`, so their output is unchanged. The message for a refused `cardRadius` names three values.
 
 ## [0.6.0] - 2026-11-22
 

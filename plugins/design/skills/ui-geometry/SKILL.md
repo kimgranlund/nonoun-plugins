@@ -5,7 +5,7 @@ description: Derives every length of a UI as a line in a root font size n, by on
 
 # UI geometry
 
-Every length is a line a·n + b px. One input, the scope font size n in px, and four dials: density δ, curvature κ (one each for controls, frames, cards and panels), card depth d, and a preset. A unit preset makes each a multiple of one unit q, snapped to whole px by default (crisp); an exact preset gives each constant its own line and rounds nothing (› 21). Answer in symbols and multiples of q first, then px at n. The default preset is **ladder** (q = ¾n − 6.75, so h = 8q = 6n − 54: 30px controls at 14, 24 at 13, 36 at 15, 48 at 17, 60 at 19); **standard** (q = n/2 − 3, h = 32 at 14, alias `standard-32`) is the other shipped preset, and the one the worked values in `references/equations.md` and the archetypes use. Every equation takes any preset's constants.
+Every length is a line a·n + b px. One input, the scope font size n in px, and four dials: density δ, curvature κ (one each for controls, frames, cards and panels), card depth d, and a preset. A unit preset makes each a multiple of one unit q, snapped to whole px by default (crisp); an exact preset gives each constant its own line and rounds nothing (› 21). Answer in symbols and multiples of q first, then px at n. The default preset is **affine**, exact (h = 4n − 26; q is 1px). The unit presets are **ladder** (q = ¾n − 6.75, h = 6n − 54) and **standard** (q = n/2 − 3, h = 32 at 14, alias `standard-32`), which the worked values in `references/equations.md` and the archetypes use. Every equation takes any preset's constants.
 
 Contents: [Route](#route) · [Axioms](#axioms) · [Presets](#presets) · [Procedure](#procedure) · [Identities](#identities) · [Tiers](#tiers) · [Fitting a project](#fitting-a-project) · [Commands](#commands) · [Files](#files)
 
@@ -73,7 +73,7 @@ To define another system, write a JSON file with any of the keys from `PRESETS.s
 
 ## Procedure
 
-1. Fix the preset, n, δ, κ for each tier and d. The defaults are ladder (the CLI's default; `--preset standard` for the 32px system, which an `--archetype` starts from), δ = default, κ = κ_s for controls, lists and panels, κ = ½ for cards (so R = d + 2q at default density), and d = 4.
+1. Fix the preset, n, δ, κ for each tier and d. The default is affine (`--preset ladder` or `standard` for the 30 and 32px unit systems; an `--archetype` starts from standard). Dial defaults: in the unit presets δ = default, κ = κ_s (½ for cards, so R = d + 2q) and d = 4; in affine r = n − 6 and d = S.
 2. Compute q, I, m_c and h. Then compute the tier that is asked for, from `references/equations.md`.
 3. For a full table, run `node scripts/derive.mjs --n <n> --density <δ> --kappa <κ>`. Add `--kappa-control`, `--kappa-frame`, `--kappa-card` or `--kappa-panel` to split tiers. Use `--card <d>`, `--width <px> --columns <N>` for a grid, `--preset <file.json>` for another system, `--archetype <name>` to start from an archetype's dials and print its bands, and `--json` for data. `--viewport <px>` takes n from the fluid scale; `--dpr <x>` lists lengths off the device grid. For every container's padding, gap and radius run `--containers [--card 4 --nest 0.5]` (section 19; `--popover`/`--dialog` fix those depths). For shadows run `--elevation <level|s|all> [--layers 5] [--scheme dark]`. Its header lists every flag.
 4. Check that the identities below hold. A value that breaks one is wrong.
@@ -93,7 +93,7 @@ To define another system, write a JSON file with any of the keys from `PRESETS.s
 - Grid for several counts: margin = gutter = g·u, u = W / (U + 2g); n columns when n divides U + g (`--field`, `references/equations.md` › 8). Checked: "every listed count fills the field in whole units".
 - Focus ring outer radius = r + o + w. A border leaves R − b and d − b inside. Checked: `checkIdentities()`, "focus ring" and "borders eat padding and radius".
 - A target never shrinks the box: expansion = max(0, (T_hit − h)/2). Checked: "hit targets".
-- Ladder: crisp h = 6n − 54 at n 12, 13, 14, 15, 17 and 19 (18 … 60), h = S + 2I. Checked: "ladder (the default)", with standard at 14 as the negative control.
+- Ladder: crisp h = 6n − 54 at n 12, 13, 14, 15, 17 and 19 (18 … 60), h = S + 2I. Checked: "ladder: crisp h = 6n − 54", with standard at 14 as the negative control.
 - Crisp: at every n, I and g_c snap to whole px and S to even px, and depths and gaps snap to whole px. Radii may land on half px at odd q. Set `crisp: false` for exact q. Checked: "crisp: at 16px every padding, gap and height is a whole px".
 - Lines and exact presets (› 21). Checked: "affine: every source line is derived" and "wholeness: affine, with unit presets as negative controls".
 - Elevation: blur_k = β·y_k. Σα_k = B_α at every level and every L. α falls with k, so the contact layer is the darkest. Layer k_a sits at e.y·s. Checked: the five "elevation" tests.

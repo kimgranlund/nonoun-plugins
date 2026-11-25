@@ -13,8 +13,7 @@ test('standard: q is 4px at 14, 5px at 16; h is 28/32/36 at 14', () => {
   assert.deepEqual(densities.map((d) => h(d) * q(14)), [28, 32, 36])
 })
 
-test('ladder (the default): crisp h = 6n − 54 at 12, 13, 14, 15, 17 and 19; identities hold; standard-32 is standard', () => {
-  assert.equal(DEFAULT_PRESET, 'ladder')
+test('ladder: crisp h = 6n − 54 at 12, 13, 14, 15, 17 and 19; identities hold; standard-32 is standard', () => {
   assert.equal(PRESETS['standard-32'], PRESETS.standard)
   for (const n of [12, 13, 14, 15, 17, 19]) {
     const px = (s) => derive({ preset: PRESETS.ladder, n }).find((r) => r.symbol === s).px
@@ -589,7 +588,8 @@ test('affine: every source line is derived', () => {
   assert.ok(bad.includes('controls.control.s') && bad.includes('controls.control.h'), bad.join(', '))
 })
 
-test('affine at 10, 14 and 22px: S, I, h and r are 12/1/14/4, 20/5/30/8 and 36/13/62/16, with nothing rounded', () => {
+test('affine (the default) at 10, 14 and 22px: S, I, h and r are 12/1/14/4, 20/5/30/8 and 36/13/62/16, with nothing rounded', () => {
+  assert.equal(DEFAULT_PRESET, 'affine')
   for (const [n, want] of [[10, [12, 1, 14, 4]], [14, [20, 5, 30, 8]], [22, [36, 13, 62, 16]]]) {
     const px = new Map(derive({ preset: PRESETS.affine, n }).map((r) => [r.id, r.px]))
     assert.deepEqual(['controls.control.s', 'controls.control.i', 'controls.control.h', 'controls.curvature.r'].map((id) => px.get(id)), want, `n = ${n}`)
