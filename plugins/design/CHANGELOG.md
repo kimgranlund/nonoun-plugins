@@ -4,6 +4,14 @@ The design plugin, newest first. Releases before this file are recorded in the r
 
 ## [Unreleased]
 
+### Added
+
+- `ui-colors`: `familyAnchors` pins a family by name (`{ "<family>": { value, dark?, step?, darkStep?, reach?, name? } }`, step 9 by default) with a role anchor's semantics and no role, so one run pins all 25 Radix accent step-9 values. `scripts/families.mjs` lays a system out one file per family per gamut (`colors-p3/`, `colors/`) with `light-dark()` variables, `globals.css`, semantic files, `index.css`, `manifest.json` and a generated `README.md` and `USAGE.md`. `references/system.md` gains Family anchors, Plain-word requests and Family files. Evidence: `docs/reports/2026-11-24-ui-colors-radix-match.md` (T-0883).
+
+### Fixed
+
+- `ui-colors`: an unknown `roles` key or anchor `role` exits 2 instead of being dropped silently, and the `brightHues` window is judged once, on the light mode's step 9, so a family no longer changes label treatment between modes (lime in dark at a deeper `keyDepth`). Default output is unchanged (T-0883).
+
 ## [0.7.2] - 2026-11-25
 
 ### Changed

@@ -15,7 +15,7 @@ import { execFileSync } from 'node:child_process';
 import { parseArgs } from 'node:util';
 import { fileURLToPath } from 'node:url';
 import { endpointVars, families, generateSpectrum, normalizeSpectrum, resolveRoles, spectrumDiagnostics, spectrumOverrides, alphaRamps, apcaLc, roleVariables, ramps as rampsOf, parseAnchorColor, SCALE_ROLES } from './system/index.js';
-import { rampVar, rampName, ROLE_STEPS, roleStep, withAlpha } from './system/roles.js';
+import { rampVar, rampName, ROLE_STEPS, roleStep, withAlpha, ROLE_NAMES, ANCHOR_ROLES } from './system/roles.js';
 import { SOLID_ANCHOR_ROLES } from './system/anchors.js';
 import { clampChroma, applyAnchors, shapeKeys, deriveKeys, deriveNeutral } from './system/anchors.js';
 import { DEFAULT_TARGETS } from './system/contrast.js';
@@ -34,7 +34,7 @@ try { req = JSON.parse(readFileSync(values.request, 'utf8')); } catch (e) { fail
 if (!req || typeof req !== 'object' || Array.isArray(req)) fail(2, 'request: must be a JSON object');
 
 // ── Request ───────────────────────────────────────────────────────────────────────────────────────────────
-const KEYS = ['apca', 'brightHues', 'neutrals', 'settings', 'roles', 'anchors', 'endpoints', 'scope', 'modes', 'extraModes', 'selectors', 'lightDark', 'p3Fallback', 'alpha', 'series', 'tonal', 'primes', 'diverging', 'tailwind', 'figma', 'dtcg', 'split', 'preset', 'familyNames', 'tonalRoles', 'showcase', 'emphasis', 'translucent', 'autoDark', 'brandExact'];
+const KEYS = ['apca', 'brightHues', 'neutrals', 'settings', 'roles', 'anchors', 'endpoints', 'scope', 'modes', 'extraModes', 'selectors', 'lightDark', 'p3Fallback', 'alpha', 'series', 'tonal', 'primes', 'diverging', 'tailwind', 'figma', 'dtcg', 'split', 'preset', 'familyNames', 'tonalRoles', 'showcase', 'emphasis', 'translucent', 'autoDark', 'brandExact', 'familyAnchors'];
 const unknown = Object.keys(req).filter((k) => !KEYS.includes(k));
 if (unknown.length) fail(2, 'request: unknown key(s) ' + unknown.join(', ') + ' (allowed: ' + KEYS.join(', ') + ')');
 for (const k of ['autoDark', 'brandExact', 'lightDark', 'p3Fallback', 'alpha', 'series', 'primes', 'diverging', 'tailwind', 'figma', 'dtcg', 'split', 'tonalRoles', 'showcase']) if (k in req && typeof req[k] !== 'boolean') fail(2, 'request: ' + k + ' must be true or false');
@@ -234,6 +234,32 @@ for (const [w, list] of [['anchors', anchorsTop], ...MODES.map((m) => [`mode ${m
   if (a.role === 'surface') { const k = ['step', 'darkStep', 'reach'].filter((x) => x in a); if (k.length) fail(2, `request: ${w}: a surface anchor pins step 1; ${k.join(', ')} not allowed`); }
   if (a.role === 'neutral' && neutrals?.ink) fail(2, `request: ${w}: a neutral anchor shapes the default neutral, but neutrals.ink replaces it; anchor ground/ink instead`);
 }
+// Role names: a roles key or an anchor role outside the system's own (ROLE_NAMES, plus ground / ink / surface for anchors) was
+// dropped without a word before; it is a request error now. A family is pinned by name with familyAnchors, not a made-up role.
+const roleLists = [['roles', eff.roles], ...MODES.map((m) => [`mode ${m.id}.roles`, m.roles]), ...Object.entries(eff.modes || {}).map(([id, o]) => [`modes.${id}.roles`, o.roles])];
+for (const [w, r] of roleLists) { if (r == null) continue; if (typeof r !== 'object' || Array.isArray(r)) fail(2, `request: ${w} must be an object { role: family }`);
+  const bad = Object.keys(r).filter((k) => !ROLE_NAMES.includes(k)); if (bad.length) fail(2, `request: ${w} has unknown role(s) ${bad.join(', ')} (roles: ${ROLE_NAMES.join(', ')}; to pin a family by name use familyAnchors)`); }
+for (const [w, list] of [['anchors', anchorsTop], ...MODES.map((m) => [`mode ${m.id}.anchors`, m.anchors]), ...Object.entries(modeOverrides).map(([id, o]) => [`modes.${id}.anchors`, o.anchors])]) for (const [i, a] of (list || []).entries())
+  if (![...ANCHOR_ROLES, 'surface'].includes(a.role)) fail(2, `request: ${w}[${i}].role ${a.role} is not a role (${[...ANCHOR_ROLES, 'surface'].join(', ')}; to pin a family by name use familyAnchors)`);
+// familyAnchors: { "<family>": { value, dark?, step?, darkStep?, reach?, name? } } pins a family by name, with a role anchor's
+// semantics (the ramp takes the anchor's hue, `key` reach by default) but no role: no semantic variable moves. step defaults to 9
+// (and darkStep to 9 when a dark colour is given, or with brandExact). Carried to the engine as the internal role `family:<name>`,
+// which run() resolves and strips again. A family that a role anchor already pins is a request error (the engine would move one).
+const FAMILY_ANCHOR_KEYS = ['value', 'dark', 'step', 'darkStep', 'reach', 'name'];
+const FAMILY_ROLE = 'family:';
+let familyAnchorsTop = [];
+if (eff.familyAnchors != null) {
+  const fa = eff.familyAnchors;
+  if (typeof fa !== 'object' || Array.isArray(fa)) fail(2, 'request: familyAnchors must be an object { "<family>": { value, dark?, step?, darkStep?, reach?, name? } }');
+  familyAnchorsTop = Object.entries(fa).map(([f, a]) => {
+    const w = `familyAnchors.${f}`;
+    if (!/^[a-z][a-z0-9-]*$/.test(f)) fail(2, `request: ${w}: a family name is lower case (gray, orange, hue-3)`);
+    if (!a || typeof a !== 'object' || Array.isArray(a)) fail(2, `request: ${w} must be an object { value, dark?, step?, darkStep?, reach?, name? }`);
+    const bad = Object.keys(a).filter((k) => !FAMILY_ANCHOR_KEYS.includes(k)); if (bad.length) fail(2, `request: ${w} has unknown key(s) ${bad.join(', ')} (allowed: ${FAMILY_ANCHOR_KEYS.join(', ')})`);
+    const dark = a.dark ?? (eff.brandExact ? a.value : undefined);
+    return anchorList([{ ...a, role: FAMILY_ROLE + f, step: a.step ?? 9, ...(dark != null ? { dark, darkStep: a.darkStep ?? 9 } : {}) }], w)[0];
+  });
+}
 if (neutrals) for (const [w, r] of [['roles', eff.roles], ...MODES.map((m) => [`mode ${m.id}.roles`, m.roles]), ...Object.entries(eff.modes || {}).map(([id, o]) => [`modes.${id}.roles`, o.roles])]) if (r && 'neutral' in r) fail(2, `request: ${w}.neutral is not allowed with neutrals (the split names the ground, surface and ink families)`);
 
 // ── Colour helpers ────────────────────────────────────────────────────────────────────────────────────────
@@ -307,7 +333,14 @@ function run(settings, roles, anchors) {
   if (typeof familyNames === 'object' || familyNames === 'index') { map = familyNames === 'index' ? indexMap(g) : Object.fromEntries(families(g).all.map((f) => [f, familyNames[f] ?? f])); const inv = Object.fromEntries(Object.entries(map).map(([a, b]) => [b, a])); wanted = Object.fromEntries(Object.entries(wanted).map(([r, f]) => [r, inv[f] ?? f])); }
   const engineAnchors = (anchors || []).map(({ source: _s, ...a }) => a);
   let resolved; try { resolved = resolveRoles(g, wanted); } catch (e) { if (e.request) fail(2, 'request: ' + e.message); throw e; }
+  // familyAnchors: each internal role names its family directly (in engine names, so through the rename map when there is one).
+  const famAnchors = engineAnchors.filter((a) => a.role.startsWith(FAMILY_ROLE)), all = families(g).all, inv = map ? Object.fromEntries(Object.entries(map).map(([a, b]) => [b, a])) : null;
+  for (const a of famAnchors) { const want = a.role.slice(FAMILY_ROLE.length), f = inv ? inv[want] : want;
+    if (!f || !all.includes(f) || f === 'neutral') fail(2, `request: familyAnchors.${want}: no such family (have ${(map ? all.map((x) => map[x] ?? x) : all).filter((x) => x !== 'neutral').join(', ')})`);
+    const by = engineAnchors.find((b) => !b.role.startsWith(FAMILY_ROLE) && resolved[b.role] === f); if (by) fail(2, `request: familyAnchors.${want}: the ${by.role} anchor already pins ${want}; anchor one of them`);
+    resolved[a.role] = f; }
   const r = prepare(g, resolved, engineAnchors);
+  if (famAnchors.length) r.roles = Object.fromEntries(Object.entries(r.roles).filter(([k]) => !k.startsWith(FAMILY_ROLE)));
   if (r.data === g) r.data = structuredClone(g); // shapeKeys passes unshaped data through; keep the cached generation untouched
   if (map) { renameData(r.data, map); r.roles = Object.fromEntries(Object.entries(r.roles).map(([k, f]) => [k, map[f] ?? f])); for (const x of r.report) x.family = map[x.family] ?? x.family; for (const sc of ['light', 'dark']) r.pins[sc] = Object.fromEntries(Object.entries(r.pins[sc] || {}).map(([f, st]) => [map[f] ?? f, st])); }
   const v = { settings: s, generated: g, ...r }; cache.set(key, v); return v;
@@ -516,7 +549,7 @@ function activeOf(ramp, st, entry, labels, T, gamut) {
 // Solids and the key run of every family in both schemes of a mode's data, then the control border (neutral step 8, a
 // control's only edge) held at |Lc| ≥ apca.ui on steps 1 and 2. Returns labels { light, dark } (per family token name, the
 // step-9 entry plus `anchored` entries for an anchored role's other solid step) and keyRun { light, dark }.
-function solveSolidLabels(data, { T, solidSteps, pins, roles, labels, gamut, anchored = new Set() }) {
+function solveSolidLabels(data, { T, solidSteps, pins, roles, labels, gamut, anchored = new Set(), brightSet = null }) {
   // fg-subtle reads neutral step 10 as text; keep its generated value before the key run moves it.
   data.subtle = data.subtle || { light: data.schemes.light.neutral?.[9]?.css, dark: data.schemes.dark.neutral?.[9]?.css };
   const out = { light: {}, dark: {} }, runs = { light: {}, dark: {} }, neutrals = new Set(families(data).neutrals);
@@ -525,7 +558,7 @@ function solveSolidLabels(data, { T, solidSteps, pins, roles, labels, gamut, anc
     const snap = ramp.map((x) => ({ ...x, oklch: [...x.oklch] })), pinned = [...new Set([pin, ...extra])].filter((st) => st >= 10 && st <= 12);
     // An anchored family never goes to the cusp (in any scheme): its solid stays the brand's own colour, not a brighter one of its hue.
     // The bright-hue window needs real chroma too, so a near-neutral of a yellow hue (a khaki, a sand) is never a bright hue.
-    const cusp = pin !== 9 && !neutrals.has(f) && !anchored.has(f) ? { ui: T.ui } : null, bright = !!cusp && ramp[8].oklch[1] >= BRIGHT_MIN_C && inBright(ramp[8].oklch[2]);
+    const cusp = pin !== 9 && !neutrals.has(f) && !anchored.has(f) ? { ui: T.ui } : null, bright = !!cusp && (brightSet ? brightSet.has(f) : ramp[8].oklch[1] >= BRIGHT_MIN_C && inBright(ramp[8].oklch[2]));
     let e = solveSolid(ramp, 9, T.solid, labels, gamut, bright ? 'dark' : undefined, cusp);
     if (bright) e.brightHue = true;
     let kr = respace(ramp, { entry: e, floor: T.solid, text: T.text, labels, gamut, pinned, nineFixed: pin === 9 && e.moved === 0 });
@@ -563,7 +596,9 @@ try {
     const settings = merge(merge(eff.settings, m.settings), o.settings);
     const mTarget = normalizeSpectrum(settings).target; solveGamut = mTarget;
     const roles = merge(merge(eff.roles, m.roles), o.roles), endpoints = o.endpoints ?? m.endpoints ?? eff.endpoints;
-    const { list: anchors, clips } = gamutAnchors(o.anchors ?? m.anchors ?? anchorsTop ?? [], mTarget);
+    const { list: roleAnchors, clips } = gamutAnchors(o.anchors ?? m.anchors ?? anchorsTop ?? [], mTarget), fam = gamutAnchors(familyAnchorsTop, mTarget);
+    for (const [k, v] of fam.clips) clips.set(k, v);
+    const anchors = [...roleAnchors, ...fam.list];
     if (neutrals && normalizeSpectrum(settings).generator === 'oklch' && NEUTRAL_ROLES_SPLIT.some((k) => neutrals[k]?.from)) fail(2, `request: mode ${m.id}: neutrals { from } needs the HCT generator (the OKLCH generator makes no Radix greys)`);
     // With neutrals, ground, ink and surface anchors pin the split families (splitNeutrals), not the engine's neutral.
     const engineAnchors = neutrals ? anchors.filter((a) => !SPLIT_ANCHORS.includes(a.role)) : anchors;
@@ -584,8 +619,12 @@ try {
   // solids are solved against the same pair of colours. Neutrals split: the light page (ground 1) and the light ink (ink 12).
   const ln = modes.light.data.schemes.light.neutral, lp = neutrals ? modes.light.data.schemes.light.ground : ln;
   labels = { light: [...lp[0].oklch], dark: [...ln[11].oklch] };
+  // The bright-hue window is judged once, on the light mode's generated light step 9 (before any solve), and holds in every mode
+  // and scheme: a family's own dark or per-mode step 9 can drift a few degrees (a darker dark solid moves lime past 125°), which
+  // used to flip one family between lemon-and-dark-label and olive-and-white-label across modes.
+  const brightSet = new Set(Object.entries(modes.light.data.schemes.light).filter(([, ramp]) => ramp[8].oklch[1] >= BRIGHT_MIN_C && inBright(ramp[8].oklch[2])).map(([f]) => f));
   for (const m of MODES) { const M = modes[m.id];
-    const sol = solveSolidLabels(M.data, { T: M.apca, solidSteps: M.solidSteps, pins: M.pins, roles: M.roles, labels, gamut: M.target, anchored: new Set(M.report.map((x) => x.family)) }); M.solidLabels = sol.labels; M.keyRun = sol.keyRun; }
+    const sol = solveSolidLabels(M.data, { T: M.apca, solidSteps: M.solidSteps, pins: M.pins, roles: M.roles, labels, gamut: M.target, anchored: new Set(M.report.map((x) => x.family)), brightSet }); M.solidLabels = sol.labels; M.keyRun = sol.keyRun; }
 } catch (e) { fail(1, 'generation failed: ' + e.message); }
 const labelCss = { light: okCss(labels.light), dark: okCss(labels.dark) };
 // The label of a role's solid in a mode: its family's entry at the role's solid step.
@@ -1056,8 +1095,9 @@ for (const id of ids) { const M = modes[id];
     const name = `anchor ${x.role}${x.name ? ' ' + x.name : ''} (${x.source?.value ?? x.value})`, d = M.scheme === 'dark' ? x.dark : x;
     if (d && d.inOrder === false && d.step) warnAnchor(`${name} ${M.scheme} step ${d.step} out of contrast order (Lc ${d.lc} against a step target of ${d.target}${d.lc < d.target ? ', lighter than its neighbours: text uses a higher step' : ', darker than its neighbours'})`, id);
     if (M.scheme === 'light' && x.stepFrom === 'nearest-lc' && SOLID_ANCHOR_ROLES.includes(x.role) && x.step !== 9) warnAnchor(`${name} placed at step ${x.step} by Lc (step "auto"); the ${x.role} solid (step 9) is generated`, id);
-    if (SOLID_ANCHOR_ROLES.includes(x.role) && M.data.schemes[M.scheme][x.family]) {
-      const want = parseAnchorColor(M.scheme === 'dark' && x.dark ? x.dark.value : x.value)?.oklch, st = M.solidSteps[M.scheme]?.[x.role] ?? 9, got = M.data.schemes[M.scheme][x.family][st - 1].oklch;
+    const famAnchor = x.role.startsWith(FAMILY_ROLE);
+    if ((SOLID_ANCHOR_ROLES.includes(x.role) || famAnchor) && M.data.schemes[M.scheme][x.family]) {
+      const want = parseAnchorColor(M.scheme === 'dark' && x.dark ? x.dark.value : x.value)?.oklch, st = M.solidSteps[M.scheme]?.[x.role] ?? (famAnchor ? (M.scheme === 'dark' ? x.dark?.step : x.step) : null) ?? 9, got = M.data.schemes[M.scheme][x.family][st - 1].oklch;
       if (want) { const e = dE(want, got); if (e >= 0.5) warnAnchor(`${name}: the ${x.role} solid in ${M.scheme} is ${hex(got)}, ΔE ${r1(e)} from the anchor${M.scheme === 'dark' && !x.dark ? ' (no dark colour: add "dark", or "brandExact": true)' : ''}`, id); }
     }
     if (d?.derived) warnAnchor(`${name}: no dark colour given, ${M.scheme} ${x.role} 1 is derived (anchorReport.dark.derived)`, id);
