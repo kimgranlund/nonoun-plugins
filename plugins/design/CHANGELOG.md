@@ -10,6 +10,7 @@ The design plugin, newest first. Releases before this file are recorded in the r
 
 ### Fixed
 
+- `ui-colors`: the Plain-word request "text looks brown" gives an exact request (`targetsLight` ending 75, 90) with the light orange 11 and 12 it produces, a variant for step 11 at Lc 75, and its side effect on the contrast mode's hover labels; defaults unchanged (T-0886).
 - `ui-geometry`: under a preset whose inset is one line (`affine`, the default), a `--density` other than `default` prints a stderr note that density is a scope with another n there, and the header marks it `(no effect: ...)`; unit presets print as before (T-0887).
 - `ui-geometry`: an unknown `--preset` exits 2 with `unknown preset "<name>"`, the built-in names and a "did you mean" hint, instead of a raw ENOENT (T-0888).
 - `ui-colors`: an unknown `roles` key or anchor `role` exits 2 instead of being dropped silently, and the `brightHues` window is judged once, on the light mode's step 9, so a family no longer changes label treatment between modes (lime in dark at a deeper `keyDepth`). Default output is unchanged (T-0883).
