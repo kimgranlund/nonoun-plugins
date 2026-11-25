@@ -8,10 +8,9 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔴 blocked |
 | T-0884 | [0884-ui-colors-cusp-step10](0884-ui-colors-cusp-step10/handoff.md) | ui-colors: step 10 of a cusp-bright solid barely changes in dark | bug | L2 | P2 | none | 🟡 claimed (branch lane/T-0884-t0884) |
 | T-0885 | [0885-ui-colors-radix-scales](0885-ui-colors-radix-scales/handoff.md) | ui-colors: bundle the full Radix scales and add compare radix | feature | L3 | P2 | none | ⏳ proposed |
-| T-0886 | [0886-ui-colors-warm-text-brown](0886-ui-colors-warm-text-brown/handoff.md) | ui-colors: warm text steps 11 and 12 read brown at the default targets | bug | L1 | P2 | none | 🟡 claimed (branch lane/T-0886-t0886) |
 | T-0889 | [0889-ui-colors-p3-anchors](0889-ui-colors-p3-anchors/handoff.md) | ui-colors: P3 that uses P3 (anchor p3 option, usage report, families --from-p3) | feature | L3 | P2 | none | 🟡 claimed (branch lane/T-0889-t0889) |
 
-Closed: 847 done, 30 dropped (git log or .NNNN-* folders)
+Closed: 848 done, 30 dropped (git log or .NNNN-* folders)
 
 ## Open follow-ups
 

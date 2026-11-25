@@ -73,7 +73,7 @@ Ticket lifecycle:
 
 - Evals: `../docs/work/evals/` holds the dated model and effort experiments and `table-lock.json`; read `../docs/work/evals/AGENTS.md` before changing a model or effort row in `plugins/sdlc-lite/scripts/run.sh` or `plugins/sdlc-lite/adapters/codex/models.json`.
 - Proposals: `../docs/work/proposals/` holds candidate changes that `proposals.py scan` mined from past runs; read `../docs/work/proposals/AGENTS.md` before scanning, accepting, rejecting, or promoting one.
-<!-- sdlc:managed:start v1 sha256:9b9d5371117d -->
+<!-- sdlc:managed:start v1 sha256:3505e7f58513 -->
 # Work records
 
 This folder holds SDLC `config`, this router, and the git-ignored `runtime/` and `messages/`. Tickets, task records, `docs/work/ROADMAP.md`, and `docs/work/NOTES.md` are in the work root `docs/work/`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `docs/work/ROADMAP.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -88,14 +88,13 @@ This folder holds SDLC `config`, this router, and the git-ignored `runtime/` and
 - proposed: 1
   - T-0885 ui-colors: bundle the full Radix scales and add compare radix (docs/work/0885-ui-colors-radix-scales)
 - ready: 0
-- claimed: 3
+- claimed: 2
   - T-0884 ui-colors: step 10 of a cusp-bright solid barely changes in dark (docs/work/0884-ui-colors-cusp-step10), claimed by nonoun-author 2026-11-25, branch lane/T-0884-t0884
-  - T-0886 ui-colors: warm text steps 11 and 12 read brown at the default targets (docs/work/0886-ui-colors-warm-text-brown), claimed by nonoun-author 2026-11-25, branch lane/T-0886-t0886
   - T-0889 ui-colors: P3 that uses P3 (anchor p3 option, usage report, families --from-p3) (docs/work/0889-ui-colors-p3-anchors), claimed by nonoun-author 2026-11-25, branch lane/T-0889-t0889
 - paused: 0
 - blocked: 1
   - T-0611 Rehearse a Pi host working tickets beside Claude and Codex (docs/work/0611-pi-host-rehearsal)
-- done: 847
+- done: 848
 - dropped: 30
 
 ## Procedures

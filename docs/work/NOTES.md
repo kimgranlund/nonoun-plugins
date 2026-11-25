@@ -1094,3 +1094,7 @@
 ## T-0888: ui-geometry: an unknown --preset fails with a raw ENOENT (2026-11-25)
 
 - note: redck.py deviations printed no process deviation lines; no (red) criteria in the handoff.
+
+## T-0886: ui-colors: warm text steps 11 and 12 read brown at the default targets (2026-11-25)
+
+- note: docs/work/0886-ui-colors-warm-text-brown/handoff.md Context lists default orange 11 `#842c00`, 12 `#270600`; the current generator gives `#7e3b00`, `#502200`, which the doc records correctly.
