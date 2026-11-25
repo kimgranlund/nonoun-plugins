@@ -73,7 +73,7 @@ test("cardRadius 'control' gives every card, nested card and panel the control's
   }
   // Negative control: under the default a padded card is larger than the control's corner, so the assertion above can fail.
   assert.ok(cur({})['containers.curvature.r-card-4'] > derive().find((x) => x.id === 'controls.curvature.r').px)
-  assert.throws(() => validatePreset({ cardRadius: 'round' }), /cardRadius is 'concentric' or 'control'/); assert.doesNotThrow(() => validatePreset({ cardRadius: 'control' }))
+  assert.throws(() => validatePreset({ cardRadius: 'round' }), /cardRadius is 'concentric', 'control' or 'level'/); assert.doesNotThrow(() => validatePreset({ cardRadius: 'control' }))
 })
 
 test('deeper cards stay soft under pill; depth 0 takes the control corner', () => {
@@ -552,4 +552,84 @@ test("rhythm 'line' puts text lines, gaps, control boxes and rows on half of the
 test('a field with its help and its own actions is one group: g_c inside, the gap between groups around it, never under three times the inside', () => {
   for (const density of densities) for (const n of [13, 14, 16, 18]) { const rows = derive({ n, density }), px = (sym) => rows.find((r) => r.symbol === sym).px
     assert.ok(px('around a field group') >= 3 * px('label → control, control → help') - 1e-9, `n ${n} ${density}`); assert.equal(px('around a field group'), Math.max(px('groups in card-4'), 3 * px('label → control, control → help'))) }
+})
+
+// ---- lines: the primitive, exact presets, and the proof that replaces snapping ----
+import { lines, lineText, wholeness, emit, resolveLines, isLine, lineAt, containers as containerRows } from './derive.mjs'
+
+const lineOf = (o, id) => lines(o).find((r) => r.id === id)?.line
+
+test('a line constant resolves to line(n) / q(n); a preset with no line comes back as it was', () => {
+  assert.equal(resolveLines(PRESETS.standard, 14), PRESETS.standard)
+  const P = resolveLines({ ...PRESETS.standard, slot: { a: 2, b: -8 } }, 14)   // q = 4 at 14
+  assert.equal(P.slot, 5)
+  assert.equal(lineAt({ a: 1, b: -2, min: 9 }, 10), 9)
+  assert.ok(isLine({ a: 1, b: 0 }) && !isLine([1, 0]) && !isLine(5) && !isLine('F'))
+})
+
+test('every length of a unit preset is a line in n: standard, unsnapped, has h = 4n − 24 and I = 0.75n − 4.5', () => {
+  const o = { preset: { ...PRESETS.standard, crisp: false }, n: 14 }
+  assert.deepEqual(lineOf(o, 'controls.control.h'), { a: 4, b: -24 })
+  assert.deepEqual(lineOf(o, 'controls.control.i'), { a: 0.75, b: -4.5 })
+  assert.equal(lineText({ a: 4, b: -24 }), '4n − 24')
+  assert.equal(lineText({ a: -1, b: 16 }), '−n + 16')
+  assert.equal(lineText({ a: 0, b: 3 }), '3')
+})
+
+test('a floored length is not a line across its floor', () => {
+  assert.equal(lineOf({ preset: PRESETS.affine, n: 10 }, 'unit.type.label'), null)   // n − 2 under the 9px floor at 10
+  assert.deepEqual(lineOf({ preset: PRESETS.affine, n: 14 }, 'unit.type.label'), { a: 1, b: -2 })
+})
+
+test('affine: every source line is the line the calculator derives, at 12, 14 and 22; a changed constant is caught', () => {
+  const diff = (preset, n) => { const L = new Map(lines({ preset, n }).map((r) => [r.id, r.line])); return Object.entries(PRESETS.affine.source).filter(([id, [a, b]]) => { const l = L.get(id); return !l || l.a !== a || l.b !== b }).map(([id]) => id) }
+  for (const n of [12, 14, 22]) assert.deepEqual(diff(PRESETS.affine, n), [], `at n = ${n}`)
+  // negative control: a slot offset of −6 moves S, h and what reads them
+  const bad = diff({ ...PRESETS.affine, slot: { a: 2, b: -6 } }, 14)
+  assert.ok(bad.includes('controls.control.s') && bad.includes('controls.control.h'), bad.join(', '))
+})
+
+test('affine at 10, 14 and 22px: S, I, h and r are 12/1/14/4, 20/5/30/8 and 36/13/62/16, with nothing rounded', () => {
+  for (const [n, want] of [[10, [12, 1, 14, 4]], [14, [20, 5, 30, 8]], [22, [36, 13, 62, 16]]]) {
+    const px = new Map(derive({ preset: PRESETS.affine, n }).map((r) => [r.id, r.px]))
+    assert.deepEqual(['controls.control.s', 'controls.control.i', 'controls.control.h', 'controls.curvature.r'].map((id) => px.get(id)), want, `n = ${n}`)
+  }
+  assert.deepEqual(checkIdentities(derive({ preset: PRESETS.affine, n: 14 })), [])
+})
+
+test("cardRadius 'level' steps the radius one inset per level: 3, 8, 13 and 18px at 14", () => {
+  const px = new Map(derive({ preset: PRESETS.affine, n: 14 }).map((r) => [r.id, r.px]))
+  assert.deepEqual(['controls.curvature.r_s', 'controls.curvature.r', 'containers.curvature.r-card-slot', 'containers.curvature.r-dialog'].map((id) => px.get(id)), [3, 8, 13, 18])
+  const dialog = containerRows({ preset: PRESETS.affine, n: 14 }).find((r) => r.container === 'Dialog, sheet')
+  assert.equal(dialog.radius[0].q, 18)
+})
+
+test('wholeness: affine is fractional in six named rows and nowhere else; unsnapped unit presets are the negative controls', () => {
+  const w = wholeness({ preset: PRESETS.affine })
+  assert.deepEqual(w.fractional.map((r) => r.id).sort(), ['containers.frame.composite-inset', 'controls.control.d', 'controls.icon.a.md-offset', 'controls.mark.checkbox-radius', 'controls.mark.choice-label', 'controls.mark.radio-dot'])
+  assert.ok(w.halfStep.some((r) => r.id === 'controls.icon.a.md'))
+  // A whole-slope, whole-offset line is whole at every n: none of the control tier's own constants appears.
+  for (const id of ['controls.control.s', 'controls.control.i', 'controls.control.h', 'controls.curvature.r']) assert.ok(![...w.fractional, ...w.halfStep].some((r) => r.id === id), id)
+  // negative controls: without snapping, standard (q = ½n − 3) and ladder (q = ¾n − 6.75) leave the pixel grid
+  assert.ok(wholeness({ preset: PRESETS.standard }).fractional.length > 20)
+  assert.ok(wholeness({ preset: PRESETS.ladder }).fractional.length > wholeness({ preset: PRESETS.standard }).fractional.length)
+  // negative control: a half-px slot slope makes h fractional at odd n
+  const bent = wholeness({ preset: { ...PRESETS.affine, slot: { a: 2.5, b: -8 } } })
+  assert.ok([...bent.fractional, ...bent.halfStep].some((r) => r.id === 'controls.control.h'))
+})
+
+test('an exact preset snaps nothing: a quarter depth and a page gutter keep their lines', () => {
+  const o = { preset: PRESETS.affine, n: 13 }
+  assert.deepEqual(lineOf(o, 'containers.gap.separate-rows-card-d'), { a: 0.5, b: -2 })   // d/4 with d = 2n − 8
+  assert.deepEqual(lineOf(o, 'layout.grid.g'), { a: 2, b: -18 })
+})
+
+test('emit: each line becomes a custom property with an exact em fallback at 16; names are unique', () => {
+  const E = emit({ preset: PRESETS.affine, n: 14 }), by = new Map(E.map((e) => [e.id, e]))
+  assert.equal(new Set(E.map((e) => e.name)).size, E.length)
+  assert.equal(by.get('controls.control.h').css, 'calc(4 * var(--n) - 26px)')
+  assert.equal(by.get('controls.control.h').fallback, 'calc(19 / 8 * 1em)')   // (4·16 − 26) / 16
+  assert.equal(by.get('controls.control.s').fallback, 'calc(3 / 2 * 1em)')
+  assert.equal(by.get('controls.curvature.r_s').css, '3px')
+  assert.ok(!E.some((e) => /\d\.\d{4,}/.test(e.fallback)), 'no truncated digits')
 })

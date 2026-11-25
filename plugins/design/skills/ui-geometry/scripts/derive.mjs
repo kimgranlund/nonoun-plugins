@@ -7,7 +7,10 @@
 //   node derive.mjs --tier controls|collections|containers|layout   (one tier, with the shared unit)
 //   node derive.mjs --containers [--card 4 --popover 3 --dialog 6 --nest 0.5]   (padding, gap, radius for every container; popover and dialog default to ¾d and 1½d)
 //   node derive.mjs --field 58 --gutter 2 --width 1440 [--dpr 2] [--max-columns 12]   (a grid for several column counts, in units u)
-// Prints every length of a scope as a multiple of the unit q and in px.
+//   node derive.mjs --lines [--preset affine]   (adds each length's line a·n + b)
+//   node derive.mjs --whole [--preset affine] [--from 10 --to 24]   (where each length is whole px with nothing snapped; exit 1 if any is fractional)
+//   node derive.mjs --emit css|json [--preset affine]   (custom properties, each a line in the font size, with an exact em fallback)
+// Prints every length of a scope as a multiple of the unit q and in px. Every length is a line in n; --lines prints it.
 
 import { readFileSync, realpathSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
@@ -76,6 +79,69 @@ export const PRESETS = {
 // ladder. Every other constant is the standard preset's; 'standard' keeps h = 32 at 14 (alias 'standard-32').
 PRESETS.ladder = { ...PRESETS.standard, name: 'ladder', unit: { a: 0.75, b: -6.75, nMin: 12 } }
 PRESETS['standard-32'] = PRESETS.standard
+// The affine preset: an exact system. Every constant is a line in n with its own slope and offset, so no one unit q
+// holds them (S = 2n − 8 and I = n − 9 share no factor); the unit is one px and nothing is rounded. The lines listed in
+// `source` are a measured kit's own (a light-DOM component kit whose every length is a line in its scope's font size);
+// the rest are the nearest expression of the standard preset's rows in the same lines and are not that kit's.
+// Density is not a dial here: a denser or looser region is a scope with another n, so the three insets are one line.
+const ln = (a, b, more) => ({ a, b, ...more })
+PRESETS.affine = {
+  ...PRESETS.standard, name: 'affine', exact: true, crisp: false,
+  unit: { a: 0, b: 1, nMin: 10 },
+  slot: ln(2, -8),
+  inset: { compact: ln(1, -9), default: ln(1, -9), loose: ln(1, -9) },
+  gutter: 0,
+  soft: ln(1, -6),
+  frameDepth: 'm_c', frameRow: 'fit',
+  cardRadius: 'level',
+  cardDepths: [0, { name: 'inset', ...ln(1, -9) }, { name: 'text-edge', ...ln(2, -18) }, { name: 'slot', ...ln(2, -8) }, { name: 'control', ...ln(4, -26) }],
+  levels: { composite: 0.5, group: 1, collection: 2, panel: ln(2, -8), page: ln(4, -26) },
+  levelGutterCap: ln(2, -18),
+  columnMin: ln(8, 48),
+  flow: { kicker: 1, heading: 1, paragraph: 1, actions: 2, note: 1, section: 3 },
+  icons: { sm: 'F', md: ln(1.5, -4), lg: ln(2, -8), full: ln(2, -8) },
+  marks: { checkRadius: ln(0.375, -1), switchWidth: ln(3, -12), badgeDot: ln(1, -9) },
+  tracks: { track: ln(0.5, -4, { min: 1 }), meter: ln(1, -8, { min: 2 }), sliderMin: ln(8, -42) },
+  widths: { tooltip: ln(16, 16), popover: ln(24, -16), dialog: ln(32, 32), rail: ln(8, -42), panel: ln(16, 16), measure: ln(44, 0) },
+  viewportMargin: ln(2, -8),
+  focus: { width: 2, offset: 0 },
+  avatars: { xs: ln(1.5, -4), sm: ln(2, -8), md: ln(3, -17), lg: ln(4, -26), xl: ln(4, -16), xxl: ln(8, -32) },
+  spacing: { ...PRESETS.standard.spacing, fieldGap: ln(1, -9), popover: ln(1, -9), dialog: ln(4, -26) },
+  grid: { gutter: ln(2, -18), inset: ln(1, -9), columns: 12 },
+  dials: { cardDepth: ln(2, -8) },
+  type: {
+    'display-lg': [ln(4, -18), ln(1, -6)], 'display-md': [ln(4, -26), ln(1, -8)], 'display-sm': [ln(4, -34), ln(1, -10)],
+    'heading-lg': [ln(2, -4), ln(1, -6)], 'heading-md': [ln(2, -8), ln(1, -8)], 'heading-sm': [ln(2, -10), ln(1, -8)],
+    'title-lg': [ln(1, 4), ln(1, -6)], 'title-md': [ln(1, 2), ln(1, -8)], 'title-sm': [ln(1, 0), ln(1, -10)],
+    'body-lg': [ln(1, 2), ln(1, -6)], 'body-md': [ln(1, 0), ln(1, -8)], 'body-sm': [ln(1, -2, { min: 9 }), ln(1, -10)],
+    label: [ln(1, -2, { min: 9 }), ln(1, -8)], 'kicker-lg': [ln(1, 0), ln(1, -8)], 'kicker-md': [ln(1, -2, { min: 9 }), ln(1, -8)], 'kicker-sm': [ln(1, -4, { min: 9 }), ln(1, -8)], code: [ln(1, -2, { min: 9 }), ln(1, -8)],
+  },
+  // Why each input is what it is. A constant with no reason here is derived from these or inherited from standard.
+  reasons: {
+    slot: 'S = 2n − 8: the slot grows two px per px of text, and the offset makes the control inset zero at 10px text',
+    inset: 'I = n − 9: S − n − 1, so h = S + 2I = 4n − 26; one line for every density, since a denser region is a scope with a smaller n',
+    gutter: '0: a hosted control is the slot itself (h_o = S), and its corner is r − I',
+    soft: 'r = n − 6 at the soft anchor: one px of radius per px of text, capped at a pill',
+    cardRadius: "'level': a radius steps one inset per level out (r − I, r, r + I, r + 2I), not with the padding",
+    focus: 'a 2px ring at no offset: the ring touches the control, so it needs no room of its own beyond its width',
+    grid: 'twelve columns with no gap; what sits on them pads itself by the column inset, half the 2I gutter, so nothing needs a negative margin',
+  },
+  // The rows a measured kit states as its own lines (row id → line). scripts/derive.test.mjs holds the calculator to them.
+  source: {
+    'controls.control.s': [2, -8], 'controls.control.i': [1, -9], 'controls.control.h': [4, -26], 'controls.control.h_o': [2, -8], 'controls.control.t': [2, -18],
+    'controls.icon.a.sm': [1, 0], 'controls.icon.a.md': [1.5, -4], 'controls.icon.a.lg': [2, -8],
+    'controls.curvature.r': [1, -6], 'controls.curvature.r_s': [0, 3],
+    'controls.mark.switch-track': [3, -12], 'controls.mark.checkbox-radius': [0.375, -1],
+    'containers.curvature.r-card-slot': [2, -15], 'containers.curvature.r-dialog': [3, -24],
+    'containers.frame.dialog-inset': [4, -26], 'containers.frame.page-inset': [4, -26], 'containers.frame.panel-inset': [2, -8],
+    'containers.gap.label-control-control-help': [1, -9],
+    'containers.width.rail': [8, -42], 'containers.width.panel': [16, 16], 'layout.width.measure': [44, 0],
+    'layout.grid.g': [2, -18], 'layout.grid.column-inset': [1, -9],
+    'unit.type.label': [1, -2], 'unit.type.body-md': [1, 0], 'unit.type.title-md': [1, 2], 'unit.type.heading-sm': [2, -10], 'unit.type.heading-md': [2, -8], 'unit.type.display-md': [4, -26],
+    'unit.type.body-md-line': [2, -8],
+  },
+}
+
 /** The preset an answer uses when none is named. */
 export const DEFAULT_PRESET = 'ladder'
 
@@ -170,11 +236,45 @@ export function tierUnit(P, tier, n) {
 const roundEven = (x) => { const r = Math.round(x); return Math.abs((x % 1) - 0.5) < 1e-9 ? 2 * Math.round(x / 2) : r }
 
 /**
+ * A line in n: { a, b } is the length a·n + b px, with an optional floor `min` and cap `max` in px. It is the primitive
+ * of the system: a multiple k of the unit q = a_q·n + b_q is the line k·a_q·n + k·b_q, and an exact preset (`exact:
+ * true`, unit 0·n + 1, so q is one px) gives its constants as lines directly, each with its own slope and offset.
+ */
+export const isLine = (v) => v !== null && typeof v === 'object' && !Array.isArray(v) && typeof v.a === 'number' && typeof v.b === 'number'
+/** A line's value at n, in px. */
+export const lineAt = (v, n) => { let x = v.a * n + v.b; if (v.min !== undefined) x = Math.max(x, v.min); if (v.max !== undefined) x = Math.min(x, v.max); return x }
+
+/** The preset keys whose values, or whose members' values, may be lines. `levels` and `type` are resolved apart. */
+const LINE_KEYS = ['slot', 'gutter', 'soft', 'frameDepth', 'viewportMargin', 'columnMin', 'levelGutterCap']
+const LINE_GROUPS = ['inset', 'icons', 'marks', 'tracks', 'widths', 'focus', 'avatars', 'grid', 'spacing']
+
+/**
+ * A preset with every line constant resolved at n to the number of q the equations take: line(n) / q(n). A level given
+ * as a line is that length, so it resolves to the multiple of I it comes to at this n and density; a type role given as
+ * [size line, leading line] resolves to its [m_t, k_t]. A preset with no line comes back unchanged.
+ */
+export function resolveLines(P0, n, density = 'default') {
+  const u = P0.unit.a * n + P0.unit.b
+  const any = (o) => o && typeof o === 'object' && Object.values(o).some((v) => isLine(v) || (Array.isArray(v) && v.some(isLine)))
+  if (!(u > 0) || !(LINE_KEYS.some((k) => isLine(P0[k])) || [...LINE_GROUPS, 'levels', 'type'].some((k) => any(P0[k])) || (Array.isArray(P0.cardDepths) && P0.cardDepths.some(isLine)))) return P0
+  const q = (v) => (isLine(v) ? lineAt(v, n) / u : v)
+  const group = (o) => (o && typeof o === 'object' && Object.values(o).some(isLine) ? Object.fromEntries(Object.entries(o).map(([k, v]) => [k, q(v)])) : o)
+  const P = { ...P0 }
+  for (const k of LINE_KEYS) if (isLine(P[k])) P[k] = q(P[k])
+  for (const k of LINE_GROUPS) if (P[k]) P[k] = group(P[k])
+  if (P.levels && Object.values(P.levels).some(isLine)) { const I = P.inset[density] ?? P.inset.default; P.levels = Object.fromEntries(Object.entries(P.levels).map(([k, v]) => [k, isLine(v) ? lineAt(v, n) / u / I : v])) }
+  if (P.type && Object.values(P.type).some((t) => t.some(isLine))) P.type = Object.fromEntries(Object.entries(P.type).map(([id, [m, k]]) => [id, [isLine(m) ? (lineAt(m, n) - n) / u : m, q(k)]]))
+  if (Array.isArray(P.cardDepths) && P.cardDepths.some(isLine)) { P.cardDepthNames = P.cardDepths.map((c, i) => (isLine(c) ? c.name ?? `l${i}` : String(c))); P.cardDepths = P.cardDepths.map(q) }
+  return P
+}
+
+/**
  * A crisp preset at n: the insets I and the gutter g_c snap to whole px (round half to even) and the slot S to even px,
  * so every length built from them lands on the pixel grid even where q is odd (at 16px: S = 24, I = 8, g_c = 2, h = 40).
  * Set `crisp: false` to keep exact q.
  */
-export function crisp(P0, n) {
+export function crisp(Praw, n, density = 'default') {
+  const P0 = resolveLines(Praw, n, density)
   const u = P0.unit.a * n + P0.unit.b
   if (!(u > 0)) return P0
   // Tethered values resolve at n: an icon size of 'F' is the text size, n px.
@@ -195,8 +295,12 @@ export function lineGrid({ bodyLine }) {
   return { L, half, up: (v) => Math.ceil(v / half - 1e-6) * half, near: (v) => Math.max(half, Math.round(v / half) * half), heading: (size) => Math.round(size * 1.15) }
 }
 
-export function derive({ preset = PRESETS.standard, n = 14, density = 'default', kappa = {}, width, columns, cardDepth = 4, tier: only, text } = {}) {
-  const P = crisp(preset, n), X = system(P)
+export function derive({ preset = PRESETS.standard, n = 14, density = 'default', kappa = {}, width, columns, cardDepth, tier: only, text } = {}) {
+  const P = crisp(preset, n, density), X = system(P)
+  // exact: nothing is rounded anywhere, so every length stays the line its constants give. `wholeness()` is the proof.
+  const exact = P.exact === true
+  // The card depth: the dial in q, or, where a preset's dial is a line, that length (its rows are then named card-d).
+  const rawD = cardDepth ?? (isLine(preset.dials?.cardDepth) ? preset.dials.cardDepth : 4), dName = isLine(rawD) ? 'd' : rawD
   const ks = P.softAnchor
   const k = { control: ks, frame: ks, card: ks, panel: ks, ...P.dials?.kappa, ...kappa }
   const u = X.q(n), rows = []
@@ -206,7 +310,7 @@ export function derive({ preset = PRESETS.standard, n = 14, density = 'default',
   const from = (src, v) => (v * uT(src)) / uT(T)
   // id: a stable key per row (tier.group.symbol, slugged), unique in every run; `alias` keeps a symbol's earlier spelling.
   const add = (group, symbol, expr, inQ, count = false, alias) => rows.push({ id: rowId(T, group, symbol), tier: T, group, symbol, ...(alias ? { alias } : {}), expr, q: inQ, px: count ? NaN : inQ * uT(T) })
-  const i = X.I(density), d = cardDepth, S = P.slot, gc = P.gutter, dc = X.dc(density)
+  const i = X.I(density), d = isLine(rawD) ? lineAt(rawD, n) / tierUnit(P, 'containers', n) : rawD, S = P.slot, gc = P.gutter, dc = X.dc(density)
   const dcExpr = typeof P.frameDepth === 'number' ? `${P.frameDepth}` : P.frameDepth === 'g_c' ? 'g_c' : 'm_c = I − g_c'
 
   // unit: shared inputs
@@ -340,44 +444,48 @@ export function derive({ preset = PRESETS.standard, n = 14, density = 'default',
   T = 'containers'
   const rc = Math.min(from('controls', X.radius(k.card, density)), P.soft)
   // cardRadius 'control': a card takes the control's corner whatever its padding, so one radius serves controls, tables and cards. A control inside is then not concentric with the corner.
-  const flatR = (P.cardRadius ?? 'concentric') === 'control', rCtl = from('controls', X.radius(k.control, density))
+  // cardRadius 'level': a radius steps by one inset per level out, whatever the padding: a nested control r − I, a control r, a card r + I, a dialog r + 2I.
+  const levelR = P.cardRadius === 'level', flatR = (P.cardRadius ?? 'concentric') === 'control' || levelR, rCtl = from('controls', X.radius(k.control, density)) + (levelR ? from('controls', i) : 0)
   const cardR = (c) => (flatR ? rCtl : c === 0 || rc === 0 ? from('controls', X.radius(k.card, density)) : c + rc)
-  for (const c of P.cardDepths) add('curvature', `R card-${c}  κ=${flatR ? k.control : k.card}`, flatR ? 'r(κ_control)' : c === 0 ? 'r(κ)' : rc === 0 ? '0 at κ 0' : 'd + min(r(κ), soft)', cardR(c))
+  const flatExpr = levelR ? 'r(κ_control) + I' : 'r(κ_control)'
+  P.cardDepths.forEach((c, ci) => add('curvature', `R card-${P.cardDepthNames?.[ci] ?? c}  κ=${flatR ? k.control : k.card}`, flatR ? flatExpr : c === 0 ? 'r(κ)' : rc === 0 ? '0 at κ 0' : 'd + min(r(κ), soft)', cardR(c)))
+  if (levelR) add('curvature', `R dialog  κ=${k.control}`, 'r(κ_control) + 2I', rCtl + from('controls', i))
   const R = cardR(d)
   for (const f of P.nest) {
     const [dd, rr] = X.nested(d, R, f)
-    add('curvature', `nest f=${f} in card-${d}`, flatR ? 'r(κ_control), 0 when flush' : 'R − f·d', flatR ? (f === 0 ? 0 : rCtl) : rr)
+    add('curvature', `nest f=${f} in card-${dName}`, flatR ? `${levelR ? 'r(κ_control): one level in' : 'r(κ_control)'}, 0 when flush` : 'R − f·d', flatR ? (f === 0 ? 0 : levelR ? from('controls', X.radius(k.control, density)) : rCtl) : rr)
     add('frame', `nest f=${f} depth`, '(1 − f)·d', dd)
   }
   // A panel of controls is a card at depth 2I.
-  add('curvature', `R panel (card at 2I)  κ=${flatR ? k.control : k.card}`, flatR ? 'r(κ_control)' : '2I + min(r(κ_card), soft)', flatR ? rCtl : from('controls', 2 * i) + rc)
+  add('curvature', `R panel (card at 2I)  κ=${flatR ? k.control : k.card}`, flatR ? flatExpr : '2I + min(r(κ_card), soft)', flatR ? rCtl : from('controls', 2 * i) + rc)
   for (const [l, v] of Object.entries(P.levels)) add('frame', `${l} inset`, `${typeof v === 'number' ? v : pageLevel(P)}·I`, from('controls', X.levelInset(l, density)))
   // Card depth follows density: d_δ = d + depthStep·(I_δ − I_default). The gaps below use it.
   { const de = d + ({ ...PRESETS.standard.spacing, ...P.spacing }.depthStep) * (i - X.I('default'))
-  if (Math.abs(de - d) > 1e-9) add('frame', `card-${d} at ${density}`, 'd + depthStep·(I − I_default)', de) }
+  if (Math.abs(de - d) > 1e-9) add('frame', `card-${dName} at ${density}`, 'd + depthStep·(I − I_default)', de) }
   // The dialog's depth as a row, so a kit can read it as a token: d_d = dialogRatio · the density's card depth, snapped
   // as containers() snaps it (whole px when crisp, else ½q). The same value as the "Dialog, sheet" line of --containers.
-  { const sp = { ...PRESETS.standard.spacing, ...P.spacing }, snap = (x) => (P.crisp === false ? Math.round(x * 2) / 2 : roundEven(x * u) / u)
-    add('frame', 'dialog inset', `d_d = ${sp.dialogRatio}·d`, snap(sp.dialogRatio * snap(d + sp.depthStep * (i - X.I('default'))))) }
+  { const sp = { ...PRESETS.standard.spacing, ...P.spacing }, snap = (x) => (exact ? x : P.crisp === false ? Math.round(x * 2) / 2 : roundEven(x * u) / u)
+    add('frame', 'dialog inset', sp.dialog !== undefined ? 'd_d, the preset\'s own line' : `d_d = ${sp.dialogRatio}·d`, sp.dialog ?? snap(sp.dialogRatio * snap(d + sp.depthStep * (i - X.I('default'))))) }
   // Inside a container the gap is half its depth; a header (an unpainted title row) is spaced as any child, the full
   // depth below as above, so its text has d + I on both sides; only a painted, flush title band gives back the row's
   // inset I (optical). The gap before an action row is the full depth. Every gap snaps to ½q.
   // Three label levels, three gaps: groups in a card sit d apart, blocks inside a group d/2, a group caption I above its
   // content, a field label g_c above its control.
-  add('gap', `groups in card-${d}`, 'd', d)
-  add('gap', `blocks in a group, card-${d}`, 'd/2', d / 2)
+  add('gap', `groups in card-${dName}`, 'd', d)
+  add('gap', `blocks in a group, card-${dName}`, 'd/2', d / 2)
   add('gap', 'group caption → content', 'I', i)
-  add('gap', `header → content card-${d}`, 'd', d)
-  add('gap', `band → content card-${d}`, 'max(0, d/2 − I)', Math.max(0, d / 2 - i))
-  add('gap', `separate rows card-${d}`, 'd/4, snapped to ½q', Math.round(d / 2) / 2)
-  add('gap', `before actions card-${d}`, 'd', d)
+  add('gap', `header → content card-${dName}`, 'd', d)
+  add('gap', `band → content card-${dName}`, 'max(0, d/2 − I)', Math.max(0, d / 2 - i))
+  add('gap', `separate rows card-${dName}`, exact ? 'd/4' : 'd/4, snapped to ½q', exact ? d / 4 : Math.round(d / 2) / 2)
+  add('gap', `before actions card-${dName}`, 'd', d)
   // Fields sit 2I apart, as table columns do; label and help text sit g_c from the control.
   add('gap', 'between form fields', '2I (as table columns)', 2 * i)
-  add('gap', 'label → control, control → help', 'g_c', from('controls', gc))
+  { const fg = ({ ...PRESETS.standard.spacing, ...P.spacing }).fieldGap
+    add('gap', 'label → control, control → help', fg === undefined ? 'g_c' : 'the field gap, the preset\'s own line', fg ?? from('controls', gc)) }
   // A field with its label, help and the actions that submit it alone is one group: g_c inside, the gap between groups around it (never under 3 g_c).
   add('gap', 'around a field group', 'max(d, 3g_c): the gap between groups', Math.max(d, 3 * from('controls', gc)))
-  add('border', `card-${d} inner padding`, 'd − b', d - b * u / uT(T))
-  add('border', `card-${d} inner radius`, 'R − b', Math.max(0, R - b * u / uT(T)))
+  add('border', `card-${dName} inner padding`, 'd − b', d - b * u / uT(T))
+  add('border', `card-${dName} inner radius`, 'R − b', Math.max(0, R - b * u / uT(T)))
   for (const w of ['dialog', 'panel', 'rail']) if (P.widths[w] !== undefined) add('width', w, `${P.widths[w]}`, P.widths[w])
   if (P.widths.panel !== undefined) add('width', 'collapse', '2 × panel: two panels side by side', 2 * P.widths.panel)
   const base = 40
@@ -387,12 +495,15 @@ export function derive({ preset = PRESETS.standard, n = 14, density = 'default',
   T = 'layout'
   // The page follows the container rule: the gutter between columns and cards is half the margin, snapped to ½q.
   // A stepped margin takes its level from the page width; the gutter stays half the base margin, so columns do not jump at a step.
-  const lp = pageLevel(P, width), stepped = typeof P.levels.page !== 'number', M = lp * from('controls', i), G = Math.round(pageLevel(P) * from('controls', i)) / 2
+  const lp = pageLevel(P, width), stepped = typeof P.levels.page !== 'number', M = lp * from('controls', i), G = P.grid?.gutter ?? (exact ? (pageLevel(P) * from('controls', i)) / 2 : Math.round(pageLevel(P) * from('controls', i)) / 2)
   add('grid', 'M', stepped ? `${lp}I (${width == null ? 'base' : `at ${width}px`}; ${P.levels.page.narrow}I under ${(P.marginSteps ?? PRESETS.standard.marginSteps)[0]}px, ${P.levels.page.wide}I from ${(P.marginSteps ?? PRESETS.standard.marginSteps)[1]}px)` : `${lp}I`, M)
-  add('grid', 'G', 'M/2, snapped to ½q', G)
+  add('grid', 'G', P.grid?.gutter !== undefined ? 'the preset\'s own line' : exact ? 'M/2' : 'M/2, snapped to ½q', G)
+  // A gutterless grid: the columns touch, and what is placed on them pads itself by the column inset (half the gutter).
+  if (P.grid?.inset !== undefined) add('grid', 'column inset', 'G/2: what sits on a column pads itself; the columns have no gap', P.grid.inset)
+  if (P.grid?.columns !== undefined) add('grid', 'columns', `${P.grid.columns}`, P.grid.columns, true)
   add('gap', 'card', 'G', G)
   // The flow of a page is spaced in body sizes, whole px when crisp: it does not move with density.
-  { const fl = { ...PRESETS.standard.flow, ...P.flow }, uL = uT(T), fq = (m) => (P.crisp === false ? Math.round(m * n / uL * 2) / 2 : roundEven(m * n) / uL)
+  { const fl = { ...PRESETS.standard.flow, ...P.flow }, uL = uT(T), fq = (m) => (exact ? (m * n) / uL : P.crisp === false ? Math.round(m * n / uL * 2) / 2 : roundEven(m * n) / uL)
     for (const [name, key] of [['kicker to heading', 'kicker'], ['heading to text', 'heading'], ['paragraphs', 'paragraph'], ['text to actions', 'actions'], ['action to note', 'note']]) add('flow', name, `${fl[key]}·F`, fq(fl[key]))
     add('flow', 'section padding', `${fl.section}·F above and below`, fq(fl.section)) }
   add('width', 'viewport margin', `${P.viewportMargin}`, P.viewportMargin)
@@ -414,22 +525,23 @@ export function derive({ preset = PRESETS.standard, n = 14, density = 'default',
  * Each cell is a list of { e: expression, q }. Every gap is half its container's padding, the full padding before
  * actions, g_c, 0, or the item inset; a page section's are the flow gaps, multiples of F. Card depth follows density; insets, gutter and gaps land on whole px (crisp).
  */
-export function containers({ preset = PRESETS.standard, n = 14, density = 'default', kappa = {}, cardDepth = 4, popoverDepth, dialogDepth, nest } = {}) {
-  const P = crisp(preset, n), X = system(P), u = X.q(n)
+export function containers({ preset = PRESETS.standard, n = 14, density = 'default', kappa = {}, cardDepth: cardDepthArg, popoverDepth, dialogDepth, nest } = {}) {
+  const P = crisp(preset, n, density), X = system(P), u = X.q(n), exact = P.exact === true
+  const rawD = cardDepthArg ?? (isLine(preset.dials?.cardDepth) ? preset.dials.cardDepth : 4), cardDepth = isLine(rawD) ? lineAt(rawD, n) / u : rawD
   const sp = { ...PRESETS.standard.spacing, ...P.spacing }
   const half = (x) => Math.round(x * 2) / 2, f = nest ?? sp.nest
   // Lengths that are not built from I or g_c (depths, gaps) snap to whole px when crisp, else to ½q.
-  const snap = (x) => (P.crisp === false ? half(x) : roundEven(x * u) / u)
+  const snap = (x) => (exact ? x : P.crisp === false ? half(x) : roundEven(x * u) / u)
   const ks = P.softAnchor, k = { control: ks, frame: ks, card: ks, panel: ks, ...P.dials?.kappa, ...kappa }
   const I = X.I(density), gc = P.gutter, mc = X.mc(density), S = P.slot, h = X.h(density), ho = S + 2 * gc, a = P.icons.md
   // Card depth moves with density, one q per step in the standard preset: d_δ = d + depthStep·(I_δ − I_default).
   const d = snap(cardDepth + sp.depthStep * (I - X.I('default')))
-  const dp = popoverDepth ?? snap(sp.popoverRatio * d), dd = dialogDepth ?? snap(sp.dialogRatio * d)
+  const dp = popoverDepth ?? sp.popover ?? snap(sp.popoverRatio * d), dd = dialogDepth ?? sp.dialog ?? snap(sp.dialogRatio * d)
   const r = X.radius(k.control, density), ro = X.inward(r, mc)
   const dcq = X.dc(density), rf = Math.min(X.radius(k.frame, density), P.soft), rrow = X.inward(rf, dcq)
-  const rk = Math.min(X.radius(k.card, density), P.soft), R = (x) => (x === 0 || rk === 0 ? X.radius(k.card, density) : x + rk)
+  const rk = Math.min(X.radius(k.card, density), P.soft), levelR = P.cardRadius === 'level', R = (x, lv = 1) => (levelR ? r + lv * I : x === 0 || rk === 0 ? X.radius(k.card, density) : x + rk)
   const lvl = (l) => Math.min(P.levelGutterCap, l * I), L = P.levels
-  const off = I + (S - a) / 2, nd = snap((1 - f) * d), nR = f === 0 ? 0 : X.inward(R(d), d - nd)
+  const off = I + (S - a) / 2, nd = snap((1 - f) * d), nR = f === 0 ? 0 : levelR ? r : X.inward(R(d), d - nd)
   const c = (e, q) => ({ e, q })
   const fl = { ...PRESETS.standard.flow, ...P.flow }, flow = (m) => snap(m * n / u)   // a multiple of F, in q
   const row = (tier, container, members, pad, gap, radius, height) => ({ tier, container, members, pad, gap, radius, height })
@@ -459,12 +571,12 @@ export function containers({ preset = PRESETS.standard, n = 14, density = 'defau
     row('collections', 'List, inset', 'navigation, selectable list: text at a button label inset', [c('d_c', dcq), c('items inline: T − d_c (text at T)', 2 * I - dcq)], [c('0, selection is a fill', 0)], [c('outline r', r), c('selection r − d_c', X.inward(r, dcq))], [c('rows h, as a button', h)]),
     // Fields sit 2I apart, the same gap as table columns (the control system's T); proximity groups each label with its control.
     // A field's control sits on the content edge like any control; its label and help text are inset T, over the value text.
-    row('collections', 'Form', 'stacked fields: label, control, help text', [c('control on the content edge', 0), c('label and help at T, over the value', 2 * I)], [c('between fields: 2I, as table columns', 2 * I), c('label → control g_c', gc), c('control → help g_c', gc)], [], [c('fields h', h)]),
+    row('collections', 'Form', 'stacked fields: label, control, help text', [c('control on the content edge', 0), c('label and help at T, over the value', 2 * I)], [c('between fields: 2I, as table columns', 2 * I), c(sp.fieldGap === undefined ? 'label → control g_c' : 'label → control: the field gap', sp.fieldGap ?? gc), c(sp.fieldGap === undefined ? 'control → help g_c' : 'control → help: the field gap', sp.fieldGap ?? gc)], [], [c('fields h', h)]),
     // Containers and layout share one rule: gap = depth / 2; under a header the full depth; under a painted band the gap gives back I; before actions it is the full depth.
     row('containers', 'Popover, tooltip', 'small floating card, d_p = ¾d', [c('d_p', dp)], [c('d_p / 2', snap(dp / 2))], [c('d_p + min(r, soft)', R(dp))], []),
     row('containers', 'Card', `header row h, its text on the content edge d (with captions, loose text and shapes); d = ${cardDepth}q at default, ${sp.depthStep}·ΔI per density step (depthStep); a panel of controls is a card at d = 2I`, [c('d', d)], [c('blocks in a group d / 2', snap(d / 2)), c('band → content max(0, d/2 − I)', snap(Math.max(0, d / 2 - I))), c('header → content d', d), c('rows d / 4', snap(d / 4)), c('before actions d', d), c('groups d', d), c('group caption → content I', I)], [c('R = d + min(r, soft)', R(d))], [c('title row h', h)]),
     row('containers', 'Nested card, well', `a card inside a card, f = ${f}`, [c('(1 − f)·d', nd)], [c('(1 − f)·d / 2', snap(nd / 2))], [c('R − f·d', nR)], []),
-    row('containers', 'Dialog, sheet', 'modal card, d_d = 1½d', [c('d_d', dd)], [c('band → body max(0, d_d/2 − I)', snap(Math.max(0, dd / 2 - I))), c('header → body d_d', dd), c('body blocks d_d / 2', snap(dd / 2)), c('before actions d_d', dd)], [c('d_d + min(r, soft)', R(dd))], [c('title row h', h)]),
+    row('containers', 'Dialog, sheet', 'modal card, d_d = 1½d', [c('d_d', dd)], [c('band → body max(0, d_d/2 − I)', snap(Math.max(0, dd / 2 - I))), c('header → body d_d', dd), c('body blocks d_d / 2', snap(dd / 2)), c('before actions d_d', dd)], [c('d_d + min(r, soft)', R(dd, 2))], [c('title row h', h)]),
     row('layout', 'Region', 'sidebar, toolbar band', [c(`${L.panel}·I`, L.panel * I)], [c(`${L.panel}·I / 2`, snap(L.panel * I / 2))], [c('0', 0)], []),
     // A page section shares the page's edge: it pads only above and below, so content never sits 2M in.
     row('layout', 'Page section', 'headings, text and actions in the flow of a page, spaced in F; shares the page edge', [c(`${fl.section}·F block`, flow(fl.section)), c('0 inline', 0)], [c(`flow: kicker → heading ${fl.kicker}·F`, flow(fl.kicker)), c(`flow: heading → text ${fl.heading}·F`, flow(fl.heading)), c(`flow: paragraphs ${fl.paragraph}·F`, flow(fl.paragraph)), c(`flow: text → actions ${fl.actions}·F`, flow(fl.actions)), c(`flow: action → note ${fl.note}·F`, flow(fl.note))], [c('0', 0)], []),
@@ -527,6 +639,64 @@ export function checkIdentities(rows) {
   return Object.entries(checks).filter(([, ok]) => !ok).map(([k]) => k)
 }
 
+/**
+ * Every row of derive() with the line it follows: { a, b } where px = a·n + b at n, n + 2 and n + 4, else null (a floor,
+ * a cap, a snap or a curvature bend makes it piecewise there). Sampled, not symbolic, so it holds for any preset.
+ */
+export function lines(o = {}) {
+  const n = o.n ?? 14, at = (k) => new Map(derive({ ...o, n: n + k }).map((r) => [r.id, r.px]))
+  const p2 = at(2), p4 = at(4)
+  return derive({ ...o, n }).map((r) => {
+    const y0 = r.px, y2 = p2.get(r.id), y4 = p4.get(r.id)
+    if ([y0, y2, y4].some((y) => y === undefined || Number.isNaN(y)) || Math.abs(y4 - y2 - (y2 - y0)) > 1e-9) return { ...r, line: null }
+    const a = (y2 - y0) / 2, clean = (x) => Math.round(x * 1e9) / 1e9
+    return { ...r, line: { a: clean(a), b: clean(y0 - a * n) } }
+  })
+}
+
+/** A line as text: 4n − 26, 1.5n − 4, 3, n. */
+export const lineText = (l) => (l === null ? 'not a line here' : l.a === 0 ? fmt(l.b) : `${l.a < 0 ? '−' : ''}${Math.abs(l.a) === 1 ? '' : fmt(Math.abs(l.a))}n${l.b === 0 ? '' : ` ${l.b < 0 ? '−' : '+'} ${fmt(Math.abs(l.b))}`}`)
+
+/** The groups whose lengths must land on whole px. Text metrics, strokes, media ratios, targets and the measure are not held to it. */
+export const WHOLE_GROUPS = ['control', 'icon', 'mark', 'track', 'curvature', 'frame', 'gap', 'rows', 'grid', 'width', 'focus', 'type', 'flow', 'breakpoint']
+
+/**
+ * Where each length is a whole number of px, with nothing snapped: derive() runs with the preset's rounding off (crisp
+ * false) at every whole n from `from` to `to`. Returns, per row that is ever fractional, the n at which it is whole and a
+ * verdict: 'even n', 'odd n', 'never', or the list. A preset is exact when `fractional` is empty; `halfStep` are the rows
+ * whole at every even n (a line with a half slope), which an exact preset may keep and must name.
+ */
+export function wholeness({ preset = PRESETS.standard, from, to = 24, ...o } = {}) {
+  const P = { ...preset, crisp: false }, lo = from ?? preset.unit.nMin ?? 12, seen = new Map()
+  const whole = (px) => Math.abs(px - Math.round(px)) < 1e-9
+  for (let n = lo; n <= to; n++) for (const r of derive({ ...o, preset: P, n })) {
+    if (Number.isNaN(r.px) || !WHOLE_GROUPS.includes(r.group)) continue
+    if (!seen.has(r.id)) seen.set(r.id, { id: r.id, symbol: r.symbol, wholeAt: [], fractionalAt: [] })
+    seen.get(r.id)[whole(r.px) ? 'wholeAt' : 'fractionalAt'].push(n)
+  }
+  const rows = [...seen.values()].filter((r) => r.fractionalAt.length).map((r) => ({ ...r, verdict: !r.wholeAt.length ? 'never' : r.wholeAt.every((n) => n % 2 === 0) && r.fractionalAt.every((n) => n % 2) ? 'even n' : r.wholeAt.every((n) => n % 2) && r.fractionalAt.every((n) => n % 2 === 0) ? 'odd n' : `n = ${r.wholeAt.join(', ')}` }))
+  return { from: lo, to, checked: seen.size, halfStep: rows.filter((r) => r.verdict === 'even n'), fractional: rows.filter((r) => r.verdict !== 'even n') }
+}
+
+/**
+ * What a kit reads: one entry per row that is a line, with its custom property, the declaration that computes it from
+ * the scope's font size, and its fallback at n = 16 as an exact ratio in em (never truncated digits).
+ */
+export function emit(o = {}) {
+  const frac = (x) => { for (let d = 1; d <= 256; d++) if (Math.abs(x * d - Math.round(x * d)) < 1e-9) return d === 1 ? `${Math.round(x)}` : `calc(${Math.round(x * d)} / ${d})`; return null }
+  const out = [], names = new Set()
+  for (const r of lines(o)) {
+    if (!r.line || Number.isNaN(r.px) || !(r.group === 'scale' || WHOLE_GROUPS.includes(r.group))) continue
+    const name = `--${r.id.replace(/^[a-z]+\./, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}`
+    if (names.has(name)) continue
+    names.add(name)
+    const { a, b } = r.line, em = (a * 16 + b) / 16, ratio = frac(em)
+    if (ratio === null) continue
+    out.push({ id: r.id, name, line: r.line, text: lineText(r.line), px: r.px, css: a === 0 ? `${fmt(b)}px` : `calc(${fmt(a)} * var(--n)${b === 0 ? '' : ` ${b < 0 ? '-' : '+'} ${fmt(Math.abs(b))}px`})`, fallback: em === 0 ? '0em' : `${ratio}${ratio.startsWith('calc') ? '' : 'em'}`.replace(/^calc\((.+)\)$/, 'calc($1 * 1em)') })
+  }
+  return out
+}
+
 /** A row's stable id: tier.group.symbol, lower-case, with runs of other characters as one hyphen. */
 export const rowId = (tier, group, symbol) => [tier, group, symbol].map((x) => String(x).toLowerCase().replace(/κ=[0-9.]+/g, '').replace(/[^a-z0-9_.+]+/g, '-').replace(/^-|-$/g, '')).join('.')
 
@@ -538,7 +708,7 @@ export function pageLevel(P, W) {
 }
 
 /** Keys a preset may carry besides those of PRESETS.standard. */
-export const PRESET_EXTRA_KEYS = ['name', 'units', 'crisp', 'dials', '$comment']
+export const PRESET_EXTRA_KEYS = ['name', 'units', 'crisp', 'dials', '$comment', 'exact', 'grid', 'reasons', 'source']
 
 /** Refuse a preset key the calculator does not read, so a typo never falls back to the standard preset unnoticed. */
 export function validatePreset(p, where = 'preset') {
@@ -546,9 +716,9 @@ export function validatePreset(p, where = 'preset') {
   const near = (k) => [...known].map((x) => [x, lev(k.toLowerCase(), x.toLowerCase())]).sort((a, b) => a[1] - b[1])[0]
   const bad = Object.keys(p).filter((k) => !known.has(k))
   const pg = p.levels?.page, st = p.marginSteps
-  if (pg !== undefined && typeof pg !== 'number' && !(pg && ['narrow', 'base', 'wide'].every((k) => typeof pg[k] === 'number') && Object.keys(pg).length === 3)) throw new Error(`${where}: levels.page is a number, or { narrow, base, wide } with a number each`)
+  if (pg !== undefined && typeof pg !== 'number' && !isLine(pg) && !(pg && ['narrow', 'base', 'wide'].every((k) => typeof pg[k] === 'number') && Object.keys(pg).length === 3)) throw new Error(`${where}: levels.page is a number, or { narrow, base, wide } with a number each`)
   if (st !== undefined && !(Array.isArray(st) && st.length === 2 && st.every((x) => typeof x === 'number') && st[0] < st[1])) throw new Error(`${where}: marginSteps is two page widths in px, the smaller first`)
-  if (p.cardRadius !== undefined && !['concentric', 'control'].includes(p.cardRadius)) throw new Error(`${where}: cardRadius is 'concentric' or 'control'`)
+  if (p.cardRadius !== undefined && !['concentric', 'control', 'level'].includes(p.cardRadius)) throw new Error(`${where}: cardRadius is 'concentric', 'control' or 'level'`)
   if (p.rhythm !== undefined && !['formula', 'line'].includes(p.rhythm)) throw new Error(`${where}: rhythm is 'formula' or 'line'`)
   if (bad.length) throw new Error(`${where}: unknown key${bad.length > 1 ? 's' : ''} ${bad.map((k) => { const [x, dist] = near(k); return `"${k}"${dist <= 3 ? ` (did you mean "${x}"?)` : ''}` }).join(', ')}. Known keys: ${[...known].join(', ')}`)
   return p
@@ -583,9 +753,10 @@ function parse(argv) {
     preset, viewport, dpr: Number(get('dpr') ?? 1),
     archetype: get('archetype'), n: get('n') !== undefined ? Number(get('n')) : viewport ? fluidN(viewport, preset) : arch?.n ?? 14, density: get('density') ?? D.density ?? 'default', kappa,
     width: get('width') && Number(get('width')), columns: get('columns') && Number(get('columns')),
-    cardDepth: Number(get('card') ?? D.cardDepth ?? 4), json: argv.includes('--json'), tier: get('tier'),
+    cardDepth: get('card') !== undefined ? Number(get('card')) : isLine(D.cardDepth) ? undefined : D.cardDepth ?? 4, json: argv.includes('--json'), tier: get('tier'),
     elevation: get('elevation'), layers: get('layers') && Number(get('layers')), scheme: get('scheme') ?? 'light',
     containers: argv.includes('--containers'),
+    lines: argv.includes('--lines'), whole: argv.includes('--whole'), emit: get('emit'), from: get('from') && Number(get('from')), to: get('to') && Number(get('to')),
     field: get('field') && Number(get('field')), gutter: get('gutter') && Number(get('gutter')), maxColumns: Number(get('max-columns') ?? 12),
     popoverDepth: get('popover') && Number(get('popover')), dialogDepth: get('dialog') && Number(get('dialog')), nest: get('nest') && Number(get('nest')),
   }
@@ -620,7 +791,7 @@ function printContainers(o) {
   const u = system(o.preset).q(o.n), all = containers(o)
   if (o.json) return console.log(JSON.stringify(all.map((r) => ({ ...r, px: u })), null, 2))
   const cell = (xs) => (xs.length ? xs.map((x) => `${x.e} = ${fmt(x.q)}q = ${fmt(x.q * u)}px`).join('<br>') : '—')
-  console.log(`n = ${fmt(o.n)}px  q = ${fmt(u)}px  density ${o.density}  card d ${o.cardDepth}q  κ ${JSON.stringify(o.kappa)}\n`)
+  console.log(`n = ${fmt(o.n)}px  q = ${fmt(u)}px  density ${o.density}  card d ${o.cardDepth === undefined ? 'the preset\'s line' : `${o.cardDepth}q`}  κ ${JSON.stringify(o.kappa)}\n`)
   for (const t of TIERS) {
     console.log(`## ${t}\n\n| container | padding | gap | radius | height |\n|---|---|---|---|---|`)
     for (const r of all.filter((x) => x.tier === t)) console.log(`| ${r.container} (${r.members}) | ${cell(r.pad)} | ${cell(r.gap)} | ${cell(r.radius)} | ${cell(r.height)} |`)
@@ -638,7 +809,23 @@ if (isMain()) (async () => {
   if (!(o.density in o.preset.inset)) throw new Error(`density must be one of ${Object.keys(o.preset.inset).join(', ')}`)
   if (o.n < o.preset.unit.nMin) console.error(`warning: n = ${o.n} is under the preset's ${o.preset.unit.nMin}px minimum`)
   if (o.field || o.gutter) return printMultiGrid(o)
-  const rows = derive(o)
+  if (o.whole) {
+    const w = wholeness({ ...o, to: o.to ?? 24 })
+    if (o.json) console.log(JSON.stringify(w, null, 2))
+    else {
+      console.log(`whole px with nothing snapped, n = ${w.from} to ${w.to}, ${w.checked} lengths: ${w.fractional.length ? `${w.fractional.length} fractional` : 'exact'}${w.halfStep.length ? `, ${w.halfStep.length} whole at even n only` : ''}\n`)
+      for (const r of w.fractional) console.log(`fractional  ${r.id}  whole at ${r.verdict}`)
+      for (const r of w.halfStep) console.log(`half step   ${r.id}  whole at even n`)
+    }
+    return process.exit(w.fractional.length ? 1 : 0)
+  }
+  if (o.emit) {
+    const E = emit(o)
+    if (o.emit === 'json') return console.log(JSON.stringify(E, null, 2))
+    if (o.emit !== 'css') throw new Error('--emit is css or json')
+    return console.log(`/* ${o.preset.name ?? 'preset'}: every length as a line in the scope's font size. --n is 1em registered as a length, or set per scope. */\n:root {\n  --n: ${fmt(o.n)}px;\n${E.map((e) => `  ${e.name}: ${e.css}; /* ${e.text}; fallback ${e.fallback} */`).join('\n')}\n}`)
+  }
+  const rows = o.lines ? lines(o) : derive(o)
   if (o.containers) printContainers(o)
   else if (o.elevation) printElevation(o)
   else if (o.json) console.log(JSON.stringify(rows, null, 2))
@@ -652,8 +839,8 @@ if (isMain()) (async () => {
       if (!inTier.length) continue
       console.log(`# ${t}${TIER_READS[t]?.length ? `  (reads from below: ${TIER_READS[t].join(', ')})` : ''}\n`)
       for (const g of [...new Set(inTier.map((r) => r.group))]) {
-        console.log(`## ${t} › ${g}\n\n| symbol | expression | q | px |\n|---|---|---|---|`)
-        for (const r of inTier.filter((x) => x.group === g)) console.log(`| ${r.symbol} | ${r.expr} | ${fmt(r.q)} | ${fmt(r.px)} |`)
+        console.log(`## ${t} › ${g}\n\n| symbol | expression | q | px |${o.lines ? ' line |' : ''}\n|---|---|---|---|${o.lines ? '---|' : ''}`)
+        for (const r of inTier.filter((x) => x.group === g)) console.log(`| ${r.symbol} | ${r.expr} | ${fmt(r.q)} | ${fmt(r.px)} |${o.lines ? ` ${Number.isNaN(r.px) ? '—' : lineText(r.line)} |` : ''}`)
         console.log('')
       }
     }
