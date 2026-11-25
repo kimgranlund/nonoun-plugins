@@ -73,7 +73,7 @@ Ticket lifecycle:
 
 - Evals: `../docs/work/evals/` holds the dated model and effort experiments and `table-lock.json`; read `../docs/work/evals/AGENTS.md` before changing a model or effort row in `plugins/sdlc-lite/scripts/run.sh` or `plugins/sdlc-lite/adapters/codex/models.json`.
 - Proposals: `../docs/work/proposals/` holds candidate changes that `proposals.py scan` mined from past runs; read `../docs/work/proposals/AGENTS.md` before scanning, accepting, rejecting, or promoting one.
-<!-- sdlc:managed:start v1 sha256:986c41dae2a5 -->
+<!-- sdlc:managed:start v1 sha256:0c44611a4cbb -->
 # Work records
 
 This folder holds SDLC `config`, this router, and the git-ignored `runtime/` and `messages/`. Tickets, task records, `docs/work/ROADMAP.md`, and `docs/work/NOTES.md` are in the work root `docs/work/`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `docs/work/ROADMAP.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -90,7 +90,7 @@ This folder holds SDLC `config`, this router, and the git-ignored `runtime/` and
 - ready: 0
 - claimed: 4
   - T-0884 ui-colors: step 10 of a cusp-bright solid barely changes in dark (docs/work/0884-ui-colors-cusp-step10), claimed by nonoun-author 2026-11-25, branch lane/T-0884-t0884
-  - T-0886 ui-colors: warm text steps 11 and 12 read brown at the default targets (docs/work/0886-ui-colors-warm-text-brown), claimed by nonoun-author 2026-11-25
+  - T-0886 ui-colors: warm text steps 11 and 12 read brown at the default targets (docs/work/0886-ui-colors-warm-text-brown), claimed by nonoun-author 2026-11-25, branch lane/T-0886-t0886
   - T-0887 ui-geometry: --density does nothing under the affine preset (docs/work/0887-ui-geometry-density-affine), claimed by nonoun-author 2026-11-25, branch lane/T-0887-t0887
   - T-0888 ui-geometry: an unknown --preset fails with a raw ENOENT (docs/work/0888-ui-geometry-unknown-preset), claimed by nonoun-author 2026-11-25, branch lane/T-0888-t0888
 - paused: 0
