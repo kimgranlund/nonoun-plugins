@@ -3,7 +3,7 @@ id: T-0884
 title: "ui-colors: step 10 of a cusp-bright solid barely changes in dark"
 type: bug             # feature | bug | chore | spike | idea
 status: proposed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
-size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
+size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
 created: 2026-11-25
