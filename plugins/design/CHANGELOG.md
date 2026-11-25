@@ -4,6 +4,10 @@ The design plugin, newest first. Releases before this file are recorded in the r
 
 ## [Unreleased]
 
+### Added
+
+- Eleven designer agents in `agents/` (T-0882), Claude Code only, called as `design:<name>`: `dieter-rams`, `ive-newson`, `jan-tschichold`, `john-maeda`, `karl-gerstner`, `le-corbusier`, `max-bill`, `muller-brockmann`, `muriel-cooper`, `naoto-fukasawa`, `wim-crouwel`. Each is a design director formed by one designer's principles and method. Imported unchanged from the MacBook share; listed in `AGENTS.md`.
+
 ## [0.6.0] - 2026-11-22
 
 ### Changed
