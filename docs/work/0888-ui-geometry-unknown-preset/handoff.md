@@ -20,12 +20,13 @@ An unknown `--preset` name gets a clear error naming the built-in presets, not a
 
 ## Context
 - Reproduced 2026-11-25: `node scripts/derive.mjs --preset nosuch` prints `ENOENT: no such file or directory, open 'nosuch'`. This predates PR #104.
-- Tests: `node --test scripts/*.test.mjs` in the skill folder. Its `plugins/design/AGENTS.md` row records differences from the MacBook source; add this one.
+- Tests: `node --test scripts/*.test.mjs` in the skill folder.
 
 ## Acceptance criteria
 - `node scripts/derive.mjs --preset nosuch` exits 2 and its stderr names `affine` and `ladder`; `--preset afine` suggests `affine`.
-- A test covers it, and `node --test scripts/*.test.mjs` passes.
+- A test in a new file `scripts/preset.test.mjs` covers it, and `node --test scripts/*.test.mjs` passes.
 - A valid preset path still loads.
 
 ## Constraints
+- T-0887 runs in a parallel lane on the same `derive.mjs`: change only the function you need, put your test only in `scripts/preset.test.mjs`, and do not edit `plugins/design/AGENTS.md` or any CHANGELOG (the conductor records both at landing).
 - None.

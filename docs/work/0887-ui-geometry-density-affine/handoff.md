@@ -20,12 +20,13 @@ router: .sdlc/AGENTS.md  # how to claim and close this ticket
 
 ## Context
 - Reproduced 2026-11-25: `node scripts/derive.mjs --n 16 --density loose` and `--density compact` differ only in the header line (`density loose` vs `density compact`); `--json` output is identical.
-- Skill: `plugins/design/skills/ui-geometry/` (`scripts/derive.mjs`, `scripts/*.test.mjs`, run with `node --test scripts/*.test.mjs`). Its `plugins/design/AGENTS.md` row records differences from the MacBook source; add this one.
+- Skill: `plugins/design/skills/ui-geometry/` (`scripts/derive.mjs`, `scripts/*.test.mjs`, run with `node --test scripts/*.test.mjs`).
 
 ## Acceptance criteria
 - `node scripts/derive.mjs --n 16 --density loose 2>&1 >/dev/null` prints the note; `--preset ladder --density loose` prints none.
-- A test covers both, and `node --test scripts/*.test.mjs` passes.
+- A test in a new file `scripts/density.test.mjs` covers both, and `node --test scripts/*.test.mjs` passes.
 - stdout for `--preset ladder` is byte-identical to `main`.
 
 ## Constraints
+- T-0888 runs in a parallel lane on the same `derive.mjs`: change only the function you need, put your test only in `scripts/density.test.mjs`, and do not edit `plugins/design/AGENTS.md` or any CHANGELOG (the conductor records both at landing).
 - Output of unit presets unchanged.
