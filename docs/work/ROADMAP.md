@@ -6,7 +6,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | ID | Ticket | Title | Type | Size | Pri | Depends on | Status |
 |---|---|---|---|---|---|---|---|
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔴 blocked |
-| T-0885 | [0885-ui-colors-radix-scales](0885-ui-colors-radix-scales/handoff.md) | ui-colors: bundle the full Radix scales and add compare radix | feature | L3 | P2 | none | ⏳ proposed |
+| T-0885 | [0885-ui-colors-radix-scales](0885-ui-colors-radix-scales/handoff.md) | ui-colors: bundle the full Radix scales and add compare radix | feature | L3 | P2 | none | 🟡 claimed |
 | T-0889 | [0889-ui-colors-p3-anchors](0889-ui-colors-p3-anchors/handoff.md) | ui-colors: P3 that uses P3 (anchor p3 option, usage report, families --from-p3) | feature | L3 | P2 | none | 🟡 claimed (branch lane/T-0889-t0889) |
 
 Closed: 849 done, 30 dropped (git log or .NNNN-* folders)
