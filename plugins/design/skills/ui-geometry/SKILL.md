@@ -23,7 +23,7 @@ Read the row whose question is open. Paths are relative to this file.
 | Which archetype is a preset or a page, or what are an archetype's dials? | `node scripts/derive.mjs --archetype <name>`; `references/archetypes.json`; `references/equations.md` › 20 | Asked for a named character (editorial, fashion, an instrument), or classifying a fitted project |
 | Which archetype is a rendered page? | `node scripts/observe.mjs <url or file>` (needs Playwright), or evaluate `scripts/observe.js` in the page and score the result with `node scripts/archetypes.mjs observed.json` (the nearest archetype, its family, and the page's position on the measured dimensions); `references/equations.md` › 20 | Asked what an existing page or kit reads as, or to compare a build with an archetype |
 | How do I define another system? | Presets, below, and `PRESETS.standard` in `scripts/derive.mjs` | Writing a preset file; unknown keys are refused |
-| Which lengths are whole px unrounded; what line is each? | `derive.mjs --whole`, `--lines`, `--emit css`, `--preset affine`; `references/equations.md` › 21 | A system must not round, or its constants share no unit |
+| Which lengths are whole px unrounded, on what line? | `derive.mjs --whole`, `--lines`, `--emit css`, `--preset affine`; `fit.mjs --lines`; `references/equations.md` › 21 | A system must not round |
 
 
 ## Axioms
@@ -75,7 +75,7 @@ To define another system, write a JSON file with any of the keys from `PRESETS.s
 
 1. Fix the preset, n, δ, κ for each tier and d. The defaults are ladder (the CLI's default; `--preset standard` for the 32px system, which an `--archetype` starts from), δ = default, κ = κ_s for controls, lists and panels, κ = ½ for cards (so R = d + 2q at default density), and d = 4.
 2. Compute q, I, m_c and h. Then compute the tier that is asked for, from `references/equations.md`.
-3. For a full table, run `node scripts/derive.mjs --n <n> --density <δ> --kappa <κ>`. Add `--kappa-control`, `--kappa-frame`, `--kappa-card` or `--kappa-panel` to split tiers. Use `--card <d>`, `--width <px> --columns <N>` for a grid, `--preset <file.json>` for another system, `--archetype <name>` to start from an archetype's dials and print its bands, and `--json` for data. `--viewport <px>` takes n from the fluid scale; `--dpr <x>` lists lengths off the device grid. For every container's padding, gap and radius run `--containers [--card 4 --nest 0.5]` (section 19; `--popover`/`--dialog` fix those depths). For shadows run `--elevation <level|s|all> [--layers 5] [--scheme dark]`. The file's header lists every flag.
+3. For a full table, run `node scripts/derive.mjs --n <n> --density <δ> --kappa <κ>`. Add `--kappa-control`, `--kappa-frame`, `--kappa-card` or `--kappa-panel` to split tiers. Use `--card <d>`, `--width <px> --columns <N>` for a grid, `--preset <file.json>` for another system, `--archetype <name>` to start from an archetype's dials and print its bands, and `--json` for data. `--viewport <px>` takes n from the fluid scale; `--dpr <x>` lists lengths off the device grid. For every container's padding, gap and radius run `--containers [--card 4 --nest 0.5]` (section 19; `--popover`/`--dialog` fix those depths). For shadows run `--elevation <level|s|all> [--layers 5] [--scheme dark]`. Its header lists every flag.
 4. Check that the identities below hold. A value that breaks one is wrong.
 5. Report a table with the columns symbol, expression, q, px. Flag any px that falls off the whole-pixel grid.
 
@@ -128,7 +128,7 @@ Run from this folder. Done means all three are green.
 
 Paths are relative to this file's folder. Run the calculator by its full path from any working directory.
 
-- `references/equations.md`: every equation in numbered sections 1 to 21, worked at n = 14 with the standard preset; 19 is the container ladder, 20 the archetypes, 21 lines and exact presets.
+- `references/equations.md`: every equation in sections 1 to 21, worked at n = 14 with the standard preset; 19 the container ladder, 20 archetypes, 21 lines and exact presets. `references/lines.md`: every row as a line.
 - `references/showcase.md`: the content and geometry a showcase must follow. ui-showcase-bento owns the canvas, packing and checks.
 - `references/fit.md`: fitting a project: the tiers, the lengths.json roles (a generated table), how the unit and κ are inferred, the report template and the canvas.
 - `references/terms.json`: the symbols and words of this skill, one meaning each, with how the sibling skills use the same words.

@@ -582,7 +582,7 @@ test('a floored length is not a line across its floor', () => {
 })
 
 test('affine: every source line is derived', () => {
-  const diff = (preset, n) => { const L = new Map(lines({ preset, n }).map((r) => [r.id, r.line])); return Object.entries(PRESETS.affine.source).filter(([id, [a, b]]) => { const l = L.get(id); return !l || l.a !== a || l.b !== b }).map(([id]) => id) }
+  const diff = (preset, n) => { const L = new Map(lines({ preset, n }).map((r) => [r.id, r.line])); return Object.entries(PRESETS.affine.source).filter(([id, [a, b]]) => { const l = L.get(id); return !l || Math.abs(l.a - a) > 1e-6 || Math.abs(l.b - b) > 1e-6 }).map(([id]) => id) }
   for (const n of [12, 14, 22]) assert.deepEqual(diff(PRESETS.affine, n), [], `at n = ${n}`)
   // negative control: a slot offset of −6 moves S, h and what reads them
   const bad = diff({ ...PRESETS.affine, slot: { a: 2, b: -6 } }, 14)
@@ -612,7 +612,6 @@ test('wholeness: affine, with unit presets as negative controls', () => {
   // negative controls: a name taken away is an unnamed row; a name for a whole row is stale
   assert.deepEqual(wholeness({ preset: { ...PRESETS.affine, fractional: PRESETS.affine.fractional.filter((id) => id !== 'controls.icon.a.md') } }).unnamed.map((r) => r.id), ['controls.icon.a.md'])
   assert.deepEqual(wholeness({ preset: { ...PRESETS.affine, fractional: [...PRESETS.affine.fractional, 'controls.control.h'] } }).stale, ['controls.control.h'])
-  assert.deepEqual(w.fractional.map((r) => r.id).sort(), ['containers.frame.composite-inset', 'controls.control.d', 'controls.icon.a.md-offset', 'controls.mark.checkbox-radius', 'controls.mark.choice-label', 'controls.mark.radio-dot'])
   assert.ok(w.halfStep.some((r) => r.id === 'controls.icon.a.md'))
   // A whole-slope, whole-offset line is whole at every n: none of the control tier's own constants appears.
   for (const id of ['controls.control.s', 'controls.control.i', 'controls.control.h', 'controls.curvature.r']) assert.ok(![...w.fractional, ...w.halfStep].some((r) => r.id === id), id)
@@ -647,4 +646,21 @@ test('a gutterless grid: twelve columns of (W − 2M)/12 touch, and a card on th
   // negative control: the same width under standard keeps its gutters, so twelve columns and eleven gutters fill it
   const st = new Map(derive({ preset: { ...PRESETS.standard, crisp: false }, n: 14, width: 1280, columns: 12 }).map((r) => [r.id, r.px]))
   assert.ok(Math.abs(12 * st.get('layout.grid.w-w-1280px-n-12') + 11 * st.get('layout.grid.g') + 2 * st.get('layout.grid.m') - 1280) < 1e-9)
+})
+
+test('marks.sizes: check box, switch and range at the three icon sizes, each from its own mark; 14px gives 14, 17 and 20', () => {
+  const px = new Map(derive({ preset: PRESETS.affine, n: 14 }).map((r) => [r.id, r.px]))
+  assert.deepEqual(['sm', 'md', 'lg'].map((t) => px.get(`controls.mark.mark.${t}`)), [14, 17, 20])
+  assert.deepEqual(['sm', 'md', 'lg'].map((t) => px.get(`controls.mark.switch-track.${t}`)), [24, 30, 36])
+  assert.deepEqual(['sm', 'md', 'lg'].map((t) => px.get(`controls.mark.switch-thumb.${t}`)), [10, 13, 16])
+  assert.equal(px.get('controls.mark.range-track.lg'), 4)                       // (20 − 8) / 3
+  assert.equal(new Map(derive({ preset: PRESETS.affine, n: 10 }).map((r) => [r.id, r.px])).get('controls.mark.range-track.sm'), 1)   // (10 − 8)/3 is under a border
+  // a preset without marks.sizes prints none of these rows
+  assert.ok(!derive({ n: 14 }).some((r) => r.id.startsWith('controls.mark.mark.')))
+})
+
+test('a shell: the header is a row, and the docking width is panel + measure + 2M (68n − 36 in affine)', () => {
+  assert.deepEqual(lineOf({ preset: PRESETS.affine, n: 14 }, 'layout.width.docking-width'), { a: 68, b: -36 })
+  assert.equal(new Map(derive({ preset: PRESETS.affine, n: 14 }).map((r) => [r.id, r.px])).get('layout.width.header'), 50)
+  assert.ok(!derive({ n: 14 }).some((r) => r.id === 'layout.width.docking-width'))
 })

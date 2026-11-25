@@ -24,7 +24,8 @@ Use this to analyse an existing project: find the nearest geometry system its co
 4. **Read the result before reporting it.** Check that the unit is plausible (the runners-up are listed), that each tier's constants look like the components, and that every ✗ identity is a real property of the project and not a wrong selector.
 5. **Report** using the template below, and render `compare.html` (or publish it) so the user sees the specimens before and after.
 6. **Mind odd q.** Targets use the crisp preset (I, g_c, S on whole px). At odd q (16px gives q = 5) crisp lengths sit off exact q multiples, so the unit search may also report 2.5px or 4px as close fits; read the runners-up.
-7. **Iterate.** `node scripts/derive.mjs --preset fitted.json --n <n>` prints the whole fitted system; `--tier <tier>` prints one tier. To try a variant, edit `fitted.json` (a κ, a depth, an inset) and run derive again.
+7. **Check for lines.** Where the project scales with a font size (a size prop, a density setting, nested scopes), collect the same specimens at two or more n, give each length its `n`, and run `node scripts/fit.mjs lengths.json --lines`. It prints each length's line and says whether one unit holds them. If not, the unit fit above describes one size only: write an exact preset (`references/equations.md` › 21).
+8. **Iterate.** `node scripts/derive.mjs --preset fitted.json --n <n>` prints the whole fitted system; `--tier <tier>` prints one tier. To try a variant, edit `fitted.json` (a κ, a depth, an inset) and run derive again.
 
 ## lengths.json
 

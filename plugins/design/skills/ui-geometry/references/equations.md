@@ -1,6 +1,6 @@
 # Equations
 
-Every length is a line in the scope's font size: a·n + b px. A unit preset gives its constants as multiples of one unit q = a_q·n + b_q, so each length k·q is the line k·a_q·n + k·b_q; an exact preset gives each constant its own line (section 21). The equations hold for any preset. The numbers are the standard preset. All lengths are in q unless they carry px. The worked column uses n = 14, so q = 4px, at default density (δ = 1) with κ = ¾.
+Every length is a line in the scope's font size: a·n + b px. A unit preset gives its constants as multiples of one unit q = a_q·n + b_q, so each length k·q is the line k·a_q·n + k·b_q; an exact preset gives each constant its own line (section 21). `references/lines.md` lists every row below as its line, for the standard, ladder and affine presets. The equations hold for any preset. The numbers are the standard preset. All lengths are in q unless they carry px. The worked column uses n = 14, so q = 4px, at default density (δ = 1) with κ = ¾.
 
 For another preset, substitute its constants: a_q, b_q in q = a_q·n + b_q; I_δ for I; g_c; S; soft and κ_s in r(κ); d_c; the level multipliers ℓ. Values at the three densities are written compact / default / loose.
 
@@ -493,13 +493,19 @@ An archetype is a named character held as a profile: for each observable, the ba
 - `spacing.fieldGap`, `spacing.popover` and `spacing.dialog`: the label gap and the popover and dialog depths as their own lines, where they are not g_c, ¾d and 1½d.
 - `grid`: `gutter`, `inset` and `columns` for a gutterless grid. The columns touch; what is placed on them pads itself by the column inset, half the gutter, so a rule or a band can still run the full width and nothing needs a negative margin.
 
+- `marks.sizes`: the small controls at each icon size (sm, md, lg), each from the mark of its size alone. `corner` is a check box's corner as a share of the mark; a switch is two marks wide less `switchInset` borders, and its thumb one mark less the same; a range's handle is `rangeThumb` of the mark, and its track (mark − `rangeCut` px) / `rangeParts`, never under a border. The rows are `mark.sm` … `range track.lg`; with it the plain `switch thumb` row follows the same rule at md.
+- `widths.header`: a shell's header height. A preset that gives one also gets the docking width, panel + measure + 2M: the page width under which the side panel does not fit beside a full measure. It is a line in n, so a media or container query cannot hold it (a query does not read a custom property): compare against it in a `clamp()`, or set the breakpoint per scope size.
+- `fractional`: the rows the preset accepts as not whole px at every n. `--whole` fails on any other, and on a name that is whole after all.
+
 `reasons` holds, per input, why it is what it is. A constant with no reason is derived from those, or inherited.
 
 **Density.** In an exact preset the three insets may be one line. A denser or looser region is then a scope with another n, which restarts the system (axiom 1); `--density` still selects among the three where they differ.
 
 **Curvature.** r(κ) is a line in n at any fixed κ on one side of the soft anchor, and at the anchor it is the preset's `soft` line (r = n − 6 in the affine preset), capped at h/2.
 
-**The affine preset** (`--preset affine`) is such a system. The rows below are a measured kit's own lines, and `scripts/derive.test.mjs` holds the calculator to them (`PRESETS.affine.source`); its other constants are the nearest expression of the standard preset's rows in the same lines, and are not that kit's. Three rows differ from that kit and are not in the list: the switch thumb (a.md − 2g_c gives the mark, the kit takes 4b off it), the popover depth and the menu item, which the kit does not state as lines.
+**Finding the lines of a project.** `node scripts/fit.mjs lengths.json --lines` takes lengths measured at two or more n and prints each one's line, its largest residual and the n at which it crosses zero. Every line of a unit system crosses zero at the same n, −b_q / a_q (6 for standard, 9 for ladder); where the zeros spread, no one unit holds the system and each constant is written as its own line.
+
+**The affine preset** (`--preset affine`) is such a system. The rows below are a measured kit's own lines, and `scripts/derive.test.mjs` holds the calculator to them (`PRESETS.affine.source`); its other constants are the nearest expression of the standard preset's rows in the same lines, and are not that kit's. Two rows are not that kit's and are not in the list: the popover depth and the menu item, which it does not state as lines.
 
 <!-- generated:lines -->
 | Length | Row | Line | n = 10 | 14 | 22 |
@@ -515,7 +521,28 @@ An archetype is a named character held as a profile: for each observable, the ba
 | r | `controls.curvature.r` | n − 6 | 4 | 8 | 16 |
 | r_s | `controls.curvature.r_s` | 3 | 3 | 3 | 3 |
 | switch track | `controls.mark.switch-track` | 3n − 12 | 18 | 30 | 54 |
+| switch thumb | `controls.mark.switch-thumb` | 1.5n − 8 | 7 | 13 | 25 |
 | checkbox radius | `controls.mark.checkbox-radius` | 0.375n − 1 | 2.75 | 4.25 | 7.25 |
+| mark.sm | `controls.mark.mark.sm` | n | 10 | 14 | 22 |
+| mark.md | `controls.mark.mark.md` | 1.5n − 4 | 11 | 17 | 29 |
+| mark.lg | `controls.mark.mark.lg` | 2n − 8 | 12 | 20 | 36 |
+| mark radius.sm | `controls.mark.mark-radius.sm` | 0.25n | 2.5 | 3.5 | 5.5 |
+| mark radius.md | `controls.mark.mark-radius.md` | 0.375n − 1 | 2.75 | 4.25 | 7.25 |
+| mark radius.lg | `controls.mark.mark-radius.lg` | 0.5n − 2 | 3 | 5 | 9 |
+| switch track.sm | `controls.mark.switch-track.sm` | 2n − 4 | 16 | 24 | 40 |
+| switch track.md | `controls.mark.switch-track.md` | 3n − 12 | 18 | 30 | 54 |
+| switch track.lg | `controls.mark.switch-track.lg` | 4n − 20 | 20 | 36 | 68 |
+| switch thumb.sm | `controls.mark.switch-thumb.sm` | n − 4 | 6 | 10 | 18 |
+| switch thumb.md | `controls.mark.switch-thumb.md` | 1.5n − 8 | 7 | 13 | 25 |
+| switch thumb.lg | `controls.mark.switch-thumb.lg` | 2n − 12 | 8 | 16 | 32 |
+| range thumb.sm | `controls.mark.range-thumb.sm` | 0.5n | 5 | 7 | 11 |
+| range thumb.md | `controls.mark.range-thumb.md` | 0.75n − 2 | 5.5 | 8.5 | 14.5 |
+| range thumb.lg | `controls.mark.range-thumb.lg` | n − 4 | 6 | 10 | 18 |
+| range track.sm | `controls.mark.range-track.sm` | 0.333n − 2.667 | 1 | 2 | 4.667 |
+| range track.md | `controls.mark.range-track.md` | 0.5n − 4 | 1 | 3 | 7 |
+| range track.lg | `controls.mark.range-track.lg` | 0.667n − 5.333 | 1.333 | 4 | 9.333 |
+| header | `layout.width.header` | 6n − 34 | 26 | 50 | 98 |
+| docking width | `layout.width.docking-width` | 68n − 36 | 644 | 916 | 1460 |
 | R card-slot | `containers.curvature.r-card-slot` | 2n − 15 | 5 | 13 | 29 |
 | R dialog | `containers.curvature.r-dialog` | 3n − 24 | 6 | 18 | 42 |
 | dialog inset | `containers.frame.dialog-inset` | 4n − 26 | 14 | 30 | 62 |
@@ -535,7 +562,7 @@ An archetype is a named character held as a profile: for each observable, the ba
 | display-md | `unit.type.display-md` | 4n − 26 | 14 | 30 | 62 |
 | body-md line | `unit.type.body-md-line` | 2n − 8 | 12 | 20 | 36 |
 
-Whole px with nothing snapped, n = 10 to 24: 155 lengths checked, 139 whole at every n.
+Whole px with nothing snapped, n = 10 to 24: 175 lengths checked, 149 whole at every n.
 
 | Row | Whole at |
 |---|---|
@@ -544,12 +571,22 @@ Whole px with nothing snapped, n = 10 to 24: 155 lengths checked, 139 whole at e
 | `controls.mark.choice-label` | n = 12, 16, 20, 24 |
 | `controls.mark.checkbox-radius` | n = 16, 24 |
 | `controls.mark.radio-dot` | n = 12, 16, 20, 24 |
+| `controls.mark.mark-radius.sm` | n = 12, 16, 20, 24 |
+| `controls.mark.range-track.sm` | n = 10, 11, 14, 17, 20, 23 |
+| `controls.mark.mark-radius.md` | n = 16, 24 |
+| `controls.mark.range-thumb.md` | n = 12, 16, 20, 24 |
+| `controls.mark.range-track.lg` | n = 11, 14, 17, 20, 23 |
 | `containers.frame.composite-inset` | odd n |
 | `controls.icon.a.sm-offset` | even n |
 | `controls.icon.a.md` | even n |
 | `controls.mark.checkbox-box` | even n |
 | `controls.mark.radio-box` | even n |
 | `controls.mark.switch-thumb` | even n |
+| `controls.mark.range-thumb.sm` | even n |
+| `controls.mark.mark.md` | even n |
+| `controls.mark.switch-thumb.md` | even n |
+| `controls.mark.range-track.md` | even n |
+| `controls.mark.mark-radius.lg` | even n |
 | `controls.track.progress-slider-track` | even n |
 | `controls.track.slider-thumb` | even n |
 | `containers.frame.nest-f-0.25-depth` | even n |

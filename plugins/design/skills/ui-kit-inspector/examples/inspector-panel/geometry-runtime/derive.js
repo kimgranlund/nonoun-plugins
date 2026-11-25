@@ -98,9 +98,9 @@ PRESETS.affine = {
   columnMin: ln(8, 48),
   flow: { kicker: 1, heading: 1, paragraph: 1, actions: 2, note: 1, section: 3 },
   icons: { sm: 'F', md: ln(1.5, -4), lg: ln(2, -8), full: ln(2, -8) },
-  marks: { checkRadius: ln(0.375, -1), switchWidth: ln(3, -12), badgeDot: ln(1, -9) },
+  marks: { checkRadius: ln(0.375, -1), switchWidth: ln(3, -12), badgeDot: ln(1, -9), sizes: { corner: 0.25, switchInset: 4, rangeThumb: 0.5, rangeCut: 8, rangeParts: 3 } },
   tracks: { track: ln(0.5, -4, { min: 1 }), meter: ln(1, -8, { min: 2 }), sliderMin: ln(8, -42) },
-  widths: { tooltip: ln(16, 16), popover: ln(24, -16), dialog: ln(32, 32), rail: ln(8, -42), panel: ln(16, 16), measure: ln(44, 0) },
+  widths: { tooltip: ln(16, 16), popover: ln(24, -16), dialog: ln(32, 32), rail: ln(8, -42), panel: ln(16, 16), measure: ln(44, 0), header: ln(6, -34) },
   viewportMargin: ln(2, -8),
   focus: { width: 2, offset: 0 },
   avatars: { xs: ln(1.5, -4), sm: ln(2, -8), md: ln(3, -17), lg: ln(4, -26), xl: ln(4, -16), xxl: ln(8, -32) },
@@ -125,13 +125,21 @@ PRESETS.affine = {
     grid: 'twelve columns with no gap; what sits on them pads itself by the column inset, half the 2I gutter, so nothing needs a negative margin',
   },
   // The rows that are not whole px at every n, each accepted by name: the medium icon and mark (a blend, 1.5n − 4) with its halves and quarters, and half and quarter depths.
-  fractional: ['controls.control.d', 'controls.icon.a.md-offset', 'controls.mark.choice-label', 'controls.mark.checkbox-radius', 'controls.mark.radio-dot', 'containers.frame.composite-inset', 'controls.icon.a.sm-offset', 'controls.icon.a.md', 'controls.mark.checkbox-box', 'controls.mark.radio-box', 'controls.mark.switch-thumb', 'controls.track.progress-slider-track', 'controls.track.slider-thumb', 'containers.frame.nest-f-0.25-depth', 'containers.frame.nest-f-0.75-depth', 'containers.gap.separate-rows-card-d'],
+  fractional: ['controls.control.d', 'controls.icon.a.md-offset', 'controls.mark.choice-label', 'controls.mark.checkbox-radius', 'controls.mark.radio-dot', 'containers.frame.composite-inset', 'controls.icon.a.sm-offset', 'controls.icon.a.md', 'controls.mark.checkbox-box', 'controls.mark.radio-box', 'controls.mark.switch-thumb', 'controls.track.progress-slider-track', 'controls.track.slider-thumb', 'containers.frame.nest-f-0.25-depth', 'containers.frame.nest-f-0.75-depth', 'containers.gap.separate-rows-card-d',
+    'controls.mark.mark-radius.sm', 'controls.mark.range-thumb.sm', 'controls.mark.range-track.sm', 'controls.mark.mark.md', 'controls.mark.mark-radius.md', 'controls.mark.switch-thumb.md', 'controls.mark.range-thumb.md', 'controls.mark.range-track.md', 'controls.mark.mark-radius.lg', 'controls.mark.range-track.lg'],
   // The rows a measured kit states as its own lines (row id → line). scripts/derive.test.mjs holds the calculator to them.
   source: {
     'controls.control.s': [2, -8], 'controls.control.i': [1, -9], 'controls.control.h': [4, -26], 'controls.control.h_o': [2, -8], 'controls.control.t': [2, -18],
     'controls.icon.a.sm': [1, 0], 'controls.icon.a.md': [1.5, -4], 'controls.icon.a.lg': [2, -8],
     'controls.curvature.r': [1, -6], 'controls.curvature.r_s': [0, 3],
-    'controls.mark.switch-track': [3, -12], 'controls.mark.checkbox-radius': [0.375, -1],
+    'controls.mark.switch-track': [3, -12], 'controls.mark.switch-thumb': [1.5, -8], 'controls.mark.checkbox-radius': [0.375, -1],
+    'controls.mark.mark.sm': [1, 0], 'controls.mark.mark.md': [1.5, -4], 'controls.mark.mark.lg': [2, -8],
+    'controls.mark.mark-radius.sm': [0.25, 0], 'controls.mark.mark-radius.md': [0.375, -1], 'controls.mark.mark-radius.lg': [0.5, -2],
+    'controls.mark.switch-track.sm': [2, -4], 'controls.mark.switch-track.md': [3, -12], 'controls.mark.switch-track.lg': [4, -20],
+    'controls.mark.switch-thumb.sm': [1, -4], 'controls.mark.switch-thumb.md': [1.5, -8], 'controls.mark.switch-thumb.lg': [2, -12],
+    'controls.mark.range-thumb.sm': [0.5, 0], 'controls.mark.range-thumb.md': [0.75, -2], 'controls.mark.range-thumb.lg': [1, -4],
+    'controls.mark.range-track.sm': [1 / 3, -8 / 3], 'controls.mark.range-track.md': [0.5, -4], 'controls.mark.range-track.lg': [2 / 3, -16 / 3],
+    'layout.width.header': [6, -34], 'layout.width.docking-width': [68, -36],
     'containers.curvature.r-card-slot': [2, -15], 'containers.curvature.r-dialog': [3, -24],
     'containers.frame.dialog-inset': [4, -26], 'containers.frame.page-inset': [4, -26], 'containers.frame.panel-inset': [2, -8],
     'containers.gap.label-control-control-help': [1, -9],
@@ -377,7 +385,18 @@ export function derive({ preset = PRESETS.standard, n = 14, density = 'default',
   add('mark', 'radio box', 'a.md, round', md)
   add('mark', 'radio dot', 'a.md / 2', md / 2)
   add('mark', 'switch track', `${mk.switchWidth} × a.md, round`, mk.switchWidth)
-  add('mark', 'switch thumb', 'a.md − 2g_c', md - 2 * gc)
+  // marks.sizes: the small controls at each icon size, each from the mark of its size alone: a corner as a share of the
+  // mark, a switch two marks wide less an inset in borders with a thumb one mark less the same, a range handle as a
+  // share of the mark and its track what a cut leaves of the mark, over a number of parts and never under a border.
+  const ms = mk.sizes, bq = (b * u) / uT(T)
+  add('mark', 'switch thumb', ms ? `a.md − ${ms.switchInset}b` : 'a.md − 2g_c', ms ? md - ms.switchInset * bq : md - 2 * gc)
+  if (ms) for (const t of ['sm', 'md', 'lg']) { const a = P.icons[t]
+    add('mark', `mark.${t}`, `a.${t}`, a)
+    add('mark', `mark radius.${t}`, `${ms.corner}·a`, ms.corner * a)
+    add('mark', `switch track.${t}`, `2a − ${ms.switchInset}b`, 2 * a - ms.switchInset * bq)
+    add('mark', `switch thumb.${t}`, `a − ${ms.switchInset}b`, a - ms.switchInset * bq)
+    add('mark', `range thumb.${t}`, `${ms.rangeThumb}·a`, ms.rangeThumb * a)
+    add('mark', `range track.${t}`, `max((a − ${ms.rangeCut}px)/${ms.rangeParts}, b)`, Math.max((a - ms.rangeCut / uT(T)) / ms.rangeParts, bq)) }
   add('mark', 'badge', 'S', S)
   add('mark', 'badge dot', `${mk.badgeDot}`, mk.badgeDot)
   add('mark', 'separator', 'hairline, g_c above and below', gc)
@@ -510,6 +529,11 @@ export function derive({ preset = PRESETS.standard, n = 14, density = 'default',
     add('flow', 'section padding', `${fl.section}·F above and below`, fq(fl.section)) }
   add('width', 'viewport margin', `${P.viewportMargin}`, P.viewportMargin)
   if (P.widths.measure !== undefined) add('width', 'measure', `${P.widths.measure}`, P.widths.measure)
+  // A shell: a preset that gives a header height declares one, and the width at which its side panel docks beside the text follows.
+  if (P.widths.header !== undefined) {
+    add('width', 'header', `${P.widths.header}`, P.widths.header)
+    if (P.widths.panel !== undefined && P.widths.measure !== undefined) add('width', 'docking width', 'panel + measure + 2M: under it the panel does not fit beside a full measure', from('containers', P.widths.panel) + P.widths.measure + 2 * M)
+  }
   if (width && columns) {
     const W = width / uT(T)
     add('grid', `w  W=${width}px N=${columns}`, Gc ? '(W − 2M − (N−1)G)/N' : '(W − 2M)/N: the columns touch', (W - 2 * M - (columns - 1) * Gc) / columns)
