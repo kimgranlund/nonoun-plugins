@@ -11,7 +11,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | T-0886 | [0886-ui-colors-warm-text-brown](0886-ui-colors-warm-text-brown/handoff.md) | ui-colors: warm text steps 11 and 12 read brown at the default targets | bug | L1 | P2 | none | 🟡 claimed (branch lane/T-0886-t0886) |
 | T-0887 | [0887-ui-geometry-density-affine](0887-ui-geometry-density-affine/handoff.md) | ui-geometry: --density does nothing under the affine preset | bug | L1 | P2 | none | 🟡 claimed (branch lane/T-0887-t0887) |
 | T-0888 | [0888-ui-geometry-unknown-preset](0888-ui-geometry-unknown-preset/handoff.md) | ui-geometry: an unknown --preset fails with a raw ENOENT | bug | L1 | P2 | none | 🟡 claimed (branch lane/T-0888-t0888) |
-| T-0889 | [0889-ui-colors-p3-anchors](0889-ui-colors-p3-anchors/handoff.md) | ui-colors: P3 that uses P3 (anchor p3 option, usage report, families --from-p3) | feature | L2 | P2 | none | ⏳ proposed |
+| T-0889 | [0889-ui-colors-p3-anchors](0889-ui-colors-p3-anchors/handoff.md) | ui-colors: P3 that uses P3 (anchor p3 option, usage report, families --from-p3) | feature | L3 | P2 | none | 🔵 ready |
 
 Closed: 845 done, 30 dropped (git log or .NNNN-* folders)
 
