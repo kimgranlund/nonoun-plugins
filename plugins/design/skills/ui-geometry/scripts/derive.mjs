@@ -8,7 +8,7 @@
 //   node derive.mjs --containers [--card 4 --popover 3 --dialog 6 --nest 0.5]   (padding, gap, radius for every container; popover and dialog default to ¾d and 1½d)
 //   node derive.mjs --field 58 --gutter 2 --width 1440 [--dpr 2] [--max-columns 12]   (a grid for several column counts, in units u)
 //   node derive.mjs --lines [--preset affine]   (adds each length's line a·n + b)
-//   node derive.mjs --whole [--preset affine] [--from 10 --to 24]   (where each length is whole px with nothing snapped; exit 1 if any is fractional)
+//   node derive.mjs --whole [--preset affine] [--from 10 --to 24]   (where each length is whole px with nothing snapped; exit 1 on a fractional row the preset does not name)
 //   node derive.mjs --emit css|json [--preset affine]   (custom properties, each a line in the font size, with an exact em fallback)
 // Prints every length of a scope as a multiple of the unit q and in px. Every length is a line in n; --lines prints it.
 
@@ -126,6 +126,8 @@ PRESETS.affine = {
     focus: 'a 2px ring at no offset: the ring touches the control, so it needs no room of its own beyond its width',
     grid: 'twelve columns with no gap; what sits on them pads itself by the column inset, half the 2I gutter, so nothing needs a negative margin',
   },
+  // The rows that are not whole px at every n, each accepted by name: the medium icon and mark (a blend, 1.5n − 4) with its halves and quarters, and half and quarter depths.
+  fractional: ['controls.control.d', 'controls.icon.a.md-offset', 'controls.mark.choice-label', 'controls.mark.checkbox-radius', 'controls.mark.radio-dot', 'containers.frame.composite-inset', 'controls.icon.a.sm-offset', 'controls.icon.a.md', 'controls.mark.checkbox-box', 'controls.mark.radio-box', 'controls.mark.switch-thumb', 'controls.track.progress-slider-track', 'controls.track.slider-thumb', 'containers.frame.nest-f-0.25-depth', 'containers.frame.nest-f-0.75-depth', 'containers.gap.separate-rows-card-d'],
   // The rows a measured kit states as its own lines (row id → line). scripts/derive.test.mjs holds the calculator to them.
   source: {
     'controls.control.s': [2, -8], 'controls.control.i': [1, -9], 'controls.control.h': [4, -26], 'controls.control.h_o': [2, -8], 'controls.control.t': [2, -18],
@@ -501,6 +503,8 @@ export function derive({ preset = PRESETS.standard, n = 14, density = 'default',
   // A gutterless grid: the columns touch, and what is placed on them pads itself by the column inset (half the gutter).
   if (P.grid?.inset !== undefined) add('grid', 'column inset', 'G/2: what sits on a column pads itself; the columns have no gap', P.grid.inset)
   if (P.grid?.columns !== undefined) add('grid', 'columns', `${P.grid.columns}`, P.grid.columns, true)
+  // Between columns: G, or nothing where the grid is gutterless and what sits on a column pads itself.
+  const Gc = P.grid?.inset !== undefined ? 0 : G
   add('gap', 'card', 'G', G)
   // The flow of a page is spaced in body sizes, whole px when crisp: it does not move with density.
   { const fl = { ...PRESETS.standard.flow, ...P.flow }, uL = uT(T), fq = (m) => (exact ? (m * n) / uL : P.crisp === false ? Math.round(m * n / uL * 2) / 2 : roundEven(m * n) / uL)
@@ -510,10 +514,10 @@ export function derive({ preset = PRESETS.standard, n = 14, density = 'default',
   if (P.widths.measure !== undefined) add('width', 'measure', `${P.widths.measure}`, P.widths.measure)
   if (width && columns) {
     const W = width / uT(T)
-    add('grid', `w  W=${width}px N=${columns}`, '(W − 2M − (N−1)G)/N', (W - 2 * M - (columns - 1) * G) / columns)
-    add('grid', 'N_max', `⌊(W − 2M + G)/(${P.columnMin} + G)⌋`, Math.floor((W - 2 * M + G) / (P.columnMin + G)), true)
+    add('grid', `w  W=${width}px N=${columns}`, Gc ? '(W − 2M − (N−1)G)/N' : '(W − 2M)/N: the columns touch', (W - 2 * M - (columns - 1) * Gc) / columns)
+    add('grid', 'N_max', Gc ? `⌊(W − 2M + G)/(${P.columnMin} + G)⌋` : `⌊(W − 2M)/${fmt(P.columnMin)}⌋`, Math.floor((W - 2 * M + Gc) / (P.columnMin + Gc)), true)
   }
-  for (let kc = 1; kc <= 6; kc++) add('breakpoint', `${kc} column${kc > 1 ? 's' : ''}`, `k·w_min + (k − 1)G + 2M, w_min ${P.columnMin}`, kc * P.columnMin + (kc - 1) * G + 2 * M)
+  for (let kc = 1; kc <= 6; kc++) add('breakpoint', `${kc} column${kc > 1 ? 's' : ''}`, Gc ? `k·w_min + (k − 1)G + 2M, w_min ${P.columnMin}` : `k·w_min + 2M, w_min ${fmt(P.columnMin)}: the columns touch`, kc * P.columnMin + (kc - 1) * Gc + 2 * M)
   const Ms = { ...PRESETS.standard.measure, ...P.measure }
   for (const [kname, c] of Object.entries(Ms)) add('measure', `${kname} (${c} ch)`, 'c · charWidth · F', (c * fm.charWidth * n) / uT(T))
 
@@ -573,10 +577,10 @@ export function containers({ preset = PRESETS.standard, n = 14, density = 'defau
     // A field's control sits on the content edge like any control; its label and help text are inset T, over the value text.
     row('collections', 'Form', 'stacked fields: label, control, help text', [c('control on the content edge', 0), c('label and help at T, over the value', 2 * I)], [c('between fields: 2I, as table columns', 2 * I), c(sp.fieldGap === undefined ? 'label → control g_c' : 'label → control: the field gap', sp.fieldGap ?? gc), c(sp.fieldGap === undefined ? 'control → help g_c' : 'control → help: the field gap', sp.fieldGap ?? gc)], [], [c('fields h', h)]),
     // Containers and layout share one rule: gap = depth / 2; under a header the full depth; under a painted band the gap gives back I; before actions it is the full depth.
-    row('containers', 'Popover, tooltip', 'small floating card, d_p = ¾d', [c('d_p', dp)], [c('d_p / 2', snap(dp / 2))], [c('d_p + min(r, soft)', R(dp))], []),
-    row('containers', 'Card', `header row h, its text on the content edge d (with captions, loose text and shapes); d = ${cardDepth}q at default, ${sp.depthStep}·ΔI per density step (depthStep); a panel of controls is a card at d = 2I`, [c('d', d)], [c('blocks in a group d / 2', snap(d / 2)), c('band → content max(0, d/2 − I)', snap(Math.max(0, d / 2 - I))), c('header → content d', d), c('rows d / 4', snap(d / 4)), c('before actions d', d), c('groups d', d), c('group caption → content I', I)], [c('R = d + min(r, soft)', R(d))], [c('title row h', h)]),
-    row('containers', 'Nested card, well', `a card inside a card, f = ${f}`, [c('(1 − f)·d', nd)], [c('(1 − f)·d / 2', snap(nd / 2))], [c('R − f·d', nR)], []),
-    row('containers', 'Dialog, sheet', 'modal card, d_d = 1½d', [c('d_d', dd)], [c('band → body max(0, d_d/2 − I)', snap(Math.max(0, dd / 2 - I))), c('header → body d_d', dd), c('body blocks d_d / 2', snap(dd / 2)), c('before actions d_d', dd)], [c('d_d + min(r, soft)', R(dd, 2))], [c('title row h', h)]),
+    row('containers', 'Popover, tooltip', 'small floating card, d_p = ¾d', [c('d_p', dp)], [c('d_p / 2', snap(dp / 2))], [c(levelR ? 'r + I: one level out' : 'd_p + min(r, soft)', R(dp))], []),
+    row('containers', 'Card', `header row h, its text on the content edge d (with captions, loose text and shapes); d = ${cardDepth}q at default, ${sp.depthStep}·ΔI per density step (depthStep); a panel of controls is a card at d = 2I`, [c('d', d)], [c('blocks in a group d / 2', snap(d / 2)), c('band → content max(0, d/2 − I)', snap(Math.max(0, d / 2 - I))), c('header → content d', d), c('rows d / 4', snap(d / 4)), c('before actions d', d), c('groups d', d), c('group caption → content I', I)], [c(levelR ? 'R = r + I: one level out' : 'R = d + min(r, soft)', R(d))], [c('title row h', h)]),
+    row('containers', 'Nested card, well', `a card inside a card, f = ${f}`, [c('(1 − f)·d', nd)], [c('(1 − f)·d / 2', snap(nd / 2))], [c(levelR ? 'r: one level in' : 'R − f·d', nR)], []),
+    row('containers', 'Dialog, sheet', 'modal card, d_d = 1½d', [c('d_d', dd)], [c('band → body max(0, d_d/2 − I)', snap(Math.max(0, dd / 2 - I))), c('header → body d_d', dd), c('body blocks d_d / 2', snap(dd / 2)), c('before actions d_d', dd)], [c(levelR ? 'r + 2I: two levels out' : 'd_d + min(r, soft)', R(dd, 2))], [c('title row h', h)]),
     row('layout', 'Region', 'sidebar, toolbar band', [c(`${L.panel}·I`, L.panel * I)], [c(`${L.panel}·I / 2`, snap(L.panel * I / 2))], [c('0', 0)], []),
     // A page section shares the page's edge: it pads only above and below, so content never sits 2M in.
     row('layout', 'Page section', 'headings, text and actions in the flow of a page, spaced in F; shares the page edge', [c(`${fl.section}·F block`, flow(fl.section)), c('0 inline', 0)], [c(`flow: kicker → heading ${fl.kicker}·F`, flow(fl.kicker)), c(`flow: heading → text ${fl.heading}·F`, flow(fl.heading)), c(`flow: paragraphs ${fl.paragraph}·F`, flow(fl.paragraph)), c(`flow: text → actions ${fl.actions}·F`, flow(fl.actions)), c(`flow: action → note ${fl.note}·F`, flow(fl.note))], [c('0', 0)], []),
@@ -663,8 +667,9 @@ export const WHOLE_GROUPS = ['control', 'icon', 'mark', 'track', 'curvature', 'f
 /**
  * Where each length is a whole number of px, with nothing snapped: derive() runs with the preset's rounding off (crisp
  * false) at every whole n from `from` to `to`. Returns, per row that is ever fractional, the n at which it is whole and a
- * verdict: 'even n', 'odd n', 'never', or the list. A preset is exact when `fractional` is empty; `halfStep` are the rows
- * whole at every even n (a line with a half slope), which an exact preset may keep and must name.
+ * verdict: 'even n', 'odd n', 'never', or the list. `halfStep` are the rows whole at every even n (a line with a half
+ * slope), `fractional` the rest. A preset names the rows it accepts in its `fractional` list: `unnamed` are those it does
+ * not name, a fault, and `stale` the names that are whole after all.
  */
 export function wholeness({ preset = PRESETS.standard, from, to = 24, ...o } = {}) {
   const P = { ...preset, crisp: false }, lo = from ?? preset.unit.nMin ?? 12, seen = new Map()
@@ -675,24 +680,26 @@ export function wholeness({ preset = PRESETS.standard, from, to = 24, ...o } = {
     seen.get(r.id)[whole(r.px) ? 'wholeAt' : 'fractionalAt'].push(n)
   }
   const rows = [...seen.values()].filter((r) => r.fractionalAt.length).map((r) => ({ ...r, verdict: !r.wholeAt.length ? 'never' : r.wholeAt.every((n) => n % 2 === 0) && r.fractionalAt.every((n) => n % 2) ? 'even n' : r.wholeAt.every((n) => n % 2) && r.fractionalAt.every((n) => n % 2 === 0) ? 'odd n' : `n = ${r.wholeAt.join(', ')}` }))
-  return { from: lo, to, checked: seen.size, halfStep: rows.filter((r) => r.verdict === 'even n'), fractional: rows.filter((r) => r.verdict !== 'even n') }
+  // A preset names the rows it accepts as not whole at every n (`fractional`); any other is a fault.
+  const named = new Set(preset.fractional ?? [])
+  return { from: lo, to, checked: seen.size, halfStep: rows.filter((r) => r.verdict === 'even n'), fractional: rows.filter((r) => r.verdict !== 'even n'), unnamed: rows.filter((r) => !named.has(r.id)), stale: [...named].filter((id) => !rows.some((r) => r.id === id)) }
 }
 
 /**
  * What a kit reads: one entry per row that is a line, with its custom property, the declaration that computes it from
- * the scope's font size, and its fallback at n = 16 as an exact ratio in em (never truncated digits).
+ * the font size of the element that uses it (1em, left unresolved in an unregistered property), and its fallback at n = 16 as an exact ratio in em (never truncated digits).
  */
 export function emit(o = {}) {
   const frac = (x) => { for (let d = 1; d <= 256; d++) if (Math.abs(x * d - Math.round(x * d)) < 1e-9) return d === 1 ? `${Math.round(x)}` : `calc(${Math.round(x * d)} / ${d})`; return null }
   const out = [], names = new Set()
   for (const r of lines(o)) {
     if (!r.line || Number.isNaN(r.px) || !(r.group === 'scale' || WHOLE_GROUPS.includes(r.group))) continue
-    const name = `--${r.id.replace(/^[a-z]+\./, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}`
-    if (names.has(name)) continue
+    const name = `--${r.id.replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}`
+    if (names.has(name)) throw new Error(`emit: two rows would share the name ${name}`)
     names.add(name)
     const { a, b } = r.line, em = (a * 16 + b) / 16, ratio = frac(em)
     if (ratio === null) continue
-    out.push({ id: r.id, name, line: r.line, text: lineText(r.line), px: r.px, css: a === 0 ? `${fmt(b)}px` : `calc(${fmt(a)} * var(--n)${b === 0 ? '' : ` ${b < 0 ? '-' : '+'} ${fmt(Math.abs(b))}px`})`, fallback: em === 0 ? '0em' : `${ratio}${ratio.startsWith('calc') ? '' : 'em'}`.replace(/^calc\((.+)\)$/, 'calc($1 * 1em)') })
+    out.push({ id: r.id, name, line: r.line, text: lineText(r.line), px: r.px, css: a === 0 ? `${fmt(b)}px` : `calc(${fmt(a)} * 1em${b === 0 ? '' : ` ${b < 0 ? '-' : '+'} ${fmt(Math.abs(b))}px`})`, fallback: em === 0 ? '0em' : `${ratio}${ratio.startsWith('calc') ? '' : 'em'}`.replace(/^calc\((.+)\)$/, 'calc($1 * 1em)') })
   }
   return out
 }
@@ -708,7 +715,7 @@ export function pageLevel(P, W) {
 }
 
 /** Keys a preset may carry besides those of PRESETS.standard. */
-export const PRESET_EXTRA_KEYS = ['name', 'units', 'crisp', 'dials', '$comment', 'exact', 'grid', 'reasons', 'source']
+export const PRESET_EXTRA_KEYS = ['name', 'units', 'crisp', 'dials', '$comment', 'exact', 'grid', 'reasons', 'source', 'fractional']
 
 /** Refuse a preset key the calculator does not read, so a typo never falls back to the standard preset unnoticed. */
 export function validatePreset(p, where = 'preset') {
@@ -813,17 +820,18 @@ if (isMain()) (async () => {
     const w = wholeness({ ...o, to: o.to ?? 24 })
     if (o.json) console.log(JSON.stringify(w, null, 2))
     else {
-      console.log(`whole px with nothing snapped, n = ${w.from} to ${w.to}, ${w.checked} lengths: ${w.fractional.length ? `${w.fractional.length} fractional` : 'exact'}${w.halfStep.length ? `, ${w.halfStep.length} whole at even n only` : ''}\n`)
-      for (const r of w.fractional) console.log(`fractional  ${r.id}  whole at ${r.verdict}`)
-      for (const r of w.halfStep) console.log(`half step   ${r.id}  whole at even n`)
+      const tag = (r) => (w.unnamed.includes(r) ? 'UNNAMED' : 'named  ')
+      console.log(`whole px with nothing snapped, n = ${w.from} to ${w.to}, ${w.checked} lengths: ${w.checked - w.fractional.length - w.halfStep.length} whole at every n, ${w.halfStep.length} at even n only, ${w.fractional.length} at fewer; ${w.unnamed.length} the preset does not name\n`)
+      for (const r of [...w.fractional, ...w.halfStep]) console.log(`${tag(r)}  ${r.id}  whole at ${r.verdict}`)
+      for (const id of w.stale) console.log(`STALE    ${id}  is named but whole at every n`)
     }
-    return process.exit(w.fractional.length ? 1 : 0)
+    return process.exit(w.unnamed.length || w.stale.length ? 1 : 0)
   }
   if (o.emit) {
     const E = emit(o)
     if (o.emit === 'json') return console.log(JSON.stringify(E, null, 2))
     if (o.emit !== 'css') throw new Error('--emit is css or json')
-    return console.log(`/* ${o.preset.name ?? 'preset'}: every length as a line in the scope's font size. --n is 1em registered as a length, or set per scope. */\n:root {\n  --n: ${fmt(o.n)}px;\n${E.map((e) => `  ${e.name}: ${e.css}; /* ${e.text}; fallback ${e.fallback} */`).join('\n')}\n}`)
+    return console.log(`/* ${o.preset.name ?? 'preset'}: every length as a line in the font size. An unregistered custom property keeps 1em unresolved, so each line is read at the font size of the element that uses it: a scope is any element with its own font size. */\n:root {\n${E.map((e) => `  ${e.name}: ${e.css}; /* ${e.text}; fallback ${e.fallback} */`).join('\n')}\n}`)
   }
   const rows = o.lines ? lines(o) : derive(o)
   if (o.containers) printContainers(o)

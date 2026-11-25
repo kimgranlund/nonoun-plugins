@@ -606,12 +606,18 @@ test("cardRadius 'level' steps the radius one inset per level: 3, 8, 13 and 18px
 
 test('wholeness: affine, with unit presets as negative controls', () => {
   const w = wholeness({ preset: PRESETS.affine })
+  // the passing case: every row that is not whole at every n is one the preset names, and no name is stale
+  assert.deepEqual([w.unnamed.length, w.stale.length], [0, 0])
+  assert.equal(w.fractional.length + w.halfStep.length, PRESETS.affine.fractional.length)
+  // negative controls: a name taken away is an unnamed row; a name for a whole row is stale
+  assert.deepEqual(wholeness({ preset: { ...PRESETS.affine, fractional: PRESETS.affine.fractional.filter((id) => id !== 'controls.icon.a.md') } }).unnamed.map((r) => r.id), ['controls.icon.a.md'])
+  assert.deepEqual(wholeness({ preset: { ...PRESETS.affine, fractional: [...PRESETS.affine.fractional, 'controls.control.h'] } }).stale, ['controls.control.h'])
   assert.deepEqual(w.fractional.map((r) => r.id).sort(), ['containers.frame.composite-inset', 'controls.control.d', 'controls.icon.a.md-offset', 'controls.mark.checkbox-radius', 'controls.mark.choice-label', 'controls.mark.radio-dot'])
   assert.ok(w.halfStep.some((r) => r.id === 'controls.icon.a.md'))
   // A whole-slope, whole-offset line is whole at every n: none of the control tier's own constants appears.
   for (const id of ['controls.control.s', 'controls.control.i', 'controls.control.h', 'controls.curvature.r']) assert.ok(![...w.fractional, ...w.halfStep].some((r) => r.id === id), id)
   // negative controls: without snapping, standard (q = ½n − 3) and ladder (q = ¾n − 6.75) leave the pixel grid
-  assert.ok(wholeness({ preset: PRESETS.standard }).fractional.length > 20)
+  assert.ok(wholeness({ preset: PRESETS.standard }).fractional.length > 20 && wholeness({ preset: PRESETS.standard }).unnamed.length > 20)
   assert.ok(wholeness({ preset: PRESETS.ladder }).fractional.length > wholeness({ preset: PRESETS.standard }).fractional.length)
   // negative control: a half-px slot slope makes h fractional at odd n
   const bent = wholeness({ preset: { ...PRESETS.affine, slot: { a: 2.5, b: -8 } } })
@@ -624,12 +630,21 @@ test('an exact preset snaps nothing: a quarter depth and a page gutter keep thei
   assert.deepEqual(lineOf(o, 'layout.grid.g'), { a: 2, b: -18 })
 })
 
-test('emit: each line becomes a custom property with an exact em fallback at 16; names are unique', () => {
+test('emit: each line becomes a custom property in 1em with an exact em fallback at 16, named by its whole row id', () => {
   const E = emit({ preset: PRESETS.affine, n: 14 }), by = new Map(E.map((e) => [e.id, e]))
-  assert.equal(new Set(E.map((e) => e.name)).size, E.length)
-  assert.equal(by.get('controls.control.h').css, 'calc(4 * var(--n) - 26px)')
+  assert.equal(by.get('controls.control.h').name, '--controls-control-h')
+  assert.equal(by.get('controls.control.h').css, 'calc(4 * 1em - 26px)')
   assert.equal(by.get('controls.control.h').fallback, 'calc(19 / 8 * 1em)')   // (4·16 − 26) / 16
   assert.equal(by.get('controls.control.s').fallback, 'calc(3 / 2 * 1em)')
   assert.equal(by.get('controls.curvature.r_s').css, '3px')
   assert.ok(!E.some((e) => /\d\.\d{4,}/.test(e.fallback)), 'no truncated digits')
+})
+
+test('a gutterless grid: twelve columns of (W − 2M)/12 touch, and a card on them pads itself by the column inset', () => {
+  const px = new Map(derive({ preset: PRESETS.affine, n: 14, width: 1280, columns: 12 }).map((r) => [r.id, r.px]))
+  assert.equal(px.get('layout.grid.w-w-1280px-n-12'), (1280 - 2 * 30) / 12)
+  assert.equal(px.get('layout.grid.column-inset'), 5)
+  // negative control: the same width under standard keeps its gutters, so twelve columns and eleven gutters fill it
+  const st = new Map(derive({ preset: { ...PRESETS.standard, crisp: false }, n: 14, width: 1280, columns: 12 }).map((r) => [r.id, r.px]))
+  assert.ok(Math.abs(12 * st.get('layout.grid.w-w-1280px-n-12') + 11 * st.get('layout.grid.g') + 2 * st.get('layout.grid.m') - 1280) < 1e-9)
 })
