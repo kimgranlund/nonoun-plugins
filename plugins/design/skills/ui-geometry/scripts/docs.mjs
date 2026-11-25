@@ -2,11 +2,12 @@
 // Each block sits between <!-- generated:<name> --> and <!-- /generated:<name> -->; edit the source, never the block.
 //   roles   references/fit.md        from ROLES in fit.mjs
 //   ladder  references/equations.md  from containers() at n = 14, default density, card depth 4, standard
+//   lines   references/equations.md  from the affine preset: its source lines at n = 10, 14 and 22, and where it is not whole
 //   archetypes  references/equations.md  from references/archetypes.json and what each archetype's dials derive
 import { readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { containers, system, PRESETS, TIERS } from './derive.mjs'
+import { containers, system, PRESETS, TIERS, lines, lineText, wholeness } from './derive.mjs'
 import { ROLES } from './fit.mjs'
 import { loadArchetypes, applyArchetype, observe } from './archetypes.mjs'
 
@@ -36,7 +37,16 @@ export function archetypesTable() {
   return ['| Archetype | Family | Hero | n | Density | κ control / card | h/F derived | h/F band | Type cap | Signature | Recognised first / in two |', '|---|---|---|---|---|---|---|---|---|---|---|', ...rows].join('\n')
 }
 
-export const BLOCKS = { roles: ['fit.md', rolesTable], ladder: ['equations.md', ladderTable], archetypes: ['equations.md', archetypesTable] }
+export function linesTable() {
+  const P = PRESETS.affine, at = (n) => new Map(lines({ preset: P, n }).map((r) => [r.id, r]))
+  const L = at(14), px = [10, 14, 22].map((n) => at(n))
+  const rows = Object.keys(P.source).map((id) => `| ${L.get(id).symbol.replace(/\s+κ=[0-9.]+$/, '')} | \`${id}\` | ${lineText(L.get(id).line)} | ${px.map((m) => num(m.get(id).px)).join(' | ')} |`)
+  const w = wholeness({ preset: P })
+  const frac = [...w.fractional.map((r) => `| \`${r.id}\` | ${r.verdict} |`), ...w.halfStep.map((r) => `| \`${r.id}\` | even n |`)]
+  return ['| Length | Row | Line | n = 10 | 14 | 22 |', '|---|---|---|---|---|---|', ...rows, '', `Whole px with nothing snapped, n = ${w.from} to ${w.to}: ${w.checked} lengths checked, ${w.checked - w.fractional.length - w.halfStep.length} whole at every n.`, '', '| Row | Whole at |', '|---|---|', ...frac].join('\n')
+}
+
+export const BLOCKS = { roles: ['fit.md', rolesTable], ladder: ['equations.md', ladderTable], lines: ['equations.md', linesTable], archetypes: ['equations.md', archetypesTable] }
 
 export function sync({ check = false } = {}) {
   const drift = []

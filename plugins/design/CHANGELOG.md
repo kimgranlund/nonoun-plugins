@@ -4,6 +4,14 @@ The design plugin, newest first. Releases before this file are recorded in the r
 
 ## [Unreleased]
 
+### Added
+
+- `ui-geometry`: a length is a line a·n + b in the scope's font size, and a preset constant may be one (`{ "a": 2, "b": -8 }`) as well as a multiple of the unit q. An exact preset (`exact: true`, unit 1px) rounds nothing; `affine` is the one shipped (S = 2n − 8, I = n − 9, h = 4n − 26, r = n − 6), with 30 rows held to a measured kit's own lines by a test. `scripts/derive.mjs` gains `--lines` (each length's line), `--whole` (where each length is whole px with nothing snapped, exit 1 if any is not) and `--emit css|json` (custom properties with exact em fallbacks), and presets gain `cardRadius: 'level'`, `spacing.fieldGap`, `spacing.popover`, `spacing.dialog`, `grid`, `reasons` and `source`. `references/equations.md` › 21 has the model.
+
+### Changed
+
+- `ui-geometry`: `SKILL.md` states the line as the primitive and the unit as one way to give it. The unit presets print what they printed before (`ladder` is still the default). The message for a refused `cardRadius` names three values.
+
 ## [0.6.0] - 2026-11-22
 
 ### Changed

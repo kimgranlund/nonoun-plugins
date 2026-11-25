@@ -1,6 +1,6 @@
 # Equations
 
-The equations hold for any preset. The numbers are the standard preset. All lengths are in q unless they carry px. The worked column uses n = 14, so q = 4px, at default density (δ = 1) with κ = ¾.
+Every length is a line in the scope's font size: a·n + b px. A unit preset gives its constants as multiples of one unit q = a_q·n + b_q, so each length k·q is the line k·a_q·n + k·b_q; an exact preset gives each constant its own line (section 21). The equations hold for any preset. The numbers are the standard preset. All lengths are in q unless they carry px. The worked column uses n = 14, so q = 4px, at default density (δ = 1) with κ = ¾.
 
 For another preset, substitute its constants: a_q, b_q in q = a_q·n + b_q; I_δ for I; g_c; S; soft and κ_s in r(κ); d_c; the level multipliers ℓ. Values at the three densities are written compact / default / loose.
 
@@ -330,6 +330,7 @@ A border b sits inside the box, so it eats padding and radius.
 - **Device grid.** A length lands on whole device pixels when px · dpr is a whole number. Snap with round(px · dpr) / dpr.
 - **Fine patterns.** A pattern whose period is a few pixels (a dot or line grid, a hatch) is crisp only when its unit is whole device pixels: u_p = max(1, round(dpr)) / dpr CSS px (1px at 1x and 2x, 0.8px at 1.25x, 1.33px at 1.5x), re-read when the ratio changes (a `resolution` media query). Draw it as a small tile image scaled nearest-neighbour (`image-rendering: pixelated`) and sized in u_p, never with CSS gradients: a gradient is resampled smoothly, so at a fractional ratio every line smears into a band of in-between values.
 - **Crisp.** By default a preset is crisp at n: I and g_c snap to whole px (round half to even) and S to even px, then depths and gaps snap to whole px. At 14 and 18 nothing moves. At 16 (q = 5) S = 24, I = 8, g_c = 2, h = 40, item 36. Radii may still land on half px at odd q (13.5 at 15px); a curve anti-aliases anyway. With `crisp: false`, the old rule holds: half-q lengths are whole when n ≡ 2 mod 4, quarter-q lengths when n ≡ 6 mod 8.
+- **Exact.** A preset with `exact: true` snaps nothing: no inset, depth, gap or gutter is rounded, so every length is the line its constants give, at every n. Whether a line lands on whole px is then a property of its slope and offset, not of a rounding rule: a whole slope and a whole offset are whole at every whole n; a half slope is whole at every even n. `node scripts/derive.mjs --whole` lists every length that is not whole at every n, and where it is (section 21). A fractional px there means a constant is wrong for that n, not that a `round()` is missing.
 - **Stretched SVG.** A stroke drawn in an SVG that stretches to its box takes `vector-effect: non-scaling-stroke`, so the stroke width stays the system's width in CSS pixels; markers, dashes and text that must not stretch are drawn in HTML over it.
 
 ## 13. Vertical text centring
@@ -479,3 +480,83 @@ An archetype is a named character held as a profile: for each observable, the ba
 | terminal | terminal | the character grid | 16 | compact | 0 / 0 | 2.13 | 1.5 to 1.58 | title-md | monoShare, darkShare, faceWidth, regularity, occupancy, nSizes | 5 / 5 of 6 |
 | marketing | expressive | one message about the product | 18 | loose (stepped margin) | 1 / 0.5 | 3 | 2.5 to 3.32 | display-md | displayVh, contrast, nRadii, pagesLong, squareShare, nSizes | 27 / 37 of 41 |
 <!-- /generated:archetypes -->
+
+## 21. Lines and exact presets
+
+**The primitive.** A length is a line a·n + b, in px, of the scope's font size n. `node scripts/derive.mjs --lines` prints the line beside every row, for any preset; it is found by sampling the row at n, n + 2 and n + 4, so a row that crosses a floor, a cap, a snap or the bend of r(κ) there prints "not a line here". Under the standard preset without snapping h = 8q = 4n − 24 and I = 1.5q = 0.75n − 4.5.
+
+**Why a unit is not enough.** A unit preset ties every slope to every offset: each length is k·(a_q·n + b_q). A system whose slot is S = 2n − 8 and whose inset is I = n − 9 (so h = S + 2I = 4n − 26) has no such q, since S / I is not constant. So a preset constant may be a line, written `{ "a": 2, "b": -8 }`, with an optional floor `min` and cap `max` in px. With a unit, a line constant resolves at n to line(n) / q(n) multiples of q, and the equations do not change. A type role may be `[size line, leading line]`; a level may be a line, which is that length whatever I is; a card depth may be a named line, `{ "name": "slot", "a": 2, "b": -8 }`.
+
+**An exact preset** sets `unit` to 0·n + 1 (q is one px), `exact: true` and `crisp: false`, and gives its constants as lines. Three more keys serve it and any other preset:
+
+- `cardRadius: 'level'`: the radius steps one inset per level out, whatever the padding: a nested control r − I, a control r, a card or panel r + I, a dialog r + 2I. A card inside a card is one level in, r.
+- `spacing.fieldGap`, `spacing.popover` and `spacing.dialog`: the label gap and the popover and dialog depths as their own lines, where they are not g_c, ¾d and 1½d.
+- `grid`: `gutter`, `inset` and `columns` for a gutterless grid. The columns touch; what is placed on them pads itself by the column inset, half the gutter, so a rule or a band can still run the full width and nothing needs a negative margin.
+
+`reasons` holds, per input, why it is what it is. A constant with no reason is derived from those, or inherited.
+
+**Density.** In an exact preset the three insets may be one line. A denser or looser region is then a scope with another n, which restarts the system (axiom 1); `--density` still selects among the three where they differ.
+
+**Curvature.** r(κ) is a line in n at any fixed κ on one side of the soft anchor, and at the anchor it is the preset's `soft` line (r = n − 6 in the affine preset), capped at h/2.
+
+**The affine preset** (`--preset affine`) is such a system. The rows below are a measured kit's own lines, and `scripts/derive.test.mjs` holds the calculator to them (`PRESETS.affine.source`); its other constants are the nearest expression of the standard preset's rows in the same lines, and are not that kit's. Three rows differ from that kit and are not in the list: the switch thumb (a.md − 2g_c gives the mark, the kit takes 4b off it), the popover depth and the menu item, which the kit does not state as lines.
+
+<!-- generated:lines -->
+| Length | Row | Line | n = 10 | 14 | 22 |
+|---|---|---|---|---|---|
+| S | `controls.control.s` | 2n − 8 | 12 | 20 | 36 |
+| I | `controls.control.i` | n − 9 | 1 | 5 | 13 |
+| h | `controls.control.h` | 4n − 26 | 14 | 30 | 62 |
+| h_o | `controls.control.h_o` | 2n − 8 | 12 | 20 | 36 |
+| T | `controls.control.t` | 2n − 18 | 2 | 10 | 26 |
+| a.sm | `controls.icon.a.sm` | n | 10 | 14 | 22 |
+| a.md | `controls.icon.a.md` | 1.5n − 4 | 11 | 17 | 29 |
+| a.lg | `controls.icon.a.lg` | 2n − 8 | 12 | 20 | 36 |
+| r | `controls.curvature.r` | n − 6 | 4 | 8 | 16 |
+| r_s | `controls.curvature.r_s` | 3 | 3 | 3 | 3 |
+| switch track | `controls.mark.switch-track` | 3n − 12 | 18 | 30 | 54 |
+| checkbox radius | `controls.mark.checkbox-radius` | 0.375n − 1 | 2.75 | 4.25 | 7.25 |
+| R card-slot | `containers.curvature.r-card-slot` | 2n − 15 | 5 | 13 | 29 |
+| R dialog | `containers.curvature.r-dialog` | 3n − 24 | 6 | 18 | 42 |
+| dialog inset | `containers.frame.dialog-inset` | 4n − 26 | 14 | 30 | 62 |
+| page inset | `containers.frame.page-inset` | 4n − 26 | 14 | 30 | 62 |
+| panel inset | `containers.frame.panel-inset` | 2n − 8 | 12 | 20 | 36 |
+| label → control, control → help | `containers.gap.label-control-control-help` | n − 9 | 1 | 5 | 13 |
+| rail | `containers.width.rail` | 8n − 42 | 38 | 70 | 134 |
+| panel | `containers.width.panel` | 16n + 16 | 176 | 240 | 368 |
+| measure | `layout.width.measure` | 44n | 440 | 616 | 968 |
+| G | `layout.grid.g` | 2n − 18 | 2 | 10 | 26 |
+| column inset | `layout.grid.column-inset` | n − 9 | 1 | 5 | 13 |
+| label | `unit.type.label` | n − 2 | 9 | 12 | 20 |
+| body-md | `unit.type.body-md` | n | 10 | 14 | 22 |
+| title-md | `unit.type.title-md` | n + 2 | 12 | 16 | 24 |
+| heading-sm | `unit.type.heading-sm` | 2n − 10 | 10 | 18 | 34 |
+| heading-md | `unit.type.heading-md` | 2n − 8 | 12 | 20 | 36 |
+| display-md | `unit.type.display-md` | 4n − 26 | 14 | 30 | 62 |
+| body-md line | `unit.type.body-md-line` | 2n − 8 | 12 | 20 | 36 |
+
+Whole px with nothing snapped, n = 10 to 24: 155 lengths checked, 139 whole at every n.
+
+| Row | Whole at |
+|---|---|
+| `controls.control.d` | odd n |
+| `controls.icon.a.md-offset` | n = 12, 16, 20, 24 |
+| `controls.mark.choice-label` | n = 12, 16, 20, 24 |
+| `controls.mark.checkbox-radius` | n = 16, 24 |
+| `controls.mark.radio-dot` | n = 12, 16, 20, 24 |
+| `containers.frame.composite-inset` | odd n |
+| `controls.icon.a.sm-offset` | even n |
+| `controls.icon.a.md` | even n |
+| `controls.mark.checkbox-box` | even n |
+| `controls.mark.radio-box` | even n |
+| `controls.mark.switch-thumb` | even n |
+| `controls.track.progress-slider-track` | even n |
+| `controls.track.slider-thumb` | even n |
+| `containers.frame.nest-f-0.25-depth` | even n |
+| `containers.frame.nest-f-0.75-depth` | even n |
+| `containers.gap.separate-rows-card-d` | even n |
+<!-- /generated:lines -->
+
+The fractional rows all come from two places: the medium icon and mark, a blend halfway between the text size and the slot (1.5n − 4), whose half and quarter (its margin in the slot, a radio dot, a check box corner) land between px except at every second or fourth n; and I/2, the composite edge. A kit that needs them whole at every n changes the blend, not the rounding.
+
+**What a kit reads.** `node scripts/derive.mjs --emit css` prints one custom property per length that is a line, `calc(a * var(--n) + b px)`, with its fallback at n = 16 as an exact ratio in em (`calc(19 / 8 * 1em)`, never truncated digits); `--emit json` prints the same as a manifest (id, name, line, px, declaration, fallback). `--n` is the scope's font size: register it as a length equal to 1em, or set it per scope.

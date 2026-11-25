@@ -581,7 +581,7 @@ test('a floored length is not a line across its floor', () => {
   assert.deepEqual(lineOf({ preset: PRESETS.affine, n: 14 }, 'unit.type.label'), { a: 1, b: -2 })
 })
 
-test('affine: every source line is the line the calculator derives, at 12, 14 and 22; a changed constant is caught', () => {
+test('affine: every source line is derived', () => {
   const diff = (preset, n) => { const L = new Map(lines({ preset, n }).map((r) => [r.id, r.line])); return Object.entries(PRESETS.affine.source).filter(([id, [a, b]]) => { const l = L.get(id); return !l || l.a !== a || l.b !== b }).map(([id]) => id) }
   for (const n of [12, 14, 22]) assert.deepEqual(diff(PRESETS.affine, n), [], `at n = ${n}`)
   // negative control: a slot offset of −6 moves S, h and what reads them
@@ -604,7 +604,7 @@ test("cardRadius 'level' steps the radius one inset per level: 3, 8, 13 and 18px
   assert.equal(dialog.radius[0].q, 18)
 })
 
-test('wholeness: affine is fractional in six named rows and nowhere else; unsnapped unit presets are the negative controls', () => {
+test('wholeness: affine, with unit presets as negative controls', () => {
   const w = wholeness({ preset: PRESETS.affine })
   assert.deepEqual(w.fractional.map((r) => r.id).sort(), ['containers.frame.composite-inset', 'controls.control.d', 'controls.icon.a.md-offset', 'controls.mark.checkbox-radius', 'controls.mark.choice-label', 'controls.mark.radio-dot'])
   assert.ok(w.halfStep.some((r) => r.id === 'controls.icon.a.md'))
