@@ -14,7 +14,8 @@ router: .sdlc/AGENTS.md  # how to claim and close this ticket
 Decide and apply how `ui-colors` handles warm text steps 11 and 12 reading brown at the default targets.
 
 ## Intent
-- Do: either lower the default step 11/12 targets to about Lc 75 / 90 (still APCA body text), or keep the defaults and make the existing Plain-word request ("text looks brown") give exact values. The choice changes default output, so ask the user before choosing the first.
+- Do: keep the defaults (user decision 2026-11-25: document the request) and make the existing Plain-word request ("text looks brown") in `references/system.md` give exact request values for steps 11 and 12 (about Lc 75 / 90), with the light orange 11 and 12 they produce, measured with `scripts/system.mjs`.
+- Decision: the user chose to document the request, not to lower the defaults.
 - Non-goals: other steps.
 - Done when: the criteria below hold.
 
@@ -24,9 +25,9 @@ Decide and apply how `ui-colors` handles warm text steps 11 and 12 reading brown
 - Source write-up: `/Volumes/kimba/Downloads/ui-colors-updates/ui-colors-pr.md` (read-only; never write under `/Volumes/kimba`), "Note on text steps".
 
 ## Acceptance criteria
-- The user's choice is recorded in this ticket's Outcome.
-- If defaults change: the default-output digest in `check.mjs` is updated with the reason, and a check shows light orange 11 and 12 at the new targets. If not: `references/system.md` names the request values that give the lighter text.
+- `references/system.md` names the request values that give the lighter text and the light orange 11 and 12 hex values they produce; running that request with `scripts/system.mjs` reproduces those hex values.
+- A `{}` request's output is byte-identical to `main`.
 - `node scripts/check.mjs` passes; packaging passes.
 
 ## Constraints
-- No default change without the user's word.
+- No default change. Edit only `references/system.md` (and `SKILL.md` only if its mapping row must change, staying under 18,000 characters). T-0884 runs in parallel on `system.mjs` and `check.mjs`: do not touch them, `plugins/design/AGENTS.md` or any CHANGELOG.
