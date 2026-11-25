@@ -60,6 +60,7 @@
 - [Release 0.20.11](reports/release-0.20.11.md): the run.sh lane gate, role bodies for sub-agent execution, hook perf, the 0.20.11 fix batch (solo_run process group, plan review L4 and L5 only, gate_lock.py and more) and the product name SDLC, with verifier history and known limits.
 - [Haiku 5.5 pin](reports/2026-10-07-haiku-5-5.md): dated record of moving the scout L1 row and the messenger to `claude-haiku-5-5` (T-0353): the sites changed, the grep inventory, the eval and lock, the live scout proof (the alias `haiku` resolved to `claude-haiku-5-5`), and the unrefit haiku price rate.
 - [Release 0.22.6](reports/2026-10-12-release-0-22-6.md): a patch with the single `/plan` skill, the opt-in inner-loop profile, merge ops guidance, a load cap for the gate lock, and the first Astra review fixes; Progressive Context unchanged at 0.1.2.
+- [Release 1.0.13](reports/2026-11-25-release-1-0-13.md): `design` 0.7.2 with `massimo-vignelli` on opus like the other designer agents.
 - [Release 1.0.12](reports/2026-11-24-release-1-0-12.md): `design` 0.7.1 with a twelfth designer agent, `massimo-vignelli`.
 - [Release 1.0.11](reports/2026-11-24-release-1-0-11.md): `design` 0.7.0 with eleven designer agents and `ui-geometry` lengths as lines, with `affine` the default preset.
 - [Release 1.0.10](reports/2026-11-22-release-1-0-10.md): `design` 0.6.0 with `ui-explore-variants` renamed `explore-variants` for any open question with several answers.

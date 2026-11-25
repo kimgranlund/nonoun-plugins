@@ -4,6 +4,14 @@ SDLC releases (named SDLC Lite before 1.0.0), newest first, in [Keep a Changelog
 
 ## [Unreleased]
 
+## [1.0.13] - 2026-11-25
+
+Report: [docs/reports/2026-11-25-release-1-0-13.md](docs/reports/2026-11-25-release-1-0-13.md). Marketplace release: `design` 0.7.2; `sdlc` 1.1.0, `context` 0.8.0 and `dev-tools` 0.1.1 are unchanged. No tickets.
+
+### Changed
+
+- `design` 0.7.2: `design:massimo-vignelli` runs on `model: opus` like the other eleven designer agents, synced from its source.
+
 ## [1.0.12] - 2026-11-24
 
 Report: [docs/reports/2026-11-24-release-1-0-12.md](docs/reports/2026-11-24-release-1-0-12.md). Marketplace release: `design` 0.7.1; `sdlc` 1.1.0, `context` 0.8.0 and `dev-tools` 0.1.1 are unchanged. No tickets.

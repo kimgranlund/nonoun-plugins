@@ -1,6 +1,6 @@
 {
   "name": "design",
-  "version": "0.7.1",
+  "version": "0.7.2",
   "description": "UI construction, UI geometry, UI colors, UI materials, content, interactions, UI kits, variant exploration, bento showcases, inspector jigs, component variants, wireframe review, design critique and twelve designer agents (Claude Code only).",
   "author": {
     "name": "Kim Granlund"

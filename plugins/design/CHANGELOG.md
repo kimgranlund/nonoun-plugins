@@ -4,6 +4,8 @@ The design plugin, newest first. Releases before this file are recorded in the r
 
 ## [Unreleased]
 
+## [0.7.2] - 2026-11-25
+
 ### Changed
 
 - `massimo-vignelli` runs on `model: opus` like the other eleven agents, synced from its source on the MacBook share.
