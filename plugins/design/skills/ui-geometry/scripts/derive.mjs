@@ -760,7 +760,14 @@ const lev = (a, b) => { const m = Array.from({ length: a.length + 1 }, (_, i) =>
 
 function loadPreset(name) {
   if (!name || name in PRESETS) return PRESETS[name ?? DEFAULT_PRESET]
-  return { ...PRESETS.standard, ...validatePreset(JSON.parse(readFileSync(name, 'utf8')), name) }
+  let text
+  try { text = readFileSync(name, 'utf8') } catch (e) {
+    if (e.code !== 'ENOENT') throw e
+    const names = Object.keys(PRESETS), [near, dist] = names.map((x) => [x, lev(name.toLowerCase(), x.toLowerCase())]).sort((a, b) => a[1] - b[1])[0]
+    console.error(`unknown preset "${name}": use one of ${names.join(', ')} or a path to a preset JSON${dist <= 3 ? ` (did you mean "${near}"?)` : ''}`)
+    process.exit(2)
+  }
+  return { ...PRESETS.standard, ...validatePreset(JSON.parse(text), name) }
 }
 
 /** An archetype's dials, read here so parse stays synchronous; scripts/archetypes.mjs holds the rest. */
@@ -834,6 +841,9 @@ function printContainers(o) {
 
 const fmt = (x) => (Number.isNaN(x) ? '—' : String(Math.round(x * 1000) / 1000))
 
+/** True when a non-default density was asked of a preset whose inset is one line: density then changes nothing. */
+const densityIsScope = (o) => o.density !== 'default' && new Set(Object.values(o.preset.inset).map((v) => JSON.stringify(v))).size === 1
+
 const isMain = () => { try { return realpathSync(process.argv[1]) === fileURLToPath(import.meta.url) } catch { return false } }
 
 // Async so the archetype report can import archetypes.mjs, which imports this module, after this module has loaded.
@@ -841,6 +851,7 @@ if (isMain()) (async () => {
   const o = parse(process.argv.slice(2))
   if (!(o.density in o.preset.inset)) throw new Error(`density must be one of ${Object.keys(o.preset.inset).join(', ')}`)
   if (o.n < o.preset.unit.nMin) console.error(`warning: n = ${o.n} is under the preset's ${o.preset.unit.nMin}px minimum`)
+  if (densityIsScope(o)) console.error(`note: --density ${o.density} has no effect under the ${o.preset.name ?? 'preset'} preset: its inset is one line for every density, so a denser or looser region is a scope with another n (--n)`)
   if (o.field || o.gutter) return printMultiGrid(o)
   if (o.whole) {
     const w = wholeness({ ...o, to: o.to ?? 24 })
@@ -864,7 +875,7 @@ if (isMain()) (async () => {
   else if (o.elevation) printElevation(o)
   else if (o.json) console.log(JSON.stringify(rows, null, 2))
   else {
-    console.log(`n = ${fmt(o.n)}px${o.viewport ? ` (fluid at W = ${o.viewport}px)` : ''}  q = ${fmt(system(o.preset).q(o.n))}px  density ${o.density}  κ ${JSON.stringify(o.kappa)}  dpr ${o.dpr}\n`)
+    console.log(`n = ${fmt(o.n)}px${o.viewport ? ` (fluid at W = ${o.viewport}px)` : ''}  q = ${fmt(system(o.preset).q(o.n))}px  density ${o.density}${densityIsScope(o) ? ' (no effect: a scope with another n)' : ''}  κ ${JSON.stringify(o.kappa)}  dpr ${o.dpr}\n`)
     const off = rows.filter((r) => !Number.isNaN(r.px) && !onGrid(r.px, o.dpr) && !['type', 'text', 'measure', 'icon stroke'].includes(r.group))
     if (off.length) console.log(`off the ${o.dpr}x device grid (snap to ${1 / o.dpr}px), ${off.length} lengths: ${off.slice(0, 12).map((r) => `${r.symbol} ${fmt(r.px)}→${fmt(snap(r.px, o.dpr))}`).join('; ')}${off.length > 12 ? `; and ${off.length - 12} more (--json for all)` : ''}\n`)
     if (o.archetype) console.log((await import('./archetypes.mjs')).archetypeReport(o.archetype, o))

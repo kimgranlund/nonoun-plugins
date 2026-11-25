@@ -8,6 +8,8 @@ priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
 created: 2026-11-25
 claimed_by: nonoun-author 2026-11-25
+branch: lane/T-0884-t0884
+worktree: ../sdlc-lite.worktrees/T-0884-t0884
 router: .sdlc/AGENTS.md  # how to claim and close this ticket
 ---
 
@@ -32,3 +34,13 @@ In dark mode, step 10 (hover) of a solid at the gamut cusp differs visibly from 
 
 ## Constraints
 - Default output (`{}`) unchanged.
+
+## Replan
+2026-11-25, after the solo's block (`.sdlc/runtime/tasks/0884-ui-colors-cusp-step10/0884-solo-L2.md`): the six figures in Context came from a `familyAnchors` run and do not reproduce at base, and a default rule would change `{}` output (dark and dim yellow and lime hover ΔE 2.96 to 3.84). User decision 2026-11-25: an opt-in request key.
+
+- Do: add a request key (name it, e.g. `hoverMin`, a ΔE in OKLab ×100) that, when set, places step 10 of any solid, anchored or cusp, so that step 9 to 10 ΔE is at least that value in every mode, by moving away from the solid (darker or less chroma, keeping its hue). Unset, output is unchanged. Document it in `references/system.md` next to the hover rule, and the opt-in in the Plain-word requests ("hover barely changes").
+- Acceptance criteria, replacing the ones above:
+  - With `{"settings":{"hueSet":"radix"},"hoverMin":4}` every family's step 9 to 10 ΔE is at least 4 in every mode, shown by a new `check.mjs` check; the same with the report's 25 `familyAnchors` too.
+  - A negative control that drops the key's effect fails that check; an invalid value (negative, or not a number) exits 2.
+  - A `{}` request's output is byte-identical to the base and the recorded digest is unchanged; `node scripts/check.mjs` passes every check with every control biting; `python3 scripts/check-packaging.py` exits 0.
+- Constraints: do not edit `plugins/design/AGENTS.md` or any CHANGELOG (T-0889 runs on the same files; the conductor records both at landing).
