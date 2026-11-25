@@ -4,6 +4,19 @@ SDLC releases (named SDLC Lite before 1.0.0), newest first, in [Keep a Changelog
 
 ## [Unreleased]
 
+## [1.0.11] - 2026-11-24
+
+Report: [docs/reports/2026-11-24-release-1-0-11.md](docs/reports/2026-11-24-release-1-0-11.md). Marketplace release: `design` 0.7.0; `sdlc` 1.1.0, `context` 0.8.0 and `dev-tools` 0.1.1 are unchanged. One ticket (T-0882) and PR #104. Details are in [the design changelog](plugins/design/CHANGELOG.md).
+
+### Added
+
+- `design`: eleven designer agents, Claude Code only, called as `design:<name>` (`dieter-rams`, `ive-newson`, `jan-tschichold`, `john-maeda`, `karl-gerstner`, `le-corbusier`, `max-bill`, `muller-brockmann`, `muriel-cooper`, `naoto-fukasawa`, `wim-crouwel`) (T-0882).
+- `design`: `ui-geometry` gives each length as a line a·n + b in the font size, with exact presets, `derive.mjs --lines`, `--whole` and `--emit css|json`, `fit.mjs --lines`, and the generated `references/lines.md` (#104).
+
+### Changed
+
+- `design` 0.7.0: the `ui-geometry` default preset is `affine`, no longer `ladder`. `derive.mjs` with no `--preset` answers in px; pass `--preset ladder` for the earlier output (#104).
+
 ## [1.0.10] - 2026-11-22
 
 Report: [docs/reports/2026-11-22-release-1-0-10.md](docs/reports/2026-11-22-release-1-0-10.md). Marketplace release: `design` 0.6.0; `sdlc` 1.1.0, `context` 0.8.0 and `dev-tools` 0.1.1 are unchanged. No tickets: PR #103. Details are in [the design changelog](plugins/design/CHANGELOG.md).
