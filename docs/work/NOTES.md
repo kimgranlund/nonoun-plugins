@@ -1090,3 +1090,7 @@
 ## T-0883: ui-colors: family anchors, role-name checks, one bright-hue verdict, families.mjs (2026-11-25)
 
 - note: the author's reported digest failure (`neutrals: default run byte-identical to the recorded digest`) did not reproduce here, on the lane or on main.
+
+## T-0888: ui-geometry: an unknown --preset fails with a raw ENOENT (2026-11-25)
+
+- note: redck.py deviations printed no process deviation lines; no (red) criteria in the handoff.

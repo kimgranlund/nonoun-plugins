@@ -2,7 +2,7 @@
 id: T-0888
 title: "ui-geometry: an unknown --preset fails with a raw ENOENT"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -33,3 +33,13 @@ An unknown `--preset` name gets a clear error naming the built-in presets, not a
 ## Constraints
 - T-0887 runs in a parallel lane on the same `derive.mjs`: change only the function you need, put your test only in `scripts/preset.test.mjs`, and do not edit `plugins/design/AGENTS.md` or any CHANGELOG (the conductor records both at landing).
 - None.
+
+## Outcome
+
+2026-11-25 · lane: solo L1 · verdict: closed by reason (delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed; gate: full) · verifier: verifier-L1 (opus) · base: 708a30071c7c
+- Changed: see commits
+- Commits: 9ed6d80 T-0888: ui-geometry unknown --preset exits 2 with built-ins and a hint; b66a0a5 T-0888: record lane T-0888-t0888
+- Check: 1 `--preset nosuch` exits 2 naming `affine` and `ladder`; `--preset afine` suggests `affine`: pass
+- Check: 2 test in new `scripts/preset.test.mjs`, `node --test scripts/*.test.mjs` passes: pass
+- Check: 3 a valid preset path still loads: pass
+- Follow-up: note: redck.py deviations printed no process deviation lines; no red... -> notes.md
