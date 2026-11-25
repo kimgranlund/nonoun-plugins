@@ -760,7 +760,14 @@ const lev = (a, b) => { const m = Array.from({ length: a.length + 1 }, (_, i) =>
 
 function loadPreset(name) {
   if (!name || name in PRESETS) return PRESETS[name ?? DEFAULT_PRESET]
-  return { ...PRESETS.standard, ...validatePreset(JSON.parse(readFileSync(name, 'utf8')), name) }
+  let text
+  try { text = readFileSync(name, 'utf8') } catch (e) {
+    if (e.code !== 'ENOENT') throw e
+    const names = Object.keys(PRESETS), [near, dist] = names.map((x) => [x, lev(name.toLowerCase(), x.toLowerCase())]).sort((a, b) => a[1] - b[1])[0]
+    console.error(`unknown preset "${name}": use one of ${names.join(', ')} or a path to a preset JSON${dist <= 3 ? ` (did you mean "${near}"?)` : ''}`)
+    process.exit(2)
+  }
+  return { ...PRESETS.standard, ...validatePreset(JSON.parse(text), name) }
 }
 
 /** An archetype's dials, read here so parse stays synchronous; scripts/archetypes.mjs holds the rest. */
