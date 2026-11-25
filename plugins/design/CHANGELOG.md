@@ -6,6 +6,7 @@ The design plugin, newest first. Releases before this file are recorded in the r
 
 ### Added
 
+- `ui-colors`: opt-in request key `hoverMin` (OKLab ΔE ×100, 0 to 100) moves step 10 of any solid, anchored or at the gamut cusp, until hover differs from step 9 by at least that much in every mode, keeping hue; unset, output is unchanged. The step-10 figures in the 2026-11-24 report came from an anchored run; at default settings dark yellow and lime hover sit near ΔE 3 (T-0884).
 - `ui-colors`: `familyAnchors` pins a family by name (`{ "<family>": { value, dark?, step?, darkStep?, reach?, name? } }`, step 9 by default) with a role anchor's semantics and no role, so one run pins all 25 Radix accent step-9 values. `scripts/families.mjs` lays a system out one file per family per gamut (`colors-p3/`, `colors/`) with `light-dark()` variables, `globals.css`, semantic files, `index.css`, `manifest.json` and a generated `README.md` and `USAGE.md`. `references/system.md` gains Family anchors, Plain-word requests and Family files. Evidence: `docs/reports/2026-11-24-ui-colors-radix-match.md` (T-0883).
 
 ### Fixed
