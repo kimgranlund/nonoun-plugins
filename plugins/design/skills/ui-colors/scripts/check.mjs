@@ -309,6 +309,49 @@ function checkBrand(j, css, jLoose) {
   }
   return f;
 }
+// Family anchors: pin families by name (no role), exact at their step 9 in every scheme, the roles untouched, no internal
+// family: role in any output; and role names outside the system's own exit 2 instead of being dropped.
+const FAMILY_ANCHORS = { orange: { value: '#f76b15', dark: '#f76b15' }, teal: { value: '#12a594' } };
+const FAMILY_REQ = { extraModes: false, tonal: false, alpha: false, series: false, dtcg: false, settings: { hueSet: 'radix' }, familyAnchors: FAMILY_ANCHORS, brandExact: true };
+const BAD_FAMILY = [{ roles: { 'pin-orange': 'orange' } }, { anchors: [{ role: 'pin-orange', value: '#f76b15' }] }, { modes: { dark: { roles: { accent: 'orange' } } } },
+  { familyAnchors: [] }, { familyAnchors: { orange: { value: '#f76b15', role: 'primary' } } }, { familyAnchors: { Orange: { value: '#f76b15' } } },
+  { settings: { hueSet: 'radix' }, familyAnchors: { tealish: { value: '#12a594' } } }, { settings: { hueSet: 'radix' }, familyAnchors: { indigo: { value: '#3e63dd' } }, anchors: [{ role: 'primary', value: '#3e63dd' }] },
+  { familyAnchors: { orange: { value: '#f76b15', step: 13 } } }];
+function checkFamilyAnchors(j, css) {
+  const f = [];
+  for (const [id, M] of Object.entries(j.modes)) {
+    if (Object.keys(M.roles).some((r) => r.startsWith('family:'))) f.push(`${id}: an internal family: role leaked into roles`);
+    for (const [fam, a] of Object.entries(FAMILY_ANCHORS)) {
+      const x = M.anchorReport.find((r) => r.role === 'family:' + fam); if (!x) { f.push(`${id}: no anchorReport entry for family ${fam}`); continue; }
+      if (x.family !== fam) f.push(`${id}: family anchor ${fam} landed on ${x.family}`);
+      const want = M.scheme === 'dark' ? a.dark ?? a.value : a.value, got = M.ramps[fam]?.[8]?.oklch; // brandExact: the light value is the dark one too
+      if (!got) { f.push(`${id}: no ${fam} ramp`); continue; }
+      const d = dE(hexOk(want), got); if (d > 0.5) f.push(`${id}: ${fam} anchor ${want} is not ${fam} step 9 (ΔE ${d.toFixed(2)})`);
+    }
+    if (M.roles.primary !== 'indigo' || M.roles.info !== 'cyan') f.push(`${id}: family anchors moved a role (primary ${M.roles.primary}, info ${M.roles.info})`);
+  }
+  if (/family:/.test(css)) f.push('system.css carries an internal family: name');
+  return f;
+}
+// Family files (families.mjs): every variable of every folder resolves to a colour in both schemes through light-dark() and var(),
+// with no missing reference; each family file is exact to the system's value; the manifest lists every file with its hash.
+function familyVars(dir) { const v = {}; for (const f of readdirSync(dir).filter((x) => x.endsWith('.css') && x !== 'index.css')) for (const m of readFileSync(join(dir, f), 'utf8').matchAll(/^\s+(--[\w-]+): (.+);$/gm)) v[m[1]] = m[2]; return v; }
+function checkFamilyFiles(root, j, vars) {
+  const f = [], folders = j.target === 'display-p3' ? ['colors-p3', 'colors'] : ['colors'];
+  for (const d of folders) { const v = vars?.[d] ?? familyVars(join(root, d)); let n = 0;
+    const res = (x, mode, depth = 0) => { if (depth > 20) throw new Error('loop'); x = x.replace(/^light-dark\(var\((--[\w-]+)\), var\((--[\w-]+)\)\)$/, (_, a, b) => `var(${mode === 'light' ? a : b})`);
+      const m = x.match(/^var\((--[\w-]+)\)$/); if (m) { if (!(m[1] in v)) throw new Error('missing ' + m[1]); return res(v[m[1]], mode, depth + 1); } return x; };
+    for (const k of Object.keys(v)) for (const mode of ['light', 'dark']) { n++; try { const c = res(v[k], mode); if (!/^(oklch\(|color\(|#|transparent|rgba?\()/.test(c) && !/^\d/.test(c)) f.push(`${d}: ${k} in ${mode} resolves to ${c}`); } catch (e) { f.push(`${d}: ${k} in ${mode}: ${e.message}`); } }
+    if (!n) f.push(`${d}: no variables`);
+    if (d === 'colors-p3') for (const fam of j.families.all) for (const [mode, M] of Object.entries({ light: j.modes.light, dark: j.modes.dark })) {
+      const want = M.variables[`--colors-${fam}-9`], got = (() => { try { return res(v[`--colors-${fam}-9`] ?? '', mode); } catch { return ''; } })();
+      if (!want || !got.startsWith('oklch(')) { f.push(`${d}: ${fam} 9 missing in ${mode}`); continue; }
+      const e = dE(nums(want), nums(got)); if (e > 0.05) f.push(`${d}: ${fam} 9 in ${mode} is ΔE ${e.toFixed(2)} from the system`); } }
+  const man = readJson(join(root, 'manifest.json'));
+  for (const x of man.files) { const p = join(root, x.path); if (!existsSync(p)) { f.push(`manifest lists ${x.path}, which is missing`); continue; } if (createHash('sha256').update(readFileSync(p)).digest('hex') !== x.sha256) f.push(`manifest hash of ${x.path} is stale`); }
+  for (const doc of ['README.md', 'USAGE.md', 'globals.css']) if (!existsSync(join(root, doc))) f.push(`${doc} missing`);
+  return f;
+}
 function checkBadRequests(list) {
   const f = [];
   list.forEach((rq, i) => { try { runSystem({ ...rq, extraModes: false, tonal: false, alpha: false, series: false, dtcg: false }, join(tmp, `bad-${i}-${Math.random().toString(36).slice(2, 8)}`)); f.push(`${JSON.stringify(rq)} was accepted`); } catch (e) { if (e.status !== 2) f.push(`${JSON.stringify(rq)} exited ${e.status}, not 2`); } });
@@ -777,6 +820,7 @@ try {
   // Endpoints: both pure (the inverse pair follows them), and white alone (only that side follows).
   const outE = join(tmp, 'endpoints'), outE2 = join(tmp, 'endpoints-white'); runSystem({ extraModes: false, tonal: false, endpoints: { white: 'pure', black: 'pure' } }, outE); runSystem({ extraModes: false, tonal: false, endpoints: { white: 'pure' } }, outE2);
   const jE = readJson(join(outE, 'system.json')), jE2 = readJson(join(outE2, 'system.json'));
+  const outFA = join(tmp, 'family-anchors'); runSystem(FAMILY_REQ, outFA); const outFF = join(tmp, 'family-files'); execFileSync(process.execPath, [here + 'families.mjs', '--from', outFA, '--out', outFF], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }); const jFA = readJson(join(outFA, 'system.json')), cssFA = readFileSync(join(outFA, 'system.css'), 'utf8');
   const outB = join(tmp, 'brand'), outBL = join(tmp, 'brand-loose'); runSystem(BRAND, outB); runSystem({ ...BRAND, brandExact: false, autoDark: true, extraModes: false }, outBL);
   const jB = readJson(join(outB, 'system.json')), cssB = readFileSync(join(outB, 'system.css'), 'utf8'), jBL = readJson(join(outBL, 'system.json'));
   const jT = readJson(join(outT, 'system.json')), cssT = readFileSync(join(outT, 'system.css'), 'utf8');
@@ -871,6 +915,9 @@ try {
     'translucent: bad values exit 2': () => checkBadRequests(BAD_TRANSLUCENT),
     'brand colours: accents exact at step 9 in every mode (brandExact), no auto-dark block, no data roles, a renamed family, anchored families off the cusp': () => checkBrand(jB, cssB, jBL),
     'brand colours: bad roles, anchor steps, autoDark and familyNames exit 2': () => checkBadRequests(BAD_BRAND),
+    'family anchors: exact at step 9 in every scheme, roles untouched, no internal names in the output': () => checkFamilyAnchors(jFA, cssFA),
+    'family files: every variable resolves in both schemes, step 9 exact to the system, manifest hashes current (families.mjs)': () => checkFamilyFiles(outFF, jFA),
+    'family anchors and role names: unknown roles, unknown families, a family a role anchor pins and bad keys exit 2': () => checkBadRequests(BAD_FAMILY),
     'showcase: the runs have anchor, APCA-miss and key-run flags to check': () => (/data-flag="anchor-order"/.test(sc4) && /data-flag="anchor-clip"/.test(sc4) && /data-flag="lc-miss"/.test(sc5) && /data-flag="keyrun"/.test(sc5) ? [] : ['a showcase run lacks the failures the controls need']),
   };
   for (const [name, fn] of Object.entries(checks)) record(name, fn());
@@ -907,6 +954,12 @@ try {
   control('a renamed family emitted under its hue name', () => checkBrand(jB, cssB + '\n:root { --colors-indigo-9: red; }', jBL));
   control('a data role written with series false', () => checkBrand(jB, cssB + '\n:root { --colors-data-1: red; }', jBL));
   control('an anchored family moved to its cusp', () => { const x = clone(jBL); const r = x.modes.dark.anchorReport.find((a) => a.role === 'secondary'); x.modes.dark.solidLabels[r.family].cusp = true; return checkBrand(jB, cssB, x); });
+  control('a family file with a missing reference', () => { const v = familyVars(join(outFF, 'colors-p3')); delete v['--colors-indigo-9']; return checkFamilyFiles(outFF, jFA, { 'colors-p3': v, colors: familyVars(join(outFF, 'colors')) }); });
+  control('a family file with a moved step 9', () => { const v = familyVars(join(outFF, 'colors-p3')); v['--colors-orange-9'] = 'oklch(0.6 0.19 45)'; return checkFamilyFiles(outFF, jFA, { 'colors-p3': v, colors: familyVars(join(outFF, 'colors')) }); });
+  control('a family anchor off its step 9', () => { const x = clone(jFA); x.modes.light.ramps.orange[8].oklch[0] -= 0.05; return checkFamilyAnchors(x, cssFA); });
+  control('a family anchor that moved a role', () => { const x = clone(jFA); x.modes.dark.roles.primary = 'orange'; return checkFamilyAnchors(x, cssFA); });
+  control('an internal family: role in the output', () => checkFamilyAnchors(jFA, cssFA + '\n--colors-family:orange-solid: red;'));
+  control('a valid family anchor in the bad list', () => checkBadRequests([{ settings: { hueSet: 'radix' }, familyAnchors: { orange: { value: '#f76b15' } } }]));
   control('a valid role hue in the bad list', () => checkBadRequests([{ roles: { primary: 'h85.5' } }, { roles: { primary: 'oklch:84' } }]));
   control('a requested translucent role at another alpha', () => { const x = clone(jT); x.modes.dark.variables['--colors-veil-a'] = x.modes.dark.variables['--colors-veil-a'].replace(/\/ [\d.]+\)$/, '/ 0.5)'); return checkTranslucent(x, cssT, TR.translucent, j1); });
   control('a requested translucent role missing from one mode', () => { const x = clone(jT); delete x.modes.dim.variables['--colors-veil-b']; return checkTranslucent(x, cssT, TR.translucent, j1); });

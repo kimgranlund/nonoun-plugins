@@ -17,6 +17,7 @@ Contents: [Route](#route) · [Invariants](#invariants) · [Commands](#commands) 
 | A system from named brand colours, each kept exact | `system.mjs`, anchors + `brandExact` | [Brand colours](references/system.md#brand-colours) | The user lists brand colours |
 | A fixed brand set of seed colors as source swatch ramps (no modes or roles) | `scripts/preset.mjs` ([palette presets](#palette-presets-scriptspresetmjs)) | `scripts/presets.json` | Adding or choosing a preset |
 | A one-page specimen sheet of a color system | `system.mjs` with `showcase: true` | [showcase.md](references/showcase.md) | Making or reviewing the sheet |
+| A file per family, `light-dark()` | `scripts/families.mjs` | [Family files](references/system.md#family-files) | Tokens for a repo |
 | What a color word means here (ground, surface, step, mode, theme…) | Answer from the vocabulary | [terms.json](references/terms.json) | A term is ambiguous or a sibling skill uses it differently |
 | Why the two generators disagree slightly | — | [system-notice.md](references/system-notice.md) | Comparing a source palette with the system's tonal scale |
 | Engine provenance, policies, maintenance | — | [engine.md](references/engine.md) | Changing or auditing the bundled generator |
@@ -35,11 +36,11 @@ Words that mean the system generator: *theme*, *light and dark*, *modes*, *roles
 
 ## Commands
 
-Run `node /absolute/path/to/ui-colors/scripts/check.mjs` after changing `scripts/system.mjs`, `scripts/system/`, this file, a reference or `terms.json`. Done means it exits 0. It regenerates the default and a light-dark system in a temporary directory, checks the fixture, contrast floors, CSS and adapters, the neutrals split, a byte-identical default (a recorded digest), the showcase, the vocabulary, request-key closure, the links and the invariants above, and runs negative controls that must fail ([system.md › Checks](references/system.md#checks)).
+Run `node /absolute/path/to/ui-colors/scripts/check.mjs` after changing `scripts/system.mjs`, `scripts/system/`, this file, a reference or `terms.json`. Done means it exits 0. It regenerates the default and a light-dark system in a temporary directory, checks the fixture, floors, CSS, adapters, family files, a byte-identical default (a recorded digest), the vocabulary, links and the invariants above, and runs negative controls that must fail ([system.md › Checks](references/system.md#checks)).
 
 ## Vocabulary
 
-[terms.json](references/terms.json) is the vocabulary as data: each concept (source palette, base stop, Material palette, family, accent, neutral, ground, surface, ink, step, alpha step, tonal scale, tonal stop, role, primary, secondary, status, scheme, mode, theme, brand, anchor, endpoint and others) with its definition, intent, what it is not (including the sibling skills' meanings of shared words), accepted aliases, phrases to avoid and the names it owns, plus a catalogue of every role the system emits. Use its terms in reports and when reading a user's request.
+[terms.json](references/terms.json) is the vocabulary as data: each concept (source palette, family, step, role, scheme, mode, anchor and the rest) with its definition, intent, what it is not (including the sibling skills' meanings of shared words), accepted aliases, phrases to avoid and the names it owns, plus a catalogue of every role the system emits. Use its terms in reports and when reading a user's request.
 
 ## Gamut
 
@@ -67,6 +68,7 @@ Map natural language onto the contract (ask only about choices that change the o
 - "warm page, cool cards", "paper and cards", "ground/surface", "cards that lift off the page" → `neutrals` (`{ "ground": { "from": "Sand" }, "surface": { "from": "Slate" } }`, a Radix gray or a tinted `{ tint, neutralFrom }` each); "swap them in dark" → `cross: true`; an exact card color → a `surface` anchor
 - "simulate deuteranopia" → `settings.cvd: "deutan"`; "just light and dark" → `extraModes: false`; "a sepia mode" → a custom entry in `extraModes`
 - "data-color-mode attributes" → `selectors: "attribute"`; "light-dark()" → `lightDark: true`; "Tailwind" / "Figma variables" → `tailwind` / `figma`; "smaller CSS" → `preset: "minimal"` or `split: true`
+- "match Radix" → `familyAnchors`; [more](references/system.md#plain-word-requests)
 - "tonal stops for my roles" → `tonalRoles: true`; "quieter / louder selection" → `emphasis` 0 / 2; "a showcase / specimen sheet / one-page overview" → `showcase: true`
 
 Deliver `preview.html`, `system.css`, `system.json`, `tokens.dtcg.json` (plus the adapters and split files requested); open the preview when a browser is available. Offer `showcase: true` when the system will be reviewed or shared, or the user wants everything on one page: `showcase.html` is 24 specimens in 8 groups at 1280 × 960, colored only by the run's variables, with every failure in `system.json` flagged. View it at that size before describing it, or say it wasn't viewed.

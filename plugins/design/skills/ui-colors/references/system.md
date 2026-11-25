@@ -43,8 +43,9 @@ Every key is optional; `{}` is the default system. Unknown keys reject.
 | `brightHues` | `[70, 125]` | The bright-hue window, OKLCH degrees of the step-9 hue (inclusive; `from > to` wraps through 0°), or `false` for white first everywhere (Contrast model › Bright hues). Anything else exits 2 |
 | `apca` | below | APCA thresholds (\|Lc\|, 0–108): `{ solid, text, hint, ui, series, contrast: { … } }`; any key left out keeps its default; contrast modes add 15 to each unless `apca.contrast` names its own (Contrast model). A non-number, a value outside 0–108, an unknown key or a non-object exits 2 |
 | `neutrals` | none | Split the neutral into ground (page), surface (cards, controls, borders) and ink (text): `{ ground?, surface?, ink?, cross? }` (Neutrals). Without it the system has one neutral, byte for byte as before |
-| `roles` | `{}` | `{ role: family }`: an exact family name, a Radix name (`red`), an **HCT** hue `h0`–`h360` (`h85`, `h085`, `h84.5`) or an **OKLCH** hue `oklch:0`–`oklch:360` (matched against each family's step-9 OKLCH hue; brand guides and CSS usually give OKLCH). The name or hue goes to the nearest family. Anything else exits 2. With `familyNames: "index"`, also `hue-N` |
-| `anchors` | `[]` | Brand colors pinned into ramps (Anchors) |
+| `roles` | `{}` | `{ role: family }`, `role` one of `primary`, `secondary`, `neutral`, `critical`, `warning`, `success`, `info`, `data1`–`data6` (any other name exits 2; it was silently dropped before): an exact family name, a Radix name (`red`), an **HCT** hue `h0`–`h360` (`h85`, `h085`, `h84.5`) or an **OKLCH** hue `oklch:0`–`oklch:360` (matched against each family's step-9 OKLCH hue; brand guides and CSS usually give OKLCH). The name or hue goes to the nearest family. Anything else exits 2. With `familyNames: "index"`, also `hue-N` |
+| `anchors` | `[]` | Brand colors pinned into ramps (Anchors). `role` must be a role of the system (or `ground`, `ink`, `surface`); any other name exits 2 |
+| `familyAnchors` | `{}` | `{ "<family>": { value, dark?, step?, darkStep?, reach?, name? } }`: pins a family by name, with no role (Anchors › Family anchors). An unknown family, a family a role anchor already pins, or an unknown key exits 2 |
 | `endpoints` | engine | `{ white, black }`: `"pure"` for #fff/#000, or a neutral step 1–12. Each endpoint the request names also takes its side of the inverse pair: `bg-inverse` is black in light and white in dark, `fg-inverse` the other |
 | `modes` | `{}` | Per-mode overrides: `{ "<mode id>": { settings, roles, anchors, endpoints } }` (Modes) |
 | `extraModes` | contrast + dim | `false` for light and dark only, or your own list of `{ id, scheme, contrast?, settings?, roles?, anchors?, endpoints? }` |
@@ -115,7 +116,7 @@ Values out of range throw (exit 1).
 | `chroma` | 120 | 4–120 | Requested HCT chroma |
 | `base` | 76 (skill; engine 100) | 0–100 | Share of chroma the whole ramp keeps |
 | `keyIntensity` | 200 (skill; engine 100) | 0–300 | Chroma of steps 9–12 on accents; contrast holds |
-| `keyDepth` | 0 | −30–30 | Moves step 9 in Lc; positive is a darker solid in both schemes |
+| `keyDepth` | 0 | −30–30 | Moves step 9 in Lc; positive is a darker solid in both schemes. In practice it acts at the label choice: once the darker solid lets the light label pass, the family switches to white first and its solid is solved there, so neighbouring values often give the same output (a dark-mode `keyDepth` of 4 and of 30 can be identical). Compare `solidLabels` after changing it |
 | `keyRamp` | 0 | 0–4 | Eases `keyIntensity` in over that many steps before 9 |
 | `falloff` | 1 | 0.2–5 | Shape of chroma away from the peak |
 | `keyC` | `radix` | `shared`, `radix` | Chroma distribution between hues |
@@ -253,7 +254,7 @@ Thresholds: APCA's most lenient level for each use. Constants in `scripts/system
 Contrast modes take `normal + 15` (capped at 108) for every key `apca.contrast` leaves out. Every solve aims 0.5 Lc over its floor (`SOLVE_MARGIN`: chroma clamping and 8-bit rounding of what ships). `system.json › modes.<id>.apca` holds the thresholds each mode used.
 
 - **Steps** sit at their APCA Lc target against the page, so a step reads the same in every hue.
-- **Bright hues**: an accent whose step-9 OKLCH hue lies in the bright-hue window (`system.mjs › BRIGHT_HUES`, 70°–125° by default; request key `brightHues`) always takes the dark label with its step 9 at the hue's gamut cusp (below), in every mode, unless the family is anchored or its step 9 has OKLCH chroma under 0.08 (`BRIGHT_MIN_C`: a khaki or sand of a yellow hue is a tinted neutral, not a bright hue), whether or not white would pass — as Radix does for yellow, amber and lime. `solidLabels.<family>.brightHue: true` marks it. In the window by default: amber (78°), yellow (95°), lime (117°); orange (59°) and grass (146°) are outside. With `hueSet: "radix"`: gold (72°), amber (81°), yellow (97°), lime (122°). Every other family follows the rules below.
+- **Bright hues**: an accent whose step-9 OKLCH hue lies in the bright-hue window (`system.mjs › BRIGHT_HUES`, 70°–125° by default; request key `brightHues`) always takes the dark label with its step 9 at the hue's gamut cusp (below), in every mode, unless the family is anchored or its step 9 has OKLCH chroma under 0.08 (`BRIGHT_MIN_C`: a khaki or sand of a yellow hue is a tinted neutral, not a bright hue), whether or not white would pass — as Radix does for yellow, amber and lime. The window is judged once per run, on the light mode's generated light step 9, and that verdict holds in every mode and scheme, so a family whose dark or per-mode step 9 drifts a few degrees (a darker dark solid moves lime past 125°) keeps its treatment. `solidLabels.<family>.brightHue: true` marks it. In the window by default: amber (78°), yellow (95°), lime (117°); orange (59°) and grass (146°) are outside. With `hueSet: "radix"`: gold (72°), amber (81°), yellow (97°), lime (122°). Every other family follows the rules below.
 - **Solids** (step 9, or an anchored role's step) each take one of two labels: the **light label** (light neutral step 1, the light page) or the **dark label** (light neutral step 12, the ink — the same color in every mode, so in dark modes it is dark text on a bright solid). White first, as in Radix, per family and mode:
   1. the light label whenever the generated solid reaches `apca.solid` against it; it is **kept exactly**;
   2. otherwise the dark label if the generated solid reaches the floor against it; kept exactly;
@@ -337,6 +338,28 @@ Anything unreadable exits 2. Wide-gamut values are kept: an anchor is clipped on
 
 Every step except the page takes the anchor's hue; the anchored step becomes exact, neighbours settle, and an anchor on steps 8–12 moves the role's solid there. Read `system.json › anchorReport`: An anchored family never takes the bright-hue cusp, in any scheme: its solid stays the brand's own colour (or, without `dark`, the generated step of its hue and chroma). `stepFrom` records how the step was chosen (`solid`, `nearest-lc` or `given`). `inOrder: false` means the color breaks the contrast order (text then needs a higher step of the family, for example 11 for a light gold); `inRange: false` means it lies beyond the ramp (use `endpoints`).
 
+### Family anchors
+
+`familyAnchors` pins a family by name, for colours that belong to a family rather than a role: matching a reference palette step by step (each Radix accent's step 9), or a brand that names its own hues. Same fields and semantics as an anchor, without `role`; `step` defaults to 9 and, when `dark` is given (or `brandExact` fills it), `darkStep` to 9.
+
+```json
+{ "settings": { "hueSet": "radix" }, "brandExact": true,
+  "familyAnchors": { "orange": { "value": "#f76b15" }, "blue": { "value": "#0090ff" } } }
+```
+
+The roles keep their families and no semantic variable moves. Each entry has an `anchorReport` row with `role: "family:<name>"` and the same warnings as a role anchor. A family that a role anchor already pins exits 2 (anchor one of them); with `familyNames`, use the family's output name.
+
+### Plain-word requests
+
+| The user says | Map to |
+|---|---|
+| "match Radix", "pin each family's step 9", "keep this family's colour exact" | `familyAnchors` (with `brandExact` for the same solid in both schemes); a role's colour is an `anchors` entry |
+| "step 1 is too close to white / black" | Step 1 is the page: lower `toneMax`, raise `darkTone` |
+| "step 1 has no colour", "step 1 is faint" | `tint` (up to 100), `rc: 1`, a higher `falloff`; on a specimen, paint the sheet on the white / black endpoint so step 1 reads as a tile |
+| "orange looks rusty", "greens look dark next to Radix" | Every solid sits at one APCA contrast, so naturally light hues are darkened (hue is kept). Offer `familyAnchors` at Radix's step 9 |
+| "dark solids look different from light" | `modes.dark.settings.keyDepth` (it switches at the label choice; compare `solidLabels`), or `familyAnchors` with `brandExact` |
+| "text looks brown" | Steps 11–12 sit at high Lc targets; lower `targetsLight` / `targetsDark` for steps 11–12 and check `apca.text` still passes |
+
 ### Brand colours
 
 A system made from a brand's named colours: one anchor per colour, by what the colour is used for. Set `"brandExact": true` so every accent is its own solid in both schemes, and read the `WARNING anchor` lines before you report.
@@ -353,6 +376,27 @@ A system made from a brand's named colours: one anchor per colour, by what the c
 | Error, warning, success, info picked to match | `critical`, `warning`, `success`, `info` | Step 9; give `dark` per scheme for a dark solid that clears its label |
 
 For dark used only on some sections, add `"autoDark": false` and a forced-only extra mode (Modes). Write roles by OKLCH hue as `oklch:NN`: `hNN` is HCT and lands elsewhere (a gold at OKLCH 84° is HCT about 80°).
+
+## Family files
+
+`scripts/families.mjs` lays a system out one family per file, for a design-system repository that imports only the families it uses. It reads a `system.mjs` output folder and writes a new one:
+
+```sh
+node scripts/families.mjs --from SYSTEM_OUTPUT_DIR --out NEW_DIR [--light light] [--dark dark]
+```
+
+| File | Holds |
+|---|---|
+| `globals.css` | `color-scheme` only: `:root` follows the OS, `.light` / `.dark` and `[data-color-mode]` force a scheme on any subtree |
+| `colors-p3/<family>.css` | Steps 1–12, alpha steps `a1`–`a12` and the tonal stops of one family, in the target gamut (with `target: display-p3`) |
+| `colors-p3/semantic.css` | Every other variable: the roles, endpoints, series, shadows |
+| `colors-p3/<name>.json`, `.dtcg.json` | Each value as CSS, OKLCH, P3 components, alpha and an sRGB hex fallback; DTCG paths `colors.<family>.<light\|dark>.<step>`, semantic tokens as aliases |
+| `colors-p3/index.css` | Imports globals, every family, then semantic |
+| `colors/…` | The same files with every value mapped into sRGB (the `system.css` sRGB block) |
+| `manifest.json` | Every file with its size and SHA-256, the families and their solid labels per scheme, anchors, roles with both values, step groups, contrast summary |
+| `README.md`, `USAGE.md` | Files and naming; how to use the steps, the solid labels, alpha steps and roles, generated from the same data |
+
+Two modes go in, one light-scheme and one dark-scheme (`--light`, `--dark`; default `light` and `dark`): each variable that differs is written as `--x-light`, `--x-dark` and `--x: light-dark(var(--x-light), var(--x-dark))`, one that is equal in both is written once. Contrast and extra modes are not laid out (light-dark() has two schemes). `light-dark()` needs Chrome 123, Safari 17.5, Firefox 120. Checked by `check.mjs` (every variable resolves in both schemes, step 9 exact to the system, manifest hashes current).
 
 ## Showcase
 
@@ -392,6 +436,8 @@ Runs `system.mjs` on `{}`, on a light-dark request (`brightHues: false`, `lightD
 - **contrast** pairs recomputed from the ramps (Lc ±0.1, informational ratio ±0.02), each threshold the intent's, `pass` consistent; **pressed solid**: `side` on step 11 exactly where the label clears `apca.solid` there, else a back step at `max(Lc9 − (Lc10 − Lc9), apca.ui)` on the page with `clamped` consistent, the label at `apca.solid` on it, `lc` and `lcOnPage` recomputed, each role's variable that alias or colour; **hover** pairs and the neutral's steps 1–6 recomputed from the variables and ramps (ΔE ±0.05, a translucent fill composited over its ground), threshold 4, `pass` and `summary` consistent, every pair present; **series CVD** unsimulated minimum recomputed; **tonal** agreement and map present;
 - **showcase**: written only when requested; 24 specimens in the 8 groups, three each; the annotation's Lc, targets, the solid's Lc and floor, and the key run 9–12 equal `system.json` (and, for the key run, the ramps) in attributes and visible text; exactly the failures `system.json` reports are flagged (APCA misses per mode with their count, series minima under the threshold, key-run deviations, anchors out of order, out of range or clipped); each mode panel carries its forced selector, scope included; every color is a variable `system.css` declares, a value from `system.json` or a light step's sRGB fallback, and the sheet's own CSS names no color. Layout (fit, overlap, blank swatches, legibility) needs a browser at 1280 × 960 and is not checked here.
 - **neutrals**: the default run's `system.css` and `system.json` hash to `scripts/system/fixtures/default-digest.json` (byte-identical default; after a deliberate change to the default output, refresh it with `check.mjs --update-digest`) and carry no split variable or field; every split role points at its family and step (the table above, restated in the check), `gray-N` is `var(--colors-ink-N)` and ink N is the gray ramp's color; each family's steps 1–7 equal the neutral the engine makes for its spec at the mode's settings (the surface at the lifted page; ground and surface specs swapped in dark when `cross`), skipping anchored ends; the cross run names Slate for the dark page and Sand for the dark cards; separation recomputed (ΔE ± 0.05, Lc ± 0.1, threshold 2, `pass`), every mode separated in the unanchored runs and the anchored run has a miss to flag; anchors pin ground 1 / ink 12 / surface 1 and their dark ends; floors with the split labels, control border on ground 1–2 and surface 1–2, series on ground 2; key run, contrast (with the split pairs), CSS, light-dark, split files and Figma on the split runs; the preview shows the three families; the showcase's Neutral & surfaces group has the three strips and a surface card on the page per shown mode with its ΔE, and separation misses are flagged; 15 bad `neutrals` values or combinations exit 2.
+- **family anchors**: a run pinning orange and teal by name with `brandExact`: each exact at step 9 in every mode, the roles where they were, no internal `family:` name in roles or CSS; unknown role names, unknown families, a family a role anchor pins and bad keys exit 2;
+- **family files**: `families.mjs` on that run: every variable in `colors-p3/` and `colors/` resolves to a colour in both schemes through `light-dark()` and `var()`, each family's step 9 equals the system's, and every `manifest.json` hash is current;
 
 Then 74 negative controls mutate a copy (move a fixture step or a placed step; lighten a solid, bring a contrast-mode solid under Lc 60, push a hover under the floor, claim the light label for a dark-label solid, give a role the other label, raise the request's `apca.solid`, drop the control border, slip a valid `apca` or `brightHues` value into the bad list; put a bright-hue family on the light label, mark a family outside the window bright, read `brightHues: false` as the default; give a white-passing solid the dark label, reject white without cause, put a white-rejected solid back on white, move a passing solid, report a failing solid as kept, widen a hover room; pull a cusp solid back, rotate its hue, drop its cusp mark; push step 10 or 11 off even spacing, collapse step 12, drop a recorded deviation, misreport `keyRun.lc`; put a series under the surface floor; delete a file, drop a brace or a declaration, flip a `color-scheme`, drop a P3 pair or a split declaration, misroute a Figma alias, misreport an Lc, pass a pair under its threshold, give a pair the wrong threshold, misreport a ΔE, alias a pressed solid to step 11 where its label fails there or to the hover, put a back step under `apca.ui`, misreport a hover ΔE, pass a hover under 4, drop a hover pair, drop a tonalMap role; in the showcase: delete it, drop or add a specimen, misreport an Lc, a target, the solid's Lc or floor or the key run, drop an APCA-miss, key-run or anchor flag, report a weak series the sheet doesn't flag, flag an anchor `system.json` reports in order, strip a panel's forced class or attribute, inject a color or a sheet color literal; neutrals: change the default output by one byte, add a split variable to the default run, read `border` from the ground, leave `fg` on gray, break the gray alias, swap the dark ground and surface back, drop the surface lift, read `cross` as off, misreport a separation, set the card to the page color, unpin a ground anchor or a surface anchor's dark color, drop a separation flag, drop the ink strip, draw a dark card on the wrong role, slip a valid `neutrals` value into the bad list); each must make its check fail. Exit 0 when every check passes and every control bites; 1 otherwise.
 
