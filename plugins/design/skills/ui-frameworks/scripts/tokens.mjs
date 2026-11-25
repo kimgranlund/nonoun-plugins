@@ -63,7 +63,7 @@ const variable = (id) => '--' + id.replaceAll('.', '-');
 /** Rows that are stacked with no gap, so that a hit area cannot grow past the box: the box itself keeps the pointer's target (D96). */
 const FLOORED = new Set(['collections.rows.menu-row', 'collections.rows.segment-tab']);
 function rows(density) {
-  const all = JSON.parse(run('ui-geometry/scripts/derive.mjs', ['--n', String(config.n), '--density', density, ...(config.archetype === undefined ? [] : ['--archetype', String(config.archetype)]), ...(config.kappa === undefined ? [] : ['--kappa', String(config.kappa)]), '--json']));
+  const all = JSON.parse(run('ui-geometry/scripts/derive.mjs', ['--n', String(config.n), '--density', density, ...(config.archetype === undefined ? ['--preset', 'ladder'] : ['--archetype', String(config.archetype)]), ...(config.kappa === undefined ? [] : ['--kappa', String(config.kappa)]), '--json']));
   const floor = all.find((r) => r.id === 'controls.target.t_hit-pointer')?.px ?? 0;
   return all.map((r) => (FLOORED.has(r.id) && r.px < floor ? { ...r, px: floor } : r));
 }

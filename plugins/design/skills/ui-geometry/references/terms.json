@@ -909,6 +909,50 @@
    "related": [
     "multi-count-grid"
    ]
+  },
+  {
+   "id": "line",
+   "term": "line",
+   "layer": "unit",
+   "definition": "A length written a·n + b px: a slope per px of the scope's font size and an offset, with an optional floor and cap.",
+   "intent": "The primitive every length reduces to; a multiple of q is the special case where every length shares one line.",
+   "names": [
+    "flag:--lines"
+   ],
+   "related": [
+    "unit",
+    "scope-size"
+   ]
+  },
+  {
+   "id": "exact-preset",
+   "term": "exact preset",
+   "layer": "unit",
+   "definition": "A preset whose unit is one px and whose constants are lines, with nothing snapped (exact: true).",
+   "intent": "A system whose slopes and offsets are chosen one by one, so no single unit holds them.",
+   "names": [
+    "flag:--emit"
+   ],
+   "related": [
+    "line",
+    "wholeness"
+   ]
+  },
+  {
+   "id": "wholeness",
+   "term": "wholeness",
+   "layer": "unit",
+   "definition": "Where a length is a whole number of px with nothing snapped: at every n, at even n, at listed n, or never.",
+   "intent": "The proof that replaces a rounding rule: a fractional px names a wrong constant.",
+   "names": [
+    "flag:--whole",
+    "flag:--from",
+    "flag:--to"
+   ],
+   "related": [
+    "line",
+    "exact-preset"
+   ]
   }
  ]
 }

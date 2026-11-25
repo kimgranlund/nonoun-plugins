@@ -1,11 +1,11 @@
 ---
 name: ui-geometry
-description: Derives every length of a UI from a root font size n and one unit q, in four tiers (controls, collections, containers, layout). Covers insets, slots, control heights, icons, type scale, marks and rows, frames, curvature κ with concentric radii, focus rings, hit targets, borders, pixel snapping, fluid scale, breakpoints, measure, elevation shadows, control gaps and page grids. Holds measured archetypes (editorial, fashion, instrument, product, marketing, civic, calm, toy, terminal) with dials. Also fits an existing project's components to the nearest system and archetype. Ships a standard preset; any kit can bring its own. Use for "what is h at 16px", "radius at κ 0.4", "grid columns at 1280", "a soft 5-layer shadow", "define a size system", "make it feel editorial", "what system does this app use", "fit our components", or the geometry a showcase must follow. NOT for colour (ui-colors), paint or materials (ui-materials), the showcase canvas (ui-showcase-bento), implementing components, typefaces or motion.
+description: Derives every length of a UI as a line in a root font size n, by one unit q or exact lines, in four tiers (controls, collections, containers, layout). Covers insets, slots, control heights, icons, type scale, marks and rows, frames, curvature κ with concentric radii, focus rings, hit targets, borders, pixel snapping, fluid scale, breakpoints, measure, elevation shadows, control gaps and page grids. Holds measured archetypes (editorial, fashion, instrument, product, marketing, civic, calm, toy, terminal) with dials. Also fits an existing project's components to the nearest system and archetype. Ships unit and exact presets. Use for "what is h at 16px", "radius at κ 0.4", "grid columns at 1280", "a soft 5-layer shadow", "define a size system", "make it feel editorial", "what system does this app use", "fit our components", or the geometry a showcase must follow. NOT for colour (ui-colors), paint or materials (ui-materials), the showcase canvas (ui-showcase-bento), implementing components, typefaces or motion.
 ---
 
 # UI geometry
 
-One input, the scope font size n in px, and four dials: density δ, curvature κ (one each for controls, frames, cards and panels), card depth d, and a preset. Every length is a multiple of one unit q, snapped to whole px by default (crisp). Answer in symbols and multiples of q first, then px at n. The default preset is **ladder** (q = ¾n − 6.75, so h = 8q = 6n − 54: 30px controls at 14, 24 at 13, 36 at 15, 48 at 17, 60 at 19); **standard** (q = n/2 − 3, h = 32 at 14, alias `standard-32`) is the other shipped preset, and the one the worked values in `references/equations.md` and the archetypes use. Every equation takes any preset's constants.
+Every length is a line a·n + b px. One input, the scope font size n in px, and four dials: density δ, curvature κ (one each for controls, frames, cards and panels), card depth d, and a preset. A unit preset makes each a multiple of one unit q, snapped to whole px by default (crisp); an exact preset gives each constant its own line and rounds nothing (› 21). Answer in symbols and multiples of q first, then px at n. The default preset is **affine**, exact (h = 4n − 26; q is 1px). The unit presets are **ladder** (q = ¾n − 6.75, h = 6n − 54) and **standard** (q = n/2 − 3, h = 32 at 14, alias `standard-32`), which the worked values in `references/equations.md` and the archetypes use. Every equation takes any preset's constants.
 
 Contents: [Route](#route) · [Axioms](#axioms) · [Presets](#presets) · [Procedure](#procedure) · [Identities](#identities) · [Tiers](#tiers) · [Fitting a project](#fitting-a-project) · [Commands](#commands) · [Files](#files)
 
@@ -23,11 +23,12 @@ Read the row whose question is open. Paths are relative to this file.
 | Which archetype is a preset or a page, or what are an archetype's dials? | `node scripts/derive.mjs --archetype <name>`; `references/archetypes.json`; `references/equations.md` › 20 | Asked for a named character (editorial, fashion, an instrument), or classifying a fitted project |
 | Which archetype is a rendered page? | `node scripts/observe.mjs <url or file>` (needs Playwright), or evaluate `scripts/observe.js` in the page and score the result with `node scripts/archetypes.mjs observed.json` (the nearest archetype, its family, and the page's position on the measured dimensions); `references/equations.md` › 20 | Asked what an existing page or kit reads as, or to compare a build with an archetype |
 | How do I define another system? | Presets, below, and `PRESETS.standard` in `scripts/derive.mjs` | Writing a preset file; unknown keys are refused |
+| Which lengths are whole px unrounded, on what line? | `derive.mjs --whole`, `--lines`, `--emit css`, `--preset affine`; `fit.mjs --lines`; `references/equations.md` › 21 | A system must not round |
 
 
 ## Axioms
 
-1. **Unit.** F = n and q = a_q·n + b_q. A nested scope with its own n′ restarts the whole system.
+1. **Line and unit.** F = n. A length is a line a·n + b: a multiple of q = a_q·n + b_q, or its own line in an exact preset. A nested scope with its own n′ restarts the whole system.
 2. **Inset.** I_δ is one value per density. Density reaches spacing only through I.
 3. **Control.** g_c is the fixed gutter, m_c = I − g_c the margin, S the slot, h = S + 2I the height.
 4. **Frames.** A card has a depth d from a ladder that moves depthStep·ΔI per density step (the preset's `spacing.depthStep`; 2·ΔI = one q in the standard preset: 3q, 4q, 5q), so cards grow with their contents; popover and dialog follow at ¾d and 1½d. A panel of controls is a card at d = 2I. A page section shares the page edge and pads only above and below. Segmented hosts and control frames (menu, listbox) both pad d_c = ¾q around items h − 2d_c, so one item plus its padding is exactly h.
@@ -66,15 +67,15 @@ A preset fixes the constants. The equations never change. **ladder** is standard
 | spacing | popover and dialog depth as ratios of d, nesting f | ¾, 1½, ½ |
 | measure, aspects, avatars, ρ_s | characters per line, ratios, avatar ladder, icon stroke ratio | 45 / 66 / 75; 1:1 … 21:9; 4, 5, 6, 8, 10, 20; 3/32 |
 
-An archetype is a profile, not a preset: for each observable, the band its measured pages fall in (`references/archetypes.json`). A preset or a fitted page is scored by its distance outside the bands, and many presets belong to the same archetype. Its `dials` give an n, a density and a κ that land inside the bands a preset can reach; text and image coverage, capitals and weight are page composition, which no preset sets. Checked: "every archetype's dials hold the identities, land the control on whole px and put h/F inside its band".
+An archetype is a profile, not a preset: the band its measured pages fall in, per observable (`references/archetypes.json`; `references/equations.md` › 20). A preset or a fitted page is scored by its distance outside the bands. Its `dials` give an n, a density and a κ inside the bands a preset can reach. Checked: "every archetype's dials hold the identities, land the control on whole px and put h/F inside its band".
 
 To define another system, write a JSON file with any of the keys from `PRESETS.standard` in `scripts/derive.mjs`, plus `name`, `units`, `crisp` or `dials`. Keys left out default to the standard preset. Any other key is refused with a "did you mean" (`validatePreset`; tested in `scripts/knowledge.test.mjs`).
 
 ## Procedure
 
-1. Fix the preset, n, δ, κ for each tier and d. The defaults are ladder (the CLI's default; `--preset standard` for the 32px system, which an `--archetype` starts from), δ = default, κ = κ_s for controls, lists and panels, κ = ½ for cards (so R = d + 2q at default density), and d = 4.
+1. Fix the preset, n, δ, κ for each tier and d. The default is affine (`--preset ladder` or `standard` for the 30 and 32px unit systems; an `--archetype` starts from standard). Dial defaults: in the unit presets δ = default, κ = κ_s (½ for cards, so R = d + 2q) and d = 4; in affine r = n − 6 and d = S.
 2. Compute q, I, m_c and h. Then compute the tier that is asked for, from `references/equations.md`.
-3. For a full table, run `node scripts/derive.mjs --n <n> --density <δ> --kappa <κ>`. Add `--kappa-control`, `--kappa-frame`, `--kappa-card` or `--kappa-panel` to split tiers. Use `--card <d>`, `--width <px> --columns <N>` for a grid, `--preset <file.json>` for another system, `--archetype <name>` to start from an archetype's n, density and κ and print its bands beside the derived values, and `--json` for data. Use `--viewport <px>` to take n from the fluid scale and `--dpr <x>` to list lengths off the device grid. For the padding, gap and radius of every container, inside out, run `node scripts/derive.mjs --containers [--card 4 --nest 0.5]` (section 19); popover and dialog default to ¾d and 1½d, and `--popover`/`--dialog` fix them. For shadows run `node scripts/derive.mjs --elevation <level|s|all> [--layers 5] [--scheme dark]`.
+3. For a full table, run `node scripts/derive.mjs --n <n> --density <δ> --kappa <κ>`. Add `--kappa-control`, `--kappa-frame`, `--kappa-card` or `--kappa-panel` to split tiers. Use `--card <d>`, `--width <px> --columns <N>` for a grid, `--preset <file.json>` for another system, `--archetype <name>` to start from an archetype's dials and print its bands, and `--json` for data. `--viewport <px>` takes n from the fluid scale; `--dpr <x>` lists lengths off the device grid. For every container's padding, gap and radius run `--containers [--card 4 --nest 0.5]` (section 19; `--popover`/`--dialog` fix those depths). For shadows run `--elevation <level|s|all> [--layers 5] [--scheme dark]`. Its header lists every flag.
 4. Check that the identities below hold. A value that breaks one is wrong.
 5. Report a table with the columns symbol, expression, q, px. Flag any px that falls off the whole-pixel grid.
 
@@ -92,8 +93,9 @@ To define another system, write a JSON file with any of the keys from `PRESETS.s
 - Grid for several counts: margin = gutter = g·u, u = W / (U + 2g); n columns when n divides U + g (`--field`, `references/equations.md` › 8). Checked: "every listed count fills the field in whole units".
 - Focus ring outer radius = r + o + w. A border leaves R − b and d − b inside. Checked: `checkIdentities()`, "focus ring" and "borders eat padding and radius".
 - A target never shrinks the box: expansion = max(0, (T_hit − h)/2). Checked: "hit targets".
-- Ladder: crisp h = 6n − 54 at n 12, 13, 14, 15, 17 and 19 (18 … 60), h = S + 2I. Checked: "ladder (the default)", with standard at 14 as the negative control.
-- Crisp: at every n, I and g_c snap to whole px and S to even px (at 16px: S 24, I 8, h 40), and depths and gaps snap to whole px. Only radii may land on half px at odd q. Set `crisp: false` for exact q. Checked: "crisp: at 16px every padding, gap and height is a whole px".
+- Ladder: crisp h = 6n − 54 at n 12, 13, 14, 15, 17 and 19 (18 … 60), h = S + 2I. Checked: "ladder: crisp h = 6n − 54", with standard at 14 as the negative control.
+- Crisp: at every n, I and g_c snap to whole px and S to even px, and depths and gaps snap to whole px. Radii may land on half px at odd q. Set `crisp: false` for exact q. Checked: "crisp: at 16px every padding, gap and height is a whole px".
+- Lines and exact presets (› 21). Checked: "affine: every source line is derived" and "wholeness: affine, with unit presets as negative controls".
 - Elevation: blur_k = β·y_k. Σα_k = B_α at every level and every L. α falls with k, so the contact layer is the darkest. Layer k_a sits at e.y·s. Checked: the five "elevation" tests.
 - Gaps: inside a padded container no gap exceeds its largest padding. Checked: "no gap exceeds its container's padding".
 
@@ -126,7 +128,7 @@ Run from this folder. Done means all three are green.
 
 Paths are relative to this file's folder. Run the calculator by its full path from any working directory.
 
-- `references/equations.md`: every equation, worked at n = 14 with the standard preset, including marks, tracks, rows and floating widths (4b), grid (8), elevation (9), focus rings (10), hit targets (11), borders and snapping (12), text centring (13), fluid scale and breakpoints (14), measure (15), media and avatars (16), icon stroke (17), tiers and fitting (18) and the container spacing ladder (19).
+- `references/equations.md`: every equation in sections 1 to 21, worked at n = 14 with the standard preset; 19 the container ladder, 20 archetypes, 21 lines and exact presets. `references/lines.md`: every row as a line.
 - `references/showcase.md`: the content and geometry a showcase must follow. ui-showcase-bento owns the canvas, packing and checks.
 - `references/fit.md`: fitting a project: the tiers, the lengths.json roles (a generated table), how the unit and κ are inferred, the report template and the canvas.
 - `references/terms.json`: the symbols and words of this skill, one meaning each, with how the sibling skills use the same words.

@@ -149,3 +149,36 @@ test('control sizes that keep the slot are read as densities', () => {
   assert.ok(!R.notes.some((x) => x.includes('host depth')))
   assert.equal(R.lengths.find((l) => l.id === 'tabs.host-depth').borderOnly, false)
 })
+
+// ---- lines from lengths measured at several n
+import { fitLines, linesReport } from './fit.mjs'
+
+const measured = (preset, ids, ns = [12, 14, 22]) => ns.flatMap((n) => derive({ preset, n }).filter((r) => ids.includes(r.id)).map((r) => ({ id: r.id, role: r.symbol, n, px: r.px })))
+const IDS = ['controls.control.s', 'controls.control.i', 'controls.control.h', 'controls.curvature.r_s']
+
+test('fitLines recovers each length\'s line and says that no one unit holds an exact system', () => {
+  const F = fitLines(measured(PRESETS.affine, IDS)), L = Object.fromEntries(F.lines.map((l) => [l.id, [l.a, l.b]]))
+  assert.deepEqual(L['controls.control.s'], [2, -8])
+  assert.deepEqual(L['controls.control.i'], [1, -9])
+  assert.deepEqual(L['controls.control.h'], [4, -26])
+  assert.deepEqual(L['controls.curvature.r_s'], [0, 3])
+  assert.equal(F.unit.single, false)          // S crosses zero at 4, I at 9, h at 6.5
+  assert.equal(F.lines.find((l) => l.id === 'controls.curvature.r_s').zero, null)
+  assert.match(linesReport(F), /No one unit holds these lines/)
+})
+
+test('fitLines finds the one unit of a unit system: standard, unsnapped, crosses zero at n = 6', () => {
+  const F = fitLines(measured({ ...PRESETS.standard, crisp: false }, IDS.slice(0, 3)))
+  assert.equal(F.unit.single, true)
+  close(F.unit.zero, 6)
+  assert.match(linesReport(F), /One unit holds these lines/)
+  // negative control: one length moved by 2px at one n is no longer on its line, and the unit no longer holds
+  const bent = measured({ ...PRESETS.standard, crisp: false }, IDS.slice(0, 3)).map((l) => (l.id === 'controls.control.i' && l.n === 22 ? { ...l, px: l.px + 2 } : l))
+  const B = fitLines(bent)
+  assert.ok(B.lines.find((l) => l.id === 'controls.control.i').residual > 0.1)
+  assert.equal(B.unit.single, false)
+})
+
+test('fitLines skips a length measured at one n only', () => {
+  assert.deepEqual(fitLines([{ id: 'a', n: 14, px: 30 }, { id: 'a', n: 14, px: 30 }]).lines, [])
+})

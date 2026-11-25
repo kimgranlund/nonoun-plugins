@@ -27,7 +27,7 @@ export const tokens={
 };
 export function derive(){
   if(!fs.existsSync(derivePath))throw Error('Missing ui-geometry beside component-variants: '+derivePath);
-  const args=['--json','--n',dials.n,'--density',dials.density,'--kappa',dials.kappa,'--kappa-card',dials.kappaCard,'--card',dials.card].map(String);
+  const args=['--json','--preset','ladder','--n',dials.n,'--density',dials.density,'--kappa',dials.kappa,'--kappa-card',dials.kappaCard,'--card',dials.card].map(String);
   const run=spawnSync(process.execPath,[derivePath,...args],{encoding:'utf8'});
   if(run.status!==0)throw Error('ui-geometry derive failed: '+(run.stderr||run.error?.message));
   return JSON.parse(run.stdout);

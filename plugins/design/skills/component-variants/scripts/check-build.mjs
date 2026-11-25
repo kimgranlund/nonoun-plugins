@@ -12,7 +12,7 @@ assert(fs.readFileSync(path.join(work,'valid/review-support.mjs')).equals(fs.rea
 assert(!fs.existsSync(path.join(work,'valid/ui-kit.lock.json')));
 // Geometry in the page is the derive output, not a copied number.
 const index=fs.readFileSync(path.join(work,'valid/index.html'),'utf8');
-const rows=JSON.parse(spawnSync(process.execPath,[path.join(geometry,'scripts/derive.mjs'),'--json','--n','14','--density','default','--kappa','0.75','--kappa-card','0.5','--card','4'],{encoding:'utf8'}).stdout);
+const rows=JSON.parse(spawnSync(process.execPath,[path.join(geometry,'scripts/derive.mjs'),'--json','--preset','ladder','--n','14','--density','default','--kappa','0.75','--kappa-card','0.5','--card','4'],{encoding:'utf8'}).stdout);
 const px=(tier,symbol)=>rows.find(r=>r.tier===tier&&r.symbol===symbol).px;
 assert(index.includes(`--g-height: ${px('controls','h')}px;`));assert(index.includes(`--g-inset: ${px('controls','I')}px;`));assert(index.includes(`--r-card: ${px('containers','R card-3  κ=0.5')}px;`));
 assert.match(index,/<span class="select__root"><select id="theme">[\s\S]*?<\/select><span data-slot="indicator"/);assert.match(index,/\.select__root\{position:relative/);assert(!index.includes('.select-control'));assert.match(index,/\.select__root \[data-slot="indicator"\]\{position:absolute/);assert.match(index,/--md-color-primary:/);assert.match(index,/--type-body-lg-size:/);assert.match(index,/@font-face \{ font-family:"IBM Plex Mono"/);

@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // Fit: find the nearest UI-geometry system behind a project's measured lengths, tier by tier.
 //   node fit.mjs lengths.json [--preset standard|file.json] [--json] [--md report.md]
+//   node fit.mjs lengths.json --lines [--json]   (lengths measured at two or more n: each one's line, and whether one unit holds them)
 //                [--preset-out fitted.json] [--html compare.html] [--target fitted|preset]
 // lengths.json: { "source": "…", "n": 16, "lengths": [ { "id": "button.height", "role": "height", "px": 40, "tier"?: "controls", "n"?: 16 } ] }
 // Prints a report: the unit, each tier's constants in notation, identity checks, and every length against
@@ -59,6 +60,38 @@ const mode = (a) => {
   const top = Math.max(...c.values()); return a.find((v) => c.get(v) === top)
 }
 const r2 = (x) => Math.round(x * 100) / 100
+/**
+ * Lines from lengths measured at more than one n. Each length is { id, role?, n, px }; a length measured at two or
+ * more n gets the least-squares line a·n + b through its points, its largest residual, and the n at which it crosses
+ * zero. A unit system has one unit q = a_q·n + b_q, so every line k·q crosses zero at the same n, −b_q / a_q (6 for
+ * standard, 9 for ladder): `unit.single` says whether the lines here do, within `tol` px of n, over the lines that
+ * have a slope. Where they do not, the system is exact: write each constant as its own line.
+ */
+export function fitLines(lengths, { tol = 0.25 } = {}) {
+  const by = new Map()
+  for (const l of lengths) if (typeof l.n === 'number' && typeof l.px === 'number') (by.get(l.id) ?? by.set(l.id, []).get(l.id)).push(l)
+  const out = []
+  for (const [id, pts] of by) {
+    const ns = [...new Set(pts.map((p) => p.n))]
+    if (ns.length < 2) continue
+    const m = pts.length, sx = pts.reduce((t, p) => t + p.n, 0), sy = pts.reduce((t, p) => t + p.px, 0)
+    const sxx = pts.reduce((t, p) => t + p.n * p.n, 0), sxy = pts.reduce((t, p) => t + p.n * p.px, 0)
+    const a = (m * sxy - sx * sy) / (m * sxx - sx * sx), b = (sy - a * sx) / m
+    const clean = (x) => Math.round(x * 1e6) / 1e6
+    out.push({ id, role: pts[0].role, a: clean(a), b: clean(b), residual: clean(Math.max(...pts.map((p) => Math.abs(a * p.n + b - p.px)))), zero: Math.abs(a) < 1e-9 ? null : clean(-b / a), points: m })
+  }
+  const zeros = out.filter((l) => l.zero !== null).map((l) => l.zero).sort((x, y) => x - y)
+  const mid = zeros.length ? zeros[Math.floor(zeros.length / 2)] : null, spread = zeros.length ? zeros[zeros.length - 1] - zeros[0] : 0
+  return { lines: out, unit: { single: zeros.length > 1 && spread <= tol, zero: mid, spread: Math.round(spread * 1e6) / 1e6, lines: zeros.length } }
+}
+
+/** fitLines() as a report. */
+export function linesReport(F) {
+  const t = (l) => `${l.a === 0 ? '' : `${l.a}n `}${l.a === 0 ? l.b : l.b === 0 ? '' : `${l.b < 0 ? '−' : '+'} ${Math.abs(l.b)}`}`.trim()
+  const head = F.unit.lines < 2 ? 'Too few lines with a slope to say whether one unit holds them.' : F.unit.single ? `One unit holds these lines: each crosses zero at n = ${F.unit.zero}, so q = a_q·(n − ${F.unit.zero}).` : `No one unit holds these lines: they cross zero from n = ${F.lines.filter((l) => l.zero !== null).map((l) => l.zero).sort((x, y) => x - y)[0]} over a span of ${F.unit.spread}. Write each constant as its own line (an exact preset).`
+  return [head, '', '| Length | Role | Line | Zero at n | Largest residual (px) | Points |', '|---|---|---|---|---|---|', ...F.lines.map((l) => `| ${l.id} | ${l.role ?? ''} | ${t(l)} | ${l.zero ?? '—'} | ${l.residual} | ${l.points} |`)].join('\n')
+}
+
 export const snapHalf = (x) => Math.round(x * 2) / 2
 const nearest = (v, list) => list.reduce((b, x) => (Math.abs(x - v) < Math.abs(b - v) ? x : b), list[0])
 
@@ -460,6 +493,7 @@ if (isMain()) {
   const get = (k) => { const i = argv.indexOf(`--${k}`); return i < 0 ? undefined : argv[i + 1] }
   const file = argv.find((a, i) => !a.startsWith('--') && !argv[i - 1]?.startsWith('--'))
   if (!file) { console.error('usage: node fit.mjs lengths.json [--preset standard|file.json] [--json] [--md out.md] [--preset-out fitted.json] [--html compare.html]'); process.exit(2) }
+  if (argv.includes('--lines')) { const F = fitLines(JSON.parse(readFileSync(file, 'utf8')).lengths); console.log(argv.includes('--json') ? JSON.stringify(F, null, 2) : linesReport(F)); process.exit(0) }
   const pname = get('preset') ?? 'standard'
   const preset = pname in PRESETS ? PRESETS[pname] : { ...PRESETS.standard, ...JSON.parse(readFileSync(pname, 'utf8')) }
   const R = fit(JSON.parse(readFileSync(file, 'utf8')), { preset })

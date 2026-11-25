@@ -10,7 +10,7 @@ import { derive, PRESETS, TIERS } from './derive.mjs'
 import { ROLES } from './fit.mjs'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
-const FLAGS = ['--n', '--density', '--kappa', '--card', '--preset', '--tier', '--containers', '--elevation', '--scheme', '--nest', '--json', '--viewport', '--dpr', '--archetype', '--field', '--gutter', '--max-columns']
+const FLAGS = ['--n', '--density', '--kappa', '--card', '--preset', '--tier', '--containers', '--elevation', '--scheme', '--nest', '--json', '--viewport', '--dpr', '--archetype', '--field', '--gutter', '--max-columns', '--lines', '--whole', '--emit', '--from', '--to']
 export const NOTATION = /^([A-Za-zκ](_[a-z]+)?)(\.[a-z]+)?$/
 const strip = (s) => s.replace(/\s+κ=[0-9.]+$/, '').trim()
 
