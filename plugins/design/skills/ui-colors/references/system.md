@@ -358,7 +358,22 @@ The roles keep their families and no semantic variable moves. Each entry has an 
 | "step 1 has no colour", "step 1 is faint" | `tint` (up to 100), `rc: 1`, a higher `falloff`; on a specimen, paint the sheet on the white / black endpoint so step 1 reads as a tile |
 | "orange looks rusty", "greens look dark next to Radix" | Every solid sits at one APCA contrast, so naturally light hues are darkened (hue is kept). Offer `familyAnchors` at Radix's step 9 |
 | "dark solids look different from light" | `modes.dark.settings.keyDepth` (it switches at the label choice; compare `solidLabels`), or `familyAnchors` with `brandExact` |
-| "text looks brown" | Steps 11–12 sit at high Lc targets; lower `targetsLight` / `targetsDark` for steps 11–12 and check `apca.text` still passes |
+| "text looks brown" | Steps 11–12 sit at high Lc targets (light 83.2 and 95). Offer the request below; the defaults stay |
+
+The "text looks brown" request lowers the light targets for steps 11 and 12 to 75 and 90 and keeps the other nine:
+
+```json
+{ "settings": { "targetsLight": [5.5, 11.6, 18.4, 25.8, 33.8, 42.4, 51.7, 61.6, 72.1, 75, 90] } }
+```
+
+Measured with `scripts/system.mjs` on that request (the default hue set, `modes.light.ramps.orange`):
+
+| Light orange | Default (`{}`) | With the request |
+|---|---|---|
+| Step 11 | `#7e3b00`, Lc 83.6 | `#8b4100`, Lc 80.3 |
+| Step 12 | `#502200`, Lc 94.8 | `#662d00`, Lc 89.8 |
+
+Step 12 lands on its target. Step 11 stops near Lc 80, not 75: steps 10 and 11 are spaced evenly in Lc between the solid (step 9) and step 12, so their own targets are not read and step 11 follows step 12. Both are still brown-leaning oranges, only lighter. To bring step 11 to Lc 75, set the last target to 82 (orange 11 `#9f4c00`, 12 `#834000`). Light and dark pass `apca.text` (45). In light-contrast, the shorter key run leaves two label-on-hover pairs (`secondary-on-solid` and `warning-on-solid`, Lc 35.8 against 60), so check `system.json › modes.light-contrast.contrast.summary` before shipping it with `contrast: true`. Dark text steps are light on a dark page and are left at the defaults.
 
 ### Brand colours
 
