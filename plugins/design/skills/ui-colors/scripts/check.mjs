@@ -317,6 +317,18 @@ const BAD_FAMILY = [{ roles: { 'pin-orange': 'orange' } }, { anchors: [{ role: '
   { familyAnchors: [] }, { familyAnchors: { orange: { value: '#f76b15', role: 'primary' } } }, { familyAnchors: { Orange: { value: '#f76b15' } } },
   { settings: { hueSet: 'radix' }, familyAnchors: { tealish: { value: '#12a594' } } }, { settings: { hueSet: 'radix' }, familyAnchors: { indigo: { value: '#3e63dd' } }, anchors: [{ role: 'primary', value: '#3e63dd' }] },
   { familyAnchors: { orange: { value: '#f76b15', step: 13 } } }];
+// hoverMin: with the key set, every family's step 9 to step 10 (the solid to its hover) is at least hoverMin OKLab ΔE × 100 in
+// every mode, recomputed from the ramps. Runs: the Radix hue set alone, and with every accent's Radix step 9 pinned (familyAnchors).
+const RADIX_STEP9 = { gold: '#978365', bronze: '#a18072', brown: '#ad7f58', yellow: '#ffe629', amber: '#ffc53d', orange: '#f76b15', tomato: '#e54d2e', red: '#e5484d', ruby: '#e54666', crimson: '#e93d82', pink: '#d6409f', plum: '#ab4aba', purple: '#8e4ec6',
+  violet: '#6e56cf', iris: '#5b5bd6', indigo: '#3e63dd', blue: '#0090ff', cyan: '#00a2c7', teal: '#12a594', jade: '#29a383', green: '#30a46c', grass: '#46a758', lime: '#bdee63', mint: '#86ead4', sky: '#7ce2fe' };
+const HOVER_MIN_REQ = { settings: { hueSet: 'radix' }, hoverMin: 4 }, HOVER_MIN_FA = { ...HOVER_MIN_REQ, familyAnchors: Object.fromEntries(Object.entries(RADIX_STEP9).map(([f, value]) => [f, { value }])) };
+const BAD_HOVER_MIN = [{ hoverMin: -1 }, { hoverMin: '4' }, { hoverMin: true }, { hoverMin: null }, { hoverMin: 101 }];
+function checkHoverMin(j, min) {
+  const f = []; let n = 0;
+  for (const [id, M] of Object.entries(j.modes)) for (const [fam, r] of Object.entries(M.ramps)) { n++; const d = dE(r[8].oklch, r[9].oklch); if (!(d >= min)) f.push(`${id} ${fam}: step 9 to 10 ΔE ${d.toFixed(2)} < hoverMin ${min}`); }
+  if (n < 30) f.push(`only ${n} family ramps checked`);
+  return f;
+}
 function checkFamilyAnchors(j, css) {
   const f = [];
   for (const [id, M] of Object.entries(j.modes)) {
@@ -821,6 +833,8 @@ try {
   const outE = join(tmp, 'endpoints'), outE2 = join(tmp, 'endpoints-white'); runSystem({ extraModes: false, tonal: false, endpoints: { white: 'pure', black: 'pure' } }, outE); runSystem({ extraModes: false, tonal: false, endpoints: { white: 'pure' } }, outE2);
   const jE = readJson(join(outE, 'system.json')), jE2 = readJson(join(outE2, 'system.json'));
   const outFA = join(tmp, 'family-anchors'); runSystem(FAMILY_REQ, outFA); const outFF = join(tmp, 'family-files'); execFileSync(process.execPath, [here + 'families.mjs', '--from', outFA, '--out', outFF], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }); const jFA = readJson(join(outFA, 'system.json')), cssFA = readFileSync(join(outFA, 'system.css'), 'utf8');
+  const outHM = join(tmp, 'hover-min'), outHA = join(tmp, 'hover-min-anchored'), outH0 = join(tmp, 'hover-min-unset'); runSystem(HOVER_MIN_REQ, outHM); runSystem(HOVER_MIN_FA, outHA); runSystem({ settings: { hueSet: 'radix' } }, outH0);
+  const jHM = readJson(join(outHM, 'system.json')), jHA = readJson(join(outHA, 'system.json')), jH0 = readJson(join(outH0, 'system.json'));
   const outB = join(tmp, 'brand'), outBL = join(tmp, 'brand-loose'); runSystem(BRAND, outB); runSystem({ ...BRAND, brandExact: false, autoDark: true, extraModes: false }, outBL);
   const jB = readJson(join(outB, 'system.json')), cssB = readFileSync(join(outB, 'system.css'), 'utf8'), jBL = readJson(join(outBL, 'system.json'));
   const jT = readJson(join(outT, 'system.json')), cssT = readFileSync(join(outT, 'system.css'), 'utf8');
@@ -915,6 +929,9 @@ try {
     'translucent: bad values exit 2': () => checkBadRequests(BAD_TRANSLUCENT),
     'brand colours: accents exact at step 9 in every mode (brandExact), no auto-dark block, no data roles, a renamed family, anchored families off the cusp': () => checkBrand(jB, cssB, jBL),
     'brand colours: bad roles, anchor steps, autoDark and familyNames exit 2': () => checkBadRequests(BAD_BRAND),
+    'hoverMin 4: every family\'s step 9 to 10 ΔE ≥ 4 in every mode (Radix hues, alone and with the 25 Radix step 9s pinned)': () => [...checkHoverMin(jHM, 4), ...checkHoverMin(jHA, 4)],
+    'hoverMin 4: floors and key run hold with the moved hovers (Radix hues, alone and pinned)': () => [...checkFloors(jHM), ...checkFloors(jHA), ...kr(jHM), ...kr(jHA)],
+    'hoverMin: negative, non-number and out-of-range values exit 2': () => checkBadRequests(BAD_HOVER_MIN),
     'family anchors: exact at step 9 in every scheme, roles untouched, no internal names in the output': () => checkFamilyAnchors(jFA, cssFA),
     'family files: every variable resolves in both schemes, step 9 exact to the system, manifest hashes current (families.mjs)': () => checkFamilyFiles(outFF, jFA),
     'family anchors and role names: unknown roles, unknown families, a family a role anchor pins and bad keys exit 2': () => checkBadRequests(BAD_FAMILY),
@@ -1068,6 +1085,8 @@ try {
   control('a separation-miss flag removed', () => checkShowcaseFlags(sc8.replace(/<span class="sc-flag" data-flag="separation"[^>]*>[^<]*<\/span>/, ''), j8));
   control('the ink strip dropped from the showcase', () => checkShowcaseNeutrals(sc6.replace(/var\(--colors-ink-7\)/g, 'var(--colors-gray-7)'), j6));
   control('a dark card drawn on the wrong role', () => checkShowcaseNeutrals(sc6.replace(/(data-mode-panel="dark"><div class="sc-page" style="background:var\(--colors-bg\)"><div class="sc-card2" style="background:var\(--colors-)surface/, '$1bg-subtle'), j6));
+  control('hoverMin dropped (the same Radix request without the key)', () => checkHoverMin(jH0, 4));
+  control('a valid hoverMin in the bad list', () => checkBadRequests([{ hoverMin: 4 }]));
   control('a valid neutrals value in the bad list', () => checkBadRequests([{ neutrals: { ground: { from: 'Sand' }, cross: true } }]));
 
   const bad = results.filter((r) => r.failures.length), soft = bites.filter((b) => !b.ok);

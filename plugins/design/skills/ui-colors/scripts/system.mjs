@@ -34,10 +34,14 @@ try { req = JSON.parse(readFileSync(values.request, 'utf8')); } catch (e) { fail
 if (!req || typeof req !== 'object' || Array.isArray(req)) fail(2, 'request: must be a JSON object');
 
 // ── Request ───────────────────────────────────────────────────────────────────────────────────────────────
-const KEYS = ['apca', 'brightHues', 'neutrals', 'settings', 'roles', 'anchors', 'endpoints', 'scope', 'modes', 'extraModes', 'selectors', 'lightDark', 'p3Fallback', 'alpha', 'series', 'tonal', 'primes', 'diverging', 'tailwind', 'figma', 'dtcg', 'split', 'preset', 'familyNames', 'tonalRoles', 'showcase', 'emphasis', 'translucent', 'autoDark', 'brandExact', 'familyAnchors'];
+const KEYS = ['apca', 'brightHues', 'neutrals', 'settings', 'roles', 'anchors', 'endpoints', 'scope', 'modes', 'extraModes', 'selectors', 'lightDark', 'p3Fallback', 'alpha', 'series', 'tonal', 'primes', 'diverging', 'tailwind', 'figma', 'dtcg', 'split', 'preset', 'familyNames', 'tonalRoles', 'showcase', 'emphasis', 'translucent', 'autoDark', 'brandExact', 'familyAnchors', 'hoverMin'];
 const unknown = Object.keys(req).filter((k) => !KEYS.includes(k));
 if (unknown.length) fail(2, 'request: unknown key(s) ' + unknown.join(', ') + ' (allowed: ' + KEYS.join(', ') + ')');
 for (const k of ['autoDark', 'brandExact', 'lightDark', 'p3Fallback', 'alpha', 'series', 'primes', 'diverging', 'tailwind', 'figma', 'dtcg', 'split', 'tonalRoles', 'showcase']) if (k in req && typeof req[k] !== 'boolean') fail(2, 'request: ' + k + ' must be true or false');
+// hoverMin (opt-in): the least OKLab ΔE × 100 from every solid's step 9 to its step 10 (the hover), in every mode; unset, step 10 is
+// placed by the key run alone. See respace › hoverMin.
+if ('hoverMin' in req && !(typeof req.hoverMin === 'number' && Number.isFinite(req.hoverMin) && req.hoverMin >= 0 && req.hoverMin <= 100)) fail(2, 'request: hoverMin must be a number from 0 to 100 (OKLab ΔE × 100 from a solid to its hover; 4 is the hover report threshold)');
+const HOVER_FLOOR_DE = 'hoverMin' in req ? req.hoverMin : null;
 if ('emphasis' in req && !(typeof req.emphasis === 'number' && req.emphasis >= 0 && req.emphasis <= 2)) fail(2, 'request: emphasis must be a number from 0 (quiet) to 2 (loud); 1 is balanced');
 // Presets fill keys the request leaves out; an explicit key always wins.
 const PRESETS = { minimal: { extraModes: false, alpha: false, tonal: false } };
@@ -484,6 +488,7 @@ function solveSolid(ramp, st, floor, labels, gamut, only, cusp) {
 // moves toward 9 to the floor instead (a recorded deviation). Steps 11 and 12 are text: each clears apca.text on the page
 // and on step 3 (where a role's -fg sits on its -subtle fill).
 // Step 12 stays as generated unless it is needed for order. Every deviation from even spacing is recorded with its reason.
+const HOVER_DE_SLACK = 0.02, HOVER_DE_MARGIN = 0.05; // hoverMin: a step 10 closer than hoverMin + slack moves to hoverMin + margin (rounding of what ships)
 const ease = (t) => t * t;
 const hueLerp = (a, b, t) => (((a + (((((b - a) % 360) + 540) % 360) - 180) * t) % 360) + 360) % 360;
 function respace(ramp, { entry, floor, text, labels, gamut, pinned, nineFixed }) {
@@ -518,6 +523,22 @@ function respace(ramp, { entry, floor, text, labels, gamut, pinned, nineFixed })
       if (ok(l9 + 1)) { extra[10] = try10(edge(l9 + 1, even, ok)); run = build(c9, extra); dev.push({ step: 10, reason: 'hover-floor' }); }
       else dev.push({ step: 10, reason: 'hover-floor-unreachable' });
     }
+  }
+  // hoverMin (opt-in): step 10 at least that OKLab ΔE × 100 from step 9. It moves away from the solid along its own hue: chroma
+  // first (lower, at step 10's lightness, which keeps the key run's order and the label), then lightness past the solid's far side
+  // (darker on a light page, lighter on a dark one) while the label still clears the floor on it; 11 re-spaces between 10 and 12.
+  if (HOVER_FLOOR_DE != null && !pinned.includes(10) && dE(c9, run[10]) < HOVER_FLOOR_DE + HOVER_DE_SLACK) {
+    const want = HOVER_FLOOR_DE + HOVER_DE_MARGIN, h = run[10], far = (c) => dE(c9, c) >= want, lab10 = (c) => lcOn(lab, c) >= F || lcOn(lab, c) >= lcOn(lab, h);
+    const byC = (k) => [h[0], h[1] * k, h[2]];
+    let to = far(byC(0)) ? byC(edge(0, 1, (k) => far(byC(k)))) : null; // edge keeps the passing end (k = 0) and closes on the least move
+    if (to && !lab10(to)) to = null;
+    if (!to) { // chroma alone is not enough: keep the gamut's chroma and step further in lightness along the run's direction
+      const byL = (L) => [L, clampChroma(L, h[1], h[2], gamut), h[2]], end = dir < 0 ? 0 : 1, ok = (L) => lab10(byL(L)), farL = (L) => far(byL(L));
+      if (farL(end) && ok(end)) to = byL(edge(end, h[0], farL));
+      else { const L = edge(h[0], end, ok); if (farL(L)) to = byL(edge(L, h[0], farL)); }
+    }
+    if (to) { extra[10] = to; run = build(c9, extra); dev.push({ step: 10, reason: 'hover-min' }); }
+    else dev.push({ step: 10, reason: 'hover-min-blocked' });
   }
   // Text steps: 11 (a role's -fg) and 12 clear apca.text against the page and against step 3 (the role's -subtle fill).
   const s3 = ramp[2].oklch, textLc = (c) => Math.min(lcP(c), lcOn(c, s3));
