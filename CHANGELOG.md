@@ -4,6 +4,14 @@ SDLC releases (named SDLC Lite before 1.0.0), newest first, in [Keep a Changelog
 
 ## [Unreleased]
 
+## [1.0.12] - 2026-11-24
+
+Report: [docs/reports/2026-11-24-release-1-0-12.md](docs/reports/2026-11-24-release-1-0-12.md). Marketplace release: `design` 0.7.1; `sdlc` 1.1.0, `context` 0.8.0 and `dev-tools` 0.1.1 are unchanged. No tickets.
+
+### Added
+
+- `design` 0.7.1: a twelfth designer agent, `design:massimo-vignelli`, Claude Code only.
+
 ## [1.0.11] - 2026-11-24
 
 Report: [docs/reports/2026-11-24-release-1-0-11.md](docs/reports/2026-11-24-release-1-0-11.md). Marketplace release: `design` 0.7.0; `sdlc` 1.1.0, `context` 0.8.0 and `dev-tools` 0.1.1 are unchanged. One ticket (T-0882) and PR #104. Details are in [the design changelog](plugins/design/CHANGELOG.md).

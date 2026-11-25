@@ -4,6 +4,12 @@ The design plugin, newest first. Releases before this file are recorded in the r
 
 ## [Unreleased]
 
+## [0.7.1] - 2026-11-24
+
+### Added
+
+- A twelfth designer agent, `massimo-vignelli`, Claude Code only, imported unchanged from the MacBook share. Its source has no `model:` line, so it runs on the session's model; listed in `AGENTS.md`.
+
 ## [0.7.0] - 2026-11-24
 
 ### Added

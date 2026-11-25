@@ -22,7 +22,7 @@
     {
       "name": "design",
       "source": "./plugins/design",
-      "description": "UI construction, UI geometry, UI colors, UI materials, content, interactions, UI kits, variant exploration, bento showcases, inspector jigs, component variants, wireframe review, design critique and eleven designer agents (Claude Code only)."
+      "description": "UI construction, UI geometry, UI colors, UI materials, content, interactions, UI kits, variant exploration, bento showcases, inspector jigs, component variants, wireframe review, design critique and twelve designer agents (Claude Code only)."
     }
   ],
   "metadata": {
