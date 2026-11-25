@@ -1,6 +1,6 @@
 # Design maintenance
 
-Read [repository guidance](../../AGENTS.md) first. This plugin ships design skills for Claude Code and Codex. It has no hooks, MCP services, native agents, model mapping, or SDLC dependency.
+Read [repository guidance](../../AGENTS.md) first. This plugin ships design skills for Claude Code and Codex, and designer agents for Claude Code only. It has no hooks, MCP services, model mapping, or SDLC dependency.
 
 ## Skills
 
@@ -19,6 +19,24 @@ Read [repository guidance](../../AGENTS.md) first. This plugin ships design skil
 | `wireframe-review` | Interactive wireframes with alternatives, annotations and JSON feedback |
 | `design-crit` | Four-reviewer critique of interfaces, workflows and wireframes |
 | `make-figma-agent-connector` | Claude Code only: brings up the local figma-bridge and its Figma connector values |
+
+## Agents
+
+Claude Code only: Claude Code finds them in `agents/` and names them `design:<name>`; Codex has no design agents. Each is a design director formed by one designer's principles, method and context: it sets direction, makes and reviews visual artifacts (websites, documents, reports, dashboards, decks, interfaces, demos) and critiques work through that designer's thinking. Imported unchanged from the MacBook share (`~/.claude/agents/`, files dated 2026-11-23); keep them identical to the source on the next sync. Their `model: opus` line is a user decision.
+
+| Agent | Use when the user wants work directed through |
+|---|---|
+| `dieter-rams` | Dieter Rams |
+| `ive-newson` | Jony Ive and Marc Newson |
+| `jan-tschichold` | Jan Tschichold |
+| `john-maeda` | John Maeda |
+| `karl-gerstner` | Karl Gerstner |
+| `le-corbusier` | Le Corbusier |
+| `max-bill` | Max Bill |
+| `muller-brockmann` | Josef Müller-Brockmann |
+| `muriel-cooper` | Muriel Cooper |
+| `naoto-fukasawa` | Naoto Fukasawa |
+| `wim-crouwel` | Wim Crouwel |
 
 ## Rules
 
