@@ -2,7 +2,7 @@
 id: T-0884
 title: "ui-colors: step 10 of a cusp-bright solid barely changes in dark"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -44,3 +44,13 @@ In dark mode, step 10 (hover) of a solid at the gamut cusp differs visibly from 
   - A negative control that drops the key's effect fails that check; an invalid value (negative, or not a number) exits 2.
   - A `{}` request's output is byte-identical to the base and the recorded digest is unchanged; `node scripts/check.mjs` passes every check with every control biting; `python3 scripts/check-packaging.py` exits 0.
 - Constraints: do not edit `plugins/design/AGENTS.md` or any CHANGELOG (T-0889 runs on the same files; the conductor records both at landing).
+
+## Outcome
+
+2026-11-25 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: a771d36f4f78
+- Changed: see commits
+- Commits: 9f52714 T-0884: ui-colors hoverMin, an opt-in least step 9 to 10 dE for every solid; ff99575 T-0884: record lane T-0884-t0884
+- Check: 1 With `{"settings":{"hueSet":"radix"},"hoverMin":4}` every family's step 9 to 10 ΔE is at least 4 ...: pass
+- Check: 2 A negative control that drops the key's effect fails that check; an invalid value (negative, or n...: pass
+- Check: 3 A `{}` request's output is byte-identical to the base and the recorded digest is unchanged; `node...: pass
+- Follow-up: note: references/system.md still says "Then 74 negative controls" in the... -> notes.md

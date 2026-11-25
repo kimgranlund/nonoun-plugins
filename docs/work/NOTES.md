@@ -1098,3 +1098,7 @@
 ## T-0886: ui-colors: warm text steps 11 and 12 read brown at the default targets (2026-11-25)
 
 - note: docs/work/0886-ui-colors-warm-text-brown/handoff.md Context lists default orange 11 `#842c00`, 12 `#270600`; the current generator gives `#7e3b00`, `#502200`, which the doc records correctly.
+
+## T-0884: ui-colors: step 10 of a cusp-bright solid barely changes in dark (2026-11-25)
+
+- note: `references/system.md` still says "Then 74 negative controls" in the check.mjs section while the run reports 136 controls; the count was stale before this change (not introduced here).
