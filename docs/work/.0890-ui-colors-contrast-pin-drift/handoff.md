@@ -2,7 +2,7 @@
 id: T-0890
 title: "ui-colors: a pinned step 9 drifts in the contrast modes"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -56,3 +56,15 @@ The T-0885 verifier saw the same with teal: ΔE 1.49 in light-contrast and 26.85
 
 ## Constraints
 The failing check lands before or with the fix, never after.
+
+## Outcome
+
+2026-11-26 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: 7f132cb88c75
+- Changed: see commits
+- Commits: 41fd445 T-0890: ui-colors: a pinned step 9 drifts in the contrast modes; b2c122f T-0890: record lane T-0890-t0890
+- Check: 1 Orange step 9 in dark-contrast within ΔE 10 of the pin, or anchorReport records the move and the ...: pass
+- Check: 2 A negative control that restores the current placement fails that check: pass
+- Check: 3 `node scripts/check.mjs` all checks pass, all controls bite; `{}` output byte-identical to main: pass
+- Check: 4 `python3 scripts/check-packaging.py` exits 0 and `git diff --check` clean: pass
+- Follow-up: note: plugins/design/skills/ui-colors/references/system.md:494 says "Then... -> notes.md
+- Follow-up: note: the dark-contrast fix lands orange lighter #ffa16e, ΔE 12.86, not... -> notes.md

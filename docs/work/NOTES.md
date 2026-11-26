@@ -1110,3 +1110,8 @@
 ## T-0889: ui-colors: P3 that uses P3 (anchor p3 option, usage report, families --from-p3) (2026-11-25)
 
 - note: docs/reports/2026-11-24-ui-colors-radix-match.md records an open decision, whether the `effectively sRGB` warning should count visible swatches (ΔE over 2) instead of all swatches outside sRGB. With the plain count, the user's own request never warns.
+
+## T-0890: ui-colors: a pinned step 9 drifts in the contrast modes (2026-11-26)
+
+- note: plugins/design/skills/ui-colors/references/system.md:494 says "Then 74 negative controls" while check.mjs now runs 150; stale before this build (it adds two controls), not introduced here.
+- note: the dark-contrast fix lands orange lighter (`#ffa16e`, ΔE 12.86), not brown; it stays above the "within ΔE 10" bar so the move is recorded, which the criterion allows.
