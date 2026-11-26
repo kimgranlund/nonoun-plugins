@@ -1102,3 +1102,7 @@
 ## T-0884: ui-colors: step 10 of a cusp-bright solid barely changes in dark (2026-11-25)
 
 - note: `references/system.md` still says "Then 74 negative controls" in the check.mjs section while the run reports 136 controls; the count was stale before this change (not introduced here).
+
+## T-0885: ui-colors: bundle the full Radix scales and add compare radix (2026-11-25)
+
+- note: contrast modes (light-contrast, dark-contrast) do not report ΔE 0 at a pinned step 9 (teal 1.49 and 26.85), because those modes move colours by design. check.mjs pins only light and dark (extraModes: false), so this is untested but consistent with the doc's "reported only" scope.

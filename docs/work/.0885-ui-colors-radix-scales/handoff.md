@@ -2,7 +2,7 @@
 id: T-0885
 title: "ui-colors: bundle the full Radix scales and add compare radix"
 type: feature        # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L3             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -34,3 +34,13 @@ router: .sdlc/AGENTS.md  # how to claim and close this ticket
 
 ## Constraints
 - Default output (`{}`) unchanged.
+
+## Outcome
+
+2026-11-25 · lane: solo L3 · verdict: closed by reason (delivered by the solo agent (level L3); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: 90073970f36d
+- Changed: see commits
+- Commits: 1ecb1bc T-0885: solo lane skips; 77e4a44 T-0885: record lane T-0885-t0885
+- Check: 1 Bundled data has 31 scales x 12 steps x light and dark, provenance names the @radix-ui/colors ver...: pass
+- Check: 2 `compare: "radix"` adds per-step deltas to system.json, and a check confirms a familyAnchors step...: pass
+- Check: 3 `{}` output byte-identical to main; `node scripts/check.mjs` passes; packaging passes: pass
+- Follow-up: note: contrast modes light-contrast, dark-contrast do not report ΔE 0 at... -> notes.md
