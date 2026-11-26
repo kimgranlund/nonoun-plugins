@@ -880,6 +880,31 @@ function checkRadixData(d) {
 }
 const RADIX_PIN = { orange: { value: RADIX.scales.orange.light[8], dark: RADIX.scales.orange.dark[8] } };
 const RADIX_REQ = { extraModes: false, tonal: false, alpha: false, series: false, dtcg: false, familyAnchors: RADIX_PIN, compare: 'radix' };
+// 13h. Pinned step 9 in the contrast modes. Orange and teal pinned at their Radix light step 9 in both schemes, with the default
+// extra modes: in every mode each pinned step 9 sits within ΔE 10 of its anchor (recomputed from the ramps), or its anchorReport
+// row records the move (`solidMove`: the mode's scheme and solid floor, the anchor and step 9 hex, ΔL and ΔE matching the ramps),
+// and a move is recorded only where the anchor colour fails that floor against both labels (the move was forced).
+const PIN_REQ = { tonal: false, alpha: false, series: false, dtcg: false, settings: { hueSet: 'radix' }, compare: 'radix', familyAnchors: { orange: { value: '#f76b15', dark: '#f76b15' }, teal: { value: '#12a594', dark: '#12a594' } } };
+function checkContrastPins(j) {
+  const f = [], labels = labelsOf(j), lcS = lcShown(j), hexOf = (c) => '#' + lin(c).map((v) => Math.round((v <= 0.0031308 ? 12.92 * v : 1.055 * v ** (1 / 2.4) - 0.055) * 255).toString(16).padStart(2, '0')).join('');
+  let moves = 0;
+  for (const [id, M] of Object.entries(j.modes)) for (const x of M.anchorReport || []) {
+    const d = M.scheme === 'dark' && x.dark ? x.dark : x; if (d.step !== 9) continue;
+    const want = hexOk(d.value), got = M.ramps[x.family][8].oklch, e = dE(want, got), T = thrOf(j, M), m = x.solidMove;
+    if (!m) { if (e > 10) f.push(`${id} ${x.family} step 9 ${hexOf(got)} is ΔE ${e.toFixed(2)} from the pin ${d.value} with no anchorReport solidMove`); else if (e > 0.5) f.push(`${id} ${x.family} step 9 moved ΔE ${e.toFixed(2)} with no solidMove recorded`); continue; }
+    moves++;
+    if (m.scheme !== M.scheme || m.floor !== T.solid) f.push(`${id} ${x.family} solidMove names ${m.scheme} floor ${m.floor}, the mode is ${M.scheme} floor ${T.solid}`);
+    if (Math.abs(m.dE - e) > 0.05 || Math.abs(m.dL - (got[0] - want[0])) > 0.0005 || m.to !== hexOf(got)) f.push(`${id} ${x.family} solidMove ${m.to} ΔE ${m.dE} ΔL ${m.dL}, the ramp has ${hexOf(got)} ΔE ${e.toFixed(2)} ΔL ${(got[0] - want[0]).toFixed(4)}`);
+    const forced = ['light', 'dark'].every((l) => lcS(labels[l], want) < T.solid); if (!forced) f.push(`${id} ${x.family}: the pin ${d.value} clears the ${T.solid} floor against a label, yet moved`);
+    // The least lightness move at the anchor's hue per label (chroma clamped to the gamut), bisected here: the step 9 shipped is no
+    // farther from the pin than the farther of the two (a label's hover room may not drag it beyond both).
+    const at = (L) => [L, clampChroma(L, want[1], want[2], j.target), want[2]], least = ['light', 'dark'].map((l) => { const ok = (L) => lcS(labels[l], at(L)) >= T.solid + MARGIN, end = l === 'light' ? 0 : 1;
+      if (!ok(end)) return Infinity; let lo = end, hi = want[0]; for (let i = 0; i < 40; i++) { const mid = (lo + hi) / 2; if (ok(mid)) lo = mid; else hi = mid; } return dE(want, at(lo)); });
+    if (e > Math.max(...least.filter(Number.isFinite)) + 0.5) f.push(`${id} ${x.family} step 9 ${hexOf(got)} ΔE ${e.toFixed(2)} from the pin, past both labels' least moves (ΔE ${least.map((v) => v.toFixed(2)).join(', ')})`);
+  }
+  if (!moves) f.push('no pinned step 9 moved in any mode (the contrast floor never bound)');
+  return f;
+}
 const BAD_COMPARE = [{ compare: 'material' }, { compare: true }, { compare: ['radix'] }, { compare: null }];
 function checkRadixCompare(j, pinned, plain, plainHtml) {
   const f = []; let n = 0, away = 0;
@@ -939,7 +964,7 @@ try {
   const lineFA = readFileSync(outFA + '.line', 'utf8'), outLow = join(tmp, 'p3-low'), lineLow = runSystem({ ...P3_LOW, p3: 'exact' }, outLow), jLow = readJson(join(outLow, 'system.json'));
   const outHM = join(tmp, 'hover-min'), outHA = join(tmp, 'hover-min-anchored'), outH0 = join(tmp, 'hover-min-unset'); runSystem(HOVER_MIN_REQ, outHM); runSystem(HOVER_MIN_FA, outHA); runSystem({ settings: { hueSet: 'radix' } }, outH0);
   const jHM = readJson(join(outHM, 'system.json')), jHA = readJson(join(outHA, 'system.json')), jH0 = readJson(join(outH0, 'system.json'));
-  const outRC = join(tmp, 'radix-compare'); runSystem(RADIX_REQ, outRC); const jRC = readJson(join(outRC, 'system.json')), htmlRC = readFileSync(join(outRC, 'preview.html'), 'utf8');
+  const outRC = join(tmp, 'radix-compare'); runSystem(RADIX_REQ, outRC); const outPC = join(tmp, 'contrast-pins'); runSystem(PIN_REQ, outPC); const jPC = readJson(join(outPC, 'system.json')); const jRC = readJson(join(outRC, 'system.json')), htmlRC = readFileSync(join(outRC, 'preview.html'), 'utf8');
   const outB = join(tmp, 'brand'), outBL = join(tmp, 'brand-loose'); runSystem(BRAND, outB); runSystem({ ...BRAND, brandExact: false, autoDark: true, extraModes: false }, outBL);
   const jB = readJson(join(outB, 'system.json')), cssB = readFileSync(join(outB, 'system.css'), 'utf8'), jBL = readJson(join(outBL, 'system.json'));
   const jT = readJson(join(outT, 'system.json')), cssT = readFileSync(join(outT, 'system.css'), 'utf8');
@@ -1049,6 +1074,7 @@ try {
     'radix data: 31 scales × 8 variants × 12 steps, the package version and tarball sha256 named, the scales at their recorded hash': () => checkRadixData(RADIX),
     'compare radix: every Radix-named family compared in every mode (ΔE, ΔL recomputed), a familyAnchors step-9 pin at ΔE 0, the preview column; none without the key': () => [...checkRadixCompare(jRC, Object.keys(RADIX_PIN), j1, readFileSync(join(out1, 'preview.html'), 'utf8')), ...(htmlRC.match(/class="rdx"/g) || []).length === 2 * jRC.families.all.length ? [] : ['the preview lacks a Radix column on some family row']],
     'compare: values other than "radix" exit 2': () => checkBadRequests(BAD_COMPARE),
+    'pinned step 9 in the contrast modes: within ΔE 10 of the pin, or the move recorded in anchorReport (solidMove), forced by the floor and no farther than a label\'s least move': () => checkContrastPins(jPC),
     'showcase: the runs have anchor, APCA-miss and key-run flags to check': () => (/data-flag="anchor-order"/.test(sc4) && /data-flag="anchor-clip"/.test(sc4) && /data-flag="lc-miss"/.test(sc5) && /data-flag="keyrun"/.test(sc5) ? [] : ['a showcase run lacks the failures the controls need']),
   };
   for (const [name, fn] of Object.entries(checks)) record(name, fn());
@@ -1097,6 +1123,8 @@ try {
   control('the effectively-sRGB warning dropped from the CLI', () => checkP3Usage(jLow, lineLow.replace(/^WARNING effectively sRGB.*$/m, '')));
   control('a p3Usage written without a p3 key', () => { const x = clone(j1); x.modes.light.p3Usage = usageCount(x.modes.light); return checkNoP3Usage(x); });
   control('colors/ laid out from the P3 run', () => checkFromP3(outFFP3x, jFA, jP3));
+  control('a pinned step 9 back at the T-0890 placement (orange dark-contrast #832a00, no solidMove)', () => { const x = clone(jPC); const M = x.modes['dark-contrast']; M.ramps.orange[8].oklch = hexOk('#832a00'); M.anchorReport = M.anchorReport.map(({ solidMove: _m, ...r }) => r); return checkContrastPins(x); });
+  control('a pinned step 9 dragged past both least moves with the move recorded', () => { const x = clone(jPC); const M = x.modes['dark-contrast'], r = M.anchorReport.find((a) => a.family === 'orange'), c = hexOk('#832a00'), w = hexOk('#f76b15'); M.ramps.orange[8].oklch = c; r.solidMove = { ...r.solidMove, to: '#832a00', dL: +(c[0] - w[0]).toFixed(4), dE: +dE(w, c).toFixed(2) }; return checkContrastPins(x); });
   control('a valid role hue in the bad list', () => checkBadRequests([{ roles: { primary: 'h85.5' } }, { roles: { primary: 'oklch:84' } }]));
   control('a requested translucent role at another alpha', () => { const x = clone(jT); x.modes.dark.variables['--colors-veil-a'] = x.modes.dark.variables['--colors-veil-a'].replace(/\/ [\d.]+\)$/, '/ 0.5)'); return checkTranslucent(x, cssT, TR.translucent, j1); });
   control('a requested translucent role missing from one mode', () => { const x = clone(jT); delete x.modes.dim.variables['--colors-veil-b']; return checkTranslucent(x, cssT, TR.translucent, j1); });
