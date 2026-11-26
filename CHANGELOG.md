@@ -4,6 +4,20 @@ SDLC releases (named SDLC Lite before 1.0.0), newest first, in [Keep a Changelog
 
 ## [Unreleased]
 
+## [1.0.14] - 2026-11-26
+
+Report: [docs/reports/2026-11-26-release-1-0-14.md](docs/reports/2026-11-26-release-1-0-14.md). Marketplace release: `design` 0.8.0; `sdlc` 1.1.0, `context` 0.8.0 and `dev-tools` 0.1.1 are unchanged. Eight tickets (T-0883 to T-0890); the T-0883 and T-0889 commits are also on PR #105. Details are in [the design changelog](plugins/design/CHANGELOG.md).
+
+### Added
+
+- `design`: five data-visualization director agents, Claude Code only, called as `design:<name>` (`amanda-cox`, `edward-tufte`, `jacques-bertin`, `mike-bostock`, `tamara-munzner`).
+- `design`: `ui-colors` family anchors (`familyAnchors`), `scripts/families.mjs` per-family files with `light-dark()`, P3 anchors (`p3: "exact" | "relative" | "edge"`) with a P3 usage report, the bundled `@radix-ui/colors` 3.0.0 scales with `compare: "radix"`, and the opt-in `hoverMin` key (T-0883, T-0884, T-0885, T-0889).
+
+### Fixed
+
+- `design`: `ui-colors` rejects unknown role names (exit 2), judges `brightHues` once from the light mode, keeps a pinned step 9 nearest the pin in the contrast modes and records the move, and documents a "text looks brown" request (T-0883, T-0886, T-0890).
+- `design`: `ui-geometry` notes a `--density` with no effect under a one-line inset, and an unknown `--preset` exits 2 with a hint (T-0887, T-0888).
+
 ## [1.0.13] - 2026-11-25
 
 Report: [docs/reports/2026-11-25-release-1-0-13.md](docs/reports/2026-11-25-release-1-0-13.md). Marketplace release: `design` 0.7.2; `sdlc` 1.1.0, `context` 0.8.0 and `dev-tools` 0.1.1 are unchanged. No tickets.

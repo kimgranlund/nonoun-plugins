@@ -4,6 +4,8 @@ The design plugin, newest first. Releases before this file are recorded in the r
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-11-26
+
 ### Added
 
 - Five data-visualization director agents, Claude Code only, imported unchanged from the MacBook share: `amanda-cox`, `edward-tufte`, `jacques-bertin`, `mike-bostock` and `tamara-munzner` (`model: opus`); listed in `AGENTS.md`.
