@@ -126,7 +126,7 @@ const p3Src = gamuts.find(([g]) => g === 'p3')?.[2];
 const p3Usage = p3Src && { method: `ramp swatches of the colors-p3 run against their sRGB mapping, OKLab ΔE × 100; outside sRGB at ${P3_OUTSIDE} or more, visibly over ${P3_VISIBLE}; ΔE over the swatches outside sRGB`, ...Object.fromEntries([values.light, values.dark].map((id) => [id, usageOf(p3Src.modes[id])])) };
 const usageLine = (id) => { const u = p3Usage[id]; return `${u.outsideSrgb} of ${u.swatches} ${id} ramp swatches (${u.share}%; ${u.visible} visibly, ${u.visibleShare}%, over ΔE ${P3_VISIBLE}; largest ΔE ${u.maxDE}${u.largest ? ', ' + u.largest : ''})`; };
 const usageText = !p3Usage ? '' : (JP ? `\`colors-p3/\` is laid out from a P3-tuned run (\`manifest.json › generator.p3Request\`), \`colors/\` from the sRGB run. The P3 run leaves sRGB in ` : `\`colors-p3/\` differs from \`colors/\` in `)
-  + `${usageLine(values.light)} and ${usageLine(values.dark)} (\`manifest.json › p3Usage\`). Under 5% visibly, the two folders look the same on a wide-gamut screen: anchor with \`"p3": "edge"\` or raise \`keyIntensity\`${JP ? '' : ', or lay out a P3-tuned run with `--from-p3`'}.\n\n`;
+  + `${usageLine(values.light)} and ${usageLine(values.dark)} (\`manifest.json › p3Usage\`). Under 5% outside sRGB, the two folders look the same on a wide-gamut screen: anchor with \`"p3": "edge"\` or raise \`keyIntensity\`${JP ? '' : ', or lay out a P3-tuned run with `--from-p3`'}.\n\n`;
 
 // ── Docs, generated from the same data so they can't drift from the values ──────────────────────────────────
 const dir0 = gamuts[0][1], sem = JSON.parse(readFileSync(join(out, dir0, 'semantic.json'), 'utf8')).roles;

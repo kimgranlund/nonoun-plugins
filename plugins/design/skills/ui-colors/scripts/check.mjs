@@ -359,12 +359,14 @@ function checkP3Anchors(j) {
   return f;
 }
 // P3 usage: each mode's p3Usage recounted from the ramps (swatches whose sRGB mapping moves them by ΔE 0.01 or more; visibly over
-// 2; max and median over those outside); the CLI warning names exactly the modes under 5% visibly; no p3Usage without a p3 key.
+// 2; max and median over those outside); the CLI warning names exactly the modes under 5% outside sRGB (a low-chroma run has
+// them); no p3Usage without a p3 key.
+const P3_LOW = { extraModes: false, tonal: false, alpha: false, series: false, dtcg: false, settings: { keyIntensity: 60, base: 50 } };
 function usageCount(M) {
   const ds = []; let n = 0;
   for (const r of Object.values(M.ramps)) for (const x of r) { n++; const [L, C, H] = x.oklch, d = 100 * (C - clampChroma(L, C, H, 'srgb')); if (d >= 0.01) ds.push(d); }
   ds.sort((a, b) => a - b); const vis = ds.filter((d) => d > 2).length;
-  return { swatches: n, outsideSrgb: ds.length, visible: vis, visibleShare: 100 * vis / n, maxDE: ds.at(-1) ?? 0, medianDE: ds.length ? (ds[(ds.length - 1) >> 1] + ds[ds.length >> 1]) / 2 : 0 };
+  return { swatches: n, outsideSrgb: ds.length, share: 100 * ds.length / n, visible: vis, maxDE: ds.at(-1) ?? 0, medianDE: ds.length ? (ds[(ds.length - 1) >> 1] + ds[ds.length >> 1]) / 2 : 0 };
 }
 function checkP3Usage(j, line, reported) {
   const f = [];
@@ -373,7 +375,7 @@ function checkP3Usage(j, line, reported) {
     for (const k of ['swatches', 'outsideSrgb', 'visible']) if (u[k] !== c[k]) f.push(`${id}: P3 usage ${k} ${u[k]}, the ramps give ${c[k]}`);
     for (const k of ['maxDE', 'medianDE']) if (Math.abs(u[k] - c[k]) > 0.01) f.push(`${id}: P3 usage ${k} ${u[k]}, the ramps give ${c[k].toFixed(2)}`);
   }
-  if (line != null) { const want = Object.entries(j.modes).filter(([, M]) => usageCount(M).visibleShare < 5).map(([id]) => id).join(', '), got = /^WARNING effectively sRGB.*\[([^\]]*)\]$/m.exec(line)?.[1] ?? '';
+  if (line != null) { const want = Object.entries(j.modes).filter(([, M]) => usageCount(M).share < 5).map(([id]) => id).join(', '), got = /^WARNING effectively sRGB.*\[([^\]]*)\]$/m.exec(line)?.[1] ?? '';
     if (got !== want) f.push(`CLI warns effectively sRGB in [${got}], the ramps give [${want}]`); }
   return f;
 }
@@ -881,7 +883,7 @@ try {
   const outFA = join(tmp, 'family-anchors'); writeFileSync(outFA + '.line', runSystem(FAMILY_REQ, outFA)); const outFF = join(tmp, 'family-files'); execFileSync(process.execPath, [here + 'families.mjs', '--from', outFA, '--out', outFF], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }); const jFA = readJson(join(outFA, 'system.json')), cssFA = readFileSync(join(outFA, 'system.css'), 'utf8');
   const outP3 = join(tmp, 'p3-anchors'), lineP3 = runSystem(P3_REQ, outP3), jP3 = readJson(join(outP3, 'system.json')), outFFP3 = join(tmp, 'family-files-p3'), outFFP3x = join(tmp, 'family-files-p3-both');
   execFileSync(process.execPath, [here + 'families.mjs', '--from', outFA, '--from-p3', outP3, '--out', outFFP3], { stdio: ['ignore', 'pipe', 'pipe'] }); execFileSync(process.execPath, [here + 'families.mjs', '--from', outP3, '--from-p3', outP3, '--out', outFFP3x], { stdio: ['ignore', 'pipe', 'pipe'] });
-  const lineFA = readFileSync(outFA + '.line', 'utf8');
+  const lineFA = readFileSync(outFA + '.line', 'utf8'), outLow = join(tmp, 'p3-low'), lineLow = runSystem({ ...P3_LOW, p3: 'exact' }, outLow), jLow = readJson(join(outLow, 'system.json'));
   const outB = join(tmp, 'brand'), outBL = join(tmp, 'brand-loose'); runSystem(BRAND, outB); runSystem({ ...BRAND, brandExact: false, autoDark: true, extraModes: false }, outBL);
   const jB = readJson(join(outB, 'system.json')), cssB = readFileSync(join(outB, 'system.css'), 'utf8'), jBL = readJson(join(outBL, 'system.json'));
   const jT = readJson(join(outT, 'system.json')), cssT = readFileSync(join(outT, 'system.css'), 'utf8');
@@ -980,7 +982,8 @@ try {
     'family files: every variable resolves in both schemes, step 9 exact to the system, manifest hashes current (families.mjs)': () => checkFamilyFiles(outFF, jFA),
     'family anchors and role names: unknown roles, unknown families, a family a role anchor pins and bad keys exit 2': () => checkBadRequests(BAD_FAMILY),
     'P3 anchors: "edge" family anchors keep lightness and hue, saturated ones outside sRGB, muted ones scaled, requested and lifted in anchorReport': () => checkP3Anchors(jP3),
-    'P3 usage: counts recounted from the ramps, the effectively-sRGB warning on exactly the modes under 5% visibly (P3 anchors, family anchors)': () => [...checkP3Usage(jP3, lineP3), ...checkP3Usage(jFA, lineFA, Object.fromEntries(Object.entries(jFA.modes).map(([id, M]) => [id, usageCount(M)])))],
+    'P3 usage: counts recounted from the ramps, the effectively-sRGB warning on exactly the modes under 5% (P3 anchors, family anchors, low chroma)': () => [...checkP3Usage(jP3, lineP3), ...checkP3Usage(jFA, lineFA, Object.fromEntries(Object.entries(jFA.modes).map(([id, M]) => [id, usageCount(M)]))), ...checkP3Usage(jLow, lineLow)],
+    'P3 usage: the low-chroma run has a mode to warn about': () => (/^WARNING effectively sRGB/m.test(lineLow) ? [] : ['no effectively-sRGB warning in the low-chroma run']),
     'P3 usage: in system.json only when the request names p3 (default, family anchors)': () => [...checkNoP3Usage(j1), ...checkNoP3Usage(jFA)],
     'P3 option: bad values exit 2': () => checkBadRequests(BAD_P3),
     'family files: --from-p3 lays colors-p3/ out from the P3 run and colors/ from the sRGB run; manifest and README carry the P3 usage': () => [...checkFamilyFiles(outFFP3, jP3), ...checkFromP3(outFFP3, jFA, jP3), ...checkP3Usage(jFA, null, readJson(join(outFF, 'manifest.json')).p3Usage).map((x) => 'manifest without --from-p3: ' + x), ...[outFF, outFFP3].filter((d) => !/ramp swatches/.test(readFileSync(join(d, 'README.md'), 'utf8'))).map((d) => `${d}: README.md does not state the P3 usage`)],
@@ -1029,7 +1032,7 @@ try {
   control('a P3 usage count that does not match the ramps', () => { const x = clone(jP3); x.modes.dark.p3Usage.outsideSrgb += 1; return checkP3Usage(x, lineP3); });
   control('an "edge" anchor that stayed inside sRGB', () => { const x = clone(jP3); const c = x.modes.light.ramps.orange[8].oklch; c[1] = clampChroma(c[0], c[1], c[2], 'srgb'); return checkP3Anchors(x); });
   control('a valid p3 value in the bad list', () => checkBadRequests([{ p3: 'relative' }]));
-  control('the effectively-sRGB warning dropped from the CLI', () => checkP3Usage(jFA, lineFA.replace(/^WARNING effectively sRGB.*$/m, ''), Object.fromEntries(Object.entries(jFA.modes).map(([id, M]) => [id, usageCount(M)]))));
+  control('the effectively-sRGB warning dropped from the CLI', () => checkP3Usage(jLow, lineLow.replace(/^WARNING effectively sRGB.*$/m, '')));
   control('a p3Usage written without a p3 key', () => { const x = clone(j1); x.modes.light.p3Usage = usageCount(x.modes.light); return checkNoP3Usage(x); });
   control('colors/ laid out from the P3 run', () => checkFromP3(outFFP3x, jFA, jP3));
   control('a valid role hue in the bad list', () => checkBadRequests([{ roles: { primary: 'h85.5' } }, { roles: { primary: 'oklch:84' } }]));

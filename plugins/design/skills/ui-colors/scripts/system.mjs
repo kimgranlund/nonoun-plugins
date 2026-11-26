@@ -1044,10 +1044,9 @@ const json = { generator: 'spectrum-system@2', request: R0, ...(R0.preset ? { re
 // How much of Display P3 the ramps use: each ramp swatch (every family, steps 1–12, the 6-decimal OKLCH system.json writes)
 // against its sRGB mapping (chroma clamped at its lightness and hue, the system.css fallback), OKLab ΔE × 100. A swatch leaves
 // sRGB when that mapping moves it by P3_OUTSIDE or more (the precision the CSS is written at), and visibly at more than
-// P3_VISIBLE (one just-noticeable difference, as for separation). A swatch a hair outside sRGB looks the same on both screens,
-// so the warning counts the visible ones: under P3_USAGE_MIN % of a display-p3 mode's swatches, the CLI warns that the system is
-// effectively sRGB (measured: Radix pinned exactly leaves sRGB in 14% of light swatches, visibly in 1.6%). In system.json only
-// when the request names `p3`, so the default output is unchanged.
+// P3_VISIBLE (one just-noticeable difference, as for separation). Under P3_USAGE_MIN % of a display-p3 mode's swatches leaving
+// sRGB, the CLI warns that the system is effectively sRGB. In system.json only when the request names `p3`, so the default
+// output is unchanged.
 const P3_OUTSIDE = 0.01, P3_VISIBLE = 2, P3_USAGE_MIN = 5;
 function p3UsageOf(ramps) {
   const out = [];
@@ -1151,6 +1150,6 @@ for (const id of ids) { const M = modes[id];
 const anchorLines = [...anchorWarnings].map(([msg, in_]) => `WARNING ${msg} [${in_.join(', ')}]`);
 console.log(`wrote ${values.out}: modes ${[...ids].join(', ')}; ${fam.accents.length} accents + ${fam.neutrals.length} neutral; ${tonal ? 'tonal 050–950' + (opt.primes ? ' + primes' : '') + '; ' : ''}target ${target}${p3 ? ' (sRGB + P3 upgrade)' : ''}${opt.split ? '; split CSS' : ''}${opt.showcase ? '; showcase.html' : ''}; weakest solid vs label (APCA): ` + [...ids].map((id) => `${id} Lc ${weak(id)[1]} (${weak(id)[0]}, floor ${modes[id].apca.solid})`).join(', ') + `; contrast pairs under their APCA threshold: ${lcLine}${target === 'display-p3' ? '; on a Display P3 screen: ' + [...ids].map((id) => `${id} ${modes[id].contrastMatrix.summary.failP3 ?? 0}`).join(', ') : ''} (system.json › modes.<id>.contrast); hover pairs under ΔE ${HOVER_MIN}: ${[...ids].map((id) => `${id} ${modes[id].hover.summary.fail}`).join(', ')} (modes.<id>.hover)` + cvdLine + sepLine);
 for (const line of anchorLines) console.log(line);
-{ const low = [...ids].filter((id) => modes[id].target === 'display-p3' && p3Usage[id].visibleShare < P3_USAGE_MIN);
+{ const low = [...ids].filter((id) => modes[id].target === 'display-p3' && p3Usage[id].share < P3_USAGE_MIN);
   console.log('P3 usage (ramp swatches outside sRGB; OKLab ΔE of the P3 value from its sRGB mapping): ' + [...ids].map((id) => { const u = p3Usage[id]; return `${id} ${u.outsideSrgb}/${u.swatches} (${u.share}%; ${u.visible} visibly, ${u.visibleShare}%, over ΔE ${P3_VISIBLE}; max ${u.maxDE}${u.largest ? ' ' + u.largest : ''}, median ${u.medianDE})`; }).join(', ') + (p3Named ? ' (modes.<id>.p3Usage)' : ''));
-  if (low.length) console.log(`WARNING effectively sRGB: under ${P3_USAGE_MIN}% of ramp swatches leave sRGB visibly (ΔE over ${P3_VISIBLE}); anchor with "p3": "edge" or raise keyIntensity (system.md › Anchors › P3 anchors) [${low.join(', ')}]`); }
+  if (low.length) console.log(`WARNING effectively sRGB: under ${P3_USAGE_MIN}% of ramp swatches leave sRGB; anchor with "p3": "edge" or raise keyIntensity (system.md › Anchors › P3 anchors) [${low.join(', ')}]`); }
