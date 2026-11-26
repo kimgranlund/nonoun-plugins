@@ -4,6 +4,7 @@
 
 - `index.js`, `config.js`, `contrast.js`, `roles.js`, `oklch.js`, `alpha.js`, `correct.js`, `anchors.js`: readable ES modules (settings, APCA step placement, roles, OKLCH generator, transparent steps, hue correction, anchors).
 - `runtime.json`: an esbuild bundle of the HCT spectrum generator (engine sha256 `a5e029449341ac3305fce2df3fbbdf5f9aa74a7c7731a94b127a41766d95a4e4`, runtime sha256 `849a8e5603017aabdbcd35408e317c88a5609d7fa73810b16e47a607641d642f`). Its source is private and not included.
+- `radix-colors.json`: data, not engine code: every `@radix-ui/colors` 3.0.0 scale (MIT, Copyright (c) 2021 Radix; the licence text travels in its `provenance.licenseText`), taken from the npm tarball (sha256 `f6cec1ff1fcc58a45eeefc25d0e6aa1f1659845dbd198963617a86e43d21f3d1`), read only by `system.mjs` for `compare: "radix"` (`references/system.md` › Reports › Radix comparison). Replace it from a newer package as its `provenance.rebuild` says, never by hand.
 
 The bundle inlines third-party code whose notices travel inside it and must stay with it: colorjs (MIT, Lea Verou and Chris Lilley), ultimate-tokens (MIT), `@stdlib` math (Apache-2.0) and a Go-derived `atan2` (BSD). Do not strip or minify the embedded notices.
 

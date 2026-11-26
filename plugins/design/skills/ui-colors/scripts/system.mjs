@@ -34,7 +34,7 @@ try { req = JSON.parse(readFileSync(values.request, 'utf8')); } catch (e) { fail
 if (!req || typeof req !== 'object' || Array.isArray(req)) fail(2, 'request: must be a JSON object');
 
 // ── Request ───────────────────────────────────────────────────────────────────────────────────────────────
-const KEYS = ['apca', 'brightHues', 'neutrals', 'settings', 'roles', 'anchors', 'endpoints', 'scope', 'modes', 'extraModes', 'selectors', 'lightDark', 'p3Fallback', 'alpha', 'series', 'tonal', 'primes', 'diverging', 'tailwind', 'figma', 'dtcg', 'split', 'preset', 'familyNames', 'tonalRoles', 'showcase', 'emphasis', 'translucent', 'autoDark', 'brandExact', 'familyAnchors', 'hoverMin'];
+const KEYS = ['apca', 'brightHues', 'neutrals', 'settings', 'roles', 'anchors', 'endpoints', 'scope', 'modes', 'extraModes', 'selectors', 'lightDark', 'p3Fallback', 'alpha', 'series', 'tonal', 'primes', 'diverging', 'tailwind', 'figma', 'dtcg', 'split', 'preset', 'familyNames', 'tonalRoles', 'showcase', 'emphasis', 'translucent', 'autoDark', 'brandExact', 'familyAnchors', 'hoverMin', 'compare'];
 const unknown = Object.keys(req).filter((k) => !KEYS.includes(k));
 if (unknown.length) fail(2, 'request: unknown key(s) ' + unknown.join(', ') + ' (allowed: ' + KEYS.join(', ') + ')');
 for (const k of ['autoDark', 'brandExact', 'lightDark', 'p3Fallback', 'alpha', 'series', 'primes', 'diverging', 'tailwind', 'figma', 'dtcg', 'split', 'tonalRoles', 'showcase']) if (k in req && typeof req[k] !== 'boolean') fail(2, 'request: ' + k + ' must be true or false');
@@ -182,6 +182,10 @@ const translucent = eff.translucent && Object.keys(eff.translucent).length ? eff
 // source-palette recipe drifts dark yellows and oranges by up to ~11° away from the ramps (references/system-notice.md).
 const tonalOpt = { toneMin: 10, toneMax: 98, step: 50, hueBalance: false, ...(typeof eff.tonal === 'object' && eff.tonal ? eff.tonal : {}) };
 if (opt.tonalRoles && !opt.tonal) fail(2, 'request: tonalRoles needs the tonal layer (tonal is false)');
+// compare (opt-in): "radix" measures every family against the bundled @radix-ui/colors scale of the same name, per mode and
+// step (system/radix-colors.json, read only then; see the Radix comparison block below). Unset, nothing is read or written.
+if ('compare' in eff && eff.compare !== 'radix') fail(2, 'request: compare must be "radix" (each family against the bundled @radix-ui/colors scale of the same name)');
+const COMPARE = eff.compare === 'radix';
 
 // Hue and hue set rename HCT families, so the default names reject a mode that changes them; index names don't.
 const HUE_KEYS = ['hue', 'hueSet', 'quadStart'];
@@ -1064,12 +1068,41 @@ if (opt.figma) {
   figma = { $description: 'Figma variables (sRGB 0–1). valuesByMode holds RGBA or { type: "VARIABLE_ALIAS", id } pointing at another variable\'s id (ids are stable: "Color:<name>", "Palette:<name>"); resolvedValuesByMode is the same colour resolved, for importers without alias support. Import with a variables plugin or the Variables REST API.', collections: [{ name: 'Color', modes: [...ids], variables: vars }, ...(pal.length ? [{ name: 'Palette', modes: ['default'], variables: pal }] : [])] };
 }
 
+// ── Radix comparison (compare: "radix") ───────────────────────────────────────────────────────────────────
+// Every family against the @radix-ui/colors scale of the same name (a familyNames rename is traced back to the family it
+// renames) in the mode's scheme, step by step, system minus Radix: OKLab ΔE × 100 against Radix's sRGB hex, the OKLCH lightness
+// and chroma deltas × 100, the hue delta in degrees (wrapped to ±180; null where either chroma is under RADIX_HUE_MIN_C, one
+// CSS Color 4 JND, where a hue is not seen), and ΔE against Radix's own Display P3 value. A family with no Radix scale of its
+// name is listed as unmatched, never guessed. Reported only; nothing moves.
+const RADIX_HUE_MIN_C = 0.02;
+let radixData = null;
+if (COMPARE) {
+  try { radixData = JSON.parse(readFileSync(fileURLToPath(new URL('./system/radix-colors.json', import.meta.url)), 'utf8')); } catch (e) { fail(1, 'compare: cannot read system/radix-colors.json: ' + e.message); }
+  const scaleOf = (name) => (radixData.scales[name] ? name : typeof familyNames === 'object' ? Object.keys(familyNames).find((k) => familyNames[k] === name && radixData.scales[k]) ?? null : null);
+  const okOf = (css) => parseAnchorColor(css).oklch, mean = (xs) => (xs.length ? r2(xs.reduce((a, b) => a + b, 0) / xs.length) : null);
+  const unmatched = fam.all.map(rampName).filter((n) => !scaleOf(n));
+  for (const id of ids) { const M = modes[id], families = {}, all = [];
+    for (const f of fam.all) { const name = rampName(f), scale = scaleOf(name); if (!scale) continue;
+      const ref = radixData.scales[scale], steps = M.data.schemes[M.scheme][f].map((s, i) => { const a = s.oklch, b = okOf(ref[M.scheme][i]), p = okOf(ref[M.scheme + 'P3'][i]), dh = ((a[2] - b[2] + 540) % 360) - 180;
+        return { step: i + 1, radix: ref[M.scheme][i], dE: r2(dE(a, b)), dL: r2(100 * (a[0] - b[0])), dC: r2(100 * (a[1] - b[1])), dH: Math.min(a[1], b[1]) < RADIX_HUE_MIN_C ? null : r1(dh), dEP3: r2(dE(a, p)) }; });
+      const worst = steps.reduce((x, y) => (y.dE > x.dE ? y : x));
+      families[name] = { scale, meanDE: mean(steps.map((x) => x.dE)), maxDE: worst.dE, maxStep: worst.step, steps }; all.push(...steps.map((x) => x.dE)); }
+    const top = Object.entries(families).sort((a, b) => b[1].meanDE - a[1].meanDE)[0];
+    json.modes[id].radix = { scheme: M.scheme, families, summary: { families: Object.keys(families).length, meanDE: mean(all), farthest: top ? { family: top[0], meanDE: top[1].meanDE } : null } };
+  }
+  const P = radixData.provenance;
+  json.compare = { with: 'radix', source: { package: P.package, version: P.version, tarballSha256: P.tarballSha256, scalesSha256: P.scalesSha256 }, hueMinChroma: RADIX_HUE_MIN_C, unmatched,
+    method: 'per mode (modes.<id>.radix), each family against the Radix scale of the same name in the mode\'s scheme, system minus Radix: dE OKLab × 100 against the sRGB hex, dL and dC OKLCH × 100, dH degrees (null where either chroma is under hueMinChroma), dEP3 OKLab × 100 against Radix\'s Display P3 value' };
+}
+const radixCell = (id, f) => { const r = json.modes[id].radix?.families[rampName(f)];
+  return r ? `<span class="rdx" style="margin-left:8px;font-size:11px;opacity:.75" title="${esc(r.steps.map((x) => `${x.step} ΔE ${x.dE}`).join(' · '))}">Radix ${esc(r.scale)} · ΔE mean ${r.meanDE} · max ${r.maxDE} (step ${r.maxStep})</span>` : '<span class="rdx" style="margin-left:8px;font-size:11px;opacity:.5">no Radix scale</span>'; };
+
 // ── Preview ───────────────────────────────────────────────────────────────────────────────────────────────
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 const pageSel = (id) => forced(id).replace(eff.scope || '', '').trim();
 const scopeCls = eff.scope && /^\.[\w-]+$/.test(eff.scope) ? eff.scope.slice(1) : '';
 const attrsFor = (id) => { const s = pageSel(id); if (selectors === 'attribute') return (scopeCls ? `class="${scopeCls}" ` : '') + [...s.matchAll(/\[([\w-]+)=([\w-]+)\]/g)].map((m) => `${m[1]}="${m[2]}"`).join(' '); return 'class="' + (scopeCls ? scopeCls + ' ' : '') + s.split('.').filter(Boolean).join(' ') + '"'; };
-const strip = () => fam.all.map((f) => `<div class="row"><code>${esc(rampName(f))}</code>${[...Array(12)].map((_, i) => `<span class="sw" style="background:var(${rampVar(f, i + 1)})"></span>`).join('')}</div>`).join('');
+const strip = (id) => fam.all.map((f) => `<div class="row"><code>${esc(rampName(f))}</code>${[...Array(12)].map((_, i) => `<span class="sw" style="background:var(${rampVar(f, i + 1)})"></span>`).join('')}${COMPARE ? radixCell(id, f) : ''}</div>`).join('');
 const rolesDemo = ['primary', 'secondary', 'critical', 'warning', 'success', 'info'].map((r) => `<span class="btn" style="background:var(--colors-${r}-solid);color:var(--colors-${r}-on-solid)">${r}</span><span class="chip" style="background:var(--colors-${r}-subtle);color:var(--colors-${r}-fg);box-shadow:inset 0 0 0 1px var(--colors-${r}-border)">${r} subtle</span>`).join('');
 const bars = (n, pre, h) => `<div class="bars${h ? '' : ' seq'}">${[...Array(n)].map((_, i) => `<span style="${h ? `height:${40 + i * 9}px;` : ''}background:var(--colors-${pre}${i + 1})"></span>`).join('')}</div>`;
 const contrastTable = (M) => { const c = M.contrastMatrix, rows = (xs) => xs.map((x) => `<tr class="${x.pass ? '' : 'miss'}"><td>${esc(x.fg)}</td><td>${esc(x.bg)}</td><td>${esc(x.intent)}</td><td><span class="pair" style="background:var(--colors-${x.bg});color:var(--colors-${x.fg})">Aa</span></td><td>Lc ${x.lc}</td><td>${x.threshold}</td><td>${x.pass ? '✓' : '✗'}</td><td>${x.ratio}:1</td></tr>`).join('');
@@ -1079,7 +1112,7 @@ const cvdTable = (M) => { const c = M.seriesCvd; if (!c) return ''; return `<h3>
 // Neutrals split: the three families (ink under its own name) and a card on the page, per mode.
 const neutralsDemo = (id) => { if (!neutrals) return ''; const S = modes[id].separation, row = (f) => `<div class="row"><code>${f}</code>${[...Array(12)].map((_, i) => `<span class="sw" style="background:var(--colors-${f}-${i + 1})"></span>`).join('')}</div>`;
   return `<h3>Neutrals · ground / surface / ink${neutrals.cross ? ' · cross (dark swaps the ground and surface sources)' : ''}</h3>${['ground', 'surface', 'ink'].map(row).join('')}<div class="page"><div class="card"><b>Card on the page</b><span>surface 1 on ground 1 · separation ΔE ${S.dE} (needs ${S.threshold}) ${S.pass ? '✓' : '✗'} · Lc ${S.lc}</span><span class="muted">fg-muted on surface</span><span class="well">bg-muted</span></div></div>`; };
-const panel = (id) => `<section ${attrsFor(id)} style="background:var(--colors-bg);color:var(--colors-fg)"><h2>${esc(id)}</h2>${strip()}${neutralsDemo(id)}<h3>Roles</h3><div class="roles">${rolesDemo}</div>${opt.series ? '<h3>Data series · sequential</h3>' + bars(6, 'data-', true) + bars(7, 'data-seq-', false) : ''}${opt.diverging ? '<h3>Diverging</h3>' + bars(11, 'data-div-', false) : ''}${contrastTable(modes[id])}${cvdTable(modes[id])}</section>`;
+const panel = (id) => `<section ${attrsFor(id)} style="background:var(--colors-bg);color:var(--colors-fg)"><h2>${esc(id)}</h2>${strip(id)}${neutralsDemo(id)}<h3>Roles</h3><div class="roles">${rolesDemo}</div>${opt.series ? '<h3>Data series · sequential</h3>' + bars(6, 'data-', true) + bars(7, 'data-seq-', false) : ''}${opt.diverging ? '<h3>Diverging</h3>' + bars(11, 'data-div-', false) : ''}${contrastTable(modes[id])}${cvdTable(modes[id])}</section>`;
 const tonalPanel = tonal ? `<section ${scopeCls ? `class="${scopeCls}" ` : ''}style="background:#fff;color:#111"><h2>Tonal 050–950${opt.primes ? ' · Primes' : ''} (mode-independent)</h2>${Object.entries(tonal).map(([f, t]) => `<div class="row"><code>${esc(f)}</code>${t.stops.map((x) => `<span class="sw" title="${x.stop}" style="background:var(--palette-${f}-${x.stop})"></span>`).join('')}${(t.primes || []).map((x) => `<span class="sw prime" title="${x.name}" style="background:var(--palette-${f}-${x.name})"></span>`).join('')}</div>`).join('')}</section>` : '';
 const preview = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Colour system preview</title><style>${css}
 body{margin:0;font:14px/1.4 system-ui,sans-serif} section{padding:24px;overflow-x:auto} h2{margin:0 0 12px} h3{margin:20px 0 8px;font-size:13px;color:var(--colors-fg-muted)}
@@ -1128,3 +1161,4 @@ for (const id of ids) { const M = modes[id];
 const anchorLines = [...anchorWarnings].map(([msg, in_]) => `WARNING ${msg} [${in_.join(', ')}]`);
 console.log(`wrote ${values.out}: modes ${[...ids].join(', ')}; ${fam.accents.length} accents + ${fam.neutrals.length} neutral; ${tonal ? 'tonal 050–950' + (opt.primes ? ' + primes' : '') + '; ' : ''}target ${target}${p3 ? ' (sRGB + P3 upgrade)' : ''}${opt.split ? '; split CSS' : ''}${opt.showcase ? '; showcase.html' : ''}; weakest solid vs label (APCA): ` + [...ids].map((id) => `${id} Lc ${weak(id)[1]} (${weak(id)[0]}, floor ${modes[id].apca.solid})`).join(', ') + `; contrast pairs under their APCA threshold: ${lcLine}${target === 'display-p3' ? '; on a Display P3 screen: ' + [...ids].map((id) => `${id} ${modes[id].contrastMatrix.summary.failP3 ?? 0}`).join(', ') : ''} (system.json › modes.<id>.contrast); hover pairs under ΔE ${HOVER_MIN}: ${[...ids].map((id) => `${id} ${modes[id].hover.summary.fail}`).join(', ')} (modes.<id>.hover)` + cvdLine + sepLine);
 for (const line of anchorLines) console.log(line);
+if (COMPARE) console.log('radix (@radix-ui/colors ' + json.compare.source.version + ', OKLab ΔE × 100, mean over steps): ' + [...ids].map((id) => { const S = json.modes[id].radix.summary; return `${id} ${S.meanDE}${S.farthest ? ` (farthest ${S.farthest.family} ${S.farthest.meanDE})` : ''}`; }).join(', ') + (json.compare.unmatched.length ? '; no Radix scale: ' + json.compare.unmatched.join(', ') : '') + ' (system.json › modes.<id>.radix)');
