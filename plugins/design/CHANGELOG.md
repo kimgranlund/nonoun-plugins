@@ -14,6 +14,7 @@ The design plugin, newest first. Releases before this file are recorded in the r
 
 ### Fixed
 
+- `ui-colors`: a pinned step 9 (role anchor or `familyAnchors`) that fails a contrast mode's raised solid floor now takes the least move at the anchor's hue, trying each label and keeping the nearer, and `anchorReport` records it as `solidMove`; pinned orange in `dark-contrast` is `#ffa16e` (ΔE 12.86 from the pin) instead of `#832a00` (ΔE 28.11). Default output is unchanged (T-0890).
 - `ui-colors`: the Plain-word request "text looks brown" gives an exact request (`targetsLight` ending 75, 90) with the light orange 11 and 12 it produces, a variant for step 11 at Lc 75, and its side effect on the contrast mode's hover labels; defaults unchanged (T-0886).
 - `ui-geometry`: under a preset whose inset is one line (`affine`, the default), a `--density` other than `default` prints a stderr note that density is a scope with another n there, and the header marks it `(no effect: ...)`; unit presets print as before (T-0887).
 - `ui-geometry`: an unknown `--preset` exits 2 with `unknown preset "<name>"`, the built-in names and a "did you mean" hint, instead of a raw ENOENT (T-0888).
