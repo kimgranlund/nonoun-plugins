@@ -317,6 +317,18 @@ const BAD_FAMILY = [{ roles: { 'pin-orange': 'orange' } }, { anchors: [{ role: '
   { familyAnchors: [] }, { familyAnchors: { orange: { value: '#f76b15', role: 'primary' } } }, { familyAnchors: { Orange: { value: '#f76b15' } } },
   { settings: { hueSet: 'radix' }, familyAnchors: { tealish: { value: '#12a594' } } }, { settings: { hueSet: 'radix' }, familyAnchors: { indigo: { value: '#3e63dd' } }, anchors: [{ role: 'primary', value: '#3e63dd' }] },
   { familyAnchors: { orange: { value: '#f76b15', step: 13 } } }];
+// hoverMin: with the key set, every family's step 9 to step 10 (the solid to its hover) is at least hoverMin OKLab ΔE × 100 in
+// every mode, recomputed from the ramps. Runs: the Radix hue set alone, and with every accent's Radix step 9 pinned (familyAnchors).
+const RADIX_STEP9 = { gold: '#978365', bronze: '#a18072', brown: '#ad7f58', yellow: '#ffe629', amber: '#ffc53d', orange: '#f76b15', tomato: '#e54d2e', red: '#e5484d', ruby: '#e54666', crimson: '#e93d82', pink: '#d6409f', plum: '#ab4aba', purple: '#8e4ec6',
+  violet: '#6e56cf', iris: '#5b5bd6', indigo: '#3e63dd', blue: '#0090ff', cyan: '#00a2c7', teal: '#12a594', jade: '#29a383', green: '#30a46c', grass: '#46a758', lime: '#bdee63', mint: '#86ead4', sky: '#7ce2fe' };
+const HOVER_MIN_REQ = { settings: { hueSet: 'radix' }, hoverMin: 4 }, HOVER_MIN_FA = { ...HOVER_MIN_REQ, familyAnchors: Object.fromEntries(Object.entries(RADIX_STEP9).map(([f, value]) => [f, { value }])) };
+const BAD_HOVER_MIN = [{ hoverMin: -1 }, { hoverMin: '4' }, { hoverMin: true }, { hoverMin: null }, { hoverMin: 101 }];
+function checkHoverMin(j, min) {
+  const f = []; let n = 0;
+  for (const [id, M] of Object.entries(j.modes)) for (const [fam, r] of Object.entries(M.ramps)) { n++; const d = dE(r[8].oklch, r[9].oklch); if (!(d >= min)) f.push(`${id} ${fam}: step 9 to 10 ΔE ${d.toFixed(2)} < hoverMin ${min}`); }
+  if (n < 30) f.push(`only ${n} family ramps checked`);
+  return f;
+}
 function checkFamilyAnchors(j, css) {
   const f = [];
   for (const [id, M] of Object.entries(j.modes)) {
@@ -845,6 +857,47 @@ function checkShowcaseNeutrals(html, j) {
     if (!card.includes('ΔE ' + j.modes[id].separation.dE)) f.push(`mode ${id}: separation ΔE ${j.modes[id].separation.dE} not shown`); }
   return f;
 }
+// 13g. Radix comparison. The bundled data (system/radix-colors.json): 31 @radix-ui/colors scales, each of its eight variants 12
+// steps (sRGB hex for light and dark, hex with or without alpha for the alpha ones, Display P3 strings for the P3 ones; Radix ships a few
+// alpha steps opaque), the package and version named, the scales hashing to
+// their recorded sha256 and the licence text kept. compare: "radix": every family with a Radix scale of its name reported in
+// every mode, each step's ΔE and ΔL recomputed here from the system.json ramps and the data (check.mjs's own maths), some step
+// measured away from 0, and every pinned family (familyAnchors at Radix's step 9) at ΔE 0 there. Without the key, none of it.
+const RADIX = readJson(here + 'system/radix-colors.json');
+const RADIX_VARIANTS = ['light', 'lightAlpha', 'lightP3', 'lightP3Alpha', 'dark', 'darkAlpha', 'darkP3', 'darkP3Alpha'];
+const RADIX_FORM = { light: /^#[0-9a-f]{6}$/, dark: /^#[0-9a-f]{6}$/, lightAlpha: /^#[0-9a-f]{6}(?:[0-9a-f]{2})?$/, darkAlpha: /^#[0-9a-f]{6}(?:[0-9a-f]{2})?$/, lightP3: /^color\(display-p3 [\d.]+ [\d.]+ [\d.]+\)$/, darkP3: /^color\(display-p3 [\d.]+ [\d.]+ [\d.]+\)$/, lightP3Alpha: /^color\(display-p3 [\d.]+ [\d.]+ [\d.]+(?: \/ [\d.]+)?\)$/, darkP3Alpha: /^color\(display-p3 [\d.]+ [\d.]+ [\d.]+(?: \/ [\d.]+)?\)$/ };
+function checkRadixData(d) {
+  const f = [], P = d.provenance || {}, names = Object.keys(d.scales || {});
+  if (P.package !== '@radix-ui/colors' || !/^\d+\.\d+\.\d+$/.test(P.version || '')) f.push(`provenance names ${P.package}@${P.version}, not @radix-ui/colors at a version`);
+  if (!/^[0-9a-f]{64}$/.test(P.tarballSha256 || '')) f.push('provenance has no tarball sha256');
+  if (sha(JSON.stringify(d.scales || {})) !== P.scalesSha256) f.push('the scales do not hash to provenance.scalesSha256 (edited by hand, or regenerated without the hash)');
+  if (!/^MIT License[\s\S]*Copyright/.test(P.licenseText || '')) f.push('provenance lacks the package licence text');
+  if (names.length !== 31) f.push(`${names.length} scales, not 31`);
+  for (const n of names) for (const v of RADIX_VARIANTS) { const a = d.scales[n][v];
+    if (!Array.isArray(a) || a.length !== 12) { f.push(`${n}.${v}: ${Array.isArray(a) ? a.length : 'no'} steps, not 12`); continue; }
+    a.forEach((x, i) => { if (!RADIX_FORM[v].test(x)) f.push(`${n}.${v} step ${i + 1}: ${x} is not a ${v} value`); }); }
+  return f;
+}
+const RADIX_PIN = { orange: { value: RADIX.scales.orange.light[8], dark: RADIX.scales.orange.dark[8] } };
+const RADIX_REQ = { extraModes: false, tonal: false, alpha: false, series: false, dtcg: false, familyAnchors: RADIX_PIN, compare: 'radix' };
+const BAD_COMPARE = [{ compare: 'material' }, { compare: true }, { compare: ['radix'] }, { compare: null }];
+function checkRadixCompare(j, pinned, plain, plainHtml) {
+  const f = []; let n = 0, away = 0;
+  if (j.compare?.source?.version !== RADIX.provenance.version) f.push(`system.json › compare.source.version is ${j.compare?.source?.version}, the data's is ${RADIX.provenance.version}`);
+  for (const [id, M] of Object.entries(j.modes)) {
+    if (!M.radix) { f.push(`${id}: no modes.${id}.radix`); continue; }
+    for (const fam of j.families.all) { const ref = RADIX.scales[fam], r = M.radix.families[fam]; if (!ref) continue; if (!r) { f.push(`${id}: ${fam} has a Radix scale but is not compared`); continue; }
+      r.steps.forEach((s, i) => { n++; const a = M.ramps[fam][i].oklch, b = hexOk(ref[M.scheme][i]), d = dE(a, b);
+        if (Math.abs(d - s.dE) > 0.02) f.push(`${id} ${fam} step ${i + 1}: reported ΔE ${s.dE}, recomputed ${d.toFixed(2)}`);
+        if (Math.abs(100 * (a[0] - b[0]) - s.dL) > 0.02) f.push(`${id} ${fam} step ${i + 1}: reported ΔL ${s.dL}, recomputed ${(100 * (a[0] - b[0])).toFixed(2)}`);
+        if (d > 0.5) away++; }); }
+    for (const fam of pinned) { const s = M.radix.families[fam]?.steps[8]; if (!s || s.dE !== 0) f.push(`${id}: ${fam} pinned to Radix step 9 reports ΔE ${s?.dE} there, not 0`); }
+  }
+  if (n < 13 * 12 * 2) f.push(`only ${n} steps compared`);
+  if (!away) f.push('every compared step reports ΔE 0 (nothing measured)');
+  if ('compare' in plain || Object.values(plain.modes).some((M) => 'radix' in M) || /class="rdx"/.test(plainHtml)) f.push('a run without the key carries a Radix comparison');
+  return f;
+}
 // 13f. Byte-identical default: the default system.css and system.json hash to the recorded digest (fixtures/default-digest.json).
 // A change to the default output must be deliberate: refresh with --update-digest.
 const sha = (t) => createHash('sha256').update(t).digest('hex');
@@ -884,6 +937,9 @@ try {
   const outP3 = join(tmp, 'p3-anchors'), lineP3 = runSystem(P3_REQ, outP3), jP3 = readJson(join(outP3, 'system.json')), outFFP3 = join(tmp, 'family-files-p3'), outFFP3x = join(tmp, 'family-files-p3-both');
   execFileSync(process.execPath, [here + 'families.mjs', '--from', outFA, '--from-p3', outP3, '--out', outFFP3], { stdio: ['ignore', 'pipe', 'pipe'] }); execFileSync(process.execPath, [here + 'families.mjs', '--from', outP3, '--from-p3', outP3, '--out', outFFP3x], { stdio: ['ignore', 'pipe', 'pipe'] });
   const lineFA = readFileSync(outFA + '.line', 'utf8'), outLow = join(tmp, 'p3-low'), lineLow = runSystem({ ...P3_LOW, p3: 'exact' }, outLow), jLow = readJson(join(outLow, 'system.json'));
+  const outHM = join(tmp, 'hover-min'), outHA = join(tmp, 'hover-min-anchored'), outH0 = join(tmp, 'hover-min-unset'); runSystem(HOVER_MIN_REQ, outHM); runSystem(HOVER_MIN_FA, outHA); runSystem({ settings: { hueSet: 'radix' } }, outH0);
+  const jHM = readJson(join(outHM, 'system.json')), jHA = readJson(join(outHA, 'system.json')), jH0 = readJson(join(outH0, 'system.json'));
+  const outRC = join(tmp, 'radix-compare'); runSystem(RADIX_REQ, outRC); const jRC = readJson(join(outRC, 'system.json')), htmlRC = readFileSync(join(outRC, 'preview.html'), 'utf8');
   const outB = join(tmp, 'brand'), outBL = join(tmp, 'brand-loose'); runSystem(BRAND, outB); runSystem({ ...BRAND, brandExact: false, autoDark: true, extraModes: false }, outBL);
   const jB = readJson(join(outB, 'system.json')), cssB = readFileSync(join(outB, 'system.css'), 'utf8'), jBL = readJson(join(outBL, 'system.json'));
   const jT = readJson(join(outT, 'system.json')), cssT = readFileSync(join(outT, 'system.css'), 'utf8');
@@ -978,6 +1034,9 @@ try {
     'translucent: bad values exit 2': () => checkBadRequests(BAD_TRANSLUCENT),
     'brand colours: accents exact at step 9 in every mode (brandExact), no auto-dark block, no data roles, a renamed family, anchored families off the cusp': () => checkBrand(jB, cssB, jBL),
     'brand colours: bad roles, anchor steps, autoDark and familyNames exit 2': () => checkBadRequests(BAD_BRAND),
+    'hoverMin 4: every family\'s step 9 to 10 ΔE ≥ 4 in every mode (Radix hues, alone and with the 25 Radix step 9s pinned)': () => [...checkHoverMin(jHM, 4), ...checkHoverMin(jHA, 4)],
+    'hoverMin 4: floors and key run hold with the moved hovers (Radix hues, alone and pinned)': () => [...checkFloors(jHM), ...checkFloors(jHA), ...kr(jHM), ...kr(jHA)],
+    'hoverMin: negative, non-number and out-of-range values exit 2': () => checkBadRequests(BAD_HOVER_MIN),
     'family anchors: exact at step 9 in every scheme, roles untouched, no internal names in the output': () => checkFamilyAnchors(jFA, cssFA),
     'family files: every variable resolves in both schemes, step 9 exact to the system, manifest hashes current (families.mjs)': () => checkFamilyFiles(outFF, jFA),
     'family anchors and role names: unknown roles, unknown families, a family a role anchor pins and bad keys exit 2': () => checkBadRequests(BAD_FAMILY),
@@ -987,6 +1046,9 @@ try {
     'P3 usage: in system.json only when the request names p3 (default, family anchors)': () => [...checkNoP3Usage(j1), ...checkNoP3Usage(jFA)],
     'P3 option: bad values exit 2': () => checkBadRequests(BAD_P3),
     'family files: --from-p3 lays colors-p3/ out from the P3 run and colors/ from the sRGB run; manifest and README carry the P3 usage': () => [...checkFamilyFiles(outFFP3, jP3), ...checkFromP3(outFFP3, jFA, jP3), ...checkP3Usage(jFA, null, readJson(join(outFF, 'manifest.json')).p3Usage).map((x) => 'manifest without --from-p3: ' + x), ...[outFF, outFFP3].filter((d) => !/ramp swatches/.test(readFileSync(join(d, 'README.md'), 'utf8'))).map((d) => `${d}: README.md does not state the P3 usage`)],
+    'radix data: 31 scales × 8 variants × 12 steps, the package version and tarball sha256 named, the scales at their recorded hash': () => checkRadixData(RADIX),
+    'compare radix: every Radix-named family compared in every mode (ΔE, ΔL recomputed), a familyAnchors step-9 pin at ΔE 0, the preview column; none without the key': () => [...checkRadixCompare(jRC, Object.keys(RADIX_PIN), j1, readFileSync(join(out1, 'preview.html'), 'utf8')), ...(htmlRC.match(/class="rdx"/g) || []).length === 2 * jRC.families.all.length ? [] : ['the preview lacks a Radix column on some family row']],
+    'compare: values other than "radix" exit 2': () => checkBadRequests(BAD_COMPARE),
     'showcase: the runs have anchor, APCA-miss and key-run flags to check': () => (/data-flag="anchor-order"/.test(sc4) && /data-flag="anchor-clip"/.test(sc4) && /data-flag="lc-miss"/.test(sc5) && /data-flag="keyrun"/.test(sc5) ? [] : ['a showcase run lacks the failures the controls need']),
   };
   for (const [name, fn] of Object.entries(checks)) record(name, fn());
@@ -1143,7 +1205,16 @@ try {
   control('a separation-miss flag removed', () => checkShowcaseFlags(sc8.replace(/<span class="sc-flag" data-flag="separation"[^>]*>[^<]*<\/span>/, ''), j8));
   control('the ink strip dropped from the showcase', () => checkShowcaseNeutrals(sc6.replace(/var\(--colors-ink-7\)/g, 'var(--colors-gray-7)'), j6));
   control('a dark card drawn on the wrong role', () => checkShowcaseNeutrals(sc6.replace(/(data-mode-panel="dark"><div class="sc-page" style="background:var\(--colors-bg\)"><div class="sc-card2" style="background:var\(--colors-)surface/, '$1bg-subtle'), j6));
+  control('hoverMin dropped (the same Radix request without the key)', () => checkHoverMin(jH0, 4));
+  control('a valid hoverMin in the bad list', () => checkBadRequests([{ hoverMin: 4 }]));
   control('a valid neutrals value in the bad list', () => checkBadRequests([{ neutrals: { ground: { from: 'Sand' }, cross: true } }]));
+  // Radix comparison.
+  control('a family with no pin (teal) held to Radix ΔE 0 at step 9', () => checkRadixCompare(jRC, ['teal'], j1, ''));
+  control('a compared ΔE misreported', () => { const x = clone(jRC); x.modes.dark.radix.families.indigo.steps[2].dE += 1; return checkRadixCompare(x, Object.keys(RADIX_PIN), j1, ''); });
+  control('a default run that carries the comparison', () => { const x = clone(j1); x.compare = jRC.compare; return checkRadixCompare(jRC, Object.keys(RADIX_PIN), x, ''); });
+  control('a Radix scale with a step dropped', () => { const x = clone(RADIX); x.scales.sky.darkP3.pop(); x.provenance.scalesSha256 = sha(JSON.stringify(x.scales)); return checkRadixData(x); });
+  control('a Radix value edited by hand', () => { const x = clone(RADIX); x.scales.mint.light[8] = '#86ead5'; return checkRadixData(x); });
+  control('a valid compare in the bad list', () => checkBadRequests([{ compare: 'radix' }]));
 
   const bad = results.filter((r) => r.failures.length), soft = bites.filter((b) => !b.ok);
   failed = bad.length > 0 || soft.length > 0;

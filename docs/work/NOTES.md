@@ -1094,3 +1094,15 @@
 ## T-0888: ui-geometry: an unknown --preset fails with a raw ENOENT (2026-11-25)
 
 - note: redck.py deviations printed no process deviation lines; no (red) criteria in the handoff.
+
+## T-0886: ui-colors: warm text steps 11 and 12 read brown at the default targets (2026-11-25)
+
+- note: docs/work/0886-ui-colors-warm-text-brown/handoff.md Context lists default orange 11 `#842c00`, 12 `#270600`; the current generator gives `#7e3b00`, `#502200`, which the doc records correctly.
+
+## T-0884: ui-colors: step 10 of a cusp-bright solid barely changes in dark (2026-11-25)
+
+- note: `references/system.md` still says "Then 74 negative controls" in the check.mjs section while the run reports 136 controls; the count was stale before this change (not introduced here).
+
+## T-0885: ui-colors: bundle the full Radix scales and add compare radix (2026-11-25)
+
+- note: contrast modes (light-contrast, dark-contrast) do not report ΔE 0 at a pinned step 9 (teal 1.49 and 26.85), because those modes move colours by design. check.mjs pins only light and dark (extraModes: false), so this is untested but consistent with the doc's "reported only" scope.

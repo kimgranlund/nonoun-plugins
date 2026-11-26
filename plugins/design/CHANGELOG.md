@@ -6,10 +6,13 @@ The design plugin, newest first. Releases before this file are recorded in the r
 
 ### Added
 
+- `ui-colors`: opt-in request key `hoverMin` (OKLab ΔE ×100, 0 to 100) moves step 10 of any solid, anchored or at the gamut cusp, until hover differs from step 9 by at least that much in every mode, keeping hue; unset, output is unchanged. The step-10 figures in the 2026-11-24 report came from an anchored run; at default settings dark yellow and lime hover sit near ΔE 3 (T-0884).
+- `ui-colors`: `scripts/system/radix-colors.json` bundles all 31 Radix scales (steps 1 to 12, light, dark, alpha, P3 and P3 alpha) from `@radix-ui/colors` 3.0.0 with its tarball sha256, and the opt-in request key `compare: "radix"` writes per-family, per-step ΔE, lightness, chroma and hue deltas to `system.json` and a preview column; unset, output is unchanged (T-0885).
 - `ui-colors`: `familyAnchors` pins a family by name (`{ "<family>": { value, dark?, step?, darkStep?, reach?, name? } }`, step 9 by default) with a role anchor's semantics and no role, so one run pins all 25 Radix accent step-9 values. `scripts/families.mjs` lays a system out one file per family per gamut (`colors-p3/`, `colors/`) with `light-dark()` variables, `globals.css`, semantic files, `index.css`, `manifest.json` and a generated `README.md` and `USAGE.md`. `references/system.md` gains Family anchors, Plain-word requests and Family files. Evidence: `docs/reports/2026-11-24-ui-colors-radix-match.md` (T-0883).
 
 ### Fixed
 
+- `ui-colors`: the Plain-word request "text looks brown" gives an exact request (`targetsLight` ending 75, 90) with the light orange 11 and 12 it produces, a variant for step 11 at Lc 75, and its side effect on the contrast mode's hover labels; defaults unchanged (T-0886).
 - `ui-geometry`: under a preset whose inset is one line (`affine`, the default), a `--density` other than `default` prints a stderr note that density is a scope with another n there, and the header marks it `(no effect: ...)`; unit presets print as before (T-0887).
 - `ui-geometry`: an unknown `--preset` exits 2 with `unknown preset "<name>"`, the built-in names and a "did you mean" hint, instead of a raw ENOENT (T-0888).
 - `ui-colors`: an unknown `roles` key or anchor `role` exits 2 instead of being dropped silently, and the `brightHues` window is judged once, on the light mode's step 9, so a family no longer changes label treatment between modes (lime in dark at a deeper `keyDepth`). Default output is unchanged (T-0883).
