@@ -34,7 +34,7 @@ try { req = JSON.parse(readFileSync(values.request, 'utf8')); } catch (e) { fail
 if (!req || typeof req !== 'object' || Array.isArray(req)) fail(2, 'request: must be a JSON object');
 
 // ── Request ───────────────────────────────────────────────────────────────────────────────────────────────
-const KEYS = ['apca', 'brightHues', 'neutrals', 'settings', 'roles', 'anchors', 'endpoints', 'scope', 'modes', 'extraModes', 'selectors', 'lightDark', 'p3Fallback', 'alpha', 'series', 'tonal', 'primes', 'diverging', 'tailwind', 'figma', 'dtcg', 'split', 'preset', 'familyNames', 'tonalRoles', 'showcase', 'emphasis', 'translucent', 'autoDark', 'brandExact', 'familyAnchors'];
+const KEYS = ['apca', 'brightHues', 'neutrals', 'settings', 'roles', 'anchors', 'endpoints', 'scope', 'modes', 'extraModes', 'selectors', 'lightDark', 'p3Fallback', 'alpha', 'series', 'tonal', 'primes', 'diverging', 'tailwind', 'figma', 'dtcg', 'split', 'preset', 'familyNames', 'tonalRoles', 'showcase', 'emphasis', 'translucent', 'autoDark', 'brandExact', 'familyAnchors', 'p3'];
 const unknown = Object.keys(req).filter((k) => !KEYS.includes(k));
 if (unknown.length) fail(2, 'request: unknown key(s) ' + unknown.join(', ') + ' (allowed: ' + KEYS.join(', ') + ')');
 for (const k of ['autoDark', 'brandExact', 'lightDark', 'p3Fallback', 'alpha', 'series', 'primes', 'diverging', 'tailwind', 'figma', 'dtcg', 'split', 'tonalRoles', 'showcase']) if (k in req && typeof req[k] !== 'boolean') fail(2, 'request: ' + k + ' must be true or false');
@@ -208,7 +208,16 @@ function anchorColor(v, where) {
   }
   fail(2, `request: ${where} must be #rrggbb, a CSS colour string or { colorSpace, components, alpha: 1 }`);
 }
-const ANCHOR_KEYS = ['role', 'value', 'dark', 'step', 'darkStep', 'reach', 'name'];
+const ANCHOR_KEYS = ['role', 'value', 'dark', 'step', 'darkStep', 'reach', 'name', 'p3'];
+// The anchors' p3 option, applied only where the mode's target is display-p3: how an anchor given in sRGB uses the wider gamut.
+// "exact" (the default) keeps the colour. "relative" scales its OKLCH chroma by Cmax_p3 / Cmax_srgb at its lightness and hue, so
+// it sits as far toward the P3 edge as it sat toward the sRGB one. "edge" does that for a muted anchor (chroma under P3_MUTED of
+// Cmax_srgb) and takes a saturated one to at least P3_EDGE of Cmax_p3. Lightness and hue never move. The top-level `p3` is the
+// default for every anchor and family anchor except the neutral pins (ground, ink, surface, neutral), which an entry's own `p3` moves.
+const P3_OPTIONS = ['exact', 'relative', 'edge'];
+const P3_MUTED = 0.7, P3_EDGE = 0.95;
+const P3_PINS = ['ground', 'ink', 'surface', 'neutral'];
+if ('p3' in eff && !P3_OPTIONS.includes(eff.p3)) fail(2, 'request: p3 must be one of ' + P3_OPTIONS.join(', '));
 function anchorList(list, where) {
   if (list == null) return list;
   if (!Array.isArray(list)) fail(2, `request: ${where} must be a list`);
@@ -217,6 +226,7 @@ function anchorList(list, where) {
     if (!a || typeof a !== 'object' || typeof a.role !== 'string') fail(2, `request: ${w} needs a role`);
     const bad = Object.keys(a).filter((k) => !ANCHOR_KEYS.includes(k)); if (bad.length) fail(2, `request: ${w} has unknown key(s) ${bad.join(', ')}`);
     if (a.value == null) fail(2, `request: ${w} needs a value`);
+    if ('p3' in a && !P3_OPTIONS.includes(a.p3)) fail(2, `request: ${w}.p3 must be one of ${P3_OPTIONS.join(', ')}`);
     for (const k of ['step', 'darkStep']) if (k in a && a[k] !== 'auto' && !(Number.isInteger(a[k]) && a[k] >= 2 && a[k] <= 12)) fail(2, `request: ${w}.${k} must be a whole step 2–12 or "auto"`);
     if (a.role === 'ground' || a.role === 'ink') { const k = ['step', 'darkStep', 'reach'].filter((x) => x in a); if (k.length) fail(2, `request: ${w}: a ${a.role} anchor pins step ${a.role === 'ground' ? 1 : 12} (and its dark pair); ${k.join(', ')} not allowed`); }
     // brandExact: an accent anchor without a dark colour keeps its own value as the dark solid, so it is exact in every scheme.
@@ -245,7 +255,7 @@ for (const [w, list] of [['anchors', anchorsTop], ...MODES.map((m) => [`mode ${m
 // semantics (the ramp takes the anchor's hue, `key` reach by default) but no role: no semantic variable moves. step defaults to 9
 // (and darkStep to 9 when a dark colour is given, or with brandExact). Carried to the engine as the internal role `family:<name>`,
 // which run() resolves and strips again. A family that a role anchor already pins is a request error (the engine would move one).
-const FAMILY_ANCHOR_KEYS = ['value', 'dark', 'step', 'darkStep', 'reach', 'name'];
+const FAMILY_ANCHOR_KEYS = ['value', 'dark', 'step', 'darkStep', 'reach', 'name', 'p3'];
 const FAMILY_ROLE = 'family:';
 let familyAnchorsTop = [];
 if (eff.familyAnchors != null) {
@@ -306,13 +316,27 @@ function renameData(d, map) {
 }
 // An anchor colour outside the output gamut is clipped into it (chroma only, at its OKLCH lightness and hue) before the
 // engine sees it, so solids are solved on what will be shown. A Display P3 colour with target display-p3 stays exact.
+// The p3 option (above) runs first, so a lifted anchor reaches the engine as its P3 colour; its clips entry records it under `p3`.
 function gamutAnchors(list, target) {
   if (!list) return { list, clips: new Map() };
   const clips = new Map();
-  const one = (s) => { const p = parseAnchorColor(s), [L, C, H] = p.oklch, inSrgb = inGamut(p.oklch, 'srgb');
-    if (inGamut(p.oklch, target)) { clips.set(s, { target, inTarget: true, inSrgb }); return s; }
-    const c = clampChroma(L, C, H, target), v = `oklch(${L} ${c} ${H})`; clips.set(v, { target, inTarget: false, inSrgb, requested: s, clipDE: r2(dE(p.oklch, [L, c, H])) }); return v; };
-  return { list: list.map((a) => ({ ...a, value: one(a.value), ...(a.dark ? { dark: one(a.dark) } : {}) })), clips };
+  const one = (s0, opt) => { let s = s0, p = parseAnchorColor(s), lift;
+    if (target === 'display-p3' && opt !== 'exact') { const x = liftP3(p.oklch, opt); if (x) { lift = x; s = `oklch(${x.lifted.join(' ')})`; p = parseAnchorColor(s); } }
+    const [L, C, H] = p.oklch, inSrgb = inGamut(p.oklch, 'srgb'), p3 = lift ? { p3: lift } : {};
+    if (inGamut(p.oklch, target)) { clips.set(s, { target, inTarget: true, inSrgb, ...p3 }); return s; }
+    const c = clampChroma(L, C, H, target), v = `oklch(${L} ${c} ${H})`; clips.set(v, { target, inTarget: false, inSrgb, requested: s, clipDE: r2(dE(p.oklch, [L, c, H])), ...p3 }); return v; };
+  const optOf = (a) => a.p3 ?? (P3_PINS.includes(a.role) ? 'exact' : eff.p3 ?? 'exact');
+  return { list: list.map((a0) => { const o = optOf(a0), { p3: _p, ...a } = a0; return { ...a, value: one(a.value, o), ...(a.dark ? { dark: one(a.dark, o) } : {}) }; }), clips };
+}
+// One anchor colour under the p3 option: { option, requested, lifted, srgbMax, p3Max } (OKLCH; the maxima are the gamuts' largest
+// chroma at its lightness and hue, from clampChroma), or undefined when its chroma would not change.
+function liftP3([L, C, H], option) {
+  const s = clampChroma(L, 0.5, H, 'srgb'), p = clampChroma(L, 0.5, H, 'display-p3');
+  if (s < 1e-4) return undefined;
+  const relative = C * p / s, c = Math.min(p, option === 'relative' || C / s < P3_MUTED ? relative : Math.max(C, P3_EDGE * p));
+  if (Math.abs(c - C) < 1e-6) return undefined;
+  const r6 = (x) => +x.toFixed(6);
+  return { option, requested: [L, C, H].map(r6), lifted: [L, c, H].map(r6), srgbMax: r6(s), p3Max: r6(p) };
 }
 const cache = new Map();
 // The engine's anchoredSpectrum (system/index.js) without its last step, solveSolids, which darkens every step 9 until a fixed
@@ -1016,6 +1040,25 @@ const modeJson = (M) => ({ scheme: M.scheme, contrastMode: !!M.contrast, targetL
   alpha: M.alpha && Object.fromEntries(Object.entries(M.alpha).map(([f, s]) => [rampName(f), s.map((x) => x.css)])), series: M.series, sequential: M.sequential, diverging: M.diverging, seriesCvd: M.seriesCvd,
   apca: M.apca, solidLabels: M.solidLabels[M.scheme], solidLabelContrast: Object.fromEntries(fam.all.map((f) => [rampName(f), r1(lcOn(labelOfFam(M, f), sw(M, f, 9)))])), keyRun: M.keyRun[M.scheme], solidMuted: M.solidMuted, contrast: M.contrastMatrix, hover: M.hover, tonalMap: M.tonalMap, ...(translucent ? { translucent: M.translucent } : {}), variables: V[M.id] });
 const json = { generator: 'spectrum-system@2', request: R0, ...(R0.preset ? { resolvedRequest: eff } : {}), target, selectors, familyNames, brightHues: brightHues ?? false, families: { all: fam.all.map(rampName), accents: fam.accents.map(rampName), neutrals: fam.neutrals.map(rampName) }, labelColors: { light: { css: labelCss.light, oklch: labels.light.map((x) => +x.toFixed(6)), from: neutrals ? 'light ground 1' : 'light gray 1' }, dark: { css: labelCss.dark, oklch: labels.dark.map((x) => +x.toFixed(6)), from: neutrals ? 'light ink 12' : 'light gray 12' } }, ...(neutrals ? { neutrals: neutralsJson() } : {}), diagnostics: { ...spectrumDiagnostics(modes.light.data, modes.light.roles), tonalAgreement }, modes: Object.fromEntries([...ids].map((id) => [id, modeJson(modes[id])])), tonal };
+// ── P3 usage, per mode ────────────────────────────────────────────────────────────────────────────────────
+// How much of Display P3 the ramps use: each ramp swatch (every family, steps 1–12, the 6-decimal OKLCH system.json writes)
+// against its sRGB mapping (chroma clamped at its lightness and hue, the system.css fallback), OKLab ΔE × 100. A swatch leaves
+// sRGB when that mapping moves it by P3_OUTSIDE or more (the precision the CSS is written at), and visibly at more than
+// P3_VISIBLE (one just-noticeable difference, as for separation). Under P3_USAGE_MIN % of a display-p3 mode's swatches leaving
+// sRGB, the CLI warns that the system is effectively sRGB. In system.json only when the request names `p3`, so the default
+// output is unchanged.
+const P3_OUTSIDE = 0.01, P3_VISIBLE = 2, P3_USAGE_MIN = 5;
+function p3UsageOf(ramps) {
+  const out = [];
+  for (const [f, steps] of Object.entries(ramps)) for (const x of steps) { const [L, C, H] = x.oklch, d = 100 * (C - clampChroma(L, C, H, 'srgb')); if (d >= P3_OUTSIDE) out.push({ f, step: x.step, d }); }
+  const n = Object.values(ramps).reduce((a, r) => a + r.length, 0), ds = out.map((x) => x.d).sort((a, b) => a - b), top = out.reduce((a, x) => (!a || x.d > a.d ? x : a), null);
+  const median = ds.length ? (ds.length % 2 ? ds[ds.length >> 1] : (ds[ds.length / 2 - 1] + ds[ds.length / 2]) / 2) : 0;
+  return { method: `ramp swatches against their sRGB mapping (chroma clamped at OKLCH lightness and hue), OKLab ΔE × 100; outside sRGB at ${P3_OUTSIDE} or more, visible over ${P3_VISIBLE}; ΔE figures over the swatches outside sRGB`,
+    swatches: n, outsideSrgb: out.length, share: r1(100 * out.length / n), visible: out.filter((x) => x.d > P3_VISIBLE).length, visibleShare: r1(100 * out.filter((x) => x.d > P3_VISIBLE).length / n), maxDE: r2(top?.d ?? 0), medianDE: r2(median), largest: top ? `${top.f} ${top.step}` : null };
+}
+const p3Usage = Object.fromEntries([...ids].map((id) => [id, p3UsageOf(json.modes[id].ramps)]));
+const p3Named = 'p3' in eff || [anchorsTop, familyAnchorsTop, ...MODES.map((m) => m.anchors), ...Object.values(modeOverrides).map((o) => o.anchors)].some((l) => (l || []).some((a) => 'p3' in a));
+if (p3Named) for (const id of ids) json.modes[id].p3Usage = p3Usage[id];
 const okVal = (c) => ({ colorSpace: 'oklch', components: c.map((x) => +x.toFixed(6)), hex: hex(c) });
 const dtcg = { $description: 'Colour system. Modes: ' + [...ids].join(', ') + '. OKLCH components; hex is an sRGB fallback.' };
 for (const id of ids) { const M = modes[id], t = (dtcg[id] = {}); for (const f of fam.all) { const g = { $type: 'color' }; M.data.schemes[M.scheme][f].forEach((s, i) => { g[i + 1] = { $value: okVal(s.oklch) }; }); if (M.alpha) M.alpha[f].forEach((x, i) => { g['a' + (i + 1)] = { $value: { colorSpace: 'srgb', components: x.rgb.map((v) => +v.toFixed(6)), alpha: x.alpha } }; }); t[rampName(f)] = g; } if (neutrals) { t.ink = t.gray; t.gray = Object.fromEntries(Object.keys(t.ink).map((k) => [k, k === '$type' ? 'color' : { $value: `{${id}.ink.${k}}` }])); } }
@@ -1107,3 +1150,6 @@ for (const id of ids) { const M = modes[id];
 const anchorLines = [...anchorWarnings].map(([msg, in_]) => `WARNING ${msg} [${in_.join(', ')}]`);
 console.log(`wrote ${values.out}: modes ${[...ids].join(', ')}; ${fam.accents.length} accents + ${fam.neutrals.length} neutral; ${tonal ? 'tonal 050–950' + (opt.primes ? ' + primes' : '') + '; ' : ''}target ${target}${p3 ? ' (sRGB + P3 upgrade)' : ''}${opt.split ? '; split CSS' : ''}${opt.showcase ? '; showcase.html' : ''}; weakest solid vs label (APCA): ` + [...ids].map((id) => `${id} Lc ${weak(id)[1]} (${weak(id)[0]}, floor ${modes[id].apca.solid})`).join(', ') + `; contrast pairs under their APCA threshold: ${lcLine}${target === 'display-p3' ? '; on a Display P3 screen: ' + [...ids].map((id) => `${id} ${modes[id].contrastMatrix.summary.failP3 ?? 0}`).join(', ') : ''} (system.json › modes.<id>.contrast); hover pairs under ΔE ${HOVER_MIN}: ${[...ids].map((id) => `${id} ${modes[id].hover.summary.fail}`).join(', ')} (modes.<id>.hover)` + cvdLine + sepLine);
 for (const line of anchorLines) console.log(line);
+{ const low = [...ids].filter((id) => modes[id].target === 'display-p3' && p3Usage[id].share < P3_USAGE_MIN);
+  console.log('P3 usage (ramp swatches outside sRGB; OKLab ΔE of the P3 value from its sRGB mapping): ' + [...ids].map((id) => { const u = p3Usage[id]; return `${id} ${u.outsideSrgb}/${u.swatches} (${u.share}%; ${u.visible} visibly, ${u.visibleShare}%, over ΔE ${P3_VISIBLE}; max ${u.maxDE}${u.largest ? ' ' + u.largest : ''}, median ${u.medianDE})`; }).join(', ') + (p3Named ? ' (modes.<id>.p3Usage)' : ''));
+  if (low.length) console.log(`WARNING effectively sRGB: under ${P3_USAGE_MIN}% of ramp swatches leave sRGB; anchor with "p3": "edge" or raise keyIntensity (system.md › Anchors › P3 anchors) [${low.join(', ')}]`); }

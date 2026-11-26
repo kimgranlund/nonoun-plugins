@@ -18,7 +18,7 @@ Outputs, in a new directory:
 |---|---|---|
 | `system.css` | on | Custom properties per mode. sRGB values, then `@media (color-gamut: p3)` re-declaring only the colors that differ in Display P3 |
 | `system.base.css`, `system.<mode>.css` | `split: true` | The same stylesheet in pieces (Split CSS); `system.css` is still written |
-| `system.json` | on | `brightHues` (the window used, or false); per mode: settings, roles as resolved, `apca` (the thresholds used), ramps (OKLCH, hex, tone, APCA), `solidLabels`, `solidLabelContrast`, `keyRun`, alpha, series, `contrast`, `seriesCvd`, `tonalMap`, the anchor report and every variable; plus `labelColors`, the tonal scale and `diagnostics` (with `tonalAgreement`) |
+| `system.json` | on | `brightHues` (the window used, or false); per mode: settings, roles as resolved, `apca` (the thresholds used), ramps (OKLCH, hex, tone, APCA), `solidLabels`, `solidLabelContrast`, `keyRun`, alpha, series, `contrast`, `seriesCvd`, `tonalMap`, the anchor report, every variable and, when the request names `p3`, `p3Usage` (below); plus `labelColors`, the tonal scale and `diagnostics` (with `tonalAgreement`) |
 | `tokens.dtcg.json` | on | DTCG 2025.10: one group per mode, plus `palette` (tonal) |
 | `preview.html` | on | Every mode with its contrast table and series CVD rows, the tonal scale |
 | `showcase.html` | `showcase: true` | A static 1280 × 960 specimen sheet: 24 specimens in 8 groups, `system.css` inlined, every failure in `system.json` flagged ([showcase.md](showcase.md)) |
@@ -30,6 +30,8 @@ node /absolute/path/to/ui-colors/scripts/system.mjs --request request.json --out
 ```
 
 The summary line names the modes, the weakest solid per mode (its APCA Lc against its label, the family and the floor), the number of contrast pairs under their APCA threshold per mode, and the series' smallest ΔE under color-vision deficiency per mode, with a `WARNING` when any is under 10. Then one `WARNING anchor …` line per anchor problem read from `anchorReport` (the modes it holds in, in brackets): a step out of contrast order (`inOrder: false`), an accent placed off step 9 by `step: "auto"`, an accent whose solid in a mode is not the anchor colour (with ΔE; usually a missing `dark`), a derived dark card (`dark.derived`) and gamut clipping (`clipDE`).
+
+Last comes the P3 usage line, per mode: how many ramp swatches (every family, steps 1 to 12) leave sRGB, how many visibly, and the largest and median OKLab ΔE × 100 between each one's P3 value and its sRGB mapping (chroma clamped at its OKLCH lightness and hue, the `system.css` fallback), over the swatches outside sRGB. A swatch leaves sRGB when that mapping moves it by 0.01 or more, and visibly at more than 2 (one just-noticeable difference). With a `display-p3` target, `WARNING effectively sRGB` names the modes where under 5% of swatches leave sRGB: there the P3 and sRGB colours look the same, so anchor with `"p3": "edge"` or raise `keyIntensity` (Anchors › P3 anchors). The visible count says how much of that a reader sees: Radix's 25 step-9 colours pinned exactly leave sRGB in 14% of light swatches, visibly in 1.6%. When the request names `p3`, `system.json › modes.<id>.p3Usage` holds the same figures: `{ method, swatches, outsideSrgb, share, visible, visibleShare, maxDE, medianDE, largest }` (shares in %, `largest` the family and step); without it the default output is unchanged.
 
 Exit codes: 0 written; 1 generation failed (message on stderr); 2 bad arguments, unknown key, invalid value, unreadable anchor color, invalid mode or existing output directory.
 
@@ -45,7 +47,8 @@ Every key is optional; `{}` is the default system. Unknown keys reject.
 | `neutrals` | none | Split the neutral into ground (page), surface (cards, controls, borders) and ink (text): `{ ground?, surface?, ink?, cross? }` (Neutrals). Without it the system has one neutral, byte for byte as before |
 | `roles` | `{}` | `{ role: family }`, `role` one of `primary`, `secondary`, `neutral`, `critical`, `warning`, `success`, `info`, `data1`–`data6` (any other name exits 2; it was silently dropped before): an exact family name, a Radix name (`red`), an **HCT** hue `h0`–`h360` (`h85`, `h085`, `h84.5`) or an **OKLCH** hue `oklch:0`–`oklch:360` (matched against each family's step-9 OKLCH hue; brand guides and CSS usually give OKLCH). The name or hue goes to the nearest family. Anything else exits 2. With `familyNames: "index"`, also `hue-N` |
 | `anchors` | `[]` | Brand colors pinned into ramps (Anchors). `role` must be a role of the system (or `ground`, `ink`, `surface`); any other name exits 2 |
-| `familyAnchors` | `{}` | `{ "<family>": { value, dark?, step?, darkStep?, reach?, name? } }`: pins a family by name, with no role (Anchors › Family anchors). An unknown family, a family a role anchor already pins, or an unknown key exits 2 |
+| `familyAnchors` | `{}` | `{ "<family>": { value, dark?, step?, darkStep?, reach?, name?, p3? } }`: pins a family by name, with no role (Anchors › Family anchors). An unknown family, a family a role anchor already pins, or an unknown key exits 2 |
+| `p3` | `"exact"` | The default `p3` option of every anchor and family anchor except `ground`, `ink`, `surface` and `neutral` (Anchors › P3 anchors): `"exact"`, `"relative"` or `"edge"`. Naming `p3` anywhere also writes `modes.<id>.p3Usage`. Any other value exits 2 |
 | `endpoints` | engine | `{ white, black }`: `"pure"` for #fff/#000, or a neutral step 1–12. Each endpoint the request names also takes its side of the inverse pair: `bg-inverse` is black in light and white in dark, `fg-inverse` the other |
 | `modes` | `{}` | Per-mode overrides: `{ "<mode id>": { settings, roles, anchors, endpoints } }` (Modes) |
 | `extraModes` | contrast + dim | `false` for light and dark only, or your own list of `{ id, scheme, contrast?, settings?, roles?, anchors?, endpoints? }` |
@@ -328,6 +331,7 @@ How a component system should use the roles for states the system has no role fo
 | `darkStep` | Optional step for `dark`, 2–12 or `"auto"`, with the same default as `step` |
 | `reach` | `key` (default): chroma changes on steps 9–12 only. `ramp` (default on neutrals): the whole ramp |
 | `name` | Optional label |
+| `p3` | Optional, with target `display-p3`: `"exact"` (default), `"relative"` or `"edge"` (P3 anchors). Default: the request's top-level `p3`, except on `ground`, `ink`, `surface` and `neutral` |
 
 Color formats for `value` and `dark`:
 - `#rrggbb`;
@@ -336,11 +340,11 @@ Color formats for `value` and `dark`:
 
 Anything unreadable exits 2. Wide-gamut values are kept: an anchor is clipped only to the mode's output gamut (`settings.target`), by reducing OKLCH chroma at its lightness and hue, before the ramps and solids are solved. So `color(display-p3 0 0.8 0.3)` with `target: display-p3` stays exact (the sRGB block of `system.css` shows its sRGB fallback, the P3 block the exact value); with `target: srgb` it becomes the nearest sRGB color of that lightness and hue. Each `anchorReport` entry carries `source` (the request's value) and `gamut: { target, inTarget, inSrgb, requested?, clipDE? }` (`clipDE`: OKLab ΔE × 100 lost to clipping), for `dark` too.
 
-Every step except the page takes the anchor's hue; the anchored step becomes exact, neighbours settle, and an anchor on steps 8–12 moves the role's solid there. Read `system.json › anchorReport`: An anchored family never takes the bright-hue cusp, in any scheme: its solid stays the brand's own colour (or, without `dark`, the generated step of its hue and chroma). `stepFrom` records how the step was chosen (`solid`, `nearest-lc` or `given`). `inOrder: false` means the color breaks the contrast order (text then needs a higher step of the family, for example 11 for a light gold); `inRange: false` means it lies beyond the ramp (use `endpoints`).
+Each entry's `gamut` may also carry `p3` (P3 anchors). Every step except the page takes the anchor's hue; the anchored step becomes exact, neighbours settle, and an anchor on steps 8–12 moves the role's solid there. Read `system.json › anchorReport`: An anchored family never takes the bright-hue cusp, in any scheme: its solid stays the brand's own colour (or, without `dark`, the generated step of its hue and chroma). `stepFrom` records how the step was chosen (`solid`, `nearest-lc` or `given`). `inOrder: false` means the color breaks the contrast order (text then needs a higher step of the family, for example 11 for a light gold); `inRange: false` means it lies beyond the ramp (use `endpoints`).
 
 ### Family anchors
 
-`familyAnchors` pins a family by name, for colours that belong to a family rather than a role: matching a reference palette step by step (each Radix accent's step 9), or a brand that names its own hues. Same fields and semantics as an anchor, without `role`; `step` defaults to 9 and, when `dark` is given (or `brandExact` fills it), `darkStep` to 9.
+`familyAnchors` pins a family by name, for colours that belong to a family rather than a role: matching a reference palette step by step (each Radix accent's step 9), or a brand that names its own hues. Same fields and semantics as an anchor, `p3` included, without `role`; `step` defaults to 9 and, when `dark` is given (or `brandExact` fills it), `darkStep` to 9.
 
 ```json
 { "settings": { "hueSet": "radix" }, "brandExact": true,
@@ -348,6 +352,18 @@ Every step except the page takes the anchor's hue; the anchored step becomes exa
 ```
 
 The roles keep their families and no semantic variable moves. Each entry has an `anchorReport` row with `role: "family:<name>"` and the same warnings as a role anchor. A family that a role anchor already pins exits 2 (anchor one of them); with `familyNames`, use the family's output name.
+
+### P3 anchors
+
+An anchor given in sRGB (a hex) stays inside sRGB, and with it most of its ramp, so a `display-p3` system pinned to sRGB colours looks the same on a wide-gamut screen as its sRGB fallback. The `p3` option, on an anchor or family anchor entry or as the request's top-level default, makes the anchor use the P3 gamut on purpose. It applies only where the mode's target is `display-p3`, and lightness and hue never move: only OKLCH chroma does, measured against the largest chroma each gamut holds at the anchor's lightness and hue (Cmax_srgb, Cmax_p3).
+
+| `p3` | Chroma |
+|---|---|
+| `"exact"` (default) | Kept: the anchor as given |
+| `"relative"` | Scaled by Cmax_p3 / Cmax_srgb: as near the P3 edge as it was to the sRGB one (a muted colour stays muted, often inside sRGB) |
+| `"edge"` | A muted anchor (chroma under 0.7 of Cmax_srgb) as `relative`; a saturated one to the larger of its own chroma and 0.95 of Cmax_p3, outside sRGB |
+
+Radix red 9 (`#e5484d`, C 0.193, Cmax_srgb 0.253) becomes C 0.271 with `edge`. The `dark` colour is lifted the same way. Each lifted entry's `anchorReport` `gamut` (or `dark.gamut`) carries `p3: { option, requested, lifted, srgbMax, p3Max }`, OKLCH; the anchor's `value` is the lifted colour, `source` the request's. The top-level `p3` leaves the neutral pins (`ground`, `ink`, `surface`, `neutral`) exact; an entry's own `p3` moves them too. On the 25 Radix step-9 colours as `familyAnchors` (five modes, default `keyIntensity`), `edge` takes the light swatches outside sRGB from 52 to 84 of 372 and the visible ones from 6 to 38. More of the ramp follows with a higher `keyIntensity` (up to 300) and `keyRamp`. The difference shows only on a wide-gamut screen; the sRGB fallback maps each lifted colour back. Read the P3 usage line (Outputs) after the run.
 
 ### Plain-word requests
 
@@ -357,6 +373,7 @@ The roles keep their families and no semantic variable moves. Each entry has an 
 | "step 1 is too close to white / black" | Step 1 is the page: lower `toneMax`, raise `darkTone` |
 | "step 1 has no colour", "step 1 is faint" | `tint` (up to 100), `rc: 1`, a higher `falloff`; on a specimen, paint the sheet on the white / black endpoint so step 1 reads as a tile |
 | "orange looks rusty", "greens look dark next to Radix" | Every solid sits at one APCA contrast, so naturally light hues are darkened (hue is kept). Offer `familyAnchors` at Radix's step 9 |
+| "the P3 and sRGB colours look identical", "P3 looks like sRGB" | Read the P3 usage line (`WARNING effectively sRGB`). Anchor with `"p3": "edge"` (P3 anchors) and raise `keyIntensity` (up to 300; `keyRamp` 2 carries it into steps 7 and 8). It only shows on a wide-gamut screen, so compare on one |
 | "dark solids look different from light" | `modes.dark.settings.keyDepth` (it switches at the label choice; compare `solidLabels`), or `familyAnchors` with `brandExact` |
 | "text looks brown" | Steps 11–12 sit at high Lc targets; lower `targetsLight` / `targetsDark` for steps 11–12 and check `apca.text` still passes |
 
@@ -382,7 +399,7 @@ For dark used only on some sections, add `"autoDark": false` and a forced-only e
 `scripts/families.mjs` lays a system out one family per file, for a design-system repository that imports only the families it uses. It reads a `system.mjs` output folder and writes a new one:
 
 ```sh
-node scripts/families.mjs --from SYSTEM_OUTPUT_DIR --out NEW_DIR [--light light] [--dark dark]
+node scripts/families.mjs --from SYSTEM_OUTPUT_DIR [--from-p3 P3_SYSTEM_OUTPUT_DIR] --out NEW_DIR [--light light] [--dark dark]
 ```
 
 | File | Holds |
@@ -393,8 +410,10 @@ node scripts/families.mjs --from SYSTEM_OUTPUT_DIR --out NEW_DIR [--light light]
 | `colors-p3/<name>.json`, `.dtcg.json` | Each value as CSS, OKLCH, P3 components, alpha and an sRGB hex fallback; DTCG paths `colors.<family>.<light\|dark>.<step>`, semantic tokens as aliases |
 | `colors-p3/index.css` | Imports globals, every family, then semantic |
 | `colors/…` | The same files with every value mapped into sRGB (the `system.css` sRGB block) |
-| `manifest.json` | Every file with its size and SHA-256, the families and their solid labels per scheme, anchors, roles with both values, step groups, contrast summary |
+| `manifest.json` | Every file with its size and SHA-256, the families and their solid labels per scheme, anchors, roles with both values, step groups, contrast summary, `p3Usage` |
 | `README.md`, `USAGE.md` | Files and naming; how to use the steps, the solid labels, alpha steps and roles, generated from the same data |
+
+`README.md` and `manifest.json › p3Usage` say how much of P3 `colors-p3/` uses: the P3 usage counts (Outputs) of the run behind it, for the two modes laid out. From one run that is how far `colors-p3/` is from `colors/`; under 5% outside sRGB the two folders look the same. `--from-p3` takes `colors-p3/` from a second, P3-tuned run (the same request with anchors' `p3: "edge"`) and `colors/` from `--from`, so the sRGB files keep the exact colours; both runs need the same families and modes, the second a `display-p3` target (else exit 2), and `manifest.json › generator.p3Request` records its request.
 
 Two modes go in, one light-scheme and one dark-scheme (`--light`, `--dark`; default `light` and `dark`): each variable that differs is written as `--x-light`, `--x-dark` and `--x: light-dark(var(--x-light), var(--x-dark))`, one that is equal in both is written once. Contrast and extra modes are not laid out (light-dark() has two schemes). `light-dark()` needs Chrome 123, Safari 17.5, Firefox 120. Checked by `check.mjs` (every variable resolves in both schemes, step 9 exact to the system, manifest hashes current).
 
@@ -438,6 +457,7 @@ Runs `system.mjs` on `{}`, on a light-dark request (`brightHues: false`, `lightD
 - **neutrals**: the default run's `system.css` and `system.json` hash to `scripts/system/fixtures/default-digest.json` (byte-identical default; after a deliberate change to the default output, refresh it with `check.mjs --update-digest`) and carry no split variable or field; every split role points at its family and step (the table above, restated in the check), `gray-N` is `var(--colors-ink-N)` and ink N is the gray ramp's color; each family's steps 1–7 equal the neutral the engine makes for its spec at the mode's settings (the surface at the lifted page; ground and surface specs swapped in dark when `cross`), skipping anchored ends; the cross run names Slate for the dark page and Sand for the dark cards; separation recomputed (ΔE ± 0.05, Lc ± 0.1, threshold 2, `pass`), every mode separated in the unanchored runs and the anchored run has a miss to flag; anchors pin ground 1 / ink 12 / surface 1 and their dark ends; floors with the split labels, control border on ground 1–2 and surface 1–2, series on ground 2; key run, contrast (with the split pairs), CSS, light-dark, split files and Figma on the split runs; the preview shows the three families; the showcase's Neutral & surfaces group has the three strips and a surface card on the page per shown mode with its ΔE, and separation misses are flagged; 15 bad `neutrals` values or combinations exit 2.
 - **family anchors**: a run pinning orange and teal by name with `brandExact`: each exact at step 9 in every mode, the roles where they were, no internal `family:` name in roles or CSS; unknown role names, unknown families, a family a role anchor pins and bad keys exit 2;
 - **family files**: `families.mjs` on that run: every variable in `colors-p3/` and `colors/` resolves to a colour in both schemes through `light-dark()` and `var()`, each family's step 9 equals the system's, and every `manifest.json` hash is current;
+- **P3 anchors**: a run pinning saturated orange, red and blue and muted gold with `p3: "edge"` and `brandExact`: each step 9 keeps the request's OKLCH lightness and hue, its chroma is the check's own `edge` result (0.7 and 0.95 restated), a saturated one lies outside sRGB, and `anchorReport` records the requested and the lifted value; `p3Usage` recounted from the ramps in every mode, and the `WARNING effectively sRGB` line names exactly the modes under 5% (this run, the family-anchor run and a low-chroma run, which has such modes); no `p3Usage` without a `p3` key; four bad `p3` values exit 2; `families.mjs --from` the family-anchor run `--from-p3` this one: `colors-p3/` holds the P3 run's step 9, `colors/` the sRGB run's mapped into sRGB, and both manifests carry the P3 usage;
 
 Then 74 negative controls mutate a copy (move a fixture step or a placed step; lighten a solid, bring a contrast-mode solid under Lc 60, push a hover under the floor, claim the light label for a dark-label solid, give a role the other label, raise the request's `apca.solid`, drop the control border, slip a valid `apca` or `brightHues` value into the bad list; put a bright-hue family on the light label, mark a family outside the window bright, read `brightHues: false` as the default; give a white-passing solid the dark label, reject white without cause, put a white-rejected solid back on white, move a passing solid, report a failing solid as kept, widen a hover room; pull a cusp solid back, rotate its hue, drop its cusp mark; push step 10 or 11 off even spacing, collapse step 12, drop a recorded deviation, misreport `keyRun.lc`; put a series under the surface floor; delete a file, drop a brace or a declaration, flip a `color-scheme`, drop a P3 pair or a split declaration, misroute a Figma alias, misreport an Lc, pass a pair under its threshold, give a pair the wrong threshold, misreport a ΔE, alias a pressed solid to step 11 where its label fails there or to the hover, put a back step under `apca.ui`, misreport a hover ΔE, pass a hover under 4, drop a hover pair, drop a tonalMap role; in the showcase: delete it, drop or add a specimen, misreport an Lc, a target, the solid's Lc or floor or the key run, drop an APCA-miss, key-run or anchor flag, report a weak series the sheet doesn't flag, flag an anchor `system.json` reports in order, strip a panel's forced class or attribute, inject a color or a sheet color literal; neutrals: change the default output by one byte, add a split variable to the default run, read `border` from the ground, leave `fg` on gray, break the gray alias, swap the dark ground and surface back, drop the surface lift, read `cross` as off, misreport a separation, set the card to the page color, unpin a ground anchor or a surface anchor's dark color, drop a separation flag, drop the ink strip, draw a dark card on the wrong role, slip a valid `neutrals` value into the bad list); each must make its check fail. Exit 0 when every check passes and every control bites; 1 otherwise.
 
