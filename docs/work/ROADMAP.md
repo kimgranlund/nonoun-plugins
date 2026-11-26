@@ -6,7 +6,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | ID | Ticket | Title | Type | Size | Pri | Depends on | Status |
 |---|---|---|---|---|---|---|---|
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔴 blocked |
-| T-0890 | [0890-ui-colors-contrast-pin-drift](0890-ui-colors-contrast-pin-drift/handoff.md) | ui-colors: a pinned step 9 drifts in the contrast modes | bug | L2 | P2 | none | ⏳ proposed |
+| T-0890 | [0890-ui-colors-contrast-pin-drift](0890-ui-colors-contrast-pin-drift/handoff.md) | ui-colors: a pinned step 9 drifts in the contrast modes | bug | L2 | P2 | none | 🟡 claimed |
 
 Closed: 851 done, 30 dropped (git log or .NNNN-* folders)
 
