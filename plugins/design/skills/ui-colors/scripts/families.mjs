@@ -6,8 +6,9 @@
 //   colors/…                           the same files with every value mapped into sRGB
 //   manifest.json  README.md  USAGE.md registry and docs, generated from the same data
 // A token that differs by scheme is written as three variables, --x-light, --x-dark and --x: light-dark(var(--x-light), var(--x-dark));
-// a token equal in both schemes is written once. Contract: ../references/system.md › Family files.
-// Usage: node families.mjs --from SYSTEM_OUTPUT_DIR --out NEW_DIR [--light light] [--dark dark]
+// a token equal in both schemes is written once. --from-p3 takes colors-p3/ from a second, P3-tuned run (anchors with "p3")
+// and colors/ from --from. README.md and manifest.json say how much of P3 colors-p3/ uses. Contract: ../references/system.md › Family files.
+// Usage: node families.mjs --from SYSTEM_OUTPUT_DIR [--from-p3 P3_SYSTEM_OUTPUT_DIR] --out NEW_DIR [--light light] [--dark dark]
 // Exit codes: 0 written; 2 bad arguments or an input it cannot lay out.
 import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
@@ -16,14 +17,23 @@ import { parseArgs } from 'node:util';
 import { clampChroma } from './system/anchors.js';
 
 const fail = (code, msg) => { console.error(msg); process.exit(code); };
-const { values } = parseArgs({ options: { from: { type: 'string' }, out: { type: 'string' }, light: { type: 'string', default: 'light' }, dark: { type: 'string', default: 'dark' } } });
-if (!values.from || !values.out) fail(2, 'usage: node families.mjs --from SYSTEM_OUTPUT_DIR --out NEW_DIR [--light <mode id>] [--dark <mode id>]');
+const USAGE = 'usage: node families.mjs --from SYSTEM_OUTPUT_DIR [--from-p3 P3_SYSTEM_OUTPUT_DIR] --out NEW_DIR [--light <mode id>] [--dark <mode id>]';
+let values; try { ({ values } = parseArgs({ options: { from: { type: 'string' }, 'from-p3': { type: 'string' }, out: { type: 'string' }, light: { type: 'string', default: 'light' }, dark: { type: 'string', default: 'dark' } } })); } catch (e) { fail(2, e.message + '\n' + USAGE); }
+if (!values.from || !values.out) fail(2, USAGE);
 if (existsSync(values.out) && readdirSync(values.out).length) fail(2, `--out ${values.out} must be a new or empty folder`);
 const J = JSON.parse(readFileSync(join(values.from, 'system.json'), 'utf8'));
 const L = J.modes?.[values.light], D = J.modes?.[values.dark];
 if (!L || !D) fail(2, `system.json needs modes ${values.light} and ${values.dark} (have ${Object.keys(J.modes || {}).join(', ')})`);
 if (L.scheme !== 'light' || D.scheme !== 'dark') fail(2, `--light must name a light-scheme mode and --dark a dark-scheme mode (light-dark() resolves by color-scheme)`);
 const FAM = J.families.all, ACC = new Set(J.families.accents), GAMUT = J.target === 'display-p3' ? 'p3' : 'srgb';
+// --from-p3: the P3-tuned run, which must target display-p3 and have the same families and the same two modes.
+let JP = null;
+if (values['from-p3']) {
+  JP = JSON.parse(readFileSync(join(values['from-p3'], 'system.json'), 'utf8'));
+  if (JP.target !== 'display-p3') fail(2, `--from-p3 ${values['from-p3']} targets ${JP.target}, not display-p3`);
+  if (JP.families?.all?.join(',') !== FAM.join(',')) fail(2, `--from-p3 has families ${JP.families?.all?.join(', ')}, not ${FAM.join(', ')} (same hue set and neutrals in both runs)`);
+  if (JP.modes?.[values.light]?.scheme !== 'light' || JP.modes?.[values.dark]?.scheme !== 'dark') fail(2, `--from-p3 needs a light-scheme mode ${values.light} and a dark-scheme mode ${values.dark}`);
+}
 
 // ── Colour maths (OKLCH ↔ linear RGB, OKLab ΔE): enough to print components and hex fallbacks ──────────────
 const M3 = (M, v) => M.map((r) => r[0] * v[0] + r[1] * v[1] + r[2] * v[2]);
@@ -68,12 +78,12 @@ const trio = (name, l, d) => l === d ? [`  ${name}: ${l};`] : [`  ${name}-light:
 const out = values.out, files = [];
 const put = (rel, text) => { const p = join(out, rel); mkdirSync(join(p, '..'), { recursive: true }); writeFileSync(p, text); files.push(rel); };
 const famRe = new RegExp(`^--colors-(${FAM.join('|')})-(a?\\d+)$`);
-const gamuts = GAMUT === 'p3' ? [['p3', 'colors-p3'], ['srgb', 'colors']] : [['srgb', 'colors']];
+const gamuts = JP ? [['p3', 'colors-p3', JP], ['srgb', 'colors', J]] : GAMUT === 'p3' ? [['p3', 'colors-p3', J], ['srgb', 'colors', J]] : [['srgb', 'colors', J]];
 const gamutName = { p3: 'display-p3', srgb: 'srgb' };
 const head = (g, what) => `/* ${what} · ${g === 'p3' ? 'Display P3 (oklch inside the P3 gamut)' : 'sRGB (oklch mapped into sRGB)'} · light and dark generated separately. Needs ../globals.css. */\n`;
 let tokens = 0;
-for (const [g, dir] of gamuts) {
-  const lv = L.variables, dv = D.variables;
+for (const [g, dir, src] of gamuts) {
+  const lv = src.modes[values.light].variables, dv = src.modes[values.dark].variables;
   for (const f of FAM) {
     const css = [head(g, `${f}: steps 1–12, alpha steps, tonal scale`) + ':root {'], json = { family: f, kind: ACC.has(f) ? 'accent' : 'neutral', gamut: gamutName[g], steps: {}, alpha: {}, tonal: {} }, dt = { colors: { [f]: { light: {}, dark: {}, alpha: { light: {}, dark: {} }, tonal: {} } } };
     for (const [prefix, group] of [['', 'steps'], ['a', 'alpha']]) for (let s = 1; s <= 12; s++) {
@@ -82,7 +92,7 @@ for (const [g, dir] of gamuts) {
       json[group][prefix + s] = { light: describe(l, g), dark: describe(d, g) };
       const t = group === 'steps' ? dt.colors[f] : dt.colors[f].alpha; t.light[prefix + s] = dtcg(l, g); t.dark[prefix + s] = dtcg(d, g);
     }
-    for (const st of J.tonal?.[f]?.stops || []) { const v = inGamut(`oklch(${st.oklch.join(' ')})`, g); css.push(`  --palette-${f}-${st.stop}: ${v};`); json.tonal[st.stop] = describe(v, g); dt.colors[f].tonal[st.stop] = dtcg(v, g); tokens++; }
+    for (const st of src.tonal?.[f]?.stops || []) { const v = inGamut(`oklch(${st.oklch.join(' ')})`, g); css.push(`  --palette-${f}-${st.stop}: ${v};`); json.tonal[st.stop] = describe(v, g); dt.colors[f].tonal[st.stop] = dtcg(v, g); tokens++; }
     css.push('}', '');
     put(`${dir}/${f}.css`, css.join('\n')); put(`${dir}/${f}.json`, JSON.stringify(json, null, 2) + '\n'); put(`${dir}/${f}.dtcg.json`, JSON.stringify(dt, null, 2) + '\n');
   }
@@ -99,6 +109,24 @@ for (const [g, dir] of gamuts) {
   put(`${dir}/index.css`, `/* Everything, in order: globals, every family, then the semantic roles. */\n@import "../globals.css";\n${FAM.map((f) => `@import "./${f}.css";`).join('\n')}\n@import "./semantic.css";\n`);
 }
 put('globals.css', `/* Which scheme light-dark() resolves to. No colours here.\n   :root follows the OS; .light / .dark (or data-color-mode) force a scheme on any subtree. */\n:root {\n  color-scheme: light dark;\n}\n.light,\n[data-color-mode="light"] {\n  color-scheme: light;\n}\n.dark,\n[data-color-mode="dark"] {\n  color-scheme: dark;\n}\n`);
+
+// ── P3 usage: how much of Display P3 colors-p3/ uses (system.md › Family files) ───────────────────────────────
+// Each ramp swatch of the colors-p3 run's two modes against its sRGB mapping (chroma clamped at its OKLCH lightness and hue),
+// OKLab ΔE × 100: outside sRGB at P3_OUTSIDE or more, visibly over P3_VISIBLE. The counts system.mjs prints for that run; when
+// one run fills both folders, this is how far colors-p3/ is from colors/.
+const P3_OUTSIDE = 0.01, P3_VISIBLE = 2;
+function usageOf(M) {
+  const out = [];
+  for (const [f, steps] of Object.entries(M.ramps)) for (const x of steps) { const [l, c, h] = x.oklch, d = 100 * (c - clampChroma(l, c, h, 'srgb')); if (d >= P3_OUTSIDE) out.push({ f, step: x.step, d }); }
+  const n = Object.values(M.ramps).reduce((a, r) => a + r.length, 0), ds = out.map((x) => x.d).sort((a, b) => a - b), top = out.reduce((a, x) => (!a || x.d > a.d ? x : a), null), r = (x, k) => +x.toFixed(k);
+  const median = ds.length ? (ds.length % 2 ? ds[ds.length >> 1] : (ds[ds.length / 2 - 1] + ds[ds.length / 2]) / 2) : 0, visible = out.filter((x) => x.d > P3_VISIBLE).length;
+  return { swatches: n, outsideSrgb: out.length, share: r(100 * out.length / n, 1), visible, visibleShare: r(100 * visible / n, 1), maxDE: r(top?.d ?? 0, 2), medianDE: r(median, 2), largest: top ? `${top.f} ${top.step}` : null };
+}
+const p3Src = gamuts.find(([g]) => g === 'p3')?.[2];
+const p3Usage = p3Src && { method: `ramp swatches of the colors-p3 run against their sRGB mapping, OKLab ΔE × 100; outside sRGB at ${P3_OUTSIDE} or more, visibly over ${P3_VISIBLE}; ΔE over the swatches outside sRGB`, ...Object.fromEntries([values.light, values.dark].map((id) => [id, usageOf(p3Src.modes[id])])) };
+const usageLine = (id) => { const u = p3Usage[id]; return `${u.outsideSrgb} of ${u.swatches} ${id} ramp swatches (${u.share}%; ${u.visible} visibly, ${u.visibleShare}%, over ΔE ${P3_VISIBLE}; largest ΔE ${u.maxDE}${u.largest ? ', ' + u.largest : ''})`; };
+const usageText = !p3Usage ? '' : (JP ? `\`colors-p3/\` is laid out from a P3-tuned run (\`manifest.json › generator.p3Request\`), \`colors/\` from the sRGB run. The P3 run leaves sRGB in ` : `\`colors-p3/\` differs from \`colors/\` in `)
+  + `${usageLine(values.light)} and ${usageLine(values.dark)} (\`manifest.json › p3Usage\`). Under 5% visibly, the two folders look the same on a wide-gamut screen: anchor with \`"p3": "edge"\` or raise \`keyIntensity\`${JP ? '' : ', or lay out a P3-tuned run with `--from-p3`'}.\n\n`;
 
 // ── Docs, generated from the same data so they can't drift from the values ──────────────────────────────────
 const dir0 = gamuts[0][1], sem = JSON.parse(readFileSync(join(out, dir0, 'semantic.json'), 'utf8')).roles;
@@ -158,7 +186,7 @@ manifest.json  README.md  USAGE.md
 
 ${gamuts.length > 1 ? 'Pick one of `colors-p3/` (wide-gamut screens get the P3 colour; others map it) or `colors/` (identical everywhere: email, print, sRGB-only tools). ' : ''}Import \`index.css\`, or \`../globals.css\`, the families you use and \`semantic.css\` (it needs every family its roles name).
 
-## Light and dark
+${usageText}## Light and dark
 
 \`\`\`css
 --colors-${FAM[0]}-1-light: …;
@@ -181,12 +209,13 @@ Regenerate with the request in \`manifest.json › generator.request\` and \`fam
 `);
 const sha = (rel) => { const b = readFileSync(join(out, rel)); return { path: rel, bytes: b.length, sha256: createHash('sha256').update(b).digest('hex') }; };
 const manifest = {
-  name: 'color-tokens', generated: new Date().toISOString().replace(/\.\d+Z$/, 'Z'), generator: { system: J.generator, request: J.request, from: { light: values.light, dark: values.dark } }, target: J.target,
+  name: 'color-tokens', generated: new Date().toISOString().replace(/\.\d+Z$/, 'Z'), generator: { system: J.generator, request: J.request, from: { light: values.light, dark: values.dark }, ...(JP ? { p3Request: JP.request } : {}) }, target: J.target,
   conventions: { step: '--colors-<family>-<1…12>', alpha: '--colors-<family>-a<1…12>', tonal: '--palette-<family>-<050…950>', role: '--colors-<role>', modes: '<name>-light, <name>-dark, <name>: light-dark(var(<name>-light), var(<name>-dark)); one variable when equal' },
   stepGroups: STEPS.map(([id, name, steps]) => ({ id, name, steps })),
   families: FAM.map((f) => ({ id: f, kind: ACC.has(f) ? 'accent' : 'neutral', solidLabel: { light: L.solidLabels?.[f]?.label ?? null, dark: D.solidLabels?.[f]?.label ?? null } })),
   anchors: anchored(L), roles: Object.fromEntries(Object.entries(sem).map(([id, v]) => [id, { light: v.light, dark: v.dark, modeDependent: v.light !== v.dark }])),
   contrast: Object.fromEntries([[values.light, L], [values.dark, D]].map(([id, M]) => [id, { apca: M.apca, pairsUnderThreshold: M.contrast?.summary?.fail ?? M.contrast?.summary?.failures?.length ?? null, hoverUnderThreshold: M.hover?.summary?.failures ?? [] }])),
+  ...(p3Usage ? { p3Usage } : {}),
   files: files.filter((f) => f !== 'manifest.json').map(sha),
 };
 put('manifest.json', JSON.stringify(manifest, null, 2) + '\n');

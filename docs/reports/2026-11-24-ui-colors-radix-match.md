@@ -54,3 +54,23 @@ Step 9, light, before pinning (OKLab ΔE × 100 against `@radix-ui/colors` 3.0.0
 ## Checks
 
 `node scripts/check.mjs` in `skills/ui-colors`: 73/74 checks pass, 134/134 negative controls bite (six new: a family anchor off its step 9, one that moved a role, an internal `family:` name in the CSS, a valid family anchor in the bad list, a family file with a missing reference, one with a moved step 9). The one failing check, `neutrals: default run byte-identical to the recorded digest`, fails the same way on the unmodified skill in this environment (`system.json` sha256 `5d65e37a3e41`, recorded `00427f06e157`); this branch's default output is byte-identical to the unmodified skill's. `python3 scripts/check-packaging.py` from the repository root: PASS.
+
+## P3 that uses P3
+
+Measured by the user (Node 22), from a claude.ai session on 2026-11-25. With the Radix hue set, 25 `familyAnchors` pinned to Radix's sRGB step-9 hex and target `display-p3`, the P3 and sRGB outputs differed visibly (OKLab ΔE × 100 over 2) in only 3 of 372 light and 10 of 372 dark swatches; the largest was 3.4. Pinning each anchor's P3 version instead (same OKLCH L and H; muted anchors, C / Cmax_srgb(L, H) under 0.7: C_p3 = C × Cmax_p3 / Cmax_srgb; saturated anchors: C_p3 = max(C, 0.95 × Cmax_p3)) with `keyIntensity` 300 and `keyRamp` 2 gave 108 light and 77 dark swatches outside sRGB, 93 per mode with ΔE over 2 and 27 over 5; the largest was 10.8 light (grass 9) and 11.8 dark (grass 10). Every text and solid pair still passed; the weakest solid label was grass at Lc 46.3 (floor 45); hover pairs under the threshold: 5 light, 4 dark. Red 9 went from C 0.193 to 0.271, past the sRGB maximum 0.2526 at that L and H.
+
+Now: anchors and family anchors take `p3` (`"exact"`, the default; `"relative"`; `"edge"`, the hybrid above, with 0.7 and 0.95 as named constants), also as a top-level default, applied only where the target is `display-p3`; `anchorReport` records the requested and the lifted colour. `system.mjs` prints a P3 usage line per mode and `WARNING effectively sRGB` where under 5% of ramp swatches leave sRGB visibly; with a `p3` key, `system.json › modes.<id>.p3Usage` has the figures. `families.mjs --from-p3` lays `colors-p3/` out from a P3-tuned run and `colors/` from the sRGB run, and its README and manifest state the P3 usage. The default output (`{}`) and a 25-anchor request without `p3` are byte-identical before and after.
+
+The warning counts visible swatches (ΔE over 2), not every swatch outside sRGB. Most pinned swatches sit a hair outside sRGB and look the same on both screens, so a plain count would almost never warn: the default system leaves sRGB in 17% to 28% of swatches per mode, and the 25 exact anchors leave it in 14% of light swatches but visibly in 1.6%.
+
+The same 25 anchors with this implementation (`{ "settings": { "hueSet": "radix" }, "familyAnchors": … }`, five modes, default `keyIntensity`), swatches outside sRGB / visibly, of 372 per mode:
+
+| Mode | `exact` | `edge` |
+|---|---|---|
+| light | 52 / 6 (1.6%) | 84 / 38 (10.2%) |
+| dark | 64 / 26 (7.0%) | 68 / 31 (8.3%) |
+| light-contrast | 17 / 0 (0%) | 51 / 25 (6.7%) |
+| dark-contrast | 81 / 19 (5.1%) | 84 / 23 (6.2%) |
+| dim | 63 / 28 (7.5%) | 70 / 31 (8.3%) |
+
+`exact` warns in light and light-contrast; `edge` does not warn, and no contrast pair misses on either screen (weakest solid label grass, light, Lc 54.2). On the request at the top of this report with the 25 anchors, `exact` gives 86 / 5 light and 70 / 24 dark; `edge` with `keyIntensity` 300 and `keyRamp` 2 gives 122 / 36 light and 102 / 40 dark, the largest ΔE 6.4 (grass 10) and 6.6 (grass 9), no contrast miss, weakest solid grass Lc 49.8, hover pairs under the threshold 2 light and 0 dark. These are below the user's figures (93 visible per mode, largest 11.8); that session's exact request (dark colours, settings) was not recorded, so the difference is not traced.
