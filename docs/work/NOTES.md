@@ -1106,3 +1106,7 @@
 ## T-0885: ui-colors: bundle the full Radix scales and add compare radix (2026-11-25)
 
 - note: contrast modes (light-contrast, dark-contrast) do not report ΔE 0 at a pinned step 9 (teal 1.49 and 26.85), because those modes move colours by design. check.mjs pins only light and dark (extraModes: false), so this is untested but consistent with the doc's "reported only" scope.
+
+## T-0889: ui-colors: P3 that uses P3 (anchor p3 option, usage report, families --from-p3) (2026-11-25)
+
+- note: docs/reports/2026-11-24-ui-colors-radix-match.md records an open decision, whether the `effectively sRGB` warning should count visible swatches (ΔE over 2) instead of all swatches outside sRGB. With the plain count, the user's own request never warns.

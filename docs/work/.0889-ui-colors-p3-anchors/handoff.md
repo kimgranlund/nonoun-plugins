@@ -2,7 +2,7 @@
 id: T-0889
 title: "ui-colors: P3 that uses P3 (anchor p3 option, usage report, families --from-p3)"
 type: feature        # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L3             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -46,3 +46,16 @@ A `ui-colors` system with target `display-p3` can use the P3 gamut on purpose, a
 ## Constraints
 - Default output (`{}`) unchanged; the recorded digest unchanged.
 - Do not edit any CHANGELOG (the conductor records it at landing).
+
+## Outcome
+
+2026-11-25 · lane: solo L3 · verdict: closed by reason (delivered by the solo agent (level L3); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: d0cb82574a67
+- Changed: see commits
+- Commits: 2d74816 T-0889: solo lane skips; 713c041 T-0889: record lane T-0889-t0889
+- Check: 1 check.mjs reports every check passing and every control biting, digest unchanged: pass
+- Check: 2 `{}` output byte-identical to base: pass
+- Check: 3 25 Radix familyAnchors, p3 edge vs exact, target display-p3: pass
+- Check: 4 bad p3 exits 2: pass
+- Check: 5 families.mjs --from-p3 writes colors-p3/ from that dir; without it manifest carries usage counts: pass
+- Check: 6 check-packaging exits 0 and `git diff --check <base>` is clean: pass
+- Follow-up: note: docs/reports/2026-11-24-ui-colors-radix-match.md records an open... -> notes.md
