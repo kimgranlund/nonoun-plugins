@@ -488,9 +488,9 @@ function solveSolid(ramp, st, floor, labels, gamut, only, cusp) {
   const passL = (L) => lcOn(labels.light, at(L)) >= F, passD = (L) => lcOn(labels.dark, at(L)) >= F;
   let label, c = p, unreachable;
   if (only !== 'dark' && lcOn(labels.light, p) >= F) label = 'light';
-  else if (lcOn(labels.dark, p) >= F) label = 'dark';
+  else if (only !== 'light' && lcOn(labels.dark, p) >= F) label = 'dark';
   else {
-    const toLight = only !== 'dark' && passL(0) ? edge(0, p[0], passL) : null, toDark = passD(1) ? edge(1, p[0], passD) : null;
+    const toLight = only !== 'dark' && passL(0) ? edge(0, p[0], passL) : null, toDark = only !== 'light' && passD(1) ? edge(1, p[0], passD) : null;
     const k = (L) => (L == null ? -1 : at(L)[1] / Math.max(p[1], 1e-9)), kL = k(toLight), kD = k(toDark);
     if (toLight == null && toDark == null) { label = lcOn(labels.light, at(0)) >= lcOn(labels.dark, at(1)) ? 'light' : 'dark'; c = at(label === 'light' ? 0 : 1); unreachable = true; }
     else { label = toLight == null ? 'dark' : toDark == null ? 'light' : kD - kL > CHROMA_EDGE ? 'dark' : 'light'; c = at(label === 'dark' ? toDark : toLight); }
@@ -611,6 +611,16 @@ function solveSolidLabels(data, { T, solidSteps, pins, roles, labels, gamut, anc
     let e = solveSolid(ramp, 9, T.solid, labels, gamut, bright ? 'dark' : undefined, cusp);
     if (bright) e.brightHue = true;
     let kr = respace(ramp, { entry: e, floor: T.solid, text: T.text, labels, gamut, pinned, nineFixed: pin === 9 && e.moved === 0 });
+    // A pinned step 9 that fails the floor at the anchor colour (a contrast mode's raised floor) moves the least visible distance:
+    // each label is solved on its own (the smallest lightness move at the anchor's hue, then any hover room), and the one whose
+    // step 9 ends nearer the anchor (OKLab ΔE) wins, a run with a passing hover before one without.
+    if (pin === 9 && e.moved !== 0) {
+      const want = snap[8].oklch, tryLabel = (only) => { ramp.forEach((x, i) => setSw(x, snap[i].oklch)); const e1 = solveSolid(ramp, 9, T.solid, labels, gamut, only, null);
+        const k1 = respace(ramp, { entry: e1, floor: T.solid, text: T.text, labels, gamut, pinned, nineFixed: false });
+        return { e: e1, kr: k1, cost: (e1.unreachable || k1.deviations.some((d) => d.reason === 'hover-floor-unreachable') ? 1000 : 0) + dE(want, ramp[8].oklch) }; };
+      const best = ['light', 'dark'].map(tryLabel).sort((a, b) => a.cost - b.cost)[0];
+      ({ e, kr } = tryLabel(best.e.label));
+    }
     // Visibility guard: white first, unless keeping white (with the hover room it needs) would leave the solid under apca.ui
     // against the page, where it no longer reads as a solid. Then the family takes the dark label instead.
     if (e.label === 'light' && pin !== 9 && kr.lc[0] < T.ui) {
@@ -673,7 +683,12 @@ try {
   // used to flip one family between lemon-and-dark-label and olive-and-white-label across modes.
   const brightSet = new Set(Object.entries(modes.light.data.schemes.light).filter(([, ramp]) => ramp[8].oklch[1] >= BRIGHT_MIN_C && inBright(ramp[8].oklch[2])).map(([f]) => f));
   for (const m of MODES) { const M = modes[m.id];
-    const sol = solveSolidLabels(M.data, { T: M.apca, solidSteps: M.solidSteps, pins: M.pins, roles: M.roles, labels, gamut: M.target, anchored: new Set(M.report.map((x) => x.family)), brightSet }); M.solidLabels = sol.labels; M.keyRun = sol.keyRun; }
+    const sol = solveSolidLabels(M.data, { T: M.apca, solidSteps: M.solidSteps, pins: M.pins, roles: M.roles, labels, gamut: M.target, anchored: new Set(M.report.map((x) => x.family)), brightSet }); M.solidLabels = sol.labels; M.keyRun = sol.keyRun;
+    // A pinned step 9 that fails the mode's solid floor at the anchor colour moves (solveSolid): record the move on its anchorReport row.
+    M.report = M.report.map((x) => { const e = M.pins[M.scheme]?.[x.family] === 9 && sol.labels[M.scheme][rampName(x.family)], d = M.scheme === 'dark' && x.dark ? x.dark : x;
+      if (!e || !e.moved || d.step !== 9) return x;
+      const want = parseAnchorColor(d.value).oklch, got = M.data.schemes[M.scheme][x.family][8].oklch;
+      return { ...x, solidMove: { scheme: M.scheme, label: e.label, floor: e.floor, lcAtAnchor: r1(lcOn(labels[e.label], want)), lc: e.lc, from: hex(want), to: hex(got), dL: +(got[0] - want[0]).toFixed(4), dE: r2(dE(want, got)) } }; }); }
 } catch (e) { fail(1, 'generation failed: ' + e.message); }
 const labelCss = { light: okCss(labels.light), dark: okCss(labels.dark) };
 // The label of a role's solid in a mode: its family's entry at the role's solid step.
