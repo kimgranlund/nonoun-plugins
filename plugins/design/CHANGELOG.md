@@ -6,6 +6,7 @@ The design plugin, newest first. Releases before this file are recorded in the r
 
 ### Added
 
+- Five data-visualization director agents, Claude Code only, imported unchanged from the MacBook share: `amanda-cox`, `edward-tufte`, `jacques-bertin`, `mike-bostock` and `tamara-munzner` (`model: opus`); listed in `AGENTS.md`.
 - `ui-colors`: opt-in request key `hoverMin` (OKLab ΔE ×100, 0 to 100) moves step 10 of any solid, anchored or at the gamut cusp, until hover differs from step 9 by at least that much in every mode, keeping hue; unset, output is unchanged. The step-10 figures in the 2026-11-24 report came from an anchored run; at default settings dark yellow and lime hover sit near ΔE 3 (T-0884).
 - `ui-colors`: P3 that uses P3. Anchors and family anchors take `p3: "exact" | "relative" | "edge"` (or one request-level `p3`), lifting a saturated step 9 toward the Display P3 edge at its own lightness and hue while muted ones scale; naming `p3` writes `modes.<id>.p3Usage` and prints `WARNING effectively sRGB` for a mode under 5% of swatches outside sRGB; `families.mjs --from-p3 <dir>` lays `colors-p3/` out from a P3 run. Default output is unchanged (T-0889).
 - `ui-colors`: `scripts/system/radix-colors.json` bundles all 31 Radix scales (steps 1 to 12, light, dark, alpha, P3 and P3 alpha) from `@radix-ui/colors` 3.0.0 with its tarball sha256, and the opt-in request key `compare: "radix"` writes per-family, per-step ΔE, lightness, chroma and hue deltas to `system.json` and a preview column; unset, output is unchanged (T-0885).

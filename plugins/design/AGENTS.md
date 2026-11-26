@@ -39,6 +39,16 @@ Claude Code only: Claude Code finds them in `agents/` and names them `design:<na
 | `naoto-fukasawa` | Naoto Fukasawa |
 | `wim-crouwel` | Wim Crouwel |
 
+Data-visualization directors, the same shape for charts, data stories, dashboards and interactive visualizations, each naming the other four as its crew. Imported unchanged from the MacBook share (`Downloads/dataviz-director-agents/.claude/agents/`, files dated 2026-11-25); their generator (`tools/design-agents/`) stays on the share. They read the `dataviz` and `artifact-design` skills when the host has them.
+
+| Agent | Use when the user wants data work directed through |
+|---|---|
+| `amanda-cox` | Amanda Cox: storytelling and annotation |
+| `edward-tufte` | Edward Tufte: evidence and integrity |
+| `jacques-bertin` | Jacques Bertin: encoding theory |
+| `mike-bostock` | Mike Bostock: building for the web |
+| `tamara-munzner` | Tamara Munzner: task analysis and interaction |
+
 ## Rules
 
 - Skills reach each other by relative paths inside `skills/`, so the plugin ships them together. `component-variants`, `wireframe-review` (`scripts/generate-geometry.mjs`) and the inspector panel read `ui-geometry/scripts/derive.mjs`; moving a skill breaks them.
