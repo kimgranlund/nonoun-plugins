@@ -4,6 +4,12 @@ The design plugin, newest first. Releases before this file are recorded in the r
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-11-27
+
+### Added
+
+- `ui-colors`: `scripts/named.mjs` writes a named-color reference as DTCG (`named.dtcg.json`) and CSS (`named.css`). By default it uses the 148 CSS Color 4 named colors bundled in `scripts/system/named-colors.json`, with no network. `--from <file>` builds from a saved file (a `ColorItem` JSON array, or the saved Encycolorpedia named page in Markdown), and `--source encycolorpedia` fetches `GET /v1/colors/named/{lang}` with `ENCYCOLORPEDIA_TOKEN` into a local `--cache`. No Encycolorpedia data ships in the plugin. Each file records its provenance; `references/named.md` documents it. `families.mjs` now takes its DTCG value shape from the shared `scripts/system/dtcg.js` (output unchanged) (T-0892).
+
 ## [0.8.1] - 2026-11-27
 
 ### Fixed

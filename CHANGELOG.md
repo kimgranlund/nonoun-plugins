@@ -4,6 +4,14 @@ SDLC releases (named SDLC Lite before 1.0.0), newest first, in [Keep a Changelog
 
 ## [Unreleased]
 
+## [1.0.16] - 2026-11-27
+
+Report: [docs/reports/2026-11-27-release-1-0-16.md](docs/reports/2026-11-27-release-1-0-16.md). Marketplace release: `design` 0.9.0; `sdlc` 1.1.1, `context` 0.8.1 and `dev-tools` 0.1.1 are unchanged. One ticket (T-0892). Details are in [the design changelog](plugins/design/CHANGELOG.md).
+
+### Added
+
+- `design`: `ui-colors` named-color DTCG reference (`scripts/named.mjs`): the bundled CSS named colors by default, a saved file with `--from`, or the Encycolorpedia API with your own token into a local cache (T-0892).
+
 ## [1.0.15] - 2026-11-27
 
 Report: [docs/reports/2026-11-27-release-1-0-15.md](docs/reports/2026-11-27-release-1-0-15.md). Marketplace release: `sdlc` 1.1.1, `context` 0.8.1 and `design` 0.8.1; `dev-tools` 0.1.1 is unchanged. One ticket (T-0891), which clears the 12 warnings the claude.ai marketplace sync showed for v1.0.14.

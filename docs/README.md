@@ -62,6 +62,7 @@
 - [Release 0.22.6](reports/2026-10-12-release-0-22-6.md): a patch with the single `/plan` skill, the opt-in inner-loop profile, merge ops guidance, a load cap for the gate lock, and the first Astra review fixes; Progressive Context unchanged at 0.1.2.
 - [Release 1.0.14](reports/2026-11-26-release-1-0-14.md): `design` 0.8.0 with five data-visualization director agents and `ui-colors` family anchors, P3 anchors, the bundled Radix scales and contrast-mode pins.
 - [Release 1.0.15](reports/2026-11-27-release-1-0-15.md): `sdlc` 1.1.1, `context` 0.8.1 and `design` 0.8.1, with skill descriptions inside the claude.ai limits and a packaging gate for them.
+- [Release 1.0.16](reports/2026-11-27-release-1-0-16.md): `design` 0.9.0 with the `ui-colors` named-color DTCG reference.
 - [Release 1.0.13](reports/2026-11-25-release-1-0-13.md): `design` 0.7.2 with `massimo-vignelli` on opus like the other designer agents.
 - [Release 1.0.12](reports/2026-11-24-release-1-0-12.md): `design` 0.7.1 with a twelfth designer agent, `massimo-vignelli`.
 - [Release 1.0.11](reports/2026-11-24-release-1-0-11.md): `design` 0.7.0 with eleven designer agents and `ui-geometry` lengths as lines, with `affine` the default preset.
