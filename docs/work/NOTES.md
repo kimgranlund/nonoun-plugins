@@ -1119,3 +1119,8 @@
 ## T-0891: Skill descriptions break claude.ai limits: angle brackets and over 1024 chars (2026-11-27)
 
 - note: plugins/sdlc/skills/build/SKILL.md:4 and run-plan/SKILL.md `argument-hint` still hold `<...>`; the claude.ai panel only flagged `description`, and the new gate checks only `description`.
+
+## T-0892: ui-colors: named-color DTCG reference from CSS colors or the Encycolorpedia API (2026-11-27)
+
+- note: plugins/design/skills/ui-colors/SKILL.md:89 the paragraph trim is unrelated to named colors (likely to stay under the SKILL.md size limit); harmless but unlisted in the handoff.
+- note: the live API fetch path (`fromApi` request branch in named.mjs) was not exercised, since the URL is fixed and the criteria forbid a network call in check.mjs; the cache and no-token paths were observed.

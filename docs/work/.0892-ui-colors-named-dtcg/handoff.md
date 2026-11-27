@@ -2,7 +2,7 @@
 id: T-0892
 title: "ui-colors: named-color DTCG reference from CSS colors or the Encycolorpedia API"
 type: feature        # feature | bug | chore | spike | idea
-status: claimed        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -47,3 +47,17 @@ router: .sdlc/AGENTS.md  # how to claim and close this ticket
 - `--source encycolorpedia` without `ENCYCOLORPEDIA_TOKEN` exits 2 and names the variable.
 - `node scripts/check.mjs` passes, with new checks for the above and a negative control: a corrupted hex in a fixture makes the round-trip check fail.
 - `python3 scripts/check-packaging.py` and `git diff --check` pass.
+
+## Outcome
+
+2026-11-27 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: a889a040a211
+- Changed: see commits
+- Commits: 08f902d T-0892: ui-colors named-color DTCG reference (named.mjs); f9e6e92 T-0892: record lane T-0892-t0892
+- Check: 1 `named.mjs --out <tmp>` writes 148 colors matching the bundled hex, all `$type: color`: pass
+- Check: 2 `--from encycolorpedia.named-colors.md` writes 1,682 distinct tokens, each hex equal to the sourc...: pass
+- Check: 3 `--from <fixture>` for JSON and Markdown, no network, clashing names distinct, provenance present: pass
+- Check: 4 `--source encycolorpedia` without `ENCYCOLORPEDIA_TOKEN` exits 2 and names it: pass
+- Check: 5 `check.mjs` passes with new checks and a negative control for a corrupted fixture hex: pass
+- Check: 6 `python3 scripts/check-packaging.py` and `git diff --check`: pass
+- Follow-up: note: plugins/design/skills/ui-colors/SKILL.md:89 the paragraph trim is... -> notes.md
+- Follow-up: note: the live API fetch path fromApi request branch in named.mjs was not... -> notes.md
