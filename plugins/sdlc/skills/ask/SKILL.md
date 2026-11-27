@@ -1,6 +1,6 @@
 ---
 name: ask
-description: "Sweep the thread, task folder, tickets, run results, and notes for open questions and blockers, then ask them in one AskUserQuestion round with reasoned options, and take prose input when an answer needs it. Use for \"what is still open\", \"what is blocking us\", \"ask me what you need\", or before a long unattended run. NOT for guessing at questions nobody raised."
+description: "Sweep the thread, task folder, tickets, run results, and notes for open questions and blockers, then ask up to 20 of them in one turn, in AskUserQuestion rounds of 4, with reasoned options, and take prose input when an answer needs it. Use for \"what is still open\", \"what is blocking us\", \"ask me what you need\", or before a long unattended run. NOT for guessing at questions nobody raised."
 argument-hint: "[<topic|task-dir>]"
 allowed-tools: Read, Grep, Glob, Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/tickets.py:*), Bash(git log:*), Bash(git status:*), Bash(ls:*), AskUserQuestion
 ---
@@ -37,9 +37,13 @@ Never invent an item. Drop one already answered or made stale since it was raise
 
 For each item write 2 to 4 distinct options. Each option's description carries its consequence in one line: cost, risk, and what it unblocks. Put an option first marked `(Recommended)` only when evidence in the thread or repo supports it, and name that evidence in the description; otherwise leave the options unranked. Use the `preview` field when options are code, config, or layout to compare.
 
-## 3. Ask once
+## 3. Ask in rounds
 
-Make exactly ONE AskUserQuestion call of 1 to 4 questions. Order blockers before nice-to-decide items, and the highest stakes first. With more than 4 items, ask the 4 most consequential and name the rest in the framing ("4 of 7 open"). Header chips are at most 12 characters, each option label is 1 to 5 words, and each question holds one decision. Never a second round in the same turn. If AskUserQuestion is unavailable in this session (a headless run, for example), ask the same round as numbered plain-text questions with the same options and consequences, then end the turn; say that it is plain text.
+AskUserQuestion takes 1 to 4 questions per call, so ask in rounds of at most 4 questions, one call per round, in sequence within the same turn. Ask up to 5 rounds, 20 items in all. Rank every item first: blockers before nice-to-decide items, then the highest stakes first. Fill round 1 with the top 4, round 2 with the next 4, and so on, so the most consequential items are always asked earliest. With more than 20 items, ask the 20 most consequential and name the rest in the first round's framing ("20 of 27 open").
+
+Each round's framing says where it stands ("round 2 of 3, 8 items still open"). Header chips are at most 12 characters, each option label is 1 to 5 words, and each question holds one decision. Before each later round, re-check its items against the answers so far: skip an item an earlier answer settled or mooted, say so in one line, and drop a round that empties out. Do not ask a new question the answers raised unless it is a blocker, and then name it as an addition.
+
+If AskUserQuestion is unavailable in this session (a headless run, for example), ask the same items as numbered plain-text questions, numbered 1 to N across all rounds in the same order, with the same options and consequences, then end the turn; say that it is plain text.
 
 ## 4. Take prose when an answer needs it
 
@@ -47,7 +51,7 @@ AskUserQuestion has no rich text field: the automatic "Other" box is plain text.
 
 ## 5. Resolve
 
-After the answers, record a decision where it belongs only when the person asked or a task folder clearly owns it (the handoff `## Intent` line or a line in the notes file). Then state in two lines what is now decided and what is unblocked. A declined question is recorded as declined, not asked again.
+After the last round, record a decision where it belongs only when the person asked or a task folder clearly owns it (the handoff `## Intent` line or a line in the notes file). Then state in two lines what is now decided and what is unblocked. A declined question is recorded as declined, not asked again.
 
 ## Unattended
 
