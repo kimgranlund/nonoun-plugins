@@ -4,6 +4,10 @@ SDLC releases (named SDLC Lite before 1.0.0), newest first, in [Keep a Changelog
 
 ## [Unreleased]
 
+## [1.0.18] - 2026-11-27
+
+Report: [docs/reports/2026-11-27-release-1-0-18.md](docs/reports/2026-11-27-release-1-0-18.md). Marketplace release: `sdlc` 1.1.2 and `design` 0.10.1; `context` 0.8.1 and `dev-tools` 0.1.1 are unchanged. Two tickets (T-0894, T-0895).
+
 ### Changed
 
 - `sdlc`: `/ask` asks up to 20 open items in one turn, in up to 5 rounds of at most 4 questions, blockers and highest stakes first, skipping items an earlier answer settles (T-0895).
