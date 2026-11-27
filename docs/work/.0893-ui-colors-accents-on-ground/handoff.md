@@ -2,7 +2,7 @@
 id: T-0893
 title: "ui-colors: opt-in re-base of accent ramps on an anchored page colour"
 type: feature        # feature | bug | chore | spike | idea
-status: claimed        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L3             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -81,3 +81,19 @@ Conductor's starting position on the tone gap (the solo may overrule it with a s
 - SKILL.md's natural-language mapping lists the key, and `references/terms.json` has any new term.
 - The solo report gives the four decisions with before and after hex for one warm and one cool family in light and dark.
 - `python3 scripts/check-packaging.py` and `git diff --check` pass.
+
+## Outcome
+
+2026-11-27 · lane: solo L3 · verdict: closed by reason (delivered by the solo agent (level L3); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: 66009c4b8a67
+- Changed: see commits
+- Commits: 05b2d65 T-0893: ui-colors settings.pageTint re-bases accent ramps on an anchored page; affe130 T-0893: user addition, the key is a settings number; c6c87fb T-0893: record lane T-0893-t0893
+- Check: 1 Key is a number in settings (0-100, default 0 = off), per mode via modes.<id>.settings; above 0 s...: pass
+- Check: 2 `node scripts/check.mjs` exits 0 with a new key-set run (step 1 is the page, pinned 9-12 unchange...: pass
+- Check: 3 Negative controls fail as they must (step 1 off the page, a moved pinned solid, an invalid value ...: pass
+- Check: 4 references/system.md documents the key (request keys table, Anchors and Brand colours sections, p...: pass
+- Check: 5 SKILL.md natural-language mapping lists the key; references/terms.json has any new term: pass
+- Check: 6 Solo report gives the four decisions with before and after hex for one warm and one cool family i...: pass
+- Check: 7 `python3 scripts/check-packaging.py` and `git diff --check` pass: pass
+- Follow-up: note: plugins/design/skills/ui-colors/SKILL.md:60 dropped "Light and dark... -> notes.md
+- Follow-up: decide: with pageTint and an ink anchor, dim takes the anchored dark page's... -> notes.md
+- Follow-up: note: pageTint overrides an explicit toneMax or darkTone documented in... -> notes.md

@@ -6,9 +6,8 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | ID | Ticket | Title | Type | Size | Pri | Depends on | Status |
 |---|---|---|---|---|---|---|---|
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔴 blocked |
-| T-0893 | [0893-ui-colors-accents-on-ground](0893-ui-colors-accents-on-ground/handoff.md) | ui-colors: opt-in re-base of accent ramps on an anchored page colour | feature | L3 | P2 | none | 🟡 claimed (branch lane/T-0893-t0893) |
 
-Closed: 854 done, 30 dropped (git log or .NNNN-* folders)
+Closed: 855 done, 30 dropped (git log or .NNNN-* folders)
 
 ## Open follow-ups
 
@@ -145,3 +144,4 @@ Closed: 854 done, 30 dropped (git log or .NNNN-* folders)
 - decide: plugins/sdlc/scripts/run.sh:527-533: `run.sh` still takes the floor against the main checkout HEAD only (the new `into` rule is `dispatch.py` only, stated in the `sdlc-internals.md` entry); the handoff Constraints ask for a parity case if the base logic is shared. decide: a follow-up ticket for the `run.sh` floor if `run.sh` lanes merge integration branches. (from T-0869: A verifier prepared in a lane that merged its integration branch gets a Base sha that keeps the integration br (2026-11-20))
 - decide: plugins/sdlc/scripts/lanes.py:1639: the marker guard covers `finish --no-ticket` only; ticketed `finish` and `fanout.py land` are unchanged, which matches the Non-goals reading. The builder flagged it as an open question. (from T-0872: Landing a ticketless lane with `lanes.py finish --no-ticket` can never commit conflict markers, resolves confl (2026-11-20))
 - decide: plugins/sdlc/scripts/lanes.py:1818: `lane_regenerate` and `lane_after_land` run through `sh`, while `land_gate` runs through `bash -c`; documented in the Finish section, so decide: whether to unify. (from T-0872: Landing a ticketless lane with `lanes.py finish --no-ticket` can never commit conflict markers, resolves confl (2026-11-20))
+- decide: with pageTint and an ink anchor, `dim` takes the anchored dark page's tone and comes out like `dark` (the solo report flags this; the system.md text says it overrides dim's 14). The conductor decides whether that matters. (from T-0893: ui-colors: opt-in re-base of accent ramps on an anchored page colour (2026-11-27))

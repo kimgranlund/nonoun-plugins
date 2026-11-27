@@ -1124,3 +1124,9 @@
 
 - note: plugins/design/skills/ui-colors/SKILL.md:89 the paragraph trim is unrelated to named colors (likely to stay under the SKILL.md size limit); harmless but unlisted in the handoff.
 - note: the live API fetch path (`fromApi` request branch in named.mjs) was not exercised, since the URL is fixed and the criteria forbid a network call in check.mjs; the cache and no-token paths were observed.
+
+## T-0893: ui-colors: opt-in re-base of accent ramps on an anchored page colour (2026-11-27)
+
+- note: plugins/design/skills/ui-colors/SKILL.md:60 dropped "Light and dark are generated separately, never inverted" from the Defaults paragraph to stay under the size limit. The invariant remains at SKILL.md:32 (checked in the base too), so no invariant is lost.
+- decide: with pageTint and an ink anchor, `dim` takes the anchored dark page's tone and comes out like `dark` (the solo report flags this; the system.md text says it overrides dim's 14). The conductor decides whether that matters.
+- note: pageTint overrides an explicit `toneMax` or `darkTone` (documented in system.md), and a light page under tone 84 exits 1, as that toneMax does without the key.
