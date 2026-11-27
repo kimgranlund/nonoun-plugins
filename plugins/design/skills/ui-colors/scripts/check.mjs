@@ -905,6 +905,48 @@ function checkContrastPins(j) {
   if (!moves) f.push('no pinned step 9 moved in any mode (the contrast floor never bound)');
   return f;
 }
+// 13i. Accents on the page (settings.pageTint, T-0893). A cream ground and a dark brown ink, four accents pinned at step 9 in
+// both schemes (a light yellow and a navy among them), the default extra modes, pageTint 100; the reference is the same request
+// without the key at the tones the key must choose (the anchored pages' tones on the 0.5 grid, dim's own darkTone included). In
+// every mode: the tones are those, every accent's step 1 is the page (ground 1 with neutrals, else gray 1), steps 2–8 keep their
+// APCA Lc on the page within 0.5 and step 2 sits nearer the page's tint than without the key, and the pinned families' steps
+// 9–12 are the reference's, hex for hex. Without the key, a run off those tones warns once per scheme; with it, or matched, never.
+const PAGE_ANCHORS = [{ role: 'ground', value: '#fff3e4' }, { role: 'ink', value: '#2a1608' }];
+const PAGE_PINS = { cyan: { value: '#008fbf' }, orange: { value: '#cc6600' }, yellow: { value: '#ffe629' }, indigo: { value: '#1e2a5a' } };
+const PAGE_REQ = { tonal: false, dtcg: false, brandExact: true, anchors: PAGE_ANCHORS, familyAnchors: PAGE_PINS, settings: { pageTint: 100 } };
+const pageToneOf = (hex, lo, hi) => Math.min(hi, Math.max(lo, Math.round(toneOk(hexOk(hex)) * 2) / 2));
+const PAGE_TONES = { toneMax: pageToneOf('#fff3e4', 80, 100), darkTone: pageToneOf('#2a1608', 0, 20) };
+const PAGE_REF = { ...PAGE_REQ, settings: { ...PAGE_TONES }, modes: { dim: { settings: { darkTone: PAGE_TONES.darkTone } } } };
+const PAGE_WARN = { extraModes: false, tonal: false, alpha: false, series: false, dtcg: false, anchors: PAGE_ANCHORS };
+const BAD_PAGE_TINT = [-1, 101, '50', true, null, [100]].map((pageTint) => ({ anchors: PAGE_ANCHORS, settings: { pageTint } }))
+  .concat([{ anchors: PAGE_ANCHORS, modes: { dark: { settings: { pageTint: 200 } } } }, { settings: { pageTint: 50 } }, { anchors: [{ role: 'primary', value: '#0a4dff' }], settings: { pageTint: 100 } }]);
+const abOf = ([, C, H]) => [C * Math.cos(H * Math.PI / 180), C * Math.sin(H * Math.PI / 180)];
+function checkPageTint(j, ref) {
+  const f = [], pageFam = j.neutrals ? 'ground' : 'gray', pinned = Object.keys(j.request.familyAnchors || {});
+  for (const [id, M] of Object.entries(j.modes)) {
+    const R = ref.modes[id]; if (!R) { f.push(`${id}: not in the reference run`); continue; }
+    const page = M.ramps[pageFam][0], pageR = R.ramps[pageFam][0], pab = abOf(page.oklch);
+    for (const k of ['toneMax', 'darkTone']) if (M.settings[k] !== PAGE_TONES[k]) f.push(`${id}: settings.${k} ${M.settings[k]}, the anchored page's tone is ${PAGE_TONES[k]}`);
+    if (page.hex !== pageR.hex) f.push(`${id}: the page is ${page.hex}, ${pageR.hex} without pageTint`);
+    for (const fam of j.families.accents) {
+      const r = M.ramps[fam], q = R.ramps[fam];
+      if (r[0].hex !== page.hex || dE(r[0].oklch, page.oklch) > 0.05) f.push(`${id} ${fam} step 1 ${r[0].hex} is not the page ${page.hex}`);
+      for (let i = 1; i < 8; i++) { const a = lcOk(r[i].oklch, page.oklch), b = lcOk(q[i].oklch, pageR.oklch); if (Math.abs(a - b) > 0.5) f.push(`${id} ${fam} step ${i + 1}: Lc ${a.toFixed(1)} on the page, ${b.toFixed(1)} without pageTint (luminance not kept)`); }
+      // The tint: step 2 moved in a/b toward the page's tint, the page minus the family's own step 1 (where that tint is visible).
+      const t = abOf(q[0].oklch).map((v, k) => pab[k] - v), d = abOf(r[1].oklch).map((v, k) => v - abOf(q[1].oklch)[k]);
+      if (Math.hypot(...t) > 0.005 && d[0] * t[0] + d[1] * t[1] <= 0) f.push(`${id} ${fam} step 2 ${r[1].hex} did not move toward the page's tint (${q[1].hex} without pageTint)`);
+      if (pinned.includes(fam)) for (let i = 8; i < 12; i++) if (r[i].hex !== q[i].hex) f.push(`${id} ${fam} (pinned) step ${i + 1} ${r[i].hex}, ${q[i].hex} without pageTint`);
+    }
+  }
+  return f;
+}
+const TONE_GAP = /^WARNING anchor (ground|ink) \([^)]*\): (light|dark) page tone [\d.]+, but the accents are placed against (toneMax|darkTone) [\d.]+/gm;
+function checkToneGap(lineOff, linesQuiet) {
+  const f = [], got = [...lineOff.matchAll(TONE_GAP)].map((m) => m[3]).sort();
+  if (got.join() !== 'darkTone,toneMax') f.push(`the run off the anchored tones warns for [${got.join(', ')}], not [darkTone, toneMax]`);
+  for (const [name, line] of linesQuiet) if (new RegExp(TONE_GAP.source, 'm').test(line) || /pageTint places/.test(line)) f.push(`${name}: a tone-gap warning where the tones match`);
+  return f;
+}
 const BAD_COMPARE = [{ compare: 'material' }, { compare: true }, { compare: ['radix'] }, { compare: null }];
 function checkRadixCompare(j, pinned, plain, plainHtml) {
   const f = []; let n = 0, away = 0;
@@ -1012,7 +1054,9 @@ try {
   const lineFA = readFileSync(outFA + '.line', 'utf8'), outLow = join(tmp, 'p3-low'), lineLow = runSystem({ ...P3_LOW, p3: 'exact' }, outLow), jLow = readJson(join(outLow, 'system.json'));
   const outHM = join(tmp, 'hover-min'), outHA = join(tmp, 'hover-min-anchored'), outH0 = join(tmp, 'hover-min-unset'); runSystem(HOVER_MIN_REQ, outHM); runSystem(HOVER_MIN_FA, outHA); runSystem({ settings: { hueSet: 'radix' } }, outH0);
   const jHM = readJson(join(outHM, 'system.json')), jHA = readJson(join(outHA, 'system.json')), jH0 = readJson(join(outH0, 'system.json'));
-  const outRC = join(tmp, 'radix-compare'); runSystem(RADIX_REQ, outRC); const outPC = join(tmp, 'contrast-pins'); runSystem(PIN_REQ, outPC); const jPC = readJson(join(outPC, 'system.json')); const jRC = readJson(join(outRC, 'system.json')), htmlRC = readFileSync(join(outRC, 'preview.html'), 'utf8');
+  const outRC = join(tmp, 'radix-compare'); runSystem(RADIX_REQ, outRC); const outPC = join(tmp, 'contrast-pins'); runSystem(PIN_REQ, outPC); const jPC = readJson(join(outPC, 'system.json'));
+  const outPG = join(tmp, 'page-tint'), outPR = join(tmp, 'page-tint-ref'), outPW = join(tmp, 'page-tint-warn'), linePG = runSystem(PAGE_REQ, outPG), linePR = runSystem(PAGE_REF, outPR), linePW = runSystem(PAGE_WARN, outPW);
+  const jPG = readJson(join(outPG, 'system.json')), jPR = readJson(join(outPR, 'system.json')); const jRC = readJson(join(outRC, 'system.json')), htmlRC = readFileSync(join(outRC, 'preview.html'), 'utf8');
   const outB = join(tmp, 'brand'), outBL = join(tmp, 'brand-loose'); runSystem(BRAND, outB); runSystem({ ...BRAND, brandExact: false, autoDark: true, extraModes: false }, outBL);
   const jB = readJson(join(outB, 'system.json')), cssB = readFileSync(join(outB, 'system.css'), 'utf8'), jBL = readJson(join(outBL, 'system.json'));
   const jT = readJson(join(outT, 'system.json')), cssT = readFileSync(join(outT, 'system.css'), 'utf8');
@@ -1136,6 +1180,10 @@ try {
     'compare radix: every Radix-named family compared in every mode (ΔE, ΔL recomputed), a familyAnchors step-9 pin at ΔE 0, the preview column; none without the key': () => [...checkRadixCompare(jRC, Object.keys(RADIX_PIN), j1, readFileSync(join(out1, 'preview.html'), 'utf8')), ...(htmlRC.match(/class="rdx"/g) || []).length === 2 * jRC.families.all.length ? [] : ['the preview lacks a Radix column on some family row']],
     'compare: values other than "radix" exit 2': () => checkBadRequests(BAD_COMPARE),
     'pinned step 9 in the contrast modes: within ΔE 10 of the pin, or the move recorded in anchorReport (solidMove), forced by the floor and no farther than a label\'s least move': () => checkContrastPins(jPC),
+    'pageTint: accent step 1 is the page in every mode, steps 2–8 keep their Lc and take the page tint, pinned 9–12 unchanged, tones from the anchors': () => checkPageTint(jPG, jPR),
+    'pageTint: placement and the contrast matrix recomputed on the re-based ramps, no floor missed that the matched-tone run meets': () => { const ref = new Set(checkFloors(jPR)); return [...checkPlacement(jPG), ...checkContrast(jPG), ...checkFloors(jPG).filter((x) => !ref.has(x)).map((x) => 'new with pageTint: ' + x)]; },
+    'pageTint: the tone-gap WARNING without the key, none with it or at matched tones': () => checkToneGap(linePW, [['pageTint', linePG], ['matched tones', linePR], ['default', line1]]),
+    'pageTint: a bad value, or a value above 0 with no ground or ink anchor, exits 2': () => checkBadRequests(BAD_PAGE_TINT),
     'named data: 148 CSS Color 4 names, 6-digit hex, the colors at their recorded hash, source, URL and licence named': () => checkNamedData(NAMED),
     'named css: 148 tokens, each hex the bundled value, $type color, sRGB components, named.css, provenance; red at its published HCT': () => [...checkNamedRoundTrip(nCss, nCssText, NAMED_CSS, 'css', Object.keys(NAMED.colors)), ...checkNamedHct(nCss)],
     'named fixtures: JSON, Markdown and an API cache round-trip offline, repeated names and slug clashes get distinct keys, provenance kept': () => [...checkNamedRoundTrip(nJson, nJsonText, NAMED_FIXTURE, 'encycolorpedia', NAMED_KEYS), ...checkNamedRoundTrip(nMd, nMdText, NAMED_FIXTURE, 'encycolorpedia', NAMED_KEYS), ...checkNamedRoundTrip(nCache, nCacheText, NAMED_FIXTURE, 'encycolorpedia', NAMED_KEYS),
@@ -1191,6 +1239,14 @@ try {
   control('colors/ laid out from the P3 run', () => checkFromP3(outFFP3x, jFA, jP3));
   control('a pinned step 9 back at the T-0890 placement (orange dark-contrast #832a00, no solidMove)', () => { const x = clone(jPC); const M = x.modes['dark-contrast']; M.ramps.orange[8].oklch = hexOk('#832a00'); M.anchorReport = M.anchorReport.map(({ solidMove: _m, ...r }) => r); return checkContrastPins(x); });
   control('a pinned step 9 dragged past both least moves with the move recorded', () => { const x = clone(jPC); const M = x.modes['dark-contrast'], r = M.anchorReport.find((a) => a.family === 'orange'), c = hexOk('#832a00'), w = hexOk('#f76b15'); M.ramps.orange[8].oklch = c; r.solidMove = { ...r.solidMove, to: '#832a00', dL: +(c[0] - w[0]).toFixed(4), dE: +dE(w, c).toFixed(2) }; return checkContrastPins(x); });
+  control('pageTint: an accent step 1 left off the page (light cyan as without the key)', () => { const x = clone(jPG); x.modes.light.ramps.cyan[0] = clone(jPR.modes.light.ramps.cyan[0]); return checkPageTint(x, jPR); });
+  control('pageTint: a pinned hover moved (dark-contrast orange 10)', () => { const x = clone(jPG), s = x.modes['dark-contrast'].ramps.orange[9]; s.oklch = [s.oklch[0] + 0.02, s.oklch[1], s.oklch[2]]; s.hex = '#000000'; return checkPageTint(x, jPR); });
+  control('pageTint: a pinned solid moved (light yellow 9)', () => { const x = clone(jPG); x.modes.light.ramps.yellow[8].hex = '#ffe62a'; return checkPageTint(x, jPR); });
+  control('pageTint: a tinted step that lost its luminance (dim indigo 5)', () => { const x = clone(jPG), s = x.modes.dim.ramps.indigo[4]; s.oklch = [s.oklch[0] + 0.03, s.oklch[1], s.oklch[2]]; return checkPageTint(x, jPR); });
+  control('pageTint: a run without the key passed off as one with it', () => checkPageTint(jPR, jPR));
+  control('pageTint: step 2 left at its own tint (light cyan 2 as without the key)', () => { const x = clone(jPG); x.modes.light.ramps.cyan[1] = clone(jPR.modes.light.ramps.cyan[1]); return checkPageTint(x, jPR); });
+  control('pageTint: the tone-gap warning dropped', () => checkToneGap(linePW.replace(TONE_GAP, ''), []));
+  control('pageTint: a valid value in the bad list', () => checkBadRequests([{ anchors: PAGE_ANCHORS, settings: { pageTint: 50 } }]));
   control('a valid role hue in the bad list', () => checkBadRequests([{ roles: { primary: 'h85.5' } }, { roles: { primary: 'oklch:84' } }]));
   control('a requested translucent role at another alpha', () => { const x = clone(jT); x.modes.dark.variables['--colors-veil-a'] = x.modes.dark.variables['--colors-veil-a'].replace(/\/ [\d.]+\)$/, '/ 0.5)'); return checkTranslucent(x, cssT, TR.translucent, j1); });
   control('a requested translucent role missing from one mode', () => { const x = clone(jT); delete x.modes.dim.variables['--colors-veil-b']; return checkTranslucent(x, cssT, TR.translucent, j1); });

@@ -61,6 +61,8 @@ The user's brief, pasted 2026-11-27, quoted in full below. Treat it as the spec.
 >
 > If any of this conflicts with how the generator is structured, stop and say so before working around it.
 
+User addition, 2026-11-27, to "What to build" (overrides the placeholder `accentsOnGround: true` and decision 2's "boolean or number"): Make the key a number in `settings` (0-100, default 0 = off), named to pair with the existing `tint`, so `modes.<id>.settings` can set it per mode. At any value above 0, step 1 is the page; the number scales only how much page tint steps 2-8 take.
+
 Conductor's starting position on the tone gap (the solo may overrule it with a stated reason): with the key set, place accents against the anchored page's tone, so the opt-in path is right without hand-matching; without the key, print a `WARNING` when an anchored page's tone differs from `toneMax` / `darkTone` by more than a small tolerance, so existing anchored output does not change silently.
 
 ## Constraints
@@ -70,6 +72,7 @@ Conductor's starting position on the tone gap (the solo may overrule it with a s
 - If the generator's structure conflicts with the brief, stop with status `blocked` and say where.
 
 ## Acceptance criteria
+- The key is a number in `settings` (0 to 100, default 0 = off), settable per mode in `modes.<id>.settings`; at any value above 0 step 1 is the page, and the value scales only the tint of steps 2 to 8.
 - `node scripts/check.mjs` exits 0 with a new run that sets the key and checks: accent step 1 equals the page in every mode; pinned steps 9 to 12 are unchanged; steps 2 to 7 stay within the existing placement tolerance; the contrast matrix is recomputed.
 - Negative controls fail as they must: a step 1 left off the page, a moved pinned solid, and an invalid key value (exit 2).
 - `references/system.md` documents the key (request keys table, Anchors and Brand colours sections, plain-word rows such as "normalize the ramps to the page" and "the tints look cold on our paper") and the "1 is the page" sentence is accurate.

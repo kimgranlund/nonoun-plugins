@@ -210,7 +210,7 @@
       "id": "step",
       "term": "Step (1–12)",
       "layer": "system",
-      "definition": "A position on a family's ramp with a fixed job: 1–2 backgrounds (1 is the page), 3–5 interactive fills, 6–8 borders, 9–10 solids, 11–12 text. Placed per mode by APCA contrast against the page.",
+      "definition": "A position on a family's ramp with a fixed job: 1–2 backgrounds (1 is the page on the neutral; an accent's step 1 sits at the page tone in its own tint, and is the page itself with page tint), 3–5 interactive fills, 6–8 borders, 9–10 solids, 11–12 text. Placed per mode by APCA contrast against the page.",
       "intent": "Picking a color by what it does, so it works in every mode and every family.",
       "not": "Not a lightness: step 5 of yellow and step 5 of blue differ in lightness, and a step's value changes between modes. Not a base or tonal stop.",
       "names": [
@@ -487,6 +487,23 @@
         "ground",
         "ink",
         "surface"
+      ]
+    },
+    {
+      "id": "page-tint",
+      "term": "Page tint",
+      "layer": "input",
+      "definition": "settings.pageTint, 0–100 (0, the default, is off): with a ground or ink anchor, every accent's step 1 becomes the page and steps 2–8 take that share of the page's tint, fading to none at step 9, each at its own luminance; the accents are placed against the anchored page's tone.",
+      "intent": "Accent tints and subtle fills that sit on a tinted paper instead of reading cold beside it.",
+      "not": "Not tint, the neutral's own tint strength. Not a change to the solids (9–12) or the tonal scale.",
+      "aliases": [
+        "pageTint"
+      ],
+      "related": [
+        "anchor",
+        "accent",
+        "step",
+        "ground"
       ]
     },
     {
