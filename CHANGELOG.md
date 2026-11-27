@@ -4,6 +4,14 @@ SDLC releases (named SDLC Lite before 1.0.0), newest first, in [Keep a Changelog
 
 ## [Unreleased]
 
+### Changed
+
+- `sdlc`: `/ask` asks up to 20 open items in one turn, in up to 5 rounds of at most 4 questions, blockers and highest stakes first, skipping items an earlier answer settles (T-0895).
+
+### Fixed
+
+- `design`: `ui-colors` `pageTint` keeps `dim` distinct from `dark` under an `ink` anchor (T-0894).
+
 ## [1.0.17] - 2026-11-27
 
 Report: [docs/reports/2026-11-27-release-1-0-17.md](docs/reports/2026-11-27-release-1-0-17.md). Marketplace release: `design` 0.10.0; `sdlc` 1.1.1, `context` 0.8.1 and `dev-tools` 0.1.1 are unchanged. One ticket (T-0893). Details are in [the design changelog](plugins/design/CHANGELOG.md).

@@ -4,6 +4,10 @@ The design plugin, newest first. Releases before this file are recorded in the r
 
 ## [Unreleased]
 
+### Fixed
+
+- `ui-colors`: with `settings.pageTint` and an `ink` anchor, `dim` keeps its own tone (`darkTone` 14 by default): its page is the ink lifted to that tone at the same OKLCH hue and chroma, and its accents re-base on it, so `dim` no longer comes out the same as `dark`. Other modes and output without `pageTint` are unchanged (T-0894).
+
 ## [0.10.0] - 2026-11-27
 
 ### Added
