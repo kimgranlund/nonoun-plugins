@@ -2,7 +2,7 @@
 id: T-0894
 title: "ui-colors: pageTint with an ink anchor collapses dim onto dark"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -41,3 +41,14 @@ From the T-0893 solo report: "With pageTint and an ink anchor, `dim` takes the a
 - `node scripts/check.mjs` exits 0 with a new check for the above and a negative control: a `dim` page equal to `dark`'s under `pageTint` fails it.
 - `light` and `dark` outputs on the repro request are byte-identical before and after the fix.
 - `python3 scripts/check-packaging.py` and `git diff --check` pass.
+
+## Outcome
+
+2026-11-27 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: def462e95e05
+- Changed: see commits
+- Commits: f547e65 T-0894: ui-colors: dim keeps its own tone under pageTint with an ink anchor; 7983fc9 T-0894: record lane T-0894-t0894
+- Check: 1 On the repro request, dim neutral step 1 differs from dark's, and every accent's step 1 in dim eq...: pass
+- Check: 2 `node scripts/check.mjs` exits 0 with a new check and a negative control: pass
+- Check: 3 light and dark outputs on the repro request are byte-identical before and after: pass
+- Check: 4 `python3 scripts/check-packaging.py` and `git diff --check` pass: pass
+- Follow-up: note: references/system.md line 366 now says dim's page is the ink's dark... -> notes.md

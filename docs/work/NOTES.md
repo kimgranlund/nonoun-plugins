@@ -1134,3 +1134,7 @@
 ## T-0895: sdlc:ask asks in rounds of 4, up to 20 questions per turn (2026-11-27)
 
 - note: check.sh --changed is vacuous on an uncommitted tree ("nothing to check (base HEAD)"); check.py was run directly instead.
+
+## T-0894: ui-colors: pageTint with an ink anchor collapses dim onto dark (2026-11-27)
+
+- note: `references/system.md` line 366 now says dim's page is the ink's dark page lifted to dim's tone at the same OKLCH hue and chroma, and the sentence about "dim's 14" being overridden is gone, as the constraint required.
