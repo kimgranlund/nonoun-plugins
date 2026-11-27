@@ -17,7 +17,7 @@ import { fileURLToPath } from 'node:url';
 import { endpointVars, families, generateSpectrum, normalizeSpectrum, resolveRoles, spectrumDiagnostics, spectrumOverrides, alphaRamps, apcaLc, roleVariables, ramps as rampsOf, parseAnchorColor, SCALE_ROLES } from './system/index.js';
 import { rampVar, rampName, ROLE_STEPS, roleStep, withAlpha, ROLE_NAMES, ANCHOR_ROLES } from './system/roles.js';
 import { SOLID_ANCHOR_ROLES } from './system/anchors.js';
-import { clampChroma, applyAnchors, shapeKeys, deriveKeys, deriveNeutral, rebaseOnPage } from './system/anchors.js';
+import { clampChroma, applyAnchors, shapeKeys, deriveKeys, deriveNeutral, rebaseOnPage, solveLightness } from './system/anchors.js';
 import { DEFAULT_TARGETS } from './system/contrast.js';
 import { showcaseHtml, mountable } from './system/showcase.js';
 
@@ -370,6 +370,15 @@ function pageTones(settings, pages) {
   for (const p of Object.values(pages)) { const [lo, hi] = TONE_RANGE[p.key], want = Math.round(p.tone * 2) / 2, v = Math.min(hi, Math.max(lo, want)); out[p.key] = v; if (v !== want) outside.push({ ...p, used: v }); }
   return { settings: out, outside };
 }
+// pageTint in a dark mode whose own definition sets darkTone (dim's 14): the mode keeps that tone, so its page is not the
+// anchored dark page. The ink's dark page moves to the mode's darkTone at the same OKLCH hue and chroma (sRGB, as hex), and the
+// accents re-base on that page; dark, light and the contrast modes still follow the anchors (T-0894).
+function ownDarkPage(m, settings, pageTint, anchors) {
+  if (!(pageTint > 0) || m.scheme !== 'dark' || !(m.settings && 'darkTone' in m.settings)) return anchors;
+  const t = settings.darkTone, y = t > 8 ? ((t + 16) / 116) ** 3 : t / 903.3;
+  return anchors.map((a) => { if (a.role !== 'ink') return a; const [, C, H] = parseAnchorColor(a.dark ?? a.value).oklch, L = solveLightness(y, C, H, 'srgb');
+    return { ...a, dark: hex([L, clampChroma(L, C, H, 'srgb'), H]) }; });
+}
 const cache = new Map();
 // The engine's anchoredSpectrum (system/index.js) without its last step, solveSolids, which darkens every step 9 until a fixed
 // light label reaches 4.6:1 (WCAG 2). The ramps come back as generated; solveSolidLabels below solves solids per family (APCA).
@@ -679,7 +688,7 @@ try {
     const { pageTint: _pt, ...settings0 } = merge(merge(eff.settings, m.settings), o.settings), pageTint = pageTintOf({ pageTint: _pt });
     const mTarget = normalizeSpectrum(settings0).target; solveGamut = mTarget;
     const roles = merge(merge(eff.roles, m.roles), o.roles), endpoints = o.endpoints ?? m.endpoints ?? eff.endpoints;
-    const { list: roleAnchors, clips } = gamutAnchors(o.anchors ?? m.anchors ?? anchorsTop ?? [], mTarget), fam = gamutAnchors(familyAnchorsTop, mTarget);
+    const { list: roleAnchors, clips } = gamutAnchors(ownDarkPage(m, settings0, pageTint, o.anchors ?? m.anchors ?? anchorsTop ?? []), mTarget), fam = gamutAnchors(familyAnchorsTop, mTarget);
     for (const [k, v] of fam.clips) clips.set(k, v);
     const anchors = [...roleAnchors, ...fam.list];
     if (neutrals && normalizeSpectrum(settings0).generator === 'oklch' && NEUTRAL_ROLES_SPLIT.some((k) => neutrals[k]?.from)) fail(2, `request: mode ${m.id}: neutrals { from } needs the HCT generator (the OKLCH generator makes no Radix greys)`);
