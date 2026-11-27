@@ -4,6 +4,14 @@ SDLC releases (named SDLC Lite before 1.0.0), newest first, in [Keep a Changelog
 
 ## [Unreleased]
 
+## [1.0.17] - 2026-11-27
+
+Report: [docs/reports/2026-11-27-release-1-0-17.md](docs/reports/2026-11-27-release-1-0-17.md). Marketplace release: `design` 0.10.0; `sdlc` 1.1.1, `context` 0.8.1 and `dev-tools` 0.1.1 are unchanged. One ticket (T-0893). Details are in [the design changelog](plugins/design/CHANGELOG.md).
+
+### Added
+
+- `design`: `ui-colors` `settings.pageTint` re-bases accent ramps on an anchored page colour, per mode, with a warning when an anchored page's tone and `toneMax` or `darkTone` disagree (T-0893).
+
 ## [1.0.16] - 2026-11-27
 
 Report: [docs/reports/2026-11-27-release-1-0-16.md](docs/reports/2026-11-27-release-1-0-16.md). Marketplace release: `design` 0.9.0; `sdlc` 1.1.1, `context` 0.8.1 and `dev-tools` 0.1.1 are unchanged. One ticket (T-0892). Details are in [the design changelog](plugins/design/CHANGELOG.md).

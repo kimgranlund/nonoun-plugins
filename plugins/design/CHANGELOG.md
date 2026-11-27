@@ -4,6 +4,12 @@ The design plugin, newest first. Releases before this file are recorded in the r
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-11-27
+
+### Added
+
+- `ui-colors`: `settings.pageTint` (0 to 100, default 0 = off, settable per mode in `modes.<id>.settings`) re-bases accent ramps on an anchored page. With a `ground` or `ink` anchor and any value above 0, each accent's step 1 is the mode's page (the ground with `neutrals`), and steps 2 to 8 take the page's tint in OKLab a/b, scaled by the value and fading to none at step 9, at their own luminance. Steps 9 to 12 and APCA placement hold: no step's Lc on the page moved more than 0.20 in the measured runs. With the key on, accents are placed against the anchored page's tone (overriding `toneMax` and `darkTone`, including `dim`). Without it, the CLI prints a `WARNING` when an anchored page's tone differs from `toneMax` or `darkTone` by more than 0.5, and the output is unchanged. New term `page-tint` in `references/terms.json`; default output is byte-identical (T-0893).
+
 ## [0.9.0] - 2026-11-27
 
 ### Added
