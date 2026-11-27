@@ -907,8 +907,8 @@ function checkContrastPins(j) {
 }
 // 13i. Accents on the page (settings.pageTint, T-0893). A cream ground and a dark brown ink, four accents pinned at step 9 in
 // both schemes (a light yellow and a navy among them), the default extra modes, pageTint 100; the reference is the same request
-// without the key at the tones the key must choose (the anchored pages' tones on the 0.5 grid, dim's own darkTone included). In
-// every mode: the tones are those, every accent's step 1 is the page (ground 1 with neutrals, else gray 1), steps 2–8 keep their
+// without the key at the tones the key must choose (the anchored pages' tones on the 0.5 grid; dim keeps its own darkTone 14, its
+// ink page lifted to that tone at the ink's OKLCH hue and chroma, T-0894). In every mode: the tones are those, every accent's step 1 is the page (ground 1 with neutrals, else gray 1), steps 2–8 keep their
 // APCA Lc on the page within 0.5 and step 2 sits nearer the page's tint than without the key, and the pinned families' steps
 // 9–12 are the reference's, hex for hex. Without the key, a run off those tones warns once per scheme; with it, or matched, never.
 const PAGE_ANCHORS = [{ role: 'ground', value: '#fff3e4' }, { role: 'ink', value: '#2a1608' }];
@@ -916,7 +916,10 @@ const PAGE_PINS = { cyan: { value: '#008fbf' }, orange: { value: '#cc6600' }, ye
 const PAGE_REQ = { tonal: false, dtcg: false, brandExact: true, anchors: PAGE_ANCHORS, familyAnchors: PAGE_PINS, settings: { pageTint: 100 } };
 const pageToneOf = (hex, lo, hi) => Math.min(hi, Math.max(lo, Math.round(toneOk(hexOk(hex)) * 2) / 2));
 const PAGE_TONES = { toneMax: pageToneOf('#fff3e4', 80, 100), darkTone: pageToneOf('#2a1608', 0, 20) };
-const PAGE_REF = { ...PAGE_REQ, settings: { ...PAGE_TONES }, modes: { dim: { settings: { darkTone: PAGE_TONES.darkTone } } } };
+// dim's page: the ink at tone 14, its OKLCH hue and chroma kept, solved here by bisection and written as sRGB hex.
+const DIM_TONE = 14, hexOfOk = (c) => '#' + lin(c).map((v) => Math.round((v <= 0.0031308 ? 12.92 * v : 1.055 * v ** (1 / 2.4) - 0.055) * 255).toString(16).padStart(2, '0')).join('');
+const DIM_PAGE = (() => { const [, C, H] = hexOk('#2a1608'); let lo = 0, hi = 1; for (let i = 0; i < 40; i++) { const L = (lo + hi) / 2; if (toneOk([L, C, H]) < DIM_TONE) lo = L; else hi = L; } return hexOfOk([(lo + hi) / 2, C, H]); })();
+const PAGE_REF = { ...PAGE_REQ, settings: { ...PAGE_TONES }, modes: { dim: { settings: { darkTone: DIM_TONE }, anchors: [PAGE_ANCHORS[0], { ...PAGE_ANCHORS[1], dark: DIM_PAGE }] } } };
 const PAGE_WARN = { extraModes: false, tonal: false, alpha: false, series: false, dtcg: false, anchors: PAGE_ANCHORS };
 const BAD_PAGE_TINT = [-1, 101, '50', true, null, [100]].map((pageTint) => ({ anchors: PAGE_ANCHORS, settings: { pageTint } }))
   .concat([{ anchors: PAGE_ANCHORS, modes: { dark: { settings: { pageTint: 200 } } } }, { settings: { pageTint: 50 } }, { anchors: [{ role: 'primary', value: '#0a4dff' }], settings: { pageTint: 100 } }]);
@@ -926,7 +929,8 @@ function checkPageTint(j, ref) {
   for (const [id, M] of Object.entries(j.modes)) {
     const R = ref.modes[id]; if (!R) { f.push(`${id}: not in the reference run`); continue; }
     const page = M.ramps[pageFam][0], pageR = R.ramps[pageFam][0], pab = abOf(page.oklch);
-    for (const k of ['toneMax', 'darkTone']) if (M.settings[k] !== PAGE_TONES[k]) f.push(`${id}: settings.${k} ${M.settings[k]}, the anchored page's tone is ${PAGE_TONES[k]}`);
+    const tones = id === 'dim' ? { ...PAGE_TONES, darkTone: DIM_TONE } : PAGE_TONES;
+    for (const k of ['toneMax', 'darkTone']) if (M.settings[k] !== tones[k]) f.push(`${id}: settings.${k} ${M.settings[k]}, the page's tone is ${tones[k]}`);
     if (page.hex !== pageR.hex) f.push(`${id}: the page is ${page.hex}, ${pageR.hex} without pageTint`);
     for (const fam of j.families.accents) {
       const r = M.ramps[fam], q = R.ramps[fam];
@@ -938,6 +942,17 @@ function checkPageTint(j, ref) {
       if (pinned.includes(fam)) for (let i = 8; i < 12; i++) if (r[i].hex !== q[i].hex) f.push(`${id} ${fam} (pinned) step ${i + 1} ${r[i].hex}, ${q[i].hex} without pageTint`);
     }
   }
+  return f;
+}
+// dim under pageTint keeps its own tone (T-0894): its page is not dark's, sits at tone 14 (read from the hex), and is every
+// accent's step 1.
+function checkDimPage(j) {
+  const f = [], pageFam = j.neutrals ? 'ground' : 'gray', D = j.modes.dim, K = j.modes.dark;
+  if (!D || !K) return ['no dim or dark mode'];
+  const page = D.ramps[pageFam][0], t = toneOk(hexOk(page.hex));
+  if (page.hex === K.ramps[pageFam][0].hex) f.push(`dim's page ${page.hex} is dark's page`);
+  if (Math.abs(t - DIM_TONE) > 0.5) f.push(`dim's page ${page.hex} is at tone ${t.toFixed(2)}, not dim's ${DIM_TONE}`);
+  for (const fam of j.families.accents) if (D.ramps[fam][0].hex !== page.hex) f.push(`dim ${fam} step 1 ${D.ramps[fam][0].hex} is not dim's page ${page.hex}`);
   return f;
 }
 const TONE_GAP = /^WARNING anchor (ground|ink) \([^)]*\): (light|dark) page tone [\d.]+, but the accents are placed against (toneMax|darkTone) [\d.]+/gm;
@@ -1181,6 +1196,7 @@ try {
     'compare: values other than "radix" exit 2': () => checkBadRequests(BAD_COMPARE),
     'pinned step 9 in the contrast modes: within ΔE 10 of the pin, or the move recorded in anchorReport (solidMove), forced by the floor and no farther than a label\'s least move': () => checkContrastPins(jPC),
     'pageTint: accent step 1 is the page in every mode, steps 2–8 keep their Lc and take the page tint, pinned 9–12 unchanged, tones from the anchors': () => checkPageTint(jPG, jPR),
+    'pageTint: dim keeps its own tone 14, its page is not dark\'s, and every dim accent step 1 is dim\'s page': () => checkDimPage(jPG),
     'pageTint: placement and the contrast matrix recomputed on the re-based ramps, no floor missed that the matched-tone run meets': () => { const ref = new Set(checkFloors(jPR)); return [...checkPlacement(jPG), ...checkContrast(jPG), ...checkFloors(jPG).filter((x) => !ref.has(x)).map((x) => 'new with pageTint: ' + x)]; },
     'pageTint: the tone-gap WARNING without the key, none with it or at matched tones': () => checkToneGap(linePW, [['pageTint', linePG], ['matched tones', linePR], ['default', line1]]),
     'pageTint: a bad value, or a value above 0 with no ground or ink anchor, exits 2': () => checkBadRequests(BAD_PAGE_TINT),
@@ -1244,6 +1260,7 @@ try {
   control('pageTint: a pinned solid moved (light yellow 9)', () => { const x = clone(jPG); x.modes.light.ramps.yellow[8].hex = '#ffe62a'; return checkPageTint(x, jPR); });
   control('pageTint: a tinted step that lost its luminance (dim indigo 5)', () => { const x = clone(jPG), s = x.modes.dim.ramps.indigo[4]; s.oklch = [s.oklch[0] + 0.03, s.oklch[1], s.oklch[2]]; return checkPageTint(x, jPR); });
   control('pageTint: a run without the key passed off as one with it', () => checkPageTint(jPR, jPR));
+  control('pageTint: dim collapsed onto dark (dark\'s page and accent step 1s in dim)', () => { const x = clone(jPG); for (const fam of ['gray', ...x.families.accents]) x.modes.dim.ramps[fam][0] = clone(x.modes.dark.ramps[fam][0]); return checkDimPage(x); });
   control('pageTint: step 2 left at its own tint (light cyan 2 as without the key)', () => { const x = clone(jPG); x.modes.light.ramps.cyan[1] = clone(jPR.modes.light.ramps.cyan[1]); return checkPageTint(x, jPR); });
   control('pageTint: the tone-gap warning dropped', () => checkToneGap(linePW.replace(TONE_GAP, ''), []));
   control('pageTint: a valid value in the bad list', () => checkBadRequests([{ anchors: PAGE_ANCHORS, settings: { pageTint: 50 } }]));
