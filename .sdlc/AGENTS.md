@@ -73,7 +73,7 @@ Ticket lifecycle:
 
 - Evals: `../docs/work/evals/` holds the dated model and effort experiments and `table-lock.json`; read `../docs/work/evals/AGENTS.md` before changing a model or effort row in `plugins/sdlc-lite/scripts/run.sh` or `plugins/sdlc-lite/adapters/codex/models.json`.
 - Proposals: `../docs/work/proposals/` holds candidate changes that `proposals.py scan` mined from past runs; read `../docs/work/proposals/AGENTS.md` before scanning, accepting, rejecting, or promoting one.
-<!-- sdlc:managed:start v1 sha256:6a281c7678d2 -->
+<!-- sdlc:managed:start v1 sha256:d44435608a10 -->
 # Work records
 
 This folder holds SDLC `config`, this router, and the git-ignored `runtime/` and `messages/`. Tickets, task records, `docs/work/ROADMAP.md`, and `docs/work/NOTES.md` are in the work root `docs/work/`. `tickets.py roadmap` (also run by `new` and `close`) generates this block: do not edit inside it; change a ticket's `handoff.md` front matter and rerun `roadmap`. `docs/work/ROADMAP.md` lists every ticket in dependency order. Closed `.NNNN-*` folders are history: open one only when asked.
@@ -86,7 +86,8 @@ This folder holds SDLC `config`, this router, and the git-ignored `runtime/` and
 ## Stages
 
 - proposed: 0
-- ready: 0
+- ready: 1
+  - T-0893 ui-colors: opt-in re-base of accent ramps on an anchored page colour (docs/work/0893-ui-colors-accents-on-ground)
 - claimed: 1
   - T-0892 ui-colors: named-color DTCG reference from CSS colors or the Encycolorpedia API (docs/work/0892-ui-colors-named-dtcg), claimed by nonoun-author 2026-11-27, branch lane/T-0892-t0892
 - paused: 0

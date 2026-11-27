@@ -18,6 +18,7 @@ Contents: [Route](#route) · [Invariants](#invariants) · [Commands](#commands) 
 | A fixed brand set of seed colors as source swatch ramps (no modes or roles) | `scripts/preset.mjs` ([palette presets](#palette-presets-scriptspresetmjs)) | `scripts/presets.json` | Adding or choosing a preset |
 | A one-page specimen sheet of a color system | `system.mjs` with `showcase: true` | [showcase.md](references/showcase.md) | Making or reviewing the sheet |
 | A file per family, `light-dark()` | `scripts/families.mjs` | [Family files](references/system.md#family-files) | Tokens for a repo |
+| Named colors as DTCG: CSS names, or Encycolorpedia (saved page, API) | `scripts/named.mjs` | [named.md](references/named.md) | Named-color tokens |
 | What a color word means here (ground, surface, step, mode, theme…) | Answer from the vocabulary | [terms.json](references/terms.json) | A term is ambiguous or a sibling skill uses it differently |
 | Why the two generators disagree slightly | — | [system-notice.md](references/system-notice.md) | Comparing a source palette with the system's tonal scale |
 | Engine provenance, policies, maintenance | — | [engine.md](references/engine.md) | Changing or auditing the bundled generator |
@@ -36,7 +37,7 @@ Words that mean the system generator: *theme*, *light and dark*, *modes*, *roles
 
 ## Commands
 
-Run `node /absolute/path/to/ui-colors/scripts/check.mjs` after changing `scripts/system.mjs`, `scripts/system/`, this file, a reference or `terms.json`. Done means it exits 0. It regenerates the default and a light-dark system in a temporary directory, checks the fixture, floors, CSS, adapters, family files, a byte-identical default (a recorded digest), the vocabulary, links and the invariants above, and runs negative controls that must fail ([system.md › Checks](references/system.md#checks)).
+Run `node /absolute/path/to/ui-colors/scripts/check.mjs` after changing `scripts/system.mjs`, `scripts/named.mjs`, `scripts/system/`, this file, a reference or `terms.json`. Done means it exits 0. It regenerates systems and named colors in a temporary directory, checks them and the invariants above, and runs negative controls that must fail ([system.md › Checks](references/system.md#checks)).
 
 ## Vocabulary
 
@@ -85,7 +86,7 @@ Then report modes, generator, hue set, gamut, roles as resolved (an anchor can m
 
 ## Source palettes (`scripts/generate.cjs`)
 
-Use the bundled offline generator; do not estimate swatches, translate hue angles between color spaces, or recreate the math in prose. It includes the originating project's float64 color core, HCT recipe, balanced tone-aligned Prime scheduler, HCT hue balance and Prime brightness bias. Node.js 22+ is the only runtime requirement; no repository, network or npm installation is needed.
+Use the bundled offline generator; do not estimate swatches, translate hue angles between color spaces, or recreate the math in prose. It carries the source project's color core and Prime scheduler ([engine](references/engine.md)). Node.js 22+ is the only runtime requirement; no repository, network or npm installation is needed.
 
 ### Palette presets (`scripts/preset.mjs`)
 

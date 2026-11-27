@@ -933,6 +933,54 @@ const checkDigest = (css, jsonText) => { const d = existsSync(DIGEST) ? readJson
 const BAD_NEUTRALS = [[], { foo: 1 }, { ground: { from: 'Blue' } }, { ground: { from: 'Sand', tint: 3 } }, { cross: 'yes' }, { ground: { tint: 200 } }, { ground: { neutralFrom: 12 } }, { ground: { hue: 400 } }, { surface: 'Sand' }, { ground: { hue: 30, neutralFrom: 2 } }].map((neutrals) => ({ neutrals }))
   .concat([{ anchors: [{ role: 'surface', value: '#ffffff' }] }, { neutrals: {}, anchors: [{ role: 'surface', value: '#ffffff', step: 2 }] }, { neutrals: { ink: { from: 'Sand' } }, anchors: [{ role: 'neutral', value: '#888888' }] }, { neutrals: {}, roles: { neutral: 'neutral' } }, { neutrals: { ground: { from: 'Sand' } }, settings: { generator: 'oklch' } }]);
 
+// 13i. Named colors (named.mjs). The bundled CSS Color 4 data: 148 names, each a 6-digit hex, hashing to its recorded sha256,
+// the source, URL and licence named. Each run (the default CSS source, a ColorItem JSON fixture, a saved-page Markdown fixture
+// and an API cache built from the JSON fixture, all offline) round-trips: one token per source entry in order, every token a
+// $type color whose hex equals the entry's and whose sRGB components match that hex, the original name kept, keys distinct (a
+// repeated name takes its hex as a suffix, a slug clash -2), named.css one variable per token, and the provenance block
+// present. HCT is checked on red against its published HCT (27.41, 113.36, 53.23). Without ENCYCOLORPEDIA_TOKEN and with no
+// cache, --source encycolorpedia exits 2, names the variable and writes nothing. The fixtures are invented (FIXTURE names).
+const NAMED = readJson(here + 'system/named-colors.json');
+function checkNamedData(d) {
+  const f = [], P = d.provenance || {}, e = Object.entries(d.colors || {});
+  if (e.length !== 148) f.push(`${e.length} CSS named colors, not 148`);
+  for (const [n, h] of e) { if (!/^[a-z]+$/.test(n)) f.push(`name ${n} is not a CSS keyword`); if (!/^#[0-9a-f]{6}$/.test(h)) f.push(`${n}: ${h} is not a 6-digit hex`); }
+  if (sha(JSON.stringify(d.colors || {})) !== P.colorsSha256) f.push('the colors do not hash to provenance.colorsSha256');
+  if (!/CSS Color Module Level 4/.test(P.source || '') || !/^https:\/\/www\.w3\.org\//.test(P.url || '') || !P.license) f.push('provenance lacks the source, URL or licence');
+  return f;
+}
+// The fixtures: invented entries. "FIXTURE Moss" twice (hex suffix), "FIXTURE Ember" and "fixture-ember" (one slug: -2), a
+// name with no Latin letters (key falls back to the hex).
+const NAMED_FIXTURE = [
+  { name: 'FIXTURE Moss', hex: '#4a6b3c', rgb: {}, hsl: {}, cmyk: {}, lrv: 12.5, undertone: { temperature: 'warm', hue: 'green' }, codes: { fixture: ['F-1'] } },
+  { name: 'FIXTURE Moss', hex: '5c7d4e', rgb: {}, hsl: {}, cmyk: {}, lrv: 18.1, undertone: { temperature: 'warm', hue: 'green' } },
+  { name: 'FIXTURE Ember', hex: '#C2410C', rgb: {}, hsl: {}, cmyk: {}, lrv: 14, undertone: { temperature: 'warm', hue: 'orange' } },
+  { name: 'fixture-ember', hex: '#b13a0a', rgb: {}, hsl: {}, cmyk: {}, lrv: 11, undertone: { temperature: 'warm', hue: 'orange' } },
+  { name: 'あい', hex: '#1f2a44', rgb: {}, hsl: {}, cmyk: {}, lrv: 2, undertone: { temperature: 'cool', hue: 'blue' } },
+  { name: 'FIXTURE "Quoted" (paren)', hex: '#e0d5c1', rgb: {}, hsl: {}, cmyk: {}, lrv: 70, undertone: { temperature: 'neutral', hue: 'neutral' } },
+];
+const NAMED_KEYS = ['fixture-moss-4a6b3c', 'fixture-moss-5c7d4e', 'fixture-ember', 'fixture-ember-2', '1f2a44', 'fixture-quoted-paren'];
+const namedMarkdown = (items) => 'FIXTURE named colors (invented)\n================================\n\n' + items.map((it, i) => { const h = it.hex.replace('#', '').toLowerCase(); return `${i + 1}.  [${it.name}  \n    #${h}](/${h})`; }).join('\n') + '\n';
+const hexNorm = (h) => '#' + String(h).replace('#', '').toLowerCase();
+function checkNamedRoundTrip(doc, css, entries, group, keys) {
+  const f = [], t = doc?.named?.[group] || {}, ks = Object.keys(t), P = doc?.$extensions?.['ui-colors']?.provenance;
+  if (ks.length !== entries.length) f.push(`${ks.length} tokens under named.${group}, ${entries.length} entries`);
+  if (keys && JSON.stringify(ks) !== JSON.stringify(keys)) f.push(`keys ${ks.join(', ')}, expected ${keys.join(', ')}`);
+  entries.forEach((e, i) => { const k = ks[i], x = t[k]; if (!x) return;
+    if (x.$type !== 'color') f.push(`${k}: $type ${x.$type}`);
+    if (x.$value?.hex !== hexNorm(e.hex)) f.push(`${k}: hex ${x.$value?.hex}, the source has ${hexNorm(e.hex)}`);
+    const rgb = [1, 3, 5].map((j) => parseInt(hexNorm(e.hex).slice(j, j + 2), 16) / 255);
+    if (x.$value?.colorSpace !== 'srgb' || x.$value.alpha !== 1 || rgb.some((v, j) => Math.abs(v - x.$value.components[j]) > 1e-4)) f.push(`${k}: components ${JSON.stringify(x.$value?.components)} do not match ${hexNorm(e.hex)}`);
+    if (x.$extensions?.['ui-colors']?.name !== e.name) f.push(`${k}: name ${x.$extensions?.['ui-colors']?.name}, the source has ${e.name}`);
+    if (!css.includes(`--named-${group}-${k}: ${hexNorm(e.hex)};`)) f.push(`named.css lacks --named-${group}-${k}`); });
+  if (!P || P.source !== (group === 'css' ? 'css' : 'encycolorpedia') || !/^[0-9a-f]{64}$/.test(P.sha256 || '') || !('license' in P) || !('fetched' in P) || !('language' in P)) f.push('the provenance block is missing a field (source, sha256, license, fetched, language)');
+  return f;
+}
+function checkNamedHct(doc) {
+  const h = doc?.named?.css?.red?.$extensions?.['ui-colors']?.hct || [], want = [27.41, 113.36, 53.23];
+  return want.some((v, i) => Math.abs(v - h[i]) > 0.05) ? [`red HCT ${h.join(', ')}, published ${want.join(', ')}`] : [];
+}
+
 // ── Run ───────────────────────────────────────────────────────────────────────────────────────────────────
 let failed = false;
 try {
@@ -974,6 +1022,19 @@ try {
   const TERMS = readJson(here + '../references/terms.json');
   const skillRoot = here + '../', readText = (r) => readFileSync(skillRoot + r, 'utf8');
   const REF_MD = ['SKILL.md', ...readdirSync(skillRoot + 'references').filter((x) => x.endsWith('.md')).map((x) => 'references/' + x)];
+  // Named colors (named.mjs), offline: the bundled CSS source, the invented fixtures as JSON, Markdown and an API cache, and a
+  // missing token with no cache (the child's environment has no ENCYCOLORPEDIA_TOKEN, so no request can be made).
+  const named = (args, env = process.env) => execFileSync(process.execPath, [here + 'named.mjs', ...args], { encoding: 'utf8', env, stdio: ['ignore', 'pipe', 'pipe'] });
+  const readNamed = (d) => [readJson(join(d, 'named.dtcg.json')), readFileSync(join(d, 'named.css'), 'utf8')];
+  const noToken = { ...process.env }; delete noToken.ENCYCOLORPEDIA_TOKEN;
+  const fxJson = join(tmp, 'named-fixture.json'), fxMd = join(tmp, 'named-fixture.md'), fxCache = join(tmp, 'named-cache.json'), fxBody = JSON.stringify(NAMED_FIXTURE);
+  writeFileSync(fxJson, fxBody); writeFileSync(fxMd, namedMarkdown(NAMED_FIXTURE));
+  writeFileSync(fxCache, JSON.stringify({ url: 'https://api.encycolorpedia.com/v1/colors/named/en', lang: 'en', fetched: '2026-01-01T00:00:00.000Z', sha256: sha(fxBody), license: null, body: fxBody }));
+  named(['--out', join(tmp, 'named-css')], noToken); named(['--from', fxJson, '--out', join(tmp, 'named-json')], noToken); named(['--from', fxMd, '--out', join(tmp, 'named-md')], noToken);
+  named(['--source', 'encycolorpedia', '--cache', fxCache, '--out', join(tmp, 'named-cache')], noToken);
+  const [nCss, nCssText] = readNamed(join(tmp, 'named-css')), [nJson, nJsonText] = readNamed(join(tmp, 'named-json')), [nMd, nMdText] = readNamed(join(tmp, 'named-md')), [nCache, nCacheText] = readNamed(join(tmp, 'named-cache'));
+  const NAMED_CSS = Object.entries(NAMED.colors).map(([name, hex]) => ({ name, hex }));
+  let namedNoToken; try { named(['--source', 'encycolorpedia', '--cache', join(tmp, 'named-none.json'), '--out', join(tmp, 'named-none')], noToken); namedNoToken = { status: 0, stderr: '' }; } catch (e) { namedNoToken = { status: e.status, stderr: String(e.stderr) }; }
   const DOCS = [readText('SKILL.md'), readText('references/system.md')], REFS = REF_MD.map(readText);
   const walk = (d) => readdirSync(skillRoot + d, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(d + e.name + '/') : /\.(md|json|mjs|cjs|js|yaml|txt|html)$/.test(e.name) ? [d + e.name] : []));
   const SKILL_FILES = walk('').map((r) => [r, readText(r)]);
@@ -1075,6 +1136,11 @@ try {
     'compare radix: every Radix-named family compared in every mode (ΔE, ΔL recomputed), a familyAnchors step-9 pin at ΔE 0, the preview column; none without the key': () => [...checkRadixCompare(jRC, Object.keys(RADIX_PIN), j1, readFileSync(join(out1, 'preview.html'), 'utf8')), ...(htmlRC.match(/class="rdx"/g) || []).length === 2 * jRC.families.all.length ? [] : ['the preview lacks a Radix column on some family row']],
     'compare: values other than "radix" exit 2': () => checkBadRequests(BAD_COMPARE),
     'pinned step 9 in the contrast modes: within ΔE 10 of the pin, or the move recorded in anchorReport (solidMove), forced by the floor and no farther than a label\'s least move': () => checkContrastPins(jPC),
+    'named data: 148 CSS Color 4 names, 6-digit hex, the colors at their recorded hash, source, URL and licence named': () => checkNamedData(NAMED),
+    'named css: 148 tokens, each hex the bundled value, $type color, sRGB components, named.css, provenance; red at its published HCT': () => [...checkNamedRoundTrip(nCss, nCssText, NAMED_CSS, 'css', Object.keys(NAMED.colors)), ...checkNamedHct(nCss)],
+    'named fixtures: JSON, Markdown and an API cache round-trip offline, repeated names and slug clashes get distinct keys, provenance kept': () => [...checkNamedRoundTrip(nJson, nJsonText, NAMED_FIXTURE, 'encycolorpedia', NAMED_KEYS), ...checkNamedRoundTrip(nMd, nMdText, NAMED_FIXTURE, 'encycolorpedia', NAMED_KEYS), ...checkNamedRoundTrip(nCache, nCacheText, NAMED_FIXTURE, 'encycolorpedia', NAMED_KEYS),
+      ...(nJson.named.encycolorpedia['fixture-moss-4a6b3c'].$extensions?.encycolorpedia?.lrv === 12.5 ? [] : ['the JSON fixture lost $extensions.encycolorpedia']), ...(nCache.$extensions['ui-colors'].provenance.fetched === '2026-01-01T00:00:00.000Z' ? [] : ['the cache build lost its fetch date'])],
+    'named token: --source encycolorpedia with no ENCYCOLORPEDIA_TOKEN and no cache exits 2, names the variable, writes nothing': () => [...(namedNoToken.status === 2 ? [] : [`exit ${namedNoToken.status}, not 2`]), ...(/ENCYCOLORPEDIA_TOKEN/.test(namedNoToken.stderr) ? [] : ['the error does not name ENCYCOLORPEDIA_TOKEN']), ...(existsSync(join(tmp, 'named-none.json')) || existsSync(join(tmp, 'named-none')) ? ['a cache or output was written'] : [])],
     'showcase: the runs have anchor, APCA-miss and key-run flags to check': () => (/data-flag="anchor-order"/.test(sc4) && /data-flag="anchor-clip"/.test(sc4) && /data-flag="lc-miss"/.test(sc5) && /data-flag="keyrun"/.test(sc5) ? [] : ['a showcase run lacks the failures the controls need']),
   };
   for (const [name, fn] of Object.entries(checks)) record(name, fn());
@@ -1243,6 +1309,13 @@ try {
   control('a Radix scale with a step dropped', () => { const x = clone(RADIX); x.scales.sky.darkP3.pop(); x.provenance.scalesSha256 = sha(JSON.stringify(x.scales)); return checkRadixData(x); });
   control('a Radix value edited by hand', () => { const x = clone(RADIX); x.scales.mint.light[8] = '#86ead5'; return checkRadixData(x); });
   control('a valid compare in the bad list', () => checkBadRequests([{ compare: 'radix' }]));
+  // Named colors.
+  control('a corrupted hex in the JSON fixture (round trip)', () => { const x = clone(NAMED_FIXTURE); x[2].hex = '#c2410d'; return checkNamedRoundTrip(nJson, nJsonText, x, 'encycolorpedia', NAMED_KEYS); });
+  control('a corrupted hex in the Markdown fixture (round trip)', () => { const x = clone(NAMED_FIXTURE); x[4].hex = '#1f2a45'; return checkNamedRoundTrip(nMd, nMdText, x, 'encycolorpedia', NAMED_KEYS); });
+  control('a repeated name collapsed onto one key', () => { const x = clone(nJson); delete x.named.encycolorpedia['fixture-moss-5c7d4e']; return checkNamedRoundTrip(x, nJsonText, NAMED_FIXTURE, 'encycolorpedia', NAMED_KEYS); });
+  control('the provenance block dropped', () => { const x = clone(nCss); delete x.$extensions; return checkNamedRoundTrip(x, nCssText, NAMED_CSS, 'css', Object.keys(NAMED.colors)); });
+  control('a bundled CSS named color edited by hand', () => { const x = clone(NAMED); x.colors.rebeccapurple = '#663398'; return checkNamedData(x); });
+  control('red HCT off by one degree of hue', () => { const x = clone(nCss); x.named.css.red.$extensions['ui-colors'].hct[0] += 1; return checkNamedHct(x); });
 
   const bad = results.filter((r) => r.failures.length), soft = bites.filter((b) => !b.ok);
   failed = bad.length > 0 || soft.length > 0;
