@@ -2,7 +2,7 @@
 id: T-0891
 title: "Skill descriptions break claude.ai limits: angle brackets and over 1024 chars"
 type: bug             # feature | bug | chore | spike | idea
-status: claimed        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L2             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -48,3 +48,14 @@ Measured locally: `build` has `<step handoff.md>`, `handoff-format` and `handoff
 - The negative control exits non-zero and names the skill and the limit.
 - No `SKILL.md` description under `plugins/` contains `<` followed by `>`, and none exceeds 1024 characters after YAML parsing.
 - `git diff --check` is clean.
+
+## Outcome
+
+2026-11-27 · lane: solo L2 · verdict: closed by reason (delivered by the solo agent (level L2); one independent batched verifier passed before the merge; gate: full) · verifier: verifier-L2 (sonnet) · base: 0938b26c4799
+- Changed: see commits
+- Commits: 0ae9012 T-0891: skill descriptions within claude.ai limits, with a packaging gate; 5ead021 T-0891: record lane T-0891-t0891
+- Check: 1 `python3 scripts/check-packaging.py` exits 0 on the fixed tree: pass
+- Check: 2 Negative control exits non-zero and names the skill and the limit: pass
+- Check: 3 No SKILL.md description under plugins/ has `<...>` or exceeds 1024 chars after YAML parsing: pass
+- Check: 4 `git diff --check` is clean: pass
+- Follow-up: note: plugins/sdlc/skills/build/SKILL.md:4 and run-plan/SKILL.md... -> notes.md

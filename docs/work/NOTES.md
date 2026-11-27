@@ -1115,3 +1115,7 @@
 
 - note: plugins/design/skills/ui-colors/references/system.md:494 says "Then 74 negative controls" while check.mjs now runs 150; stale before this build (it adds two controls), not introduced here.
 - note: the dark-contrast fix lands orange lighter (`#ffa16e`, ΔE 12.86), not brown; it stays above the "within ΔE 10" bar so the move is recorded, which the criterion allows.
+
+## T-0891: Skill descriptions break claude.ai limits: angle brackets and over 1024 chars (2026-11-27)
+
+- note: plugins/sdlc/skills/build/SKILL.md:4 and run-plan/SKILL.md `argument-hint` still hold `<...>`; the claude.ai panel only flagged `description`, and the new gate checks only `description`.

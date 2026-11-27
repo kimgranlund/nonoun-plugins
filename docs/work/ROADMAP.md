@@ -6,9 +6,8 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | ID | Ticket | Title | Type | Size | Pri | Depends on | Status |
 |---|---|---|---|---|---|---|---|
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔴 blocked |
-| T-0891 | [0891-skill-description-host-limits](0891-skill-description-host-limits/handoff.md) | Skill descriptions break claude.ai limits: angle brackets and over 1024 chars | bug | L2 | P2 | none | 🟡 claimed (branch lane/T-0891-t0891) |
 
-Closed: 852 done, 30 dropped (git log or .NNNN-* folders)
+Closed: 853 done, 30 dropped (git log or .NNNN-* folders)
 
 ## Open follow-ups
 
