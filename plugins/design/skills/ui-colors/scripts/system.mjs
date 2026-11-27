@@ -17,7 +17,7 @@ import { fileURLToPath } from 'node:url';
 import { endpointVars, families, generateSpectrum, normalizeSpectrum, resolveRoles, spectrumDiagnostics, spectrumOverrides, alphaRamps, apcaLc, roleVariables, ramps as rampsOf, parseAnchorColor, SCALE_ROLES } from './system/index.js';
 import { rampVar, rampName, ROLE_STEPS, roleStep, withAlpha, ROLE_NAMES, ANCHOR_ROLES } from './system/roles.js';
 import { SOLID_ANCHOR_ROLES } from './system/anchors.js';
-import { clampChroma, applyAnchors, shapeKeys, deriveKeys, deriveNeutral } from './system/anchors.js';
+import { clampChroma, applyAnchors, shapeKeys, deriveKeys, deriveNeutral, rebaseOnPage } from './system/anchors.js';
 import { DEFAULT_TARGETS } from './system/contrast.js';
 import { showcaseHtml, mountable } from './system/showcase.js';
 
@@ -278,6 +278,18 @@ if (eff.familyAnchors != null) {
     return anchorList([{ ...a, role: FAMILY_ROLE + f, step: a.step ?? 9, ...(dark != null ? { dark, darkStep: a.darkStep ?? 9 } : {}) }], w)[0];
   });
 }
+// settings.pageTint (opt-in, 0–100, default 0 = off; per mode through modes.<id>.settings): with a ground or ink anchor, every
+// accent family is re-based on the mode's page (rebaseOnPage in system/anchors.js): step 1 is the page at any value above 0, and
+// the value is the share of the page's tint that steps 2–8 take, fading to none at step 9. The accents are then placed against
+// the anchored page's tone (pageTones below). It pairs with the neutral's `tint`, and system.mjs owns it: it never reaches the
+// engine, and modes.<id>.settings echoes it only when the request sets it. Unset, a mode whose anchored page tone is off
+// toneMax / darkTone gets a WARNING.
+const PAGE_ROLES = ['ground', 'ink'];
+const pageTintOf = (settings) => settings?.pageTint ?? 0;
+for (const [w, st] of [['settings', eff.settings], ...MODES.map((m) => [`mode ${m.id}.settings`, m.settings]), ...Object.entries(eff.modes || {}).map(([id, o]) => [`modes.${id}.settings`, o.settings])])
+  if (st && 'pageTint' in st && !(typeof st.pageTint === 'number' && Number.isFinite(st.pageTint) && st.pageTint >= 0 && st.pageTint <= 100)) fail(2, `request: ${w}.pageTint must be a number from 0 (off, the default) to 100 (the share of the page's tint accent steps 2–8 take)`);
+for (const m of MODES) { const o = modeOverrides[m.id] || {}, st = { ...eff.settings, ...(m.settings || {}), ...((eff.modes || {})[m.id]?.settings || {}) };
+  if (pageTintOf(st) > 0 && ![...(o.anchors ?? m.anchors ?? anchorsTop ?? [])].some((a) => PAGE_ROLES.includes(a.role))) fail(2, `request: mode ${m.id}: settings.pageTint needs a ground or ink anchor (it re-bases the accents on the anchored page)`); }
 if (neutrals) for (const [w, r] of [['roles', eff.roles], ...MODES.map((m) => [`mode ${m.id}.roles`, m.roles]), ...Object.entries(eff.modes || {}).map(([id, o]) => [`modes.${id}.roles`, o.roles])]) if (r && 'neutral' in r) fail(2, `request: ${w}.neutral is not allowed with neutrals (the split names the ground, surface and ink families)`);
 
 // ── Colour helpers ────────────────────────────────────────────────────────────────────────────────────────
@@ -345,6 +357,18 @@ function liftP3([L, C, H], option) {
   if (Math.abs(c - C) < 1e-6) return undefined;
   const r6 = (x) => +x.toFixed(6);
   return { option, requested: [L, C, H].map(r6), lifted: [L, c, H].map(r6), srgbMax: r6(s), p3Max: r6(p) };
+}
+// The anchored page per scheme and its tone: a ground anchor is the light page, an ink anchor (its dark colour, else its value) the
+// dark page, with or without neutrals. pageTones gives the settings that place the accents against those tones: toneMax and
+// darkTone on their own 0.5 grid and range (a page outside it is reported), so the residual is at most 0.25 tone.
+const PAGE_TONE_TOLERANCE = 0.5;
+const anchoredPages = (anchors) => { const g = anchors.find((a) => a.role === 'ground'), k = anchors.find((a) => a.role === 'ink'), t = (v) => toneOf(parseAnchorColor(v).oklch);
+  return { ...(g ? { light: { role: 'ground', value: g.source?.value ?? g.value, tone: t(g.value), key: 'toneMax' } } : {}), ...(k ? { dark: { role: 'ink', value: k.source?.dark ?? k.source?.value ?? k.dark ?? k.value, tone: t(k.dark ?? k.value), key: 'darkTone' } } : {}) }; };
+const TONE_RANGE = { toneMax: [80, 100], darkTone: [0, 20] };
+function pageTones(settings, pages) {
+  const out = { ...settings }, outside = [];
+  for (const p of Object.values(pages)) { const [lo, hi] = TONE_RANGE[p.key], want = Math.round(p.tone * 2) / 2, v = Math.min(hi, Math.max(lo, want)); out[p.key] = v; if (v !== want) outside.push({ ...p, used: v }); }
+  return { settings: out, outside };
 }
 const cache = new Map();
 // The engine's anchoredSpectrum (system/index.js) without its last step, solveSolids, which darkens every step 9 until a fixed
@@ -652,15 +676,17 @@ let labels;
 try {
   for (const m of MODES) {
     const o = modeOverrides[m.id] || {};
-    const settings = merge(merge(eff.settings, m.settings), o.settings);
-    const mTarget = normalizeSpectrum(settings).target; solveGamut = mTarget;
+    const { pageTint: _pt, ...settings0 } = merge(merge(eff.settings, m.settings), o.settings), pageTint = pageTintOf({ pageTint: _pt });
+    const mTarget = normalizeSpectrum(settings0).target; solveGamut = mTarget;
     const roles = merge(merge(eff.roles, m.roles), o.roles), endpoints = o.endpoints ?? m.endpoints ?? eff.endpoints;
     const { list: roleAnchors, clips } = gamutAnchors(o.anchors ?? m.anchors ?? anchorsTop ?? [], mTarget), fam = gamutAnchors(familyAnchorsTop, mTarget);
     for (const [k, v] of fam.clips) clips.set(k, v);
     const anchors = [...roleAnchors, ...fam.list];
-    if (neutrals && normalizeSpectrum(settings).generator === 'oklch' && NEUTRAL_ROLES_SPLIT.some((k) => neutrals[k]?.from)) fail(2, `request: mode ${m.id}: neutrals { from } needs the HCT generator (the OKLCH generator makes no Radix greys)`);
+    if (neutrals && normalizeSpectrum(settings0).generator === 'oklch' && NEUTRAL_ROLES_SPLIT.some((k) => neutrals[k]?.from)) fail(2, `request: mode ${m.id}: neutrals { from } needs the HCT generator (the OKLCH generator makes no Radix greys)`);
     // With neutrals, ground, ink and surface anchors pin the split families (splitNeutrals), not the engine's neutral.
     const engineAnchors = neutrals ? anchors.filter((a) => !SPLIT_ANCHORS.includes(a.role)) : anchors;
+    // pageTint: the accents are placed against the anchored page's tone (toneMax / darkTone follow the anchors).
+    const pages = anchoredPages(anchors), onPage = pageTint > 0 && Object.keys(pages).length ? pageTones(settings0, pages) : null, settings = onPage ? onPage.settings : settings0;
     let r, lifted = null;
     if (m.contrast) { // the highest lift up to +18% that the scheme's page can still reach (a dark page tops out lower than a light one)
       const base = normalizeSpectrum(settings), key = m.scheme === 'light' ? 'targetsLight' : 'targetsDark', t0 = base[key] ?? DEFAULT_TARGETS[m.scheme];
@@ -669,10 +695,13 @@ try {
     } else r = run(settings, roles, engineAnchors);
     const data = structuredClone(r.data); // solids are solved per mode (below), on a copy of the cached generation
     const split = neutrals ? splitNeutrals(data, r.settings, r.generated, roles, anchors.filter((a) => SPLIT_ANCHORS.includes(a.role))) : null;
+    // pageTint: every accent's steps 1–8 re-based on the page (ground 1 with neutrals), after the neutral ends are pinned and
+    // before any solve, so the solids, alpha steps, series, tonal map and contrast all read the moved ramps. Anchored steps stay exact.
+    if (onPage) rebaseOnPage(data, neutrals ? 'ground' : r.roles.neutral, pageTint / 100, new Set(r.report.flatMap((x) => [x.step && `light|${x.family}|${x.step}`, x.dark?.step && `dark|${x.family}|${x.dark.step}`]).filter(Boolean)));
     // Each anchor's gamut: whether it was inside the target, and what clipping cost it (ΔE OKLab × 100).
     const report = [...r.report, ...(split ? split.report : [])].map((x) => { const src = anchors.find((a) => a.role === x.role); const g = clips.get(x.value); const gd = x.dark && clips.get(x.dark.value);
       return { ...x, ...(src?.source ? { source: src.source } : {}), ...(g ? { gamut: g } : {}), ...(x.dark && gd ? { dark: { ...x.dark, gamut: gd } } : {}) }; });
-    modes[m.id] = { ...m, apca: m.contrast ? APCA.contrast : APCA.normal, lift: lifted, settings: r.settings, target: mTarget, data, roles: r.roles, solidSteps: r.solidSteps, pins: r.pins, report, endpoints, generated: r.generated, ...(split ? { neutralSources: split.sources } : {}) };
+    modes[m.id] = { ...m, pages, pagesOutside: onPage?.outside ?? [], apca: m.contrast ? APCA.contrast : APCA.normal, lift: lifted, settings: _pt === undefined ? r.settings : { ...r.settings, pageTint }, target: mTarget, data, roles: r.roles, solidSteps: r.solidSteps, pins: r.pins, report, endpoints, generated: r.generated, ...(split ? { neutralSources: split.sources } : {}) };
   }
   // The two labels come from the light mode's light neutral (steps 1 and 12 are never moved by a solve), so every mode's
   // solids are solved against the same pair of colours. Neutrals split: the light page (ground 1) and the light ink (ink 12).
@@ -1216,6 +1245,12 @@ for (const id of ids) { const M = modes[id];
     for (const g of [x.gamut, x.dark?.gamut]) if (g?.clipDE > 0) warnAnchor(`${name}: clipped to ${g.target}, ΔE ${g.clipDE}`, id);
   }
 }
+// The tone gap: accents are placed against toneMax / darkTone, so an anchored page off those tones leaves accent steps 1–2 on the
+// wrong side of the page. pageTint places them against the page; without it, a mode off by more than PAGE_TONE_TOLERANCE warns.
+for (const id of ids) { const M = modes[id];
+  for (const [sc, p] of Object.entries(M.pages)) { if (sc !== M.scheme) continue;
+    if (pageTintOf(M.settings) > 0) { for (const x of M.pagesOutside) if (x.key === p.key) warnAnchor(`anchor ${p.role} (${p.value}): page tone ${r2(p.tone)} is outside ${p.key} ${TONE_RANGE[p.key].join('–')}; pageTint places the accents against ${x.used}`, id); continue; }
+    const set = M.settings[p.key]; if (Math.abs(p.tone - set) > PAGE_TONE_TOLERANCE) warnAnchor(`anchor ${p.role} (${p.value}): ${sc} page tone ${r2(p.tone)}, but the accents are placed against ${p.key} ${set}; set settings.pageTint (100 re-bases the accents on the page), or ${p.key} ${Math.min(TONE_RANGE[p.key][1], Math.max(TONE_RANGE[p.key][0], Math.round(p.tone * 2) / 2))}`, id); } }
 const anchorLines = [...anchorWarnings].map(([msg, in_]) => `WARNING ${msg} [${in_.join(', ')}]`);
 console.log(`wrote ${values.out}: modes ${[...ids].join(', ')}; ${fam.accents.length} accents + ${fam.neutrals.length} neutral; ${tonal ? 'tonal 050–950' + (opt.primes ? ' + primes' : '') + '; ' : ''}target ${target}${p3 ? ' (sRGB + P3 upgrade)' : ''}${opt.split ? '; split CSS' : ''}${opt.showcase ? '; showcase.html' : ''}; weakest solid vs label (APCA): ` + [...ids].map((id) => `${id} Lc ${weak(id)[1]} (${weak(id)[0]}, floor ${modes[id].apca.solid})`).join(', ') + `; contrast pairs under their APCA threshold: ${lcLine}${target === 'display-p3' ? '; on a Display P3 screen: ' + [...ids].map((id) => `${id} ${modes[id].contrastMatrix.summary.failP3 ?? 0}`).join(', ') : ''} (system.json › modes.<id>.contrast); hover pairs under ΔE ${HOVER_MIN}: ${[...ids].map((id) => `${id} ${modes[id].hover.summary.fail}`).join(', ')} (modes.<id>.hover)` + cvdLine + sepLine);
 for (const line of anchorLines) console.log(line);

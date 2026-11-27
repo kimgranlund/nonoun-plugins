@@ -41,7 +41,7 @@ Every key is optional; `{}` is the default system. Unknown keys reject.
 
 | Key | Default | Value |
 |---|---|---|
-| `settings` | `{}` | Generator settings for every mode (next section) |
+| `settings` | `{}` | Generator settings for every mode (next section); `settings.pageTint` re-bases the accent ramps on an anchored page (Anchors › Accents on the page) |
 | `brightHues` | `[70, 125]` | The bright-hue window, OKLCH degrees of the step-9 hue (inclusive; `from > to` wraps through 0°), or `false` for white first everywhere (Contrast model › Bright hues). Anything else exits 2 |
 | `apca` | below | APCA thresholds (\|Lc\|, 0–108): `{ solid, text, hint, ui, series, contrast: { … } }`; any key left out keeps its default; contrast modes add 15 to each unless `apca.contrast` names its own (Contrast model). A non-number, a value outside 0–108, an unknown key or a non-object exits 2 |
 | `neutrals` | none | Split the neutral into ground (page), surface (cards, controls, borders) and ink (text): `{ ground?, surface?, ink?, cross? }` (Neutrals). Without it the system has one neutral, byte for byte as before |
@@ -109,7 +109,7 @@ Load `system.base.css` first, then the modes you ship (`system.light.css` alone 
 
 Ramp shape: by default this skill sets `base: 76` and `keyIntensity: 200`, so steps 1–8 (surfaces, fills, borders) stay muted and steps 9–12 (solids and text) are saturated. Pass `"base": 100, "keyIntensity": 100` for the engine's flat ramp, where every step carries similar chroma. Step 9 is placed at the same Lc on the page for every hue; with the defaults every generated light-mode step 9 already carries white text (Contrast model), so yellow, amber and lime solids are dark gold and olive rather than Radix's lemon (see the note under Solids).
 
-Values out of range throw (exit 1).
+Values out of range throw (exit 1); a bad `pageTint` exits 2.
 
 | Key | Default | Range | Effect |
 |---|---|---|---|
@@ -132,6 +132,7 @@ Values out of range throw (exit 1).
 | `targetsLight`, `targetsDark` | below | 11 numbers, 0–108 | APCA Lc for steps 2–12 on each page |
 | `mat` | `tinted` | `none`, `tinted` | Tint the neutral |
 | `tint` | 75 | 0–100 | Neutral tint strength |
+| `pageTint` | 0 (off) | 0–100 | With a `ground` or `ink` anchor: every accent's step 1 becomes the page, steps 2–8 take this share of the page's tint, and the accents are placed against the anchored page's tone (Anchors › Accents on the page). Read by `system.mjs` only; echoed in `modes.<id>.settings` when the request sets it. A non-number, a value outside 0–100, or a value above 0 in a mode with no `ground` or `ink` anchor exits 2 |
 | `neutralFrom` | 0 | 0–11 | Which accent tints the neutral |
 | `grays` | `[]` | `Gray`, `Mauve`, `Slate`, `Sage`, `Olive`, `Sand` | Extra grey families |
 | `radixGrays` | all six | same | Greys included with `hueSet: radix` |
@@ -147,7 +148,7 @@ Under HCT, family names follow the hues, so they change with `hue` (at 250 the i
 
 ## Steps and roles
 
-Ramps: `--colors-<family>-1…12` (the neutral is `gray`; with `neutrals`, also `ground`, `surface` and `ink`, and `gray` aliases `ink`); transparent `--colors-<family>-a1…a12`; tonal `--palette-<family>-050…950` and, with `primes`, `--palette-<family>-brightest…dimmest`; with `tonalRoles`, `--palette-role-<role>` and `--palette-role-<role>-1…12`. Steps 1–2 backgrounds (1 is the page), 3–5 interactive fills, 6–8 borders, 9–10 solids, 11–12 text.
+Ramps: `--colors-<family>-1…12` (the neutral is `gray`; with `neutrals`, also `ground`, `surface` and `ink`, and `gray` aliases `ink`); transparent `--colors-<family>-a1…a12`; tonal `--palette-<family>-050…950` and, with `primes`, `--palette-<family>-brightest…dimmest`; with `tonalRoles`, `--palette-role-<role>` and `--palette-role-<role>-1…12`. Steps 1–2 backgrounds (step 1 is the page on the neutral; an accent's step 1 sits at the page tone, `toneMax` or `darkTone`, in its own tint, and is the page itself with `settings.pageTint`), 3–5 interactive fills, 6–8 borders, 9–10 solids, 11–12 text.
 
 Roles (defaults before resolving): primary indigo, secondary amber, neutral, critical red, warning yellow, success green, info cyan, data1–6. `primary`, `secondary`, `neutral`, `critical`, `warning`, `success`, `info` each get `-subtle`, `-subtle-hover` (3, 4), `-border` (7), `-solid`, `-solid-hover` (9, 10 or the anchored step), `-solid-active` (the solid held down: step 11, or one step back from the solid where its label would fail on 11), `-on-solid` (text on that solid: its family's label in this mode), `-on-solid-muted` (quiet text on that solid: a step of the role's own family), `-fg` (11) and `-1…-12`. Page roles: `bg`, `bg-subtle`, `bg-muted`, `bg-muted-hover`, `bg-muted-active`, `bg-control(-hover/-active)`, `bg-selected`/`fg-selected` (a part chosen alone; strength from `emphasis` 0–2), `bg-selected-multiple` (the tint of a row chosen among several), `bg-inverse`/`fg-inverse`, `bg-disabled`/`fg-disabled` (the muted fill and neutral step 8; no contrast level applies), `bg-backdrop`, `border`, `border-strong`, `control-border`, `fg`, `fg-muted`, `fg-subtle`, `fg-on-solid` (the primary's label, kept for compatibility), `fg-strong`, `white`, `black`, `focus-ring`, `data-1…6`, `shadow`. **Generated, not derived.** Every variable is a color (`oklch(L C H)`, or `oklch(L C H / a)` when translucent) or an alias that names another variable (`var(--…)`); the output never contains `color-mix()`, `calc()` or relative color syntax, so the browser never derives a color (`check.mjs` › generated). Translucent roles (`bg-control*`, `shadow`, `bg-backdrop`) are their source step's color at a fixed alpha, written out per mode. The backdrop, `bg-backdrop` (behind dialogs and sheets), is pure black at 80% (`oklch(0 0 0 / 0.8)`) in every mode, independent of `endpoints.black`. The selection fills are resolved from the request's `emphasis` (0 quiet, 1 balanced, 2 loud; default 1): a whole number lands on a step and is an alias to it, a value between is the OKLCH mix of the two steps, written as a color. A theme that wants another emphasis regenerates; there is no live `--ui-emphasis`.
 
@@ -355,6 +356,34 @@ Each entry's `gamut` may also carry `p3` (P3 anchors). Every step except the pag
 
 **Pins in the contrast modes.** A step-9 pin (a role anchor or a family anchor at step 9) stays exact wherever it clears the mode's solid floor against a label (white first, then the dark label). The contrast modes raise that floor by 15 Lc, and a brand colour often fails it against both. Then each label is solved on its own: the smallest lightness move at the anchor's hue that clears the floor (chroma clamped to the gamut), plus any hover room that label's key run needs; the label whose step 9 ends nearer the anchor (OKLab ΔE) wins, a run with a passing hover before one without. Radix orange `#f76b15` in `dark-contrast` takes the dark label at `#ffa16e` (ΔE 12.86) instead of white at `#832a00` (ΔE 28.11, where the hover room dragged it). The floor always wins over the pin. The mode's `anchorReport` row records the move as `solidMove: { scheme, label, floor, lcAtAnchor, lc, from, to, dL, dE }` (`lcAtAnchor` against the chosen label, `dL` OKLCH lightness, `dE` OKLab ΔE × 100); a row without `solidMove` kept its pin exact.
 
+### Accents on the page
+
+A `ground` or `ink` anchor pins the neutral's ends, but every accent ramp is generated against the engine's own near-neutral page at `toneMax` / `darkTone`. On a tinted paper an accent's step 1 is then not the page and its tints read cold: on `#fff3e4` (with `ink` `#2a1608`) cyan 1 is `#f8f8f9`, OKLab ΔE × 100 2.7 from the page (6.9 in dark), and in dark accent steps 1–2 sit darker than the page. `settings.pageTint` (0–100, default 0 = off) re-bases every accent family on the mode's page, neutral step 1 (ground 1 with `neutrals`):
+
+- Step 1 becomes the page, at any value above 0.
+- Steps 2–8 shift in OKLab a/b by the page's tint (the page minus the family's own step 1) times `pageTint` / 100, weighted 1 at step 1 to 0 at step 9 by lightness: where each step's target tone falls between the page and step 9 on the mode's tone ladder, one schedule for every family. Each moved step keeps its luminance, so its APCA placement against the page holds (Lc within 0.2).
+- Step 9 (the solid), 10–12, any anchored step and the neutral families stay as they were.
+- The accents are placed against the anchored page's tone: `toneMax` follows a `ground` anchor and `darkTone` an `ink` anchor's dark page (its `dark`, else its `value`), each rounded to its 0.5 grid and held in its range (a page outside it is placed at the range end, with a `WARNING`). This overrides an explicit `toneMax` or `darkTone` (`dim`'s 14 too) and re-places the neutral; `modes.<id>.settings` shows the tones used. A light page under tone 84 fails generation (exit 1), as that `toneMax` does without `pageTint`; a dark page over tone 20 is placed at 20, so its steps 2–3 can sit darker than the page (the warning says so).
+- It runs per mode at that mode's settings, contrast modes included, so `modes.<id>.settings.pageTint` sets a mode's own value. A scheme whose page has no anchor (a `ground` anchor alone leaves the dark page generated) is re-based on its generated page.
+- Everything after it re-solves from the moved ramps: solids and labels, alpha steps (an accent's a1 is transparent, since step 1 is the page), the series, the contrast matrix and the tonal map. The tonal scale is seeded from the solids and does not move, so `tonalRoles` stops do not carry the page tint.
+
+Without `pageTint`, a mode whose anchored page tone is more than 0.5 off `toneMax` / `darkTone` prints `WARNING anchor ground (#fff3e4): light page tone 96.39, but the accents are placed against toneMax 97.5; …` and nothing else changes.
+
+```json
+{ "anchors": [{ "role": "ground", "value": "#fff3e4" }, { "role": "ink", "value": "#2a1608" }], "settings": { "pageTint": 100 } }
+```
+
+Measured with `scripts/system.mjs` on that request (`extraModes: false`), steps 1–4:
+
+| Family | Without `pageTint` | With `pageTint: 100` |
+|---|---|---|
+| Light cyan | `#f8f8f9 #e6f0f5 #d3e7f0 #c0dce8` | `#fff3e4 #eeebe1 #dce2dd #c8d7d7` |
+| Light orange | `#fff6f0 #ffeadb #feddc6 #f8cfb1` | `#fff3e4 #fee8d1 #fadbbe #f4cdaa` |
+| Dark cyan | `#0d1214 #151f24 #1f3138 #28424c` | `#2a1608 #302217 #38322c #3f4341` |
+| Dark orange | `#16100b #281b12 #3d2a1c #533825` | `#2a1608 #381e0c #4a2b15 #5e391e` |
+
+On a strongly tinted dark page the cool hues' steps 2–4 turn brown-grey before their hue shows (dark cyan above). Give the dark modes a lower value, `{ "modes": { "dark": { "settings": { "pageTint": 50 } } } }` (and `dark-contrast`, `dim`): dark cyan 1–4 `#2a1608 #262421 #2f3434 #374448`. No step 9–12 moved and no contrast pair failed in either scheme; with twelve accents pinned at step 9 (`familyAnchors` and `brandExact`) in all five modes, steps 9–12 match a run without the key at the same tones, hex for hex.
+
 ### Family anchors
 
 `familyAnchors` pins a family by name, for colours that belong to a family rather than a role: matching a reference palette step by step (each Radix accent's step 9), or a brand that names its own hues. Same fields and semantics as an anchor, `p3` included, without `role`; `step` defaults to 9 and, when `dark` is given (or `brandExact` fills it), `darkStep` to 9.
@@ -384,6 +413,7 @@ Radix red 9 (`#e5484d`, C 0.193, Cmax_srgb 0.253) becomes C 0.271 with `edge`. T
 |---|---|
 | "match Radix", "pin each family's step 9", "keep this family's colour exact" | `familyAnchors` (with `brandExact` for the same solid in both schemes); a role's colour is an `anchors` entry |
 | "step 1 is too close to white / black" | Step 1 is the page: lower `toneMax`, raise `darkTone` |
+| "normalize the ramps to the page", "the tints look cold on our paper", "the subtle fills don't sit on the page" | `settings.pageTint: 100` with a `ground` (and `ink`) anchor (Accents on the page); lower it per mode where cool hues turn brown-grey on a dark page |
 | "step 1 has no colour", "step 1 is faint" | `tint` (up to 100), `rc: 1`, a higher `falloff`; on a specimen, paint the sheet on the white / black endpoint so step 1 reads as a tile |
 | "orange looks rusty", "greens look dark next to Radix" | Every solid sits at one APCA contrast, so naturally light hues are darkened (hue is kept). Offer `familyAnchors` at Radix's step 9 |
 | "the P3 and sRGB colours look identical", "P3 looks like sRGB" | Read the P3 usage line (`WARNING effectively sRGB`). Anchor with `"p3": "edge"` (P3 anchors) and raise `keyIntensity` (up to 300; `keyRamp` 2 carries it into steps 7 and 8). It only shows on a wide-gamut screen, so compare on one |
@@ -413,6 +443,7 @@ A system made from a brand's named colours: one anchor per colour, by what the c
 | Brand colour used as | Anchor | Note |
 |---|---|---|
 | Light page / paper | `ground` (`value`) | Ground 1 in light |
+| Paper the accent tints should sit on | `settings.pageTint: 100` with `ground` / `ink` | Every accent's step 1 is the paper, steps 2–8 carry its tint (Accents on the page) |
 | Dark page / dark section background | `ink` with `dark` | The `ink` anchor's `dark` is ground 1 in dark; its `value` is the light body text |
 | Body text | `ink` (`value`) | Ink 12 in light |
 | Cards, panels, dividers | `surface` (needs `neutrals`) | Surface 1; add `dark` for an exact dark card, else it is derived |

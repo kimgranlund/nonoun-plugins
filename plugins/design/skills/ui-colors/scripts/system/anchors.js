@@ -394,6 +394,38 @@ export function deriveNeutral(data, family) {
     }
     return data;
 }
+/**
+ * Accents on the page (system.mjs settings.pageTint, opt-in): every accent family re-based on its scheme's page, the first
+ * step of `page` (the neutral, or the ground family with neutrals). Step 1 becomes the page; steps 2–8 shift in OKLab a/b by
+ * the page's tint (page minus the family's own step 1), weighted from 1 at step 1 to 0 at step 9, so the solid and 10–12 are
+ * untouched. The weight follows lightness: (T − T9) / (Tpage − T9) on the tone ladder the contrast targets give against this
+ * page (stepTones), the page acting as the white point the accents adapt to. It is one schedule for every family, so a pinned
+ * step 9 does not bend it; against fading by APCA target it keeps more tint in light steps 6–8 and less in dark (T-0893).
+ * `strength` (0–1, pageTint / 100) scales the shift of steps 2–8; step 1 is the page at any strength. Each moved step keeps
+ * its luminance, so its APCA placement against the page holds. `keep` lists anchored steps ("light|cyan|4"), which stay exact.
+ */
+export function rebaseOnPage(data, page, strength = 1, keep = new Set()) {
+    const gamut = data.settings?.target ?? 'display-p3', rad = Math.PI / 180, neutrals = neutralFamiliesOf(data);
+    for (const mode of ['light', 'dark']) {
+        const pg = data.schemes[mode]?.[page]?.[0];
+        if (!pg) continue;
+        const [, Cp, Hp] = pg.oklch, ap = Cp * Math.cos(Hp * rad), bp = Cp * Math.sin(Hp * rad);
+        const targets = data.settings?.[mode === 'light' ? 'targetsLight' : 'targetsDark'] ?? DEFAULT_TARGETS[mode], T = stepTones(toneOfY(linearY(pg.oklch)), targets, mode);
+        const weight = T.slice(0, KEY_FROM - 1).map((t) => (t - T[KEY_FROM - 1]) / (T[0] - T[KEY_FROM - 1]));
+        for (const [name, ramp] of Object.entries(data.schemes[mode])) {
+            if (name === page || neutrals.has(name)) continue;
+            const [, C1, H1] = ramp[0].oklch, da = strength * (ap - C1 * Math.cos(H1 * rad)), db = strength * (bp - C1 * Math.sin(H1 * rad));
+            for (let s = 1; s < KEY_FROM - 1; s++) {
+                if (keep.has(`${mode}|${name}|${s + 1}`)) continue;
+                const [, C, H] = ramp[s].oklch, Y = linearY(ramp[s].oklch);
+                const a = C * Math.cos(H * rad) + weight[s] * da, b = C * Math.sin(H * rad) + weight[s] * db, C2 = Math.hypot(a, b), H2 = C2 < 1e-4 ? H : ((Math.atan2(b, a) / rad) + 360) % 360;
+                moveSwatch(ramp[s], [solveLightness(Y, C2, H2, gamut), C2, H2], gamut);
+            }
+            moveSwatch(ramp[0], [...pg.oklch], gamut);
+        }
+    }
+    return data;
+}
 function yOfHex(color) {
     const p = parseAnchorColor(color);
     return p ? p.y : 0;
