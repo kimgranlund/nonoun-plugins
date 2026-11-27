@@ -15,6 +15,7 @@ import { join } from 'node:path';
 import { createHash } from 'node:crypto';
 import { parseArgs } from 'node:util';
 import { clampChroma } from './system/anchors.js';
+import { dtcgColor } from './system/dtcg.js';
 
 const fail = (code, msg) => { console.error(msg); process.exit(code); };
 const USAGE = 'usage: node families.mjs --from SYSTEM_OUTPUT_DIR [--from-p3 P3_SYSTEM_OUTPUT_DIR] --out NEW_DIR [--light <mode id>] [--dark <mode id>]';
@@ -71,7 +72,7 @@ function describe(css, g) {
   const p = parse(css), x = xyzOfOklch(p.oklch), srgb = M3(XYZ2SRGB, x).map(enc), p3 = M3(XYZ2P3, x).map(enc);
   return { css, oklch: p.oklch.map(r4), [g === 'p3' ? 'displayP3' : 'srgb']: (g === 'p3' ? p3 : srgb).map((v) => r4(clip(v))), alpha: r4(p.alpha), hex: hexOf(srgb) };
 }
-function dtcg(css, g) { const d = describe(css, g), v = { colorSpace: g === 'p3' ? 'display-p3' : 'srgb', components: g === 'p3' ? d.displayP3 : d.srgb, alpha: d.alpha }; if (d.alpha === 1) v.hex = d.hex; return { $type: 'color', $value: v }; }
+function dtcg(css, g) { const d = describe(css, g); return dtcgColor(g === 'p3' ? 'display-p3' : 'srgb', g === 'p3' ? d.displayP3 : d.srgb, d.alpha, d.hex); }
 const trio = (name, l, d) => l === d ? [`  ${name}: ${l};`] : [`  ${name}-light: ${l};`, `  ${name}-dark: ${d};`, `  ${name}: light-dark(var(${name}-light), var(${name}-dark));`];
 
 // ── Layout ─────────────────────────────────────────────────────────────────────────────────────────────────
