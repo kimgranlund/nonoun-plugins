@@ -6,6 +6,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | ID | Ticket | Title | Type | Size | Pri | Depends on | Status |
 |---|---|---|---|---|---|---|---|
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔴 blocked |
+| T-0894 | [0894-ui-colors-pagetint-dim](0894-ui-colors-pagetint-dim/handoff.md) | ui-colors: pageTint with an ink anchor collapses dim onto dark | bug | L2 | P2 | none | 🔵 ready |
 
 Closed: 855 done, 30 dropped (git log or .NNNN-* folders)
 
