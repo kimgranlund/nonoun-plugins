@@ -6,8 +6,6 @@ from pathlib import Path
 import re
 import sys
 
-import yaml
-
 SKILL_LIMIT = 18000
 # claude.ai cuts a skill description at 1024 characters and strips angle-bracket tags from it (T-0891).
 DESCRIPTION_LIMIT = 1024
@@ -75,10 +73,42 @@ def check(root):
     return errors
 
 
-def check_description(skill, text):
-    """The description as the host reads it, after YAML parsing (folded and literal scalars)."""
+def frontmatter_description(text):
+    """The description as a YAML parser reads it, standard library only: plain, quoted, folded (>) and literal (|)."""
     front = re.match(r'---\n(.*?)\n---', text, flags=re.S)
-    description = str((yaml.safe_load(front.group(1)) or {}).get('description', '')) if front else ''
+    lines = front.group(1).split('\n') if front else []
+    for i, line in enumerate(lines):
+        if not line.startswith('description:'):
+            continue
+        head = line[len('description:'):].strip()
+        body, last = [], True  # last: the key ends the front matter, so a block keeps no final line break
+        for more in lines[i + 1:]:
+            if more.strip() and not more[0].isspace():
+                last = False
+                break
+            body.append(more)
+        while body and not body[-1].strip():
+            body.pop()
+        if head[:1] in '>|':
+            indent = min((len(b) - len(b.lstrip()) for b in body if b.strip()), default=0)
+            block = [b[indent:] for b in body]
+            if head[0] == '|':
+                value = '\n'.join(block)
+            else:
+                value = re.sub(r'(?<!\n)\n(?!\n)', ' ', '\n'.join(block)).replace('\n\n', '\n')
+            return value if head.endswith('-') or last else value + '\n'
+        joined = ' '.join([head] + [b.strip() for b in body if b.strip()])
+        if joined.startswith('"'):
+            return json.loads(joined)
+        if joined.startswith("'"):
+            return joined[1:-1].replace("''", "'")
+        return joined
+    return ''
+
+
+def check_description(skill, text):
+    """claude.ai cuts a description over the limit and strips angle-bracket tags (T-0891)."""
+    description = frontmatter_description(text)
     errors = []
     if len(description) > DESCRIPTION_LIMIT:
         errors.append(f'{skill}: description {len(description)} characters, limit {DESCRIPTION_LIMIT}')
@@ -153,7 +183,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
     try:
         errors = check(args.root)
-    except (OSError, ValueError, KeyError, TypeError, yaml.YAMLError) as exc:
+    except (OSError, ValueError, KeyError, TypeError) as exc:
         errors = [str(exc)]
     for error in errors:
         print('FAIL:', error, file=sys.stderr)
