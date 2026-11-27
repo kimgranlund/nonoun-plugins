@@ -25,7 +25,7 @@ Packaging then: Progressive Context 0.1.0 and SDLC 0.16.0, two plugin roots.
 - Claude plugin validator: both plugins and the repository marketplace pass.
 - Codex CLI 0.155.0 app-server `plugin/read`, using the repository marketplace path: discovers Progressive Context's one skill and all 24 SDLC skills. Both return zero Codex hooks. No installation or user configuration changes were required.
 - New entry-point skills pass `quick_validate.py`. Progressive Context passes the cross-harness validator.
-- `scripts/check-packaging.py` checks catalog membership/source paths, manifest identity parity, required entry points, Codex routing, hook separation, and Progressive Context reference links. A copied marketplace with a wrong/missing plugin path was rejected as a negative control.
+- `scripts/check-packaging.py` checks catalog membership/source paths, manifest identity parity, required entry points, skill description limits (at most 1024 characters after YAML parsing, no `<...>` tag), Codex routing, hook separation, and Progressive Context reference links. A copied marketplace with a wrong/missing plugin path was rejected as a negative control.
 - `bash plugins/sdlc/scripts/check.sh`: exit 0. Role-table checks, decomposition, tickets, board, steps, ordering, fanout, runner, hooks, offline live-probe selftests, shellcheck, and Claude validation all pass. The metadata/role consistency check was rerun after the final skill edits and also passed.
 
 These checks demonstrate packaging, discovery, and the covered script behavior. They do not demonstrate model adherence to every workflow, installed-session implicit routing, browser portability, or comparative effectiveness against ICM Architect.

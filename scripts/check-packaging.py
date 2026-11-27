@@ -6,7 +6,11 @@ from pathlib import Path
 import re
 import sys
 
+import yaml
+
 SKILL_LIMIT = 18000
+# claude.ai cuts a skill description at 1024 characters and strips angle-bracket tags from it (T-0891).
+DESCRIPTION_LIMIT = 1024
 # A plugin whose entry skill is not named after it (the context plugin kept its skill name, T-0793).
 ENTRY_SKILL = {'context': 'context-system', 'dev-tools': None, 'design': None}
 
@@ -44,6 +48,7 @@ def check(root):
             require(text.startswith('---\n'), f'{skill}: missing frontmatter')
             # The host re-injects a skill body after compaction, capped at 20,000 characters (T-0659).
             require(len(text) < SKILL_LIMIT, f'{skill}: {len(text)} characters, limit {SKILL_LIMIT:,}; move detail into references/')
+            errors.extend(check_description(skill, text))
         entry = ENTRY_SKILL.get(name, name)  # None: a skill collection with no skill named after the plugin
         require(entry is None or (plugin / 'skills' / entry / 'SKILL.md').is_file(), f'{name}: missing entry point')
     sdlc = root / 'plugins/sdlc'
@@ -67,6 +72,19 @@ def check(root):
                 require((path.parent / target.split('#')[0]).exists(), f'{path}: broken link {target}')
     errors += check_design(root / 'plugins/design')
     errors += check_workflows(root)
+    return errors
+
+
+def check_description(skill, text):
+    """The description as the host reads it, after YAML parsing (folded and literal scalars)."""
+    front = re.match(r'---\n(.*?)\n---', text, flags=re.S)
+    description = str((yaml.safe_load(front.group(1)) or {}).get('description', '')) if front else ''
+    errors = []
+    if len(description) > DESCRIPTION_LIMIT:
+        errors.append(f'{skill}: description {len(description)} characters, limit {DESCRIPTION_LIMIT}')
+    tags = re.findall(r'<[^>]*>', description)
+    if tags:
+        errors.append(f'{skill}: description contains angle-bracket tags {tags}, which claude.ai strips')
     return errors
 
 
@@ -135,10 +153,10 @@ if __name__ == '__main__':
     args = parser.parse_args()
     try:
         errors = check(args.root)
-    except (OSError, ValueError, KeyError, TypeError) as exc:
+    except (OSError, ValueError, KeyError, TypeError, yaml.YAMLError) as exc:
         errors = [str(exc)]
     for error in errors:
         print('FAIL:', error, file=sys.stderr)
     if errors:
         sys.exit(1)
-    print('PASS: catalog parity, identity, skill routes and sizes, hook isolation, context and design links and CI triggers')
+    print('PASS: catalog parity, identity, skill routes, sizes and descriptions, hook isolation, context and design links and CI triggers')
