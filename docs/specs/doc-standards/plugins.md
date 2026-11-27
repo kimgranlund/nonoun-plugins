@@ -23,7 +23,7 @@ The shipped skill `author-cross-harness-plugins` (dev-tools plugin) is the autho
 
 ## Checks
 
-- `python3 scripts/check-packaging.py` (enforced, run by `check.sh`): catalog parity and source paths, manifest identity, entry skills, the SDLC Codex route line, hook separation, and skill links.
+- `python3 scripts/check-packaging.py` (enforced, run by `check.sh`): catalog parity and source paths, manifest identity, entry skills, skill descriptions (at most 1024 characters after YAML parsing, no `<...>` tag, as claude.ai requires), the SDLC Codex route line, hook separation, and skill links.
 - `python3 plugins/dev-tools/skills/author-cross-harness-plugins/scripts/validate_cross_harness.py plugins/<name>` (advisory): the skill's own validator. It is clean on `context` and `dev-tools`. It flags `${CLAUDE_PLUGIN_ROOT}` in SDLC skills, which rule 3 accepts through the Codex adapter, and `$ARGUMENTS` in one design skill.
 
 Discovery in a live host is evidence the checks do not give; record it in a dated section of [plugin-compatibility.md](../../references/plugin-compatibility.md).

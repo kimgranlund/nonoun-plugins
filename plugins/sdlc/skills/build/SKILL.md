@@ -1,6 +1,6 @@
 ---
 name: build
-description: "Build one plan step: dispatch a builder sub-agent at a fixed model and effort per level (L1..L5). If no level is given, take it from the handoff or assess the step first. Args: [level] <step handoff.md>."
+description: "Build one plan step: dispatch a builder sub-agent at a fixed model and effort per level (L1..L5). If no level is given, take it from the handoff or assess the step first. Args: [level] [step handoff.md]."
 argument-hint: "[L1|L2|L3|L4|L5] <handoff.md>"
 allowed-tools: Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/dispatch.py:*), Agent, Read, Grep, Glob
 ---

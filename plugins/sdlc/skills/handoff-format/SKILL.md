@@ -1,6 +1,6 @@
 ---
 name: handoff-format
-description: "Layout and templates for sdlc task folders (<work root>/<task>/, .sdlc/ by default or docs/work/ with work_root: docs/work) and handoff files. Reference for the launcher skills; not a command."
+description: "Layout and templates for sdlc task folders (WORK_ROOT/TASK/, .sdlc/ by default or docs/work/ with work_root: docs/work) and handoff files. Reference for the launcher skills; not a command."
 user-invocable: false
 ---
 

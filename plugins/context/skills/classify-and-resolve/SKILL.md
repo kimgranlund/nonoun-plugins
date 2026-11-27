@@ -4,8 +4,7 @@ description: >
   Design and grow classify-and-resolve workflows: incoming items get a class from a closed set,
   with an explicit unclassified route, and go to a resolver with a declared contract, through a
   cascade of rules, observed evidence, decision models and humans, an autonomy matrix guarded by evaluation gates, and a
-  taxonomy feedback loop, with a pipeline validator, a log-to-cases converter and an
-  unclassified report. Use for triage, routing, dispatch and intake; "sort these into", "route each X to",
+  taxonomy feedback loop. Use for triage, routing, dispatch and intake; "sort these into", "route each X to",
   "categorize and handle", "handle different kinds of X differently"; ticket, incident or request
   queues; intent classification; router agents and specialist agents; inbox or document
   processing; escalation paths; human-in-the-loop review queues; corpus cleanup by type; and

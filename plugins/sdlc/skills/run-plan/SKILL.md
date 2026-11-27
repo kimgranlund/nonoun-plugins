@@ -1,6 +1,6 @@
 ---
 name: run-plan
-description: "Run an approved plan doc to completion unattended: preflight, then loop plan_done.py, dispatch each open step through fanout.py prep and land, follow steps.py next, and stop with state written when a script says stop. Built for a smaller driver model that follows exit codes and carries no judgment. Use for \"/goal complete build and verify <plan-doc.md>\" or \"run this plan doc\". NOT for writing the plan (plan-doc), a goal with no plan doc (plan-goal), or one ticket (solo)."
+description: "Run an approved plan doc to completion unattended: preflight, then loop plan_done.py, dispatch each open step through fanout.py prep and land, follow steps.py next, and stop with state written when a script says stop. Built for a smaller driver model that follows exit codes and carries no judgment. Use for \"/goal complete build and verify [plan-doc.md]\" or \"run this plan doc\". NOT for writing the plan (plan-doc), a goal with no plan doc (plan-goal), or one ticket (solo)."
 argument-hint: "<plan-doc.md>"
 allowed-tools: Read, Grep, Glob, Bash, Agent, SendMessage
 ---
