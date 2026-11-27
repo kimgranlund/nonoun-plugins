@@ -2,7 +2,7 @@
 id: T-0895
 title: "sdlc:ask asks in rounds of 4, up to 20 questions per turn"
 type: chore           # feature | bug | chore | spike | idea
-status: claimed        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done        # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -34,3 +34,13 @@ router: .sdlc/AGENTS.md  # how to claim and close this ticket
 - `grep -n "ONE AskUserQuestion\|Never a second round" plugins/sdlc/skills/ask/SKILL.md` prints nothing.
 - The skill states the 4-per-call limit, the 5-call (20-item) cap, the ordering across rounds and the skip rule.
 - `python3 scripts/check-packaging.py` and `git diff --check` pass, and `bash plugins/sdlc/scripts/check.sh --changed` passes.
+
+## Outcome
+
+2026-11-27 · lane: solo L1 · verdict: closed by reason (delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed; gate: full) · verifier: verifier-L1 (opus) · base: a01c379157b2
+- Changed: see commits
+- Commits: 76bae3a T-0895: sdlc:ask asks in rounds of 4, up to 20 items; 580f0e2 T-0895: record lane T-0895-t0895
+- Check: 1 `grep -n "ONE AskUserQuestion\|Never a second round" plugins/sdlc/skills/ask/SKILL.md` prints not...: pass
+- Check: 2 The skill states the 4-per-call limit, the 5-call (20-item) cap, the ordering across rounds and t...: pass
+- Check: 3 `python3 scripts/check-packaging.py`, `git diff --check`, `bash plugins/sdlc/scripts/check.sh --c...: pass
+- Follow-up: note: check.sh --changed is vacuous on an uncommitted tree "nothing to... -> notes.md
