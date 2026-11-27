@@ -4,6 +4,19 @@ SDLC releases (named SDLC Lite before 1.0.0), newest first, in [Keep a Changelog
 
 ## [Unreleased]
 
+## [1.0.15] - 2026-11-27
+
+Report: [docs/reports/2026-11-27-release-1-0-15.md](docs/reports/2026-11-27-release-1-0-15.md). Marketplace release: `sdlc` 1.1.1, `context` 0.8.1 and `design` 0.8.1; `dev-tools` 0.1.1 is unchanged. One ticket (T-0891), which clears the 12 warnings the claude.ai marketplace sync showed for v1.0.14.
+
+### Fixed
+
+- `sdlc`: the `build`, `handoff-format`, `handoff` and `run-plan` skill descriptions name their placeholders without angle brackets, which claude.ai strips (T-0891).
+- `context` and `design`: the `classify-and-resolve` and `explore-variants` skill descriptions fit the 1024 characters claude.ai keeps (T-0891).
+
+### Added
+
+- `scripts/check-packaging.py` fails a skill description over 1024 characters after YAML parsing or one holding a `<...>` tag, naming the skill and the limit (T-0891).
+
 ## [1.0.14] - 2026-11-26
 
 Report: [docs/reports/2026-11-26-release-1-0-14.md](docs/reports/2026-11-26-release-1-0-14.md). Marketplace release: `design` 0.8.0; `sdlc` 1.1.0, `context` 0.8.0 and `dev-tools` 0.1.1 are unchanged. Eight tickets (T-0883 to T-0890); the T-0883 and T-0889 commits are also on PR #105. Details are in [the design changelog](plugins/design/CHANGELOG.md).

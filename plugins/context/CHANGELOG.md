@@ -4,6 +4,12 @@ The context plugin (formerly Progressive Context), newest first. Releases before
 
 ## [Unreleased]
 
+## [0.8.1] - 2026-11-27
+
+### Fixed
+
+- `classify-and-resolve`: the skill description is 963 characters, under the 1024 that claude.ai keeps; the tool list it dropped stays in the body (T-0891).
+
 ## [0.8.0] - 2026-11-15
 
 ### Added

@@ -4,6 +4,12 @@ The design plugin, newest first. Releases before this file are recorded in the r
 
 ## [Unreleased]
 
+## [0.8.1] - 2026-11-27
+
+### Fixed
+
+- `explore-variants`: the skill description is 1018 characters, under the 1024 that claude.ai keeps, with its triggers and NOT list kept; recorded as differing from the MacBook source (T-0891).
+
 ## [0.8.0] - 2026-11-26
 
 ### Added
