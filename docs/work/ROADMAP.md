@@ -6,7 +6,7 @@ New ticket: `/ticket new <feature|bug|chore|spike|idea> <slug> "title"`. Build p
 | ID | Ticket | Title | Type | Size | Pri | Depends on | Status |
 |---|---|---|---|---|---|---|---|
 | T-0611 | [0611-pi-host-rehearsal](0611-pi-host-rehearsal/handoff.md) | Rehearse a Pi host working tickets beside Claude and Codex | chore | L2 | P2 | none | 🔴 blocked |
-| T-0896 | [0896-families-manifest-pairings](0896-families-manifest-pairings/handoff.md) | ui-colors: families.mjs manifest gains pairings and per-step data | feature | L1 | P2 | none | 🟡 claimed |
+| T-0896 | [0896-families-manifest-pairings](0896-families-manifest-pairings/handoff.md) | ui-colors: families.mjs manifest gains pairings and per-step data | feature | L1 | P2 | none | 🟡 claimed (branch lane/T-0896-t0896) |
 
 Closed: 857 done, 30 dropped (git log or .NNNN-* folders)
 
