@@ -64,6 +64,7 @@
 - [Release 1.0.15](reports/2026-11-27-release-1-0-15.md): `sdlc` 1.1.1, `context` 0.8.1 and `design` 0.8.1, with skill descriptions inside the claude.ai limits and a packaging gate for them.
 - [Release 1.0.16](reports/2026-11-27-release-1-0-16.md): `design` 0.9.0 with the `ui-colors` named-color DTCG reference.
 - [Release 1.0.17](reports/2026-11-27-release-1-0-17.md): `design` 0.10.0 with `ui-colors` `settings.pageTint`, accent ramps re-based on an anchored page.
+- [Release 1.0.19](reports/2026-11-28-release-1-0-19.md): `design` 0.10.2 with `steps` and `pairings` in the `ui-colors` family manifest.
 - [Release 1.0.18](reports/2026-11-27-release-1-0-18.md): `sdlc` 1.1.2 with `/ask` in rounds of 4, and `design` 0.10.1 with `pageTint` keeping `dim` distinct.
 - [Release 1.0.13](reports/2026-11-25-release-1-0-13.md): `design` 0.7.2 with `massimo-vignelli` on opus like the other designer agents.
 - [Release 1.0.12](reports/2026-11-24-release-1-0-12.md): `design` 0.7.1 with a twelfth designer agent, `massimo-vignelli`.
