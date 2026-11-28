@@ -424,6 +424,21 @@ function checkFamilyFiles(root, j, vars) {
   for (const doc of ['README.md', 'USAGE.md', 'globals.css']) if (!existsSync(join(root, doc))) f.push(`${doc} missing`);
   return f;
 }
+// manifest.json › steps (12 entries, group ids from stepGroups, a use each) and › pairings (the four rules); USAGE.md carries each rule's text.
+function checkFamilyManifest(man, usage) {
+  const f = [], groups = man.stepGroups ?? [], steps = man.steps, pairs = man.pairings;
+  if (!Array.isArray(steps) || steps.length !== 12) f.push(`manifest.steps has ${Array.isArray(steps) ? steps.length : 'no'} entries, not 12`);
+  else for (let i = 0; i < 12; i++) { const x = steps[i], g = groups.find((y) => y.steps.includes(i + 1));
+    if (x.step !== i + 1) f.push(`manifest.steps[${i}] is step ${x.step}, not ${i + 1}`);
+    if (!g || x.group !== g.id) f.push(`manifest.steps ${i + 1} group ${x.group} is not stepGroups' ${g?.id}`);
+    if (typeof x.use !== 'string' || !x.use) f.push(`manifest.steps ${i + 1} has no use`); }
+  const want = { 'text-on-step': (p) => p.text?.join() === '11,12' && p.on?.join() === '1,5', 'component-border': (p) => p.component?.join() === '3,5' && p.border === 7 && p.hoverBorder === 8,
+    'on-solid': (p) => p.solid?.join() === '9,10' && p.token === '-on-solid', hover: (p) => p.within === 'group' && p.up === 1 && JSON.stringify(p.pairs) === '[[3,4],[7,8],[9,10]]' };
+  if (!Array.isArray(pairs)) f.push('manifest.pairings missing');
+  else { if (pairs.length !== 4) f.push(`manifest.pairings has ${pairs.length} rules, not 4`);
+    for (const [id, ok] of Object.entries(want)) { const p = pairs.find((x) => x.id === id); if (!p) f.push(`manifest.pairings lacks ${id}`); else { if (!ok(p)) f.push(`manifest.pairings ${id} states the wrong steps`); if (!usage.includes(p.rule)) f.push(`USAGE.md does not carry the ${id} rule`); } } }
+  return f;
+}
 function checkBadRequests(list) {
   const f = [];
   list.forEach((rq, i) => { try { runSystem({ ...rq, extraModes: false, tonal: false, alpha: false, series: false, dtcg: false }, join(tmp, `bad-${i}-${Math.random().toString(36).slice(2, 8)}`)); f.push(`${JSON.stringify(rq)} was accepted`); } catch (e) { if (e.status !== 2) f.push(`${JSON.stringify(rq)} exited ${e.status}, not 2`); } });
@@ -1184,6 +1199,7 @@ try {
     'hoverMin: negative, non-number and out-of-range values exit 2': () => checkBadRequests(BAD_HOVER_MIN),
     'family anchors: exact at step 9 in every scheme, roles untouched, no internal names in the output': () => checkFamilyAnchors(jFA, cssFA),
     'family files: every variable resolves in both schemes, step 9 exact to the system, manifest hashes current (families.mjs)': () => checkFamilyFiles(outFF, jFA),
+    'family files: manifest steps (12, group ids match stepGroups) and pairings (the four rules), each rule in USAGE.md': () => checkFamilyManifest(readJson(join(outFF, 'manifest.json')), readFileSync(join(outFF, 'USAGE.md'), 'utf8')),
     'family anchors and role names: unknown roles, unknown families, a family a role anchor pins and bad keys exit 2': () => checkBadRequests(BAD_FAMILY),
     'P3 anchors: "edge" family anchors keep lightness and hue, saturated ones outside sRGB, muted ones scaled, requested and lifted in anchorReport': () => checkP3Anchors(jP3),
     'P3 usage: counts recounted from the ramps, the effectively-sRGB warning on exactly the modes under 5% (P3 anchors, family anchors, low chroma)': () => [...checkP3Usage(jP3, lineP3), ...checkP3Usage(jFA, lineFA, Object.fromEntries(Object.entries(jFA.modes).map(([id, M]) => [id, usageCount(M)]))), ...checkP3Usage(jLow, lineLow)],
@@ -1242,6 +1258,8 @@ try {
   control('a data role written with series false', () => checkBrand(jB, cssB + '\n:root { --colors-data-1: red; }', jBL));
   control('an anchored family moved to its cusp', () => { const x = clone(jBL); const r = x.modes.dark.anchorReport.find((a) => a.role === 'secondary'); x.modes.dark.solidLabels[r.family].cusp = true; return checkBrand(jB, cssB, x); });
   control('a family file with a missing reference', () => { const v = familyVars(join(outFF, 'colors-p3')); delete v['--colors-indigo-9']; return checkFamilyFiles(outFF, jFA, { 'colors-p3': v, colors: familyVars(join(outFF, 'colors')) }); });
+  control('a manifest steps entry dropped', () => { const m = clone(readJson(join(outFF, 'manifest.json'))); m.steps.splice(4, 1); return checkFamilyManifest(m, readFileSync(join(outFF, 'USAGE.md'), 'utf8')); });
+  control('a manifest pairings rule removed', () => { const m = clone(readJson(join(outFF, 'manifest.json'))); m.pairings = m.pairings.filter((p) => p.id !== 'component-border'); return checkFamilyManifest(m, readFileSync(join(outFF, 'USAGE.md'), 'utf8')); });
   control('a family file with a moved step 9', () => { const v = familyVars(join(outFF, 'colors-p3')); v['--colors-orange-9'] = 'oklch(0.6 0.19 45)'; return checkFamilyFiles(outFF, jFA, { 'colors-p3': v, colors: familyVars(join(outFF, 'colors')) }); });
   control('a family anchor off its step 9', () => { const x = clone(jFA); x.modes.light.ramps.orange[8].oklch[0] -= 0.05; return checkFamilyAnchors(x, cssFA); });
   control('a family anchor that moved a role', () => { const x = clone(jFA); x.modes.dark.roles.primary = 'orange'; return checkFamilyAnchors(x, cssFA); });
