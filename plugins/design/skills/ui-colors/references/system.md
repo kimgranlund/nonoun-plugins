@@ -470,7 +470,7 @@ node scripts/families.mjs --from SYSTEM_OUTPUT_DIR [--from-p3 P3_SYSTEM_OUTPUT_D
 | `colors-p3/<name>.json`, `.dtcg.json` | Each value as CSS, OKLCH, P3 components, alpha and an sRGB hex fallback; DTCG paths `colors.<family>.<light\|dark>.<step>`, semantic tokens as aliases |
 | `colors-p3/index.css` | Imports globals, every family, then semantic |
 | `colors/…` | The same files with every value mapped into sRGB (the `system.css` sRGB block) |
-| `manifest.json` | Every file with its size and SHA-256, the families and their solid labels per scheme, anchors, roles with both values, step groups, contrast summary, `p3Usage` |
+| `manifest.json` | Every file with its size and SHA-256, the families and their solid labels per scheme, anchors, roles with both values, step groups, `steps` (each step's group and use), `pairings` (the text, border, hover and on-solid rules USAGE.md states), contrast summary, `p3Usage` |
 | `README.md`, `USAGE.md` | Files and naming; how to use the steps, the solid labels, alpha steps and roles, generated from the same data |
 
 `README.md` and `manifest.json › p3Usage` say how much of P3 `colors-p3/` uses: the P3 usage counts (Outputs) of the run behind it, for the two modes laid out. From one run that is how far `colors-p3/` is from `colors/`; under 5% outside sRGB the two folders look the same. `--from-p3` takes `colors-p3/` from a second, P3-tuned run (the same request with anchors' `p3: "edge"`) and `colors/` from `--from`, so the sRGB files keep the exact colours; both runs need the same families and modes, the second a `display-p3` target (else exit 2), and `manifest.json › generator.p3Request` records its request.
