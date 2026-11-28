@@ -4,6 +4,10 @@ The design plugin, newest first. Releases before this file are recorded in the r
 
 ## [Unreleased]
 
+### Added
+
+- `ui-colors`: `families.mjs` writes `manifest.json › steps` (each step 1 to 12 with its group and use) and `manifest.json › pairings` (the four pairing and hover rules), and `USAGE.md` renders its pairing line and hover sentence from that data; `USAGE.md` text is unchanged (T-0896).
+
 ## [0.10.1] - 2026-11-27
 
 ### Fixed

@@ -4,6 +4,10 @@ SDLC releases (named SDLC Lite before 1.0.0), newest first, in [Keep a Changelog
 
 ## [Unreleased]
 
+### Added
+
+- `design`: `ui-colors` `families.mjs` adds `steps` and `pairings` to `manifest.json`, with `USAGE.md` rendered from them (T-0896).
+
 ## [1.0.18] - 2026-11-27
 
 Report: [docs/reports/2026-11-27-release-1-0-18.md](docs/reports/2026-11-27-release-1-0-18.md). Marketplace release: `sdlc` 1.1.2 and `design` 0.10.1; `context` 0.8.1 and `dev-tools` 0.1.1 are unchanged. Two tickets (T-0894, T-0895).
