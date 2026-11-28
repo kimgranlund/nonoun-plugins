@@ -2,7 +2,7 @@
 id: T-0896
 title: "ui-colors: families.mjs manifest gains pairings and per-step data"
 type: feature        # feature | bug | chore | spike | idea
-status: claimed     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
+status: done     # proposed | ready | claimed | paused | blocked | done | dropped (build progress lives in /board)
 size: L1             # L1 | L2 | L3 | L4 (L5 reserved)
 priority: P2         # P1 | P2 | P3
 depends: []          # T-NNNN, file:<path>, cap:<name>; e.g. [T-0002]
@@ -39,3 +39,15 @@ router: .sdlc/AGENTS.md  # how to claim and close this ticket
 - `USAGE.md`'s "Pairing:" line and hover sentence are generated from `pairings` (a grep of `families.mjs` shows no hard-coded copy of the rule text outside the data).
 - `references/system.md` lists `steps` and `pairings` in the `manifest.json` row.
 - `python3 scripts/check-packaging.py` exits 0 and `git diff --check` is clean.
+
+## Outcome
+
+2026-11-28 · lane: solo L1 · verdict: closed by reason (delivered by the solo agent (level L1); the ticket's own checks and the fanout gates passed; gate: full) · verifier: verifier-L1 (opus) · base: 426204e299aa
+- Changed: see commits
+- Commits: 4c4c9ee T-0896: ui-colors: families.mjs manifest gains pairings and per-step data; 64124e9 T-0896: record lane T-0896-t0896
+- Check: 1 `node scripts/check.mjs` exits 0 with new steps and pairings checks: pass
+- Check: 2 Negative controls bite: pass
+- Check: 3 The USAGE Pairing line and hover sentence come from `pairings`: pass
+- Check: 4 system.md lists `steps` and `pairings` in the manifest.json row: pass
+- Check: 5 check-packaging and `git diff --check`: pass
+- Follow-up: note: redck.py deviations printed no process deviation lines; the ticket... -> notes.md

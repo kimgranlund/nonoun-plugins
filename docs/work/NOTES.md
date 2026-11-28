@@ -1138,3 +1138,7 @@
 ## T-0894: ui-colors: pageTint with an ink anchor collapses dim onto dark (2026-11-27)
 
 - note: `references/system.md` line 366 now says dim's page is the ink's dark page lifted to dim's tone at the same OKLCH hue and chroma, and the sentence about "dim's 14" being overridden is gone, as the constraint required.
+
+## T-0896: ui-colors: families.mjs manifest gains pairings and per-step data (2026-11-28)
+
+- note: redck.py deviations printed no process deviation lines; the ticket has no (red) criteria.
